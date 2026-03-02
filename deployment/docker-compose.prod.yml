@@ -1,0 +1,183 @@
+services:
+  # Database (TimescaleDB)
+  postgres:
+    image: timescale/timescaledb-ha:pg16
+    restart: always
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-worldos}
+      POSTGRES_USER: ${DB_USERNAME:-worldos}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-secret}
+    volumes:
+      - worldos_prod_pgdata:/home/postgres/pgdata/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U worldos" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - internal
+
+  # Cache
+  redis:
+    image: redis:7-alpine
+    restart: always
+    volumes:
+      - worldos_prod_redisdata:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - internal
+
+  # Backend (PHP-FPM)
+  backend:
+    build:
+      context: ../backend
+      dockerfile: ../deployment/backend.prod.Dockerfile
+    restart: always
+    environment:
+      APP_ENV: production
+      APP_DEBUG: "false"
+      APP_KEY: ${APP_KEY:-base64:prodplaceholderkey0000000000000000000000=}
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: ${DB_DATABASE:-worldos}
+      DB_USERNAME: ${DB_USERNAME:-worldos}
+      DB_PASSWORD: ${DB_PASSWORD:-secret}
+      REDIS_HOST: redis
+      SIMULATION_ENGINE_GRPC_URL: http://engine:50052
+    volumes:
+      - ../backend:/var/www
+      - backend_public:/var/www/public
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - internal
+
+  # Scheduler (Laravel)
+  scheduler:
+    build:
+      context: ../backend
+      dockerfile: ../deployment/backend.prod.Dockerfile
+    restart: always
+    environment:
+      APP_ENV: production
+      APP_DEBUG: "false"
+      APP_KEY: ${APP_KEY:-base64:prodplaceholderkey0000000000000000000000=}
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: ${DB_DATABASE:-worldos}
+      DB_USERNAME: ${DB_USERNAME:-worldos}
+      DB_PASSWORD: ${DB_PASSWORD:-secret}
+      REDIS_HOST: redis
+    command: php artisan schedule:work
+    volumes:
+      - ../backend:/var/www
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - internal
+
+  # Worker (Laravel)
+  worker:
+    build:
+      context: ../backend
+      dockerfile: ../deployment/backend.prod.Dockerfile
+    restart: always
+    environment:
+      APP_ENV: production
+      APP_DEBUG: "false"
+      APP_KEY: ${APP_KEY:-base64:prodplaceholderkey0000000000000000000000=}
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: ${DB_DATABASE:-worldos}
+      DB_USERNAME: ${DB_USERNAME:-worldos}
+      DB_PASSWORD: ${DB_PASSWORD:-secret}
+      REDIS_HOST: redis
+    command: php artisan queue:work
+    volumes:
+      - ../backend:/var/www
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - internal
+
+  # Frontend (Next.js)
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: ../deployment/frontend.prod.Dockerfile
+    restart: always
+    environment:
+      NEXT_PUBLIC_API_URL: /api # Use relative path since served by Nginx
+    depends_on:
+      - backend
+    networks:
+      - internal
+
+  # Engine (Rust)
+  engine:
+    build: ../engine
+    restart: always
+    environment:
+      GRPC_ADDR: 0.0.0.0:50051
+      HTTP_ADDR: 0.0.0.0:50052
+      DATABASE_URL: postgres://${DB_USERNAME:-worldos}:${DB_PASSWORD:-secret}@postgres:5432/${DB_DATABASE:-worldos}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - internal
+
+  # Centrifugo (Realtime Messaging)
+  centrifugo:
+    image: centrifugo/centrifugo:v5
+    restart: always
+    command: centrifugo --config=config.json
+    environment:
+      CENTRIFUGO_API_KEY: ${CENTRIFUGO_KEY:-api_key}
+      CENTRIFUGO_SECRET: ${CENTRIFUGO_SECRET:-secret}
+      CENTRIFUGO_HMAC_SECRET: ${CENTRIFUGO_HMAC_SECRET:-hmac_secret}
+    volumes:
+      - ./centrifugo/config.json:/centrifugo/config.json
+    networks:
+      - internal
+
+  # Nginx Gateway
+  nginx:
+    image: nginx:alpine
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - backend_public:/var/www/public:ro # Read-only public files
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - internal
+
+volumes:
+  worldos_prod_pgdata:
+  worldos_prod_redisdata:
+  backend_public:
+
+
+networks:
+  internal:
+    driver: bridge

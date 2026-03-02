@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package worldos.simulation;
+
+option java_multiple_files = true;
+option java_package = "worldos.simulation";
+
+// Simulation engine service: advance universe by N ticks, return snapshot.
+service SimulationEngine {
+  rpc Advance(AdvanceRequest) returns (AdvanceResponse);
+}
+
+message AdvanceRequest {
+  uint64 universe_id = 1;
+  uint64 ticks = 2;
+  // Optional: serialized state to load (e.g. from Laravel). Empty = load from store.
+  bytes state_input = 3;
+}
+
+message AdvanceResponse {
+  bool ok = 1;
+  string error_message = 2;
+  UniverseSnapshot snapshot = 3;
+}
+
+message UniverseSnapshot {
+  uint64 universe_id = 1;
+  uint64 tick = 2;
+  string state_vector_json = 3;
+  double entropy = 4;
+  double stability_index = 5;
+  string metrics_json = 6;
+}

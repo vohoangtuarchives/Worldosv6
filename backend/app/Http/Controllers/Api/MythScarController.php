@@ -1,0 +1,24 @@
+<?php
+
+namespace App\Http\Controllers\Api;
+
+use App\Http\Controllers\Controller;
+use App\Models\MythScar;
+use Illuminate\Http\JsonResponse;
+
+class MythScarController extends Controller
+{
+    /**
+     * Get all myth scars for a specific universe.
+     */
+    public function index(string $universeId): JsonResponse
+    {
+        $id = (int) $universeId;
+        
+        $scars = MythScar::where('universe_id', $id)
+            ->orderByDesc('created_at_tick')
+            ->get();
+            
+        return response()->json($scars);
+    }
+}

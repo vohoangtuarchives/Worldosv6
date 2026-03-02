@@ -1,0 +1,21 @@
+{
+    "api_key": "api_key",
+    "secret": "secret",
+    "hmac_secret": "hmac_secret",
+    "allowed_origins": [
+        "http://localhost",
+        "http://127.0.0.1"
+    ],
+    "namespaces": [
+        {
+            "name": "public",
+            "publish": true,
+            "subscribe": true,
+            "presence": true,
+            "presence_stats": true,
+            "join_leave": true,
+            "history_size": 10,
+            "history_ttl": "60s"
+        }
+    ]
+}

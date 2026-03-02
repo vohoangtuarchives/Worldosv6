@@ -1,0 +1,68 @@
+# Laravel
+/src/backend/vendor/
+/src/backend/node_modules/
+/src/backend/.env
+/src/backend/.env.backup
+/src/backend/.phpunit.result.cache
+/src/backend/Homestead.json
+/src/backend/Homestead.yaml
+/src/backend/npm-debug.log
+/src/backend/yarn-error.log
+/src/backend/storage/*.key
+/src/backend/storage/logs/*
+/src/backend/storage/framework/cache/*
+/src/backend/storage/framework/sessions/*
+/src/backend/storage/framework/testing/*
+/src/backend/storage/framework/views/*
+/src/backend/bootstrap/cache/*
+/src/backend/public/assets/
+
+*# Next.js
+/src/frontend/.next/
+/src/frontend/node_modules/
+/src/frontend/.env.local
+/src/frontend/.env.development.local
+/src/frontend/.env.test.local
+/src/frontend/.env.production.local
+/src/frontend/npm-debug.log*
+/src/frontend/yarn-debug.log*
+/src/frontend/yarn-error.log*
+/src/frontend/build
+/src/frontend/out
+/src/frontend/.DS_Store
+/src/frontend/*.pem
+
+/node_modules
+/.next
+
+# IDE and Editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+*.swn
+.DS_Store
+Thumbs.db
+
+# Docker
+.docker/data/
+docker-compose.override.yml
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Testing
+/coverage
+.nyc_output
+
+# Misc
+*.bak
+*.cache
+*.env
+*.local
+
+# Editor backup files
+*~
