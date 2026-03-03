@@ -8,11 +8,24 @@ use Illuminate\Support\Facades\DB;
 class MemoryService
 {
     public function __construct(
-        protected VectorSearchService $vectorizer
+        protected VectorSearchService $vectorizer,
+        protected EpistemicService $epistemicService
     ) {}
 
     public function write(?int $universeId, string $scope, string $category, string $content, array $keywords = [], array $meta = []): AiMemory
     {
+        // Apply distortion if noise is high and we have a universe context
+        if ($universeId) {
+            $universe = \App\Models\Universe::find($universeId);
+            if ($universe) {
+                $noise = $this->epistemicService->calculateNoise($universe, (float)($universe->state_vector['entropy'] ?? 0));
+                if ($noise > 0.3) {
+                    $content = "[SYSTEM PERCEPTION: " . $this->epistemicService->getClarityLabel($noise) . "]\n" . $content;
+                    // Note: Full content distortion could be done here if needed
+                }
+            }
+        }
+
         $contentHash = $this->hashContent($content);
 
         $existing = AiMemory::query()

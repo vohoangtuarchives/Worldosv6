@@ -35,18 +35,10 @@ class AutonomicPulseAction
                 try {
                     Log::info("Pulse starting for Universe {$universe->id} (World: {$world->id})");
                     
-                    // 1. Chạy mô phỏng
+                    // 1. Advance Simulation (triggers Event & all side-effects via Listeners)
                     $response = $this->advanceAction->execute($universe->id, $ticksPerPulse);
                     
                     if ($response['ok'] ?? false) {
-                        // 2. Xử lý quyết định tự trị dựa trên snapshot cuối cùng
-                        $latestSnapshot = $universe->snapshots()->latest('tick')->first();
-                        
-                        if ($latestSnapshot) {
-                            $this->culturalService->advance($universe, $ticksPerPulse);
-                            $this->autonomicEngine->process($universe, $latestSnapshot);
-                        }
-                        
                         $results[$universe->id] = 'success';
                     } else {
                         $results[$universe->id] = 'failed: ' . ($response['error'] ?? 'unknown');

@@ -48,10 +48,13 @@ class WorldEdictEngine
     {
         $metrics = is_string($snapshot->metrics) ? json_decode($snapshot->metrics, true) : ($snapshot->metrics ?? []);
         
-        // 1. Evaluate current Supreme Entities to see if they decree a new Law
+        // 1. Sync Meta-Edicts from World Axiom
+        $this->syncMetaEdicts($universe, $metrics);
+
+        // 2. Evaluate current Supreme Entities to see if they decree a new Law
         $this->evaluateNewDecrees($universe, $snapshot->tick, $metrics);
 
-        // 2. Check Expiry
+        // 3. Check Expiry (Meta-Edicts are exempt)
         $this->processExpiry($snapshot->tick, $metrics);
 
         // Save back
@@ -59,7 +62,37 @@ class WorldEdictEngine
         $snapshot->save();
     }
 
-    public function activateEdict(Universe $universe, int $tick, array &$metrics, string $edictId, string $decreedBy): bool
+    protected function syncMetaEdicts(Universe $universe, array &$metrics): void
+    {
+        $world = $universe->world;
+        $axiom = $world->axiom ?? [];
+        $metaEdicts = $axiom['meta_edicts'] ?? [];
+
+        if (empty($metaEdicts)) return;
+
+        $activeEdicts = $metrics['active_edicts'] ?? [];
+
+        foreach ($metaEdicts as $id => $data) {
+            if (!isset($activeEdicts[$id])) {
+                $edictDef = $this->edictDictionary[$id] ?? null;
+                if (!$edictDef) continue;
+
+                $activeEdicts[$id] = [
+                    'id' => $id,
+                    'decreed_by' => $data['decreed_by'] ?? 'The Origin',
+                    'name' => $edictDef['name'],
+                    'target' => $edictDef['target'],
+                    'multiplier' => $edictDef['multiplier'],
+                    'expires_at' => null, // Immortal
+                    'is_meta' => true
+                ];
+            }
+        }
+
+        $metrics['active_edicts'] = $activeEdicts;
+    }
+
+    public function activateEdict(Universe $universe, int $tick, array &$metrics, string $edictId, string $decreedBy, string $narrativeContext = ''): bool
     {
         if (!isset($this->edictDictionary[$edictId])) return false;
 
@@ -79,7 +112,7 @@ class WorldEdictEngine
 
         $metrics['active_edicts'] = $activeEdicts;
 
-        $flavor = "ĐẠO LUẬT BAN HÀNH: {$decreedBy} đã giáng hạ thần ấn. {$edictDef['flavor']}";
+        $flavor = "THIÊN ĐẠO BIẾN CHUYỂN: {$narrativeContext}. {$decreedBy} đã ban bố [{$edictDef['name']}]. {$edictDef['flavor']}";
 
         Chronicle::create([
             'universe_id' => $universe->id,
@@ -95,7 +128,7 @@ class WorldEdictEngine
             'event_type' => 'edict_decree',
             'payload' => [
                 'entity' => $decreedBy,
-                'edict' => $edictId,
+                'edict_name' => $edictDef['name'],
                 'description' => $flavor,
             ],
         ]);
@@ -115,11 +148,12 @@ class WorldEdictEngine
             ->get();
 
         foreach ($entities as $entity) {
-            // High power entities have a chance to decree laws
+            // High power entities can impose their will on reality
             if ($entity->power_level > 0.8 && mt_rand(1, 100) <= 2) { 
                 $chosenEdictId = $this->chooseEdictForEntity($entity);
                 if ($chosenEdictId) {
-                    $this->activateEdict($universe, $tick, $metrics, $chosenEdictId, $entity->name);
+                    $context = "Dưới uy áp khủng khiếp của {$entity->name}, trật tự thực tại đã bị bẻ cong";
+                    $this->activateEdict($universe, $tick, $metrics, $chosenEdictId, $entity->name, $context);
                 }
             }
         }
@@ -129,7 +163,7 @@ class WorldEdictEngine
     {
         $edicts = $metrics['active_edicts'] ?? [];
         foreach ($edicts as $id => $data) {
-            if ($tick >= ($data['expires_at'] ?? 0)) {
+            if (isset($data['expires_at']) && $data['expires_at'] !== null && $tick >= $data['expires_at']) {
                 unset($edicts[$id]); // Expire the law
             }
         }

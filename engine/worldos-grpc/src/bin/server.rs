@@ -12,18 +12,27 @@ use serde::{Deserialize, Serialize};
 
 struct EngineService;
 
-fn run_advance(universe_id: u64, ticks: u64, state_input: &[u8]) -> Result<(u64, String, f64, f64, String), String> {
+fn run_advance(universe_id: u64, ticks: u64, state_input: &[u8], world_meta: Option<worldos_grpc::WorldConfig>) -> Result<(u64, String, f64, f64, String), String> {
     let mut state: UniverseState = if state_input.is_empty() {
         UniverseState::with_one_zone(universe_id, 100.0)
     } else {
         serde_json::from_slice(state_input).map_err(|e| format!("state_input json: {}", e))?
     };
 
-    let world = WorldConfig {
-        world_id: 0,
-        axiom: None,
-        world_seed: None,
-        origin: "generic".to_string(),
+    let world = if let Some(meta) = world_meta {
+        WorldConfig {
+            world_id: meta.world_id,
+            origin: meta.origin,
+            axiom: serde_json::from_str(&meta.axiom_json).ok(),
+            world_seed: serde_json::from_str(&meta.world_seed_json).ok(),
+        }
+    } else {
+        WorldConfig {
+            world_id: 0,
+            axiom: None,
+            world_seed: None,
+            origin: "generic".to_string(),
+        }
     };
 
     for _ in 0..ticks {
@@ -47,7 +56,7 @@ impl SimulationEngine for EngineService {
     ) -> Result<Response<AdvanceResponse>, Status> {
         let req = request.into_inner();
         let state_input = req.state_input.as_slice();
-        match run_advance(req.universe_id, req.ticks, state_input) {
+        match run_advance(req.universe_id, req.ticks, state_input, req.world_config) {
             Ok((tick, state_vector_json, entropy, stability_index, metrics_json)) => {
                 let snapshot = UniverseSnapshot {
                     universe_id: req.universe_id,
@@ -74,6 +83,16 @@ struct AdvanceHttpRequest {
     ticks: u64,
     #[serde(default)]
     state_input: Option<String>,
+    #[serde(default)]
+    world_config: Option<AdvanceHttpWorldConfig>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct AdvanceHttpWorldConfig {
+    world_id: u64,
+    origin: String,
+    axiom_json: String,
+    world_seed_json: String,
 }
 
 #[derive(Debug, Serialize)]
@@ -99,7 +118,15 @@ async fn advance_http(Json(body): Json<AdvanceHttpRequest>) -> Json<AdvanceHttpR
         .as_deref()
         .unwrap_or("")
         .as_bytes();
-    match run_advance(body.universe_id, body.ticks, state_input) {
+
+    let world_meta = body.world_config.map(|wc| worldos_grpc::WorldConfig {
+        world_id: wc.world_id,
+        origin: wc.origin,
+        axiom_json: wc.axiom_json,
+        world_seed_json: wc.world_seed_json,
+    });
+
+    match run_advance(body.universe_id, body.ticks, state_input, world_meta) {
         Ok((tick, state_vector, entropy, stability_index, metrics)) => Json(AdvanceHttpResponse {
             ok: true,
             error_message: String::new(),

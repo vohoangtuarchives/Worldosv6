@@ -60,23 +60,31 @@ class MaterialSeeder extends Seeder
 
     protected function seedMutations(): void
     {
-        // Example mutation: Lúa nước -> Làng xã (if population > 0.6)
+        // Vietnamese Mutation DAG
         $luaNuoc = Material::where('slug', 'nong-nghiep-lua-nuoc')->first();
         $langXa = Material::where('slug', 'lang-xa-tu-tri')->first();
+        $trongDong = Material::where('slug', 'van-hoa-trong-dong')->first();
+        $thoCung = Material::where('slug', 'tho-cung-to-tien')->first();
+        $leHoi = Material::where('slug', 'le-hoi-den-dai')->first();
+
         if ($luaNuoc && $langXa) {
             MaterialMutation::updateOrCreate(
                 ['parent_material_id' => $luaNuoc->id, 'child_material_id' => $langXa->id],
-                ['trigger_condition' => 'population > 0.6', 'context_constraint' => []]
+                ['trigger_condition' => 'population >= 0.5 && growth >= 0.4', 'context_constraint' => []]
             );
         }
 
-        // Example mutation: Trống đồng -> Thờ cúng tổ tiên (if authority > 0.5)
-        $trongDong = Material::where('slug', 'van-hoa-trong-dong')->first();
-        $thoCung = Material::where('slug', 'tho-cung-to-tien')->first();
         if ($trongDong && $thoCung) {
             MaterialMutation::updateOrCreate(
                 ['parent_material_id' => $trongDong->id, 'child_material_id' => $thoCung->id],
-                ['trigger_condition' => 'authority > 0.5', 'context_constraint' => []]
+                ['trigger_condition' => 'authority >= 0.4 && culture >= 0.3', 'context_constraint' => []]
+            );
+        }
+
+        if ($langXa && $leHoi) {
+            MaterialMutation::updateOrCreate(
+                ['parent_material_id' => $langXa->id, 'child_material_id' => $leHoi->id],
+                ['trigger_condition' => 'population >= 0.7 && stability >= 0.5', 'context_constraint' => []]
             );
         }
     }
@@ -88,33 +96,41 @@ class MaterialSeeder extends Seeder
                 'name' => 'Nông nghiệp Lúa nước',
                 'description' => 'Wet rice civilisation based on hydraulic management and communal labor.',
                 'ontology' => Material::ONTOLOGY_PHYSICAL,
-                'inputs' => ['water' => 0.3, 'entropy' => 0.5],
-                'outputs' => ['order' => 1, 'growth' => 0.8, 'population' => 0.5],
-                'pressures' => ['order' => 0.3, 'growth' => 0.2, 'entropy' => 0.05],
+                'inputs' => ['water' => 0.3],
+                'outputs' => ['order' => 0.4, 'growth' => 0.5, 'population' => 0.6],
+                'pressures' => ['order' => 0.2, 'growth' => 0.15, 'entropy' => 0.05],
             ],
             [
                 'name' => 'Thờ cúng Tổ tiên',
                 'description' => 'Ancestor worship reinforcing lineage and social cohesion.',
                 'ontology' => Material::ONTOLOGY_SYMBOLIC,
-                'inputs' => ['order' => 0.2, 'tradition' => 0.1],
-                'outputs' => ['order' => 0.5, 'stability' => 0.3],
-                'pressures' => ['order' => 0.3, 'innovation' => -0.1, 'trauma' => 0.05],
+                'inputs' => ['order' => 0.3, 'tradition' => 0.2],
+                'outputs' => ['order' => 0.5, 'stability' => 0.4],
+                'pressures' => ['order' => 0.3, 'innovation' => -0.15, 'trauma' => 0.05],
             ],
             [
                 'name' => 'Làng xã Tự trị',
                 'description' => 'Village autonomy: "The King\'s law bows to village custom".',
                 'ontology' => Material::ONTOLOGY_INSTITUTIONAL,
-                'inputs' => ['population' => 0.2],
-                'outputs' => ['order' => 0.4, 'resilience' => 0.6],
-                'pressures' => ['order' => 0.2, 'centralization' => -0.3],
+                'inputs' => ['population' => 0.5, 'order' => 0.4],
+                'outputs' => ['order' => 0.5, 'resilience' => 0.7],
+                'pressures' => ['order' => 0.2, 'centralization' => -0.4],
             ],
             [
                 'name' => 'Văn hóa Trống đồng',
                 'description' => 'Dong Son culture symbolizing power and community.',
                 'ontology' => Material::ONTOLOGY_SYMBOLIC,
-                'inputs' => ['bronze' => 0.5, 'craftsmanship' => 0.4],
-                'outputs' => ['culture' => 0.7, 'authority' => 0.4],
-                'pressures' => ['culture' => 0.3],
+                'inputs' => ['bronze' => 0.4],
+                'outputs' => ['culture' => 0.8, 'authority' => 0.5],
+                'pressures' => ['culture' => 0.3, 'authority' => 0.2],
+            ],
+            [
+                'name' => 'Lễ hội Đền đài',
+                'description' => 'Communal festivals honoring tutelary deities.',
+                'ontology' => Material::ONTOLOGY_SYMBOLIC,
+                'inputs' => ['culture' => 0.6, 'stability' => 0.5],
+                'outputs' => ['solidarity' => 0.8, 'spirituality' => 0.7],
+                'pressures' => ['solidarity' => 0.4, 'entropy' => 0.1],
             ],
         ];
     }

@@ -39,6 +39,8 @@ class NarrativeAiService
 
         $latest = $universe->snapshots()->orderByDesc('tick')->first();
         $vector = $latest?->state_vector ?? [];
+
+        // Flatten vector if necessary
         if (is_array($vector) && isset($vector[0]['state'])) {
             $flat = [];
             foreach ($vector as $z) {
@@ -46,24 +48,42 @@ class NarrativeAiService
             }
             $vector = $flat;
         }
-        $eventTypes = ['crisis', 'unrest'];
-        $perceived = $this->perceived->build($universeId, $eventTypes, $vector, $toTick);
 
+        // Tier 1 & 2 are handled within PerceivedArchiveBuilder (mapping flavor and events)
+        $eventTypes = ['crisis', 'unrest', 'formation', 'collapse', 'myth_scar', 'secession'];
+        $perceived = $this->perceived->build($universeId, $eventTypes, (array)$vector, $toTick);
+
+        // Tier 3: Residual Injection is already in PerceivedArchiveBuilder's output
+        
+        // Contextual search for long-term memory
         $contextQuery = implode(' ', [
             implode(' ', $perceived['events'] ?? []),
             implode(' ', $perceived['materials'] ?? []),
             json_encode($perceived['culture'] ?? []),
             implode(' ', $perceived['institutions'] ?? []),
         ]);
-        $facts = $this->memory->search($contextQuery, $universeId, 5);
+        
+        $facts = [];
+        try {
+            $facts = $this->memory->search($contextQuery, $universeId, 5);
+        } catch (\Throwable $e) {
+            Log::warning("Memory search failed: " . $e->getMessage());
+        }
+
         $prompt = $this->buildPrompt($perceived, $fromTick, $toTick, $facts);
         $content = $this->callLlm($prompt);
 
         if ($content === null) {
-            $content = "[Stub: Chronicle would be generated from LLM for ticks {$fromTick}-" . ($toTick ?? 'latest') . "]";
+            $content = $this->generateMockNarrative($prompt);
         }
 
-        $vector = $this->vectorSearch->vectorize($content);
+        // Store with embedding for search
+        $vector = [0]; // default empty vector
+        try {
+            $vector = $this->vectorSearch->vectorize($content);
+        } catch (\Throwable $e) {
+            Log::warning("Vectorization failed: " . $e->getMessage());
+        }
         $vectorString = '[' . implode(',', $vector) . ']';
 
         return Chronicle::create([
@@ -80,39 +100,45 @@ class NarrativeAiService
     protected function buildPrompt(array $perceived, int $fromTick, ?int $toTick, array $facts): string
     {
         $flavor = implode(' ', $perceived['flavor'] ?? []);
-        $events = implode(', ', $perceived['events'] ?? []);
+        $events = implode(', ', array_values($perceived['events'] ?? []));
         $materials = implode(', ', $perceived['materials'] ?? []);
         $institutions = implode(', ', $perceived['institutions'] ?? []);
         $culture = json_encode($perceived['culture'] ?? []);
         $branches = implode('; ', $perceived['branch_events'] ?? []);
         $entropy = $perceived['metrics']['entropy'] ?? 'unknown';
+        $instability = $perceived['metrics']['instability'] ?? 0;
         $tail = $perceived['residual_prompt_tail'] ?? '';
+        
         $factsText = '';
         if (!empty($facts)) {
-            $factsText = '- Long-term Facts: ' . implode(' | ', array_slice($facts, 0, 5));
+            $factsText = "\nKIẾN THỨC CỔ XƯA (Bản lưu Ký ức):\n- " . implode("\n- ", array_slice($facts, 0, 5));
         }
 
-        $personality = $this->config->personality ?? 'Objective';
-        $agentName = $this->config->agent_name ?? 'Chronicle';
-        $themes = implode(', ', $this->config->themes ?? ['General']);
+        $personality = $this->config->personality ?? 'Sử gia vũ trụ';
+        $agentName = $this->config->agent_name ?? 'Biên niên sử WorldOS';
+        $themes = implode(', ', $this->config->themes ?? ['Tổng quát']);
         $creativity = $this->config->creativity ?? 50;
 
         return <<<EOT
-You are $agentName, a $personality narrator of a simulated universe. 
-Your focus themes are: $themes. Creativity Level: $creativity%.
+Bạn là $agentName, một $personality của vũ trụ mô phỏng. 
+Chủ đề trọng tâm: $themes. Mức độ sáng tạo: $creativity%.
+Ngôn ngữ phản hồi: TIẾNG VIỆT (Tông giọng trang trọng, huyền bí hoặc khoa học viễn tưởng).
 
-Time Period: Ticks $fromTick to $toTick.
-World State:
-- Entropy: $entropy
-- Dominant Materials: $materials
-- Collective Culture: $culture
-- Active Institutions: $institutions
-- Recent Events: $events
-- Branching History: $branches
-- Atmosphere: $flavor
+Thời kỳ: Tick $fromTick đến $toTick.
+Trạng thái Thế giới (Cảm quan - Perceived):
+- Entropy (Độ hỗn loạn): $entropy
+- Bất ổn tri thức (Fog of War): $instability
+- Vật liệu chủ đạo: $materials
+- Văn hóa cộng đồng (Vector): $culture
+- Định chế đang hoạt động: $institutions
+- Sự kiện ghi nhận: $events
+- Biến động dòng thời gian: $branches
+- Không khí (Flavor): $flavor
 $factsText
 
-Task: Write a concise, mythic-style chronicle entry (2-3 sentences). Focus on how the material base and cultural shifts influenced the rise or fall of institutions and collective stability.
+NHIỆM VỤ: Hãy viết một đoạn biên niên sử ngắn gọn (2-3 câu). 
+Tập trung vào tính nhân quả: sự thay đổi vật chất và văn hóa đã dẫn dắt sự trỗi dậy hoặc sụp đổ của các định chế như thế nào. 
+Nếu chỉ số 'Bất ổn tri thức' cao (>$instability), hãy dùng ngôn từ mờ ảo, thần thoại hóa các sự kiện.
 $tail
 EOT;
     }
@@ -136,7 +162,7 @@ EOT;
                     ->post('https://api.openai.com/v1/chat/completions', [
                         'model' => $model,
                         'messages' => [
-                            ['role' => 'system', 'content' => "You are WorldOS, a cosmic simulation narrator."],
+                            ['role' => 'system', 'content' => "Bạn là WorldOS, người kể chuyện về sự tiến hóa của vũ trụ."],
                             ['role' => 'user', 'content' => $prompt],
                         ],
                         'temperature' => 0.7,
@@ -150,7 +176,7 @@ EOT;
             }
         }
 
-        return $this->generateMockNarrative($prompt);
+        return null;
     }
 
     protected function callLocalAI(string $prompt): ?string
@@ -166,7 +192,7 @@ EOT;
             $response = Http::timeout(30)->post($endpoint, [
                 'model' => $model,
                 'messages' => [
-                    ['role' => 'system', 'content' => "You are a creative writer for a simulation game."],
+                    ['role' => 'system', 'content' => "Bạn là người ghi chép sáng tạo cho một trò chơi mô phỏng."],
                     ['role' => 'user', 'content' => $prompt]
                 ],
                 'temperature' => 0.7,
@@ -180,24 +206,24 @@ EOT;
             Log::error("Local AI Error: " . $e->getMessage());
         }
 
-        return $this->generateMockNarrative($prompt);
+        return null;
     }
 
     protected function generateMockNarrative(string $prompt): string
     {
         // Extract key info for mock generation
-        preg_match('/Entropy: ([\d.]+)/', $prompt, $mEntropy);
-        preg_match('/Dominant Materials: (.*)/', $prompt, $mMat);
+        preg_match('/Entropy ([\w\W]+): ([\d.]+)/', $prompt, $mEntropy);
+        preg_match('/Vật liệu chủ đạo: (.*)/', $prompt, $mMat);
         
-        $entropy = floatval($mEntropy[1] ?? 0);
-        $materials = $mMat[1] ?? 'void';
+        $entropy = floatval($mEntropy[2] ?? 0);
+        $materials = $mMat[1] ?? 'hư không';
         
         if ($entropy > 0.8) {
-            return "Chaos reigns. The structure of $materials collapses under the weight of high entropy ($entropy). Society fragments into isolated pockets of survival.";
+            return "Hỗn loạn ngự trị. Cấu trúc của $materials sụp đổ dưới sức nặng của sự gia tăng entropy ($entropy). Xã hội tan rã thành những mảnh vỡ sinh tồn biệt lập.";
         } elseif ($entropy > 0.5) {
-            return "Tension rises. The age of $materials faces stagnation as entropy climbs to $entropy. Whispers of change echo through the system.";
+            return "Căng thẳng leo thang. Thời đại của $materials đối mặt với sự trì trệ khi entropy chạm ngưỡng $entropy. Những lời thì thầm về sự thay đổi vang vọng khắp hệ thống.";
         } else {
-            return "A golden age. $materials flourishes in a stable order (Entropy: $entropy). The civilization expands its complexity with confidence.";
+            return "Một thời kỳ hoàng kim. $materials hưng thịnh trong một trật tự ổn định (Entropy: $entropy). Nền văn minh mở rộng sự phức hợp với niềm tin vững chãi.";
         }
     }
 }

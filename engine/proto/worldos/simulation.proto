@@ -15,6 +15,15 @@ message AdvanceRequest {
   uint64 ticks = 2;
   // Optional: serialized state to load (e.g. from Laravel). Empty = load from store.
   bytes state_input = 3;
+  // Metadata about the World (Axioms, Origin, etc.)
+  WorldConfig world_config = 4;
+}
+
+message WorldConfig {
+  uint64 world_id = 1;
+  string origin = 2;
+  string axiom_json = 3;
+  string world_seed_json = 4;
 }
 
 message AdvanceResponse {

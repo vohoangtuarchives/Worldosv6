@@ -16,6 +16,8 @@ class SupremeEntity extends Model
         'description',
         'power_level',
         'alignment',
+        'karma',
+        'karma_metadata',
         'status',
         'ascended_at_tick',
         'fallen_at_tick',
@@ -23,7 +25,9 @@ class SupremeEntity extends Model
 
     protected $casts = [
         'alignment' => 'array',
+        'karma_metadata' => 'array',
         'power_level' => 'float',
+        'karma' => 'float',
     ];
 
     public function universe(): BelongsTo

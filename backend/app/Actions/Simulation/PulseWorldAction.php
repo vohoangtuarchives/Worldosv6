@@ -9,7 +9,8 @@ use App\Services\Simulation\UniverseRuntimeService;
 class PulseWorldAction
 {
     public function __construct(
-        protected UniverseRuntimeService $runtime
+        protected UniverseRuntimeService $runtime,
+        protected \App\Services\Simulation\WorldAutonomicEngine $autonomicEngine
     ) {}
 
     /**
@@ -25,6 +26,9 @@ class PulseWorldAction
         foreach ($universes as $universe) {
             $results[$universe->id] = $this->runtime->advance($universe->id, $ticksPerUniverse);
         }
+
+        // Run World Autonomic Engine after pulsing all universes
+        $this->autonomicEngine->process($world);
 
         return $results;
     }

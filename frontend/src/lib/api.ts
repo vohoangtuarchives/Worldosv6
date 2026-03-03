@@ -109,5 +109,41 @@ export const api = {
       body: JSON.stringify(config),
     });
   },
+  async graph(id: number) {
+    return apiFetch(`/worldos/universes/${id}/graph`);
+  },
+  async anomalies(id: number) {
+    return apiFetch(`/worldos/universes/${id}/anomalies`);
+  },
+  async institutions(id: number) {
+    return apiFetch(`/worldos/universes/${id}/institutions`);
+  },
+  async supremeEntities(id: number) {
+    return apiFetch(`/worldos/universes/${id}/supreme-entities`);
+  },
+  async edicts() {
+    return apiFetch("/worldos/edicts");
+  },
+  async decree(id: number, edictId: string) {
+    return apiFetch(`/worldos/universes/${id}/decree`, {
+      method: "POST",
+      body: JSON.stringify({ edict_id: edictId }),
+    });
+  },
+  async interactions(id: number) {
+    return apiFetch(`/worldos/universes/${id}/interactions`);
+  },
+  async scenarios() {
+    return apiFetch("/worldos/scenarios");
+  },
+  async trajectories(universeId: number) {
+    return apiFetch(`/worldos/universes/${universeId}/causal-trajectories`);
+  },
+  async launchScenario(id: number, scenarioId: string) {
+    return apiFetch(`/worldos/universes/${id}/scenario`, {
+      method: "POST",
+      body: JSON.stringify({ scenario_id: scenarioId }),
+    });
+  },
 };
 

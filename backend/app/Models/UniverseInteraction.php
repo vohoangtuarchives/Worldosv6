@@ -11,10 +11,14 @@ class UniverseInteraction extends Model
         'universe_b_id',
         'interaction_type',
         'payload',
+        'resonance_level',
+        'synchronicity_score',
     ];
 
     protected $casts = [
         'payload' => 'array',
+        'resonance_level' => 'float',
+        'synchronicity_score' => 'float',
     ];
 
     public function universeA()

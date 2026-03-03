@@ -7,6 +7,8 @@ use App\Domain\Simulation\Actors\Archetypes\Warlord;
 use App\Domain\Simulation\Actors\Archetypes\Technocrat;
 use App\Domain\Simulation\Actors\Archetypes\RogueAI;
 use App\Domain\Simulation\Actors\Archetypes\Archmage;
+use App\Domain\Simulation\Actors\Archetypes\VillageElder;
+use App\Domain\Simulation\Actors\Archetypes\TribalLeader;
 
 class ActorRegistry
 {
@@ -21,6 +23,8 @@ class ActorRegistry
             app(Technocrat::class),
             app(RogueAI::class),
             app(Archmage::class),
+            app(VillageElder::class),
+            app(TribalLeader::class),
         ];
     }
 

@@ -23,56 +23,45 @@ class PerceivedArchiveBuilder
      */
     public function build(int $universeId, array $eventTypes, array $vector, ?int $tick = null): array
     {
+        // Epistemic Instability (Fog of War) logic
+        // If instability is high, some data might be hidden or "mythologized"
+        $instability = $vector['epistemic_instability'] ?? 0;
+        
         $flavorTexts = $this->flavor->mapMany($vector);
         
-        // 1. Get Active Materials
-        $materials = MaterialInstance::with('material')
+        // 1. Get Active Materials (Filtered by visibility if instability > 0.8)
+        $materialsQuery = MaterialInstance::with('material')
             ->where('universe_id', $universeId)
-            ->where('lifecycle', 'active')
-            ->get()
+            ->where('lifecycle', 'active');
+            
+        if ($instability > 0.8) {
+             $materialsQuery->limit(2); // AI only sees "echoes" of material reality
+        }
+
+        $materials = $materialsQuery->get()
             ->map(fn($m) => $m->material->name)
             ->toArray();
 
-        // Fallback: Check state_vector for injected materials (Demo Scenario)
-        if (empty($materials)) {
-            // Check 'zones' structure
-            if (isset($vector['zones'])) {
-                foreach ($vector['zones'] as $z) {
-                    if (!empty($z['state']['active_materials'])) {
-                        foreach ($z['state']['active_materials'] as $am) {
-                            $materials[] = $am['slug'];
-                        }
-                    }
-                }
-            } 
-            // Check flat/mixed structure
-            else {
-                 foreach ($vector as $k => $v) {
-                     if (is_array($v) && isset($v['state']['active_materials'])) {
-                         foreach ($v['state']['active_materials'] as $am) {
-                             $materials[] = $am['slug'];
-                         }
-                     }
-                 }
-            }
-            $materials = array_unique($materials);
-        }
-
-        // 2. Get Recent Branch Events (last 50 ticks)
+        // 2. Get Recent Events
+        $recentTicks = 50;
         $branchEvents = [];
         if ($tick) {
             $branchEvents = BranchEvent::where('universe_id', $universeId)
-                ->whereBetween('from_tick', [$tick - 50, $tick])
+                ->whereBetween('from_tick', [max(0, $tick - $recentTicks), $tick])
+                ->orderByDesc('from_tick')
                 ->get()
-                ->map(function($e) {
+                ->map(function($e) use ($instability) {
+                    if ($instability > 0.7) {
+                        return "Dấu vết mờ nhạt của một sự biến tại tick {$e->from_tick}";
+                    }
                     if ($e->event_type === 'micro_crisis') {
                         $p = is_array($e->payload) ? $e->payload : json_decode($e->payload, true);
                         $wName = $p['winner']['name'] ?? 'Unknown';
                         $wArch = $p['winner']['archetype'] ?? 'Unknown';
                         $act = $p['outcome'] ?? '';
-                        return "A Micro Crisis occurred at tick {$e->from_tick}: The {$wArch} named {$wName} took control. Action taken: {$act}";
+                        return "Khủng hoảng vi mô tại tick {$e->from_tick}: {$wName} ({$wArch}) nắm quyền. Hành động: {$act}";
                     }
-                    return "{$e->event_type} at tick {$e->from_tick}";
+                    return "Sự kiện {$e->event_type} tại tick {$e->from_tick}";
                 })
                 ->toArray();
         }
@@ -81,10 +70,16 @@ class PerceivedArchiveBuilder
         $institutions = \App\Models\InstitutionalEntity::where('universe_id', $universeId)
             ->whereNull('collapsed_at_tick')
             ->get()
-            ->map(fn($e) => "{$e->name} ({$e->entity_type}, Capacity: " . round($e->org_capacity, 1) . ")")
+            ->map(function($e) use ($instability) {
+                $cap = round($e->org_capacity, 1);
+                if ($instability > 0.6) {
+                    return "Phái đoàn bí ẩn: {$e->name}";
+                }
+                return "{$e->name} ({$e->entity_type}, Năng lực: {$cap})";
+            })
             ->toArray();
 
-        // 4. Calculate Average Culture
+        // 4. Calculate Average Culture (With noise if instability is high)
         $avgCulture = [];
         if (isset($vector['zones'])) {
             $count = count($vector['zones']);
@@ -97,7 +92,11 @@ class PerceivedArchiveBuilder
                     }
                 }
                 foreach ($avgCulture as $dim => $total) {
-                    $avgCulture[$dim] = round($total / $count, 2);
+                    $val = $total / $count;
+                    if ($instability > 0.5) {
+                        $val += (mt_rand(-10, 10) / 100); // Add epistemic noise
+                    }
+                    $avgCulture[$dim] = round(max(0, min(1, $val)), 2);
                 }
             }
         }
@@ -120,8 +119,9 @@ class PerceivedArchiveBuilder
             'branch_events' => $branchEvents,
             'residual_prompt_tail' => $residualTail,
             'metrics' => [
-                'entropy' => $vector['entropy'] ?? 0,
-                'stability' => $vector['stability_index'] ?? 0,
+                'entropy' => round($vector['entropy'] ?? 0, 3),
+                'stability' => round($vector['stability_index'] ?? 0, 3),
+                'instability' => round($instability, 3),
             ]
         ];
     }

@@ -1,0 +1,114 @@
+# Phase 27: Void-Space Exploration & The Chronicler's Legends
+
+Phase 27 được tái cấu trúc để đảm bảo tính nhất quán với triết lý: "Mọi thứ đều là diễn biến của vũ trụ và lời kể của sử gia". Các cổ vật (Relics) giờ đây không chỉ là vật phẩm dữ liệu, mà là sự kết tinh của những biến cố thực tại được ghi chép lại.
+
+## Proposed Changes
+
+### [Backend] Narrative-Driven Evolution
+
+#### [MODIFY] [VoidExplorationEngine.php](file:///C:/Users/vohoa/Worldosv6/backend/app/Services/Simulation/VoidExplorationEngine.php)
+- Chỉ đóng vai trò "Phát hiện vết nứt". Khi một cơ hội xuất hiện, nó sẽ phát động một sự kiện mô phỏng thay vì tự tạo dữ liệu.
+
+#### [NEW] [ManifestRelicAction.php](file:///C:/Users/vohoa/Worldosv6/backend/app/Actions/Simulation/ManifestRelicAction.php)
+- Tuân thủ Action Pattern. Phụ trách việc "Kết tinh huyền thoại".
+- Khi một cổ vật xuất hiện, nó phải đi kèm với một bản ghi [Chronicle](file:///C:/Users/vohoa/Worldosv6/frontend/src/components/Simulation/ChronicleView.tsx#5-18) chuyên sâu, biến nó thành một "Legendary Artifact" trong dòng thời gian.
+
+#### [NEW] [RelicRepository.php](file:///C:/Users/vohoa/Worldosv6/backend/app/Repositories/RelicRepository.php)
+- Tuân thủ DDD Repository Pattern để quản lý việc truy xuất cổ vật qua lăng kính của Sử gia.
+
+### [Frontend] Sanctuary of Ancient Echoes
+
+#### [MODIFY] [VoidArchive.tsx](file:///C:/Users/vohoa/Worldosv6/frontend/src/components/Simulation/VoidArchive.tsx)
+- Đổi tên thành "Thánh Đường Dư Âm Cổ Xưa".
+- Giao diện hiển thị cổ vật như những chương hồi lịch sử, gắn liền với các sự kiện Chronicler đã ghi lại.
+
+## Verification Plan
+
+### Automated Tests
+- Đảm bảo khi một Relic được tạo ra, một bản ghi Chronicle tương ứng phải tồn tại với đầy đủ ngữ cảnh mô phỏng.
+- Kiểm tra tính nhất quán: Relic chỉ xuất hiện khi các chỉ số Universe đạt đến ngưỡng "Huyền thoại".
+
+### Manual Verification
+- Kiểm tra `Void Archive` để đảm bảo mỗi cổ vật đều có một "Câu chuyện khởi nguồn" (Origin Story) được kể bởi Sử gia.
+
+# Phase 31: Architectural Observation Interference & Wavefunction Collapse
+
+Phase 31 hiện thực hóa nguyên lý "Sự can thiệp của Đệ nhất Quan sát nhân". Tầm nhìn của Architect là một dạng tương tác lượng tử làm thay đổ thực tại. Khi một vũ trụ được quan sát, "Hàm sóng thực tại" sẽ sụp đổ, cố định các biến số và tạo ra "Áp lực ý thức" (Consciousness Pressure).
+
+## Proposed Changes
+
+### [Backend] Quantized Observation Layer
+
+#### [MODIFY] [Universe.php](file:///C:/Users/vohoa/Worldosv6/backend/app/Models/Universe.php)
+- Thêm trường `observation_pressure` (float).
+- Thêm `last_synchronized_at` (timestamp).
+
+#### [NEW] [ObservationInterferenceEngine.php](file:///C:/Users/vohoa/Worldosv6/backend/app/Services/Simulation/ObservationInterferenceEngine.php)
+- Tính toán "Hiệu ứng quan sát": Giảm độ nhiễu (Volatility) nhưng tăng tính xác thực đồng thời tạo ra tải trọng ý thức.
+- Cơ chế "Reality Saturation": Nếu quan sát quá cường độ cao, thực tại bị bão hòa và mất đi tính biến thiên tự nhiên.
+
+#### [NEW] [WavefunctionCollapseAction.php](file:///C:/Users/vohoa/Worldosv6/backend/app/Actions/Simulation/WavefunctionCollapseAction.php)
+- Thực thi sự chuyển đổi từ "Khả năng" sang "Thực tại" dựa trên sự quan sát.
+- **Narrative-Driven**: Sử gia ghi chép về "Sự ngưng trệ của các khả năng" dưới điểm nhìn tối cao.
+
+### [Frontend] The Observation Interface
+
+#### [NEW] [ObservationMonitor.tsx](file:///C:/Users/vohoa/frontend/src/components/Simulation/ObservationMonitor.tsx)
+- Giao diện trực quan hóa mức độ sụp đổ hàm sóng và cường độ quan sát.
+
+---
+
+# Phase 32: Causal Trajectory Modeling & Event Horizons
+
+Phase 32 hiện thực hóa khả năng "Dự báo dòng chảy nhân quả". Sử gia sử dụng các mẫu dữ liệu lịch sử để phác thảo các "Đường chân trời sự kiện", giúp xác định các xu hướng tiến hóa nội tại trước khi chúng biểu hiện thành hình thái vật chất.
+
+## Proposed Changes
+
+### [Backend] The Predictive Lens
+
+#### [NEW] [CausalTrajectory.php](file:///C:/Users/vohoa/Worldosv6/backend/app/Models/CausalTrajectory.php)
+- Lưu trữ các dự báo nhân quả: `universe_id`, `target_tick`, `phenomenon_description`, `probability`, `convergence_type`.
+
+#### [NEW] [TrajectoryModelingEngine.php](file:///C:/Users/vohoa/Worldosv6/backend/app/Services/Simulation/TrajectoryModelingEngine.php)
+- Phân tích sự tự tương quan của dữ liệu (Entropy, Integrity, Causal Debt) để xác định điểm hội tụ.
+
+#### [NEW] [DefineEventHorizonAction.php](file:///C:/Users/vohoa/Worldosv6/backend/app/Actions/Simulation/DefineEventHorizonAction.php)
+- Xác lập một ngã rẽ tiềm năng trong Biên niên sử.
+
+### [Frontend] The Convergence Monitor
+
+#### [NEW] [ConvergenceMonitor.tsx](file:///C:/Users/vohoa/frontend/src/components/Simulation/ConvergenceMonitor.tsx)
+- Giao diện hiển thị các điểm hội tụ nhân quả và độ lệch thực tại.
+
+---
+
+# Phase 33: Intrinsic Evolution & Historical Persistence
+
+Phase 33 tập trung vào sự "Tự chứng nghiệm" của vũ trụ. Toàn bộ hệ thống giờ đây tiến hóa dựa trên các phản hồi ngược giữa Tự sự (Narrative) và Quy luật (Axiom), tạo nên một thực tại tự trường tồn.
+
+## Proposed Changes
+
+### [Backend] The Weaving of Fate
+
+#### [MODIFY] [EpochEngine.php](file:///C:/Users/vohoa/Worldosv6/backend/app/Services/Simulation/EpochEngine.php)
+- Triển khai logic **Chuyển mình tự thân**: Kỷ nguyên tự động thay đổi khi các chỉ số Lyapunov và Entropy đạt ngưỡng bão hòa.
+- Thêm cơ chế "Dư chấn kỷ nguyên": Các đặc tính của kỷ nguyên cũ không biến mất ngay mà mờ dần vào thực tại mới.
+
+#### [NEW] [NarrativeFeedbackService.php](file:///C:/Users/vohoa/Worldosv6/backend/app/Services/Simulation/NarrativeFeedbackService.php)
+- Phân tích các từ khóa chính trong Chronicle (thông qua NLP đơn giản hoặc mapping tag).
+- Chuyển hóa các "Chủ đề tự sự" thành các delta trạng thái nhỏ nhưng liên tục, tạo ra sự nhất quán giữa "Lời kể" và "Thực tại".
+
+### [Frontend] The Great Tapestry
+
+#### [NEW] [HistoricalImprint.tsx](file:///C:/Users/vohoa/frontend/src/components/Simulation/HistoricalImprint.tsx)
+- Một giao diện trực quan hóa các "Dòng chảy lịch sử" vĩ mô.
+- Hiển thị cách các sự kiện trong quá khứ vẫn đang âm thầm định hình thực tại hiện tại mà không cần sự can thiệp của Architect.
+
+## Verification Plan
+
+### Automated Tests
+- Kiểm tra [EpochEngine](file:///C:/Users/vohoa/Worldosv6/backend/app/Services/Simulation/EpochEngine.php#11-113) có tự động chuyển đổi Kỷ nguyên khi Entropy vượt ngưỡng mà không cần gọi Action bên ngoài.
+- Xác nhận các delta từ `NarrativeFeedbackService` được áp dụng chính xác vào `state_vector`.
+
+### Manual Verification
+- Để mô phỏng chạy tự động trong thời gian dài và quan sát sự chuyển biến sinh động của vũ trụ thông qua các ghi chép của Sử gia.

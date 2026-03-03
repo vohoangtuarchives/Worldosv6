@@ -8,15 +8,15 @@ use App\Models\MythScar;
 use App\Models\Actor;
 
 /**
- * Institutional Engine: Manages lifecycle of Social/Political Entities 
+ * Institution Manager: Manages lifecycle of Social/Political Entities 
  * (Factions, Guilds, Orders) as per WORLDOS_V6 §4.5.
  */
-class InstitutionalEngine
+class InstitutionManager
 {
     /*
      * Process tick for all entities in the universe.
      */
-    public function process(Universe $universe, int $tick, array $metrics = []): void
+    public function update(Universe $universe, int $tick, array $metrics = []): void
     {
         $entities = InstitutionalEntity::where('universe_id', $universe->id)
             ->whereNull('collapsed_at_tick')
@@ -28,18 +28,13 @@ class InstitutionalEngine
             $this->updateEntity($entity, $universe, $tick, $activeEdicts);
         }
 
-        // Potential spawning of new entities based on cultural threshold
+        // Potential spawning of new entities based on cultural threshold AND material stress
         $this->potentialSpawn($universe, $tick, $activeEdicts);
 
         // Crisis Actor Spawning (Macro -> Micro Transition)
         $instability = $metrics['stability_index'] ?? 1.0;
         if ($instability < 0.4) { // If stability is low (High Instability)
             $this->spawnCrisisActors($universe, $entities, $tick);
-        }
-
-        // Evolve social contracts
-        if (isset($this->evolutionAction)) {
-            $this->evolutionAction->execute($universe, $tick);
         }
     }
 
@@ -50,10 +45,6 @@ class InstitutionalEngine
         if ($actorCount >= 20) return;
 
         foreach ($entities as $entity) {
-            // Chance to spawn a leader if none exists
-            // We assume "leader" is an actor linked to this entity via metadata or name convention for now
-            // or simply if the entity is strong enough but has no representation
-            
             if ($entity->org_capacity > 50 && mt_rand(0, 10) === 0) {
                 $this->createLeader($universe, $entity, $tick);
             }
@@ -64,34 +55,30 @@ class InstitutionalEngine
     {
         $ideology = $entity->ideology_vector ?? [];
         
-        // Map ideology to 17D traits
-        // Simple mapping: Ideology usually has 'authority', 'tradition', etc.
-        // We map to 17D traits: Dominance, Ambition, etc.
         $traits = array_fill(0, 17, 0.5);
         
-        // Example: High Authority ideology -> High Dominance
-        if (($ideology['authority'] ?? 0) > 0.7) {
-            $traits[0] = 0.9; // Dominance
-            $traits[2] = 0.8; // Coercion
+        // Example: High Tradition ideology -> High Dogmatism
+        if (($ideology['tradition'] ?? 0) > 0.7) {
+            $traits[9] = 0.9; // Dogmatism
+            $traits[6] = 0.8; // Conformity
+        }
+        
+        // High Innovation -> High Curiosity
+        if (($ideology['innovation'] ?? 0) > 0.7) {
+            $traits[8] = 0.9; // Curiosity
+            $traits[10] = 0.8; // RiskTolerance
         }
         
         Actor::create([
             'universe_id' => $universe->id,
-            'name' => 'Leader of ' . $entity->name,
+            'name' => 'Lãnh tụ của ' . $entity->name,
             'archetype' => 'Leader',
             'traits' => $traits,
-            'biography' => "Rose to power during the crisis of tick $tick, representing " . $entity->name,
+            'biography' => "Trỗi dậy trong cuộc khủng hoảng tại tick $tick, đại diện cho " . $entity->name,
             'is_alive' => true,
             'generation' => 1,
             'metrics' => ['influence' => $entity->org_capacity / 10]
         ]);
-    }
-
-    protected ?\App\Actions\Simulation\SocialContractEvolutionAction $evolutionAction = null;
-
-    public function setEvolutionAction(\App\Actions\Simulation\SocialContractEvolutionAction $action)
-    {
-        $this->evolutionAction = $action;
     }
 
     protected function updateEntity(InstitutionalEntity $entity, Universe $universe, int $tick, array $activeEdicts): void
@@ -107,17 +94,6 @@ class InstitutionalEngine
         $capacityMultiplier = 1.0;
         $growthMultiplier = 1.0;
 
-        if (isset($activeEdicts['heavenly_tribulation'])) {
-            $capacityMultiplier *= 0.8; // Institutions suffer from chaos
-        }
-        if (isset($activeEdicts['reiki_revival'])) {
-            $capacityMultiplier *= 1.2; // Higher energy allows more complex structures
-            $growthMultiplier *= 1.5;
-        }
-        if (isset($activeEdicts['age_of_chaos'])) {
-            $growthMultiplier *= 0.5; // Hard to expand in chaos
-        }
-
         foreach ($zones as $zone) {
             $zoneId = $zone['id'];
             $currentInfluence = $influenceMap[$zoneId] ?? 0.0;
@@ -126,7 +102,7 @@ class InstitutionalEngine
             $alignment = $this->calculateAlignment($entity->ideology_vector, $zone['culture'] ?? []);
             
             // Influence grows/shrinks based on alignment and existing presence
-            if ($alignment > 0.5) {
+            if ($alignment > 0.4) {
                 $growth = 0.02 * $alignment * $growthMultiplier;
             } else {
                 $growth = -0.01 * (1.0 - $alignment);
@@ -137,25 +113,18 @@ class InstitutionalEngine
         }
 
         // Maintenance cost based on institutional memory and scale
-        $maintenance = (count($zones) * 0.05) * (1.0 - $entity->institutional_memory * 0.5);
+        $maintenance = (count($zones) * 0.03) * (1.1 - $entity->institutional_memory);
         
-        $change = ($totalSupport * 0.1 * $capacityMultiplier) - $maintenance;
+        $change = ($totalSupport * 0.15 * $capacityMultiplier) - $maintenance;
         $entity->org_capacity = max(0.0, $entity->org_capacity + $change);
         $entity->influence_map = $newInfluenceMap;
         
-        // Memory decay - boosted by divine inspiration
-        $memoryDecay = isset($activeEdicts['divine_inspiration']) ? 0.9999 : 0.999;
-        $entity->institutional_memory = max(0.1, $entity->institutional_memory * $memoryDecay);
+        // Memory decay
+        $entity->institutional_memory = max(0.1, $entity->institutional_memory * 0.999);
 
-        if ($entity->org_capacity <= 1.0) {
-            // Very weak, risk of collapse
-            $collapseChance = 5;
-            if (isset($activeEdicts['age_of_chaos'])) $collapseChance = 20;
-
-            if (mt_rand(0, 100) < $collapseChance) {
-                $this->collapse($entity, $tick);
-                return;
-            }
+        if ($entity->org_capacity <= 0.5) {
+            $this->collapse($entity, $tick);
+            return;
         }
 
         $entity->save();
@@ -166,24 +135,30 @@ class InstitutionalEngine
         $vec = $universe->state_vector;
         $zones = $vec['zones'] ?? [];
         
-        // Reiki Revival boosts spawn chance
-        $spawnCheckRate = isset($activeEdicts['reiki_revival']) ? 4 : 9; // 0..4 or 0..9
-
-        if (mt_rand(0, $spawnCheckRate) > 0) return;
+        if (mt_rand(0, 10) > 2) return; // Only check 30% of time
 
         foreach ($zones as $zone) {
-            $myth = $zone['culture']['myth'] ?? 0;
-            $respect = $zone['culture']['respect'] ?? 0;
-            $tradition = $zone['culture']['tradition'] ?? 0;
+            $stress = (float) ($zone['state']['material_stress'] ?? ($zone['material_stress'] ?? 0));
+            $culture = $zone['culture'] ?? [];
+            
+            // High Material Stress spawns "Rebel" factions or "Cults"
+            if ($stress > 0.75 && mt_rand(0, 5) === 0) {
+                $this->spawn($universe, $zone['id'], $tick, 'rebel');
+                return;
+            }
 
-            // Cults emerge from myth/respect
-            if ($myth > 0.8 && $respect > 0.7) {
+            $myth = $culture['myth'] ?? 0;
+            $respect = $culture['respect'] ?? 0;
+            $tradition = $culture['tradition'] ?? 0;
+
+            // Cults emerge from myth
+            if ($myth > 0.85 && mt_rand(0, 5) === 0) {
                 $this->spawn($universe, $zone['id'], $tick, 'cult');
                 return; 
             }
 
-            // Orders emerge from tradition/respect
-            if ($tradition > 0.8 && $respect > 0.8) {
+            // Orders emerge from tradition
+            if ($tradition > 0.8 && $respect > 0.8 && mt_rand(0, 5) === 0) {
                 $this->spawn($universe, $zone['id'], $tick, 'order');
                 return;
             }
@@ -192,17 +167,28 @@ class InstitutionalEngine
 
     protected function spawn(Universe $universe, int $zoneId, int $tick, string $type): void
     {
-        $namePrefixes = ['Holy', 'Imperial', 'Eternal', 'Shadow', 'Azure'];
-        $nameSuffixes = ['Order', 'Guild', 'Federation', 'Cult', 'Monastery'];
-        $name = $namePrefixes[array_rand($namePrefixes)] . ' ' . $nameSuffixes[array_rand($nameSuffixes)];
+        $prefixes = [
+            'cult' => ['U minh', 'Huyền ảo', 'Hư vô', 'Tà phái', 'Thiên đạo'],
+            'order' => ['Hoàng gia', 'Thánh khiết', 'Trưởng lão', 'Chính nghĩa', 'Hàn lâm'],
+            'rebel' => ['Khởi nghĩa', 'Tự do', 'Bóng đêm', 'Phá xiềng', 'Rạng đông']
+        ];
+        
+        $suffixes = [
+            'cult' => ['Giáo', 'Hội', 'Tông', 'U cung', 'Miếu'],
+            'order' => ['Hội', 'Hiệp hội', 'Viện', 'Môn', 'Các'],
+            'rebel' => ['Quân', 'Đoàn', 'Mạng', 'Hội', 'Đảng']
+        ];
+        
+        $typeName = $prefixes[$type][array_rand($prefixes[$type])] . ' ' . $suffixes[$type][array_rand($suffixes[$type])];
+        $name = $typeName . ' - Phân nhánh ' . mt_rand(10, 99);
 
         InstitutionalEntity::create([
             'universe_id' => $universe->id,
-            'name' => $name . ' ' . mt_rand(10, 99),
+            'name' => $name,
             'entity_type' => $type,
             'ideology_vector' => $this->randomIdeology(),
-            'org_capacity' => 10.0,
-            'influence_map' => ["$zoneId" => 0.2],
+            'org_capacity' => 15.0,
+            'influence_map' => ["$zoneId" => 0.25],
             'spawned_at_tick' => $tick,
         ]);
     }
@@ -211,24 +197,21 @@ class InstitutionalEngine
     {
         $entity->update(['collapsed_at_tick' => $tick]);
         
-        // Create Myth Scar if it was somewhat significant
-        if ($entity->org_capacity > 2.0 || mt_rand(0, 1) === 1) {
-            // Find primary zone
-            $primaryZone = '0';
-            if (!empty($entity->influence_map)) {
-                arsort($entity->influence_map);
-                $primaryZone = key($entity->influence_map);
-            }
-
-            MythScar::create([
-                'universe_id' => $entity->universe_id,
-                'zone_id' => (string)$primaryZone,
-                'name' => "Fall of " . $entity->name,
-                'description' => "The institutional collapse of {$entity->name} left a void in the social order.",
-                'created_at_tick' => $tick,
-                'severity' => 0.5,
-            ]);
+        // Create Myth Scar
+        $primaryZone = '0';
+        if (!empty($entity->influence_map)) {
+            arsort($entity->influence_map);
+            $primaryZone = key($entity->influence_map);
         }
+
+        MythScar::create([
+            'universe_id' => $entity->universe_id,
+            'zone_id' => (string)$primaryZone,
+            'name' => "Sự sụp đổ của " . $entity->name,
+            'description' => "Định chế {$entity->name} đã tan rã, để lại một khoảng trống quyền lực và sẹo thần thoại.",
+            'created_at_tick' => $tick,
+            'severity' => 0.6,
+        ]);
     }
 
     protected function calculateAlignment(array $ideology, array $culture): float

@@ -84,7 +84,8 @@ Route::middleware('auth:sanctum')->prefix('worldos')->group(function () {
 
     Route::get('universes/{id}', function (string $id) {
         $universe = Universe::with(['world:id,name,slug,axiom,origin,current_genre,base_genre,is_autonomic', 'saga:id,name'])->findOrFail((int) $id);
-        return response()->json($universe);
+        $universe->update(['last_observed_at' => now()]);
+        return response()->json(['data' => $universe]);
     })->name('worldos.universes.show');
 
     Route::get('universes/{id}/snapshot', function (string $id, UniverseSnapshotRepository $repo) {
@@ -167,6 +168,27 @@ Route::middleware('auth:sanctum')->prefix('worldos')->group(function () {
         return response()->json($result, 400);
     })->name('worldos.universes.decree');
 
+    Route::get('universes/{id}/interactions', function (string $id) {
+        $interactions = \App\Models\UniverseInteraction::with(['universeA:id,name', 'universeB:id,name'])
+            ->where(function($q) use ($id) {
+                $q->where('universe_a_id', (int) $id)
+                  ->orWhere('universe_b_id', (int) $id);
+            })
+            ->orderByDesc('created_at')
+            ->get();
+        return response()->json($interactions);
+    })->name('worldos.universes.interactions');
+
+    // --- Causal Trajectory & Event Horizons (Phân tích quỹ đạo nhân quả) ---
+    Route::get('universes/{id}/causal-trajectories', function (string $id) {
+        $trajectories = \App\Models\CausalTrajectory::where('universe_id', (int) $id)
+            ->where('is_fulfilled', false)
+            ->orderBy('target_tick', 'asc')
+            ->get();
+        
+        return response()->json(['data' => $trajectories]);
+    })->name('worldos.universes.causal-trajectories');
+
     Route::get('scenarios', function (\App\Services\Simulation\ScenarioEngine $engine) {
         return response()->json($engine->getScenarioList());
     })->name('worldos.scenarios.list');
@@ -208,6 +230,13 @@ Route::middleware('auth:sanctum')->prefix('worldos')->group(function () {
             ->get();
         return response()->json($decisions);
     })->name('worldos.actors.decisions');
+
+    Route::get('universes/{id}/graph', [\App\Http\Controllers\Api\UniverseGraphController::class, 'show'])
+        ->name('worldos.universes.graph');
+    Route::get('universes/{id}/anomalies', [\App\Http\Controllers\Api\UniverseAnomalyController::class, 'index'])
+        ->name('worldos.universes.anomalies');
+    Route::get('universes/{id}/institutions', [\App\Http\Controllers\Api\UniverseInstitutionController::class, 'index'])
+        ->name('worldos.universes.institutions');
 
     Route::get('universes/{id}/topology', function (string $id, \App\Actions\Simulation\GetUniverseTopologyAction $action) {
         return response()->json($action->execute((int)$id));

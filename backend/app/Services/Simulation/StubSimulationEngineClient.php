@@ -10,8 +10,10 @@ use App\Contracts\SimulationEngineClientInterface;
  */
 class StubSimulationEngineClient implements SimulationEngineClientInterface
 {
-    public function advance(int $universeId, int $ticks, string $stateInput = ''): array
+    public function advance(int $universeId, int $ticks, string $stateInput = '', ?array $worldConfig = null): array
     {
+        // Simple mock of a simulation advance
+        $tick = (int) (time() / 100);
         $state = json_decode($stateInput, true) ?? [];
         $currentTick = $state['tick'] ?? 0;
         $entropy = $state['entropy'] ?? 0.1;

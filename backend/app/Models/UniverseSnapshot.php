@@ -22,4 +22,26 @@ class UniverseSnapshot extends Model
     {
         return $this->belongsTo(Universe::class);
     }
+
+    // --- Domain Logic ---
+
+    public function isCritical(): bool
+    {
+        return $this->entropy >= 0.85;
+    }
+
+    public function isUnstable(): bool
+    {
+        return $this->stability_index <= 0.25;
+    }
+
+    public function getMetric(string $key, $default = null)
+    {
+        return $this->metrics[$key] ?? $default;
+    }
+
+    public function getSummary(): string
+    {
+        return "Tick {$this->tick}: Entropy=" . number_format($this->entropy, 2) . ", Stability=" . number_format($this->stability_index, 2);
+    }
 }

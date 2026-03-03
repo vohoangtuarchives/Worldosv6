@@ -14,7 +14,8 @@ interface SimulationEngineClientInterface
      * @param  int  $universeId
      * @param  int  $ticks
      * @param  string  $stateInput  Optional serialized state to load (empty = load from store).
+     * @param  array|null  $worldConfig Optional world metadata (origin, axioms, etc.)
      * @return array{ok: bool, snapshot?: array, error_message?: string}
      */
-    public function advance(int $universeId, int $ticks, string $stateInput = ''): array;
+    public function advance(int $universeId, int $ticks, string $stateInput = '', ?array $worldConfig = null): array;
 }

@@ -82,22 +82,29 @@ class MaterialLifecycleEngine
     {
         if (empty($condition)) return true;
         
-        if (preg_match('/([a-z_]+)\s*([><=]+)\s*([\d.]+)/', $condition, $matches)) {
-            $key = $matches[1];
-            $op = $matches[2];
-            $val = (float)$matches[3];
-            $current = $context[$key] ?? 0;
-            
-            return match($op) {
-                '>' => $current > $val,
-                '>=' => $current >= $val,
-                '<' => $current < $val,
-                '<=' => $current <= $val,
-                '=' => abs($current - $val) < 0.001,
-                default => false,
-            };
+        // Support multiple conditions separated by '&&'
+        $parts = explode('&&', $condition);
+        foreach ($parts as $part) {
+            $part = trim($part);
+            if (preg_match('/([a-z_]+)\s*([><=]+)\s*([\d.]+)/', $part, $matches)) {
+                $key = $matches[1];
+                $op = $matches[2];
+                $val = (float)$matches[3];
+                $current = $context[$key] ?? 0;
+                
+                $satisfied = match($op) {
+                    '>' => $current > $val,
+                    '>=' => $current >= $val,
+                    '<' => $current < $val,
+                    '<=' => $current <= $val,
+                    '=' => abs($current - $val) < 0.001,
+                    default => false,
+                };
+
+                if (!$satisfied) return false;
+            }
         }
-        return false;
+        return true;
     }
 
     protected function mutate(MaterialInstance $parent, $mutation, int $tick): void

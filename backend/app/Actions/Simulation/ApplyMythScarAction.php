@@ -8,6 +8,9 @@ use App\Models\UniverseSnapshot;
 
 class ApplyMythScarAction
 {
+    public function __construct(
+        protected \App\Contracts\GraphProviderInterface $graphProvider
+    ) {}
     /**
      * Tự động sinh một Vết Sẹo (Myth Scar) cho một quy mô lãnh thổ nhất định 
      * dựa vào mức độ hỗn loạn (chaos) hiện tại.
@@ -37,7 +40,7 @@ class ApplyMythScarAction
             return;
         }
 
-        MythScar::create([
+        $scar = MythScar::create([
             'universe_id'      => $universe->id,
             'zone_id'          => $zoneId,
             'name'             => $name,
@@ -46,6 +49,12 @@ class ApplyMythScarAction
             'decay_rate'       => 0.01 + (rand(-5, 5) * 0.001),
             'created_at_tick'  => $universe->current_tick,
             'resolved_at_tick' => null,
+        ]);
+
+        // Integrate with GraphDB for topology awareness
+        $this->graphProvider->sync($universe->id, [
+            'type' => 'MythScar',
+            'model' => $scar
         ]);
     }
 }

@@ -18,6 +18,7 @@ class SupremeEntityEngine
         $metrics = is_string($snapshot->metrics) ? json_decode($snapshot->metrics, true) : ($snapshot->metrics ?? []);
         
         $this->evaluateEmergence($universe, $snapshot, $metrics);
+        $this->evaluateAscendedHeroes($universe, $snapshot);
         $this->applyWorldImpact($universe, $snapshot, $metrics);
     }
 
@@ -80,6 +81,48 @@ class SupremeEntityEngine
         }
     }
 
+    private function evaluateAscendedHeroes(Universe $universe, UniverseSnapshot $snapshot): void
+    {
+        // Find heroic actors with influence > 85 (Legendary status)
+        $candidates = \App\Models\Actor::where('universe_id', $universe->id)
+            ->where('is_alive', true)
+            ->whereRaw("CAST(metrics->>'influence' AS DECIMAL) > 85.0")
+            ->get();
+
+        foreach ($candidates as $actor) {
+            // Check for specific trait thresholds for ascension
+            $traits = $actor->traits ?? [];
+            $hasAscensionQuality = false;
+
+            // Dimension 1 (Ambition) or 8 (Curiosity) > 0.95
+            if (($traits[1] ?? 0) > 0.95 || ($traits[8] ?? 0) > 0.95) {
+                $hasAscensionQuality = true;
+            }
+
+            if ($hasAscensionQuality && rand(1, 100) <= 20) { // 20% chance to trigger ascension when criteria met
+                $this->spawnEntity($universe, $snapshot->tick, [
+                    'name' => "Thần Vương {$actor->name}",
+                    'entity_type' => 'ascended_hero',
+                    'domain' => 'Di sản Nhân quả: ' . ($actor->archetype ?? 'Hero'),
+                    'description' => "Vị anh hùng huyền thoại {$actor->name} đã vượt qua giới hạn của xác thịt, thăng hoa thành bất tử để bảo hộ vĩnh hằng cho di sản của mình.",
+                    'power_level' => 0.7, // Lower than primordial gods but growing
+                    'alignment' => [
+                        'spirituality' => ($traits[4] ?? 0.5), // Empathy based
+                        'hardtech' => ($traits[7] ?? 0.5),    // Pragmatism based
+                        'entropy' => 0.2, 
+                        'energy_level' => 0.9
+                    ]
+                ], $actor);
+
+                // Actor "dies" as a mortal, transcending
+                $actor->update([
+                    'is_alive' => false,
+                    'biography' => $actor->biography . " [ĐÃ PHI THĂNG TẠI TICK {$snapshot->tick}]"
+                ]);
+            }
+        }
+    }
+
     private function applyWorldImpact(Universe $universe, UniverseSnapshot $snapshot, array &$metrics): void
     {
         $entities = SupremeEntity::where('universe_id', $universe->id)
@@ -130,7 +173,7 @@ class SupremeEntityEngine
         $snapshot->save();
     }
 
-    private function spawnEntity(Universe $universe, int $tick, array $data): void
+    private function spawnEntity(Universe $universe, int $tick, array $data, ?\App\Models\Actor $sourceActor = null): void
     {
         $entity = SupremeEntity::create(array_merge($data, [
             'universe_id' => $universe->id,
@@ -138,7 +181,9 @@ class SupremeEntityEngine
             'ascended_at_tick' => $tick,
         ]));
 
-        $flavorText = "Biến cố cấp vũ trụ: Sự kiện Giáng Lâm Thực Thể! [{$entity->name}] - Danh hiệu: {$entity->domain} đã đản sinh. Lực vô hình từ thực thể này bắt đầu bóp méo quỹ đạo tiến hóa của thế giới.";
+        $flavorText = $sourceActor 
+            ? "PHI THĂNG ANH HÙNG: [{$sourceActor->name}] đã bứt phá xiềng xích phàm trần, trở thành [{$entity->name}]. Một ngôi sao mới đã rực sáng trên bầu trời thần thoại!"
+            : "Biến cố cấp vũ trụ: Sự kiện Giáng Lâm Thực Thể! [{$entity->name}] - Danh hiệu: {$entity->domain} đã đản sinh. Lực vô hình từ thực thể này bắt đầu bóp méo quỹ đạo tiến hóa của thế giới.";
 
         Chronicle::create([
             'universe_id' => $universe->id,
@@ -152,12 +197,11 @@ class SupremeEntityEngine
             'universe_id' => $universe->id,
             'from_tick' => $tick,
             'event_type' => 'supreme_emergence',
-            'payload' => [
+            'payload' => array_merge($data, [
                 'entity_id' => $entity->id,
-                'entity_type' => $entity->entity_type,
-                'name' => $entity->name,
+                'source_actor_id' => $sourceActor?->id,
                 'description' => $flavorText,
-            ],
+            ]),
         ]);
     }
 }

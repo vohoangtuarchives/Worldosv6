@@ -119,16 +119,33 @@ class RunMicroModeAction
     private function generateContextWeight(UniverseSnapshot $snapshot): array
     {
         $entropy = $snapshot->entropy ?? 0.5;
-        // Trọng số (Context) phụ thuộc vào trạng thái Hỗn loạn của vũ trụ
-        $w = [];
-        for ($i = 0; $i < 17; $i++) {
-            // Khi vũ trụ hỗn loạn, những trait như Fear, Vengeance, Risk, Dominance có lợi thế
-            if (in_array($i, [0, 10, 11, 12])) {
-                $w[] = $entropy * 1.5;
-            } else {
-                $w[] = (1 - $entropy) * 0.8;
-            }
-        }
+        $stability = $snapshot->stability_index ?? 0.5;
+        
+        $w = array_fill(0, 17, 0.0);
+
+        // 0-2: Quyền lực (Dominance, Ambition, Coercion)
+        // Có lợi thế khi ổn định thấp hoặc entropy cao
+        for($i=0; $i<=2; $i++) $w[$i] = (1.0 - $stability) * 1.2 + ($entropy * 0.5);
+
+        // 3-6: Xã hội (Loyalty, Empathy, Solidarity, Conformity)
+        // Có lợi thế khi ổn định cao và entropy thấp
+        for($i=3; $i<=6; $i++) $w[$i] = $stability * 1.5 - ($entropy * 0.3);
+
+        // 7-10: Nhận thức (Pragmatism, Curiosity, Dogmatism, RiskTolerance)
+        // Pragmatism/Curiosity cần ổn định vừa phải, RiskTolerance cần entropy cao
+        $w[7] = 0.5 + (1.0 - $entropy) * 0.5; // Pragmatism
+        $w[8] = 0.4 + (1.0 - $entropy) * 0.6; // Curiosity
+        $w[9] = $stability * 1.2;            // Dogmatism
+        $w[10] = $entropy * 1.8;             // RiskTolerance
+
+        // 11-16: Cảm xúc (Fear, Vengeance, Hope, Grief, Pride, Shame)
+        $w[11] = $entropy * 2.0;             // Fear bùng nổ khi hỗn loạn
+        $w[12] = (1.0 - $stability) * 1.5;   // Vengeance khi bất ổn
+        $w[13] = $stability * 1.0;            // Hope
+        $w[14] = $entropy * 0.5;             // Grief
+        $w[15] = $stability * 0.8;           // Pride
+        $w[16] = (1.0 - $stability) * 0.6;   // Shame
+
         return $w;
     }
 }

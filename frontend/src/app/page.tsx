@@ -13,7 +13,7 @@ export default function Home() {
 
   return (
     <div className="relative min-h-dvh overflow-hidden flex flex-col">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,hsl(var(--cosmos)/0.20),transparent_55%),radial-gradient(circle_at_80%_20%,hsl(var(--left-brain)/0.18),transparent_55%),radial-gradient(circle_at_50%_90%,hsl(var(--nebula)/0.16),transparent_60%)]" />
+      {/* <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,hsl(var(--cosmos)/0.20),transparent_55%),radial-gradient(circle_at_80%_20%,hsl(var(--left-brain)/0.18),transparent_55%),radial-gradient(circle_at_50%_90%,hsl(var(--nebula)/0.16),transparent_60%)]" />
       <div className="pointer-events-none absolute inset-0 bg-starfield opacity-35 bg-starfield-drift-slow" />
       <div className="pointer-events-none absolute -inset-10 bg-starfield opacity-25 bg-starfield-drift-fast" />
       <div className="pointer-events-none absolute inset-0">
@@ -30,7 +30,7 @@ export default function Home() {
             }}
           />
         ))}
-      </div>
+      </div> */}
 
       <header className="relative z-10 mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-6">
         <div className="flex items-center gap-3">

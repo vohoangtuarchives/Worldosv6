@@ -36,42 +36,59 @@ class ZoneConflictEngine
         }
 
         if (count($zones) < 2) {
-            return; // No conflicts if there's only 1 or 0 zones
+            return;
         }
+
+        $diplomacy = $stateVector['diplomacy'] ?? [];
+        $civMap = $this->buildZoneCivMap($universe->id);
 
         $conflictsOccurred = false;
 
-        // Compare adjacent zones (Simulating 1D ring topology for O(n))
         $numZones = count($zones);
         for ($i = 0; $i < $numZones; $i++) {
             $zoneA = $zones[$i];
-            
-            // Check right neighbor
             $neighborIndex = ($i + 1) % $numZones;
             $zoneB = $zones[$neighborIndex];
 
-            // Extract metrics (assuming 'state' contains order, entropy)
+            // 1. Identify which civilizations these zones belong to
+            $civAId = $civMap[$zoneA['id']] ?? null;
+            $civBId = $civMap[$zoneB['id']] ?? null;
+
+            // 2. Check if they are the same civilization (No civil war for now)
+            if ($civAId && $civBId && $civAId === $civBId) continue;
+
+            // 3. Check Diplomatic Status
+            $isWar = false;
+            if ($civAId && $civBId) {
+                $relKey = $this->getRelationKey($civAId, $civBId);
+                $isWar = ($diplomacy[$relKey]['status'] ?? 'NEUTRAL') === 'WAR';
+            } else {
+                // If one zone is wild (no civ), conquest is always possible
+                $isWar = true;
+            }
+
             $orderA = $this->getMetric($zoneA, 'order');
-            $entropyA = $this->getMetric($zoneA, 'entropy');
-
-            $orderB = $this->getMetric($zoneB, 'order');
             $entropyB = $this->getMetric($zoneB, 'entropy');
+            $orderB = $this->getMetric($zoneB, 'order');
 
-            // Condition for A conquering B
-            if ($orderA > 0.7 && $entropyB > 0.7 && ($orderA - $orderB) > 0.4) {
-                // Zone A invades Zone B
-                $this->executeConquest($universe, $snapshot->tick, $zoneA['id'], $zoneB['id']);
-                
-                // Adjust vectors
-                $zones[$i]['state']['entropy'] = max(0, $entropyA - 0.1); // A gains stability 
-                $zones[$neighborIndex]['state']['entropy'] = min(1.0, $entropyB + 0.2); // B collapses further
-                $zones[$neighborIndex]['state']['order'] = max(0, $orderB - 0.3); // B loses order
-                
-                // Add conflict marker for topology
-                $zones[$i]['conflict_status'] = 'active';
-                $zones[$neighborIndex]['conflict_status'] = 'active';
-                
-                $conflictsOccurred = true;
+            // 4. Combat Logic
+            if ($orderA > 0.7 && $entropyB > 0.6 && ($orderA - $orderB) > 0.3) {
+                if ($isWar) {
+                    $this->executeConquest($universe, $snapshot->tick, $zoneA['id'], $zoneB['id']);
+                    
+                    $zones[$i]['state']['entropy'] = max(0, $zones[$i]['state']['entropy'] - 0.1);
+                    $zones[$neighborIndex]['state']['entropy'] = min(1.0, $zones[$neighborIndex]['state']['entropy'] + 0.2);
+                    $zones[$neighborIndex]['state']['order'] = max(0, $zones[$neighborIndex]['state']['order'] - 0.3);
+                    
+                    $zones[$i]['conflict_status'] = 'active';
+                    $zones[$neighborIndex]['conflict_status'] = 'active';
+                    $conflictsOccurred = true;
+                } else {
+                    // Diplomatic Crisis instead of War
+                    if (rand(1, 100) <= 20) {
+                        $this->triggerDiplomaticCrisis($universe, $snapshot->tick, $civAId, $civBId, $zoneA['id'], $zoneB['id']);
+                    }
+                }
             }
         }
 
@@ -80,6 +97,42 @@ class ZoneConflictEngine
             $snapshot->state_vector = $stateVector;
             $snapshot->save();
         }
+    }
+
+    protected function buildZoneCivMap(int $universeId): array
+    {
+        $civs = \App\Models\InstitutionalEntity::where('universe_id', $universeId)
+            ->where('entity_type', 'CIVILIZATION')
+            ->whereNull('collapsed_at_tick')
+            ->get();
+
+        $map = [];
+        foreach ($civs as $civ) {
+            foreach ($civ->influence_map ?? [] as $zoneId) {
+                $map[$zoneId] = $civ->id;
+            }
+        }
+        return $map;
+    }
+
+    protected function getRelationKey(int $id1, int $id2): string
+    {
+        $ids = [$id1, $id2];
+        sort($ids);
+        return "rel_{$ids[0]}_{$ids[1]}";
+    }
+
+    protected function triggerDiplomaticCrisis(Universe $universe, int $tick, ?int $civA, ?int $civB, string $zA, string $zB): void
+    {
+        if (!$civA || !$civB) return;
+
+        Chronicle::create([
+            'universe_id' => $universe->id,
+            'from_tick' => $tick,
+            'to_tick' => $tick,
+            'type' => 'diplomacy',
+            'content' => "KHỦNG HOẢNG BIÊN GIỚI: Quân đội vùng [$zA] áp sát [$zB]. Căng thẳng ngoại giao giữa văn minh #$civA và #$civB đang bùng nổ.",
+        ]);
     }
 
     private function getMetric(array $zone, string $key): float

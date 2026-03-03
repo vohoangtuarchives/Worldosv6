@@ -55,6 +55,17 @@ class SagaService
              // Handle other mutation types here (e.g. boost innovation)
         }
 
+        // Phase 26: Inject Meta-Edicts from World Axiom
+        $axiom = $world->axiom ?? [];
+        $metaEdicts = $axiom['meta_edicts'] ?? [];
+        if (!empty($metaEdicts)) {
+            $initialState = $initialState ?? [];
+            // We store them in a temporary structure that WorldEdictEngine will pick up
+            // or we can just let WorldEdictEngine::decree handle it.
+            // For immediate effect in the very first tick, we ensure they are considered.
+            $initialState['inherited_meta_edicts'] = array_keys($metaEdicts);
+        }
+
         $name = $world->name . ' - ' . ($parentUniverseId ? 'Branch' : 'Genesis') . ' (' . now()->format('H:i:s') . ')';
 
         $universe = Universe::create([

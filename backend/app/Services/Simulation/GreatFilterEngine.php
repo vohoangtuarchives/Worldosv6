@@ -60,10 +60,10 @@ class GreatFilterEngine
         }
 
         $content = match($type) {
-            self::CRISIS_SINGULARITY => "THẢM HỌA ĐIỂM KỲ DỊ: Công nghệ đột phá vượt xa niềm tin xã hội, cấu trúc hiện thực bắt đầu tan rã.",
-            self::CRISIS_STAGNATION => "SỰ TRÌ TRỆ ĐẠI HỆ THỐNG: Truyền thống hủ lậu và bộ máy cồng kềnh đã làm cạn kiệt sức sống của nền văn minh.",
-            self::CRISIS_VOID_BREACH => "CÁNH CỬA HƯ VÔ: Entropy đạt mức cực hạn, ranh giới giữa tồn tại và hư vô trở nên mỏng manh.",
-            default => "KHỦNG HOẢNG VĨ MÔ: Một bộ lọc vĩ đại đang thử thách sự sinh tồn của vũ trụ.",
+            self::CRISIS_SINGULARITY => "NGHỊCH LÝ ĐIỂM KỲ DỊ: Công nghệ đột phá vượt xa tầm kiểm soát của đạo đức và niềm tin xã hội. Cấu trúc thực tại bắt đầu rạn nứt.",
+            self::CRISIS_STAGNATION => "SỰ ĐÌNH TRỆ ĐẠI HỆ THỐNG: Truyền thống hủ lậu và bộ máy cồng kềnh đã bóp nghẹt mọi mầm mống đổi mới. Nền văn minh đang tự thối rữa từ bên trong.",
+            self::CRISIS_VOID_BREACH => "CÁNH CỬA HƯ VÔ: Entropy đạt mức cực hạn. Ranh giới giữa hiện hữu và hư vô đang tan biến. Hư âm vang lên từ vực thẳm.",
+            default => "BỘ LỌC VĨ ĐẠI: Một thử thách vĩ mô đang đe dọa sự tồn vong của toàn bộ vũ trụ.",
         };
 
         Chronicle::create([
@@ -71,17 +71,27 @@ class GreatFilterEngine
             'from_tick' => $tick,
             'to_tick' => $tick,
             'type' => 'great_filter_event',
-            'content' => "BỘ LỌC VĨ ĐẠI: {$content}",
+            'content' => "CẢNH BÁO BỘ LỌC VĨ ĐẠI: {$content}",
         ]);
+
+        // Broadcast as Anomaly
+        event(new \App\Events\Simulation\AnomalyDetected($universe, [
+            'title' => "BỘ LỌC VĨ ĐẠI: " . strtoupper(str_replace('_', ' ', $type)),
+            'description' => $content,
+            'severity' => 'CRITICAL'
+        ]));
 
         // Apply immediate effects
         $this->applyCrisisEffects($universe, $type, $tick);
 
         // Record in state_vector
-        $vec['active_crises'][$type] = [
+        $vec = $universe->fresh()->state_vector; // Get fresh state
+        $activeCrises = $vec['active_crises'] ?? [];
+        $activeCrises[$type] = [
             'started_at' => $tick,
             'intensity' => 1.0
         ];
+        $vec['active_crises'] = $activeCrises;
         $universe->update(['state_vector' => $vec]);
 
         return ['type' => $type, 'status' => 'triggered'];
@@ -98,6 +108,15 @@ class GreatFilterEngine
                     ->inRandomOrder()
                     ->limit((int)($count * 0.3))
                     ->update(['is_alive' => false]);
+                
+                // Damage civilization capacity due to technological chaos
+                InstitutionalEntity::where('universe_id', $universe->id)
+                    ->where('entity_type', 'CIVILIZATION')
+                    ->whereNull('collapsed_at_tick')
+                    ->update([
+                        'org_capacity' => \DB::raw('GREATEST(0.1, org_capacity - 0.2)'),
+                        'legitimacy' => \DB::raw('GREATEST(0.0, legitimacy - 0.15)')
+                    ]);
                 break;
 
             case self::CRISIS_STAGNATION:
@@ -105,16 +124,34 @@ class GreatFilterEngine
                 InstitutionalEntity::where('universe_id', $universe->id)
                     ->whereNull('collapsed_at_tick')
                     ->update([
-                        'org_capacity' => \DB::raw('org_capacity * 0.5'),
-                        'institutional_memory' => \DB::raw('institutional_memory * 0.7')
+                        'org_capacity' => \DB::raw('org_capacity * 0.4'),
+                        'institutional_memory' => \DB::raw('institutional_memory * 0.6'),
+                        'legitimacy' => \DB::raw('GREATEST(0.0, legitimacy - 0.3)')
                     ]);
                 break;
 
             case self::CRISIS_VOID_BREACH:
-                // Increase trauma across all zones
+                // Increase trauma across all zones and cause mass civilization fragmentation
                 $vec = $universe->state_vector;
-                $vec['trauma'] = ($vec['trauma'] ?? 0) + 0.5;
+                $vec['trauma'] = ($vec['trauma'] ?? 0) + 0.6;
                 $universe->update(['state_vector' => $vec]);
+
+                // Fragment civilizations: 50% chance to lose random zones from influence_map
+                $civs = InstitutionalEntity::where('universe_id', $universe->id)
+                    ->where('entity_type', 'CIVILIZATION')
+                    ->whereNull('collapsed_at_tick')
+                    ->get();
+
+                foreach ($civs as $civ) {
+                    $map = $civ->influence_map ?? [];
+                    if (count($map) > 1) {
+                        // Randomly remove 20-40% of zones
+                        $removeCount = (int)(count($map) * rand(20, 40) / 100);
+                        shuffle($map);
+                        $remaining = array_slice($map, $removeCount);
+                        $civ->update(['influence_map' => $remaining]);
+                    }
+                }
                 break;
         }
     }
