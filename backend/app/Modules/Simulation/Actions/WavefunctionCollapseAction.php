@@ -46,7 +46,10 @@ class WavefunctionCollapseAction
             'from_tick' => $tick,
             'to_tick' => $tick,
             'type' => 'observation_interference',
-            'content' => $narrative,
+            'raw_payload' => [
+                'action' => 'legacy_event',
+                'description' => $narrative
+            ],
             'perceived_archive_snapshot' => [
                 'interference_load' => $universe->observationLoad,
                 'state' => $universe->observationLoad > 8 ? 'saturation' : 'collapse'

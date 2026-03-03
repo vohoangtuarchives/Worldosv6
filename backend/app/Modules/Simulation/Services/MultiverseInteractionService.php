@@ -71,7 +71,10 @@ class MultiverseInteractionService
             'from_tick' => (int)$a->current_tick,
             'to_tick' => (int)$a->current_tick,
             'type' => 'multiverse_resonance',
-            'content' => $content,
+            'raw_payload' => [
+                'action' => 'legacy_event',
+                'description' => $content
+            ],
         ]);
 
         // Phase 58: Agent Migration if strength is high
@@ -110,7 +113,10 @@ class MultiverseInteractionService
             'from_tick' => (int)$target->current_tick,
             'to_tick' => (int)$target->current_tick,
             'type' => 'multiverse_migration',
-            'content' => "DỊCH CHUYỂN BẢN THỂ: Một thực thể mạnh mẽ từ vũ trụ {$source->id} đã vượt qua vết nứt không gian và xuất hiện tại đây.",
+            'raw_payload' => [
+                'action' => 'legacy_event',
+                'description' => "DỊCH CHUYỂN BẢN THỂ: Một thực thể mạnh mẽ từ vũ trụ {$source->id} đã vượt qua vết nứt không gian và xuất hiện tại đây."
+            ],
         ]);
 
         Log::info("Migrated " . count($migrants) . " agents from Universe {$source->id} to {$target->id}");

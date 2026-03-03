@@ -62,7 +62,10 @@ class SolarSeeder implements SeederInterface
             'from_tick' => 0,
             'to_tick' => 0,
             'type' => 'myth',
-            'content' => 'Ánh sáng vĩnh cửu của Thái Dương đã khai mở thực tại này. Mọi sự sống sẽ vươn lên dưới hào quang rực rỡ và trật tự tuyệt đối.'
+            'raw_payload' => [
+            'action' => 'legacy_event',
+            'description' => 'Ánh sáng vĩnh cửu của Thái Dương đã khai mở thực tại này. Mọi sự sống sẽ vươn lên dưới hào quang rực rỡ và trật tự tuyệt đối.'
+        ]
         ]);
     }
 }

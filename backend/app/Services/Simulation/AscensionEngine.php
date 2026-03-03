@@ -45,7 +45,10 @@ class AscensionEngine
             'from_tick' => $universe->current_tick,
             'to_tick' => $universe->current_tick,
             'type' => 'ascension',
-            'content' => "SỰ THĂNG HOA: Thực thể '{$entity->name}' đã tích lũy đủ tính chính danh và năng lực để vượt qua giới hạn của một định chế thông thường, trở thành một Supreme Entity điều khiển dòng chảy của vũ trụ.",
+            'raw_payload' => [
+                'action' => 'legacy_event',
+                'description' => "SỰ THĂNG HOA: Thực thể '{$entity->name}' đã tích lũy đủ tính chính danh và năng lực để vượt qua giới hạn của một định chế thông thường, trở thành một Supreme Entity điều khiển dòng chảy của vũ trụ."
+            ],
         ]);
     }
 }

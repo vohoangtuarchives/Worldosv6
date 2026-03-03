@@ -46,7 +46,10 @@ class EasternHeritageSeeder implements SeederInterface
             'from_tick' => 0,
             'to_tick' => 0,
             'type' => 'myth',
-            'content' => 'The Dragon has awoken, and the Mandate of Heaven is bestowed.'
+            'raw_payload' => [
+            'action' => 'legacy_event',
+            'description' => 'The Dragon has awoken, and the Mandate of Heaven is bestowed.'
+        ]
         ]);
     }
 }

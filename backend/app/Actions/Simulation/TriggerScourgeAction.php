@@ -26,7 +26,10 @@ class TriggerScourgeAction
             'from_tick' => $tick,
             'to_tick' => $tick,
             'type' => 'divine_retribution',
-            'content' => $narrative,
+            'raw_payload' => [
+                'action' => 'legacy_event',
+                'description' => $narrative
+            ],
             'perceived_archive_snapshot' => [
                 'scourge_name' => $name,
                 'target_entity' => $target ? $target->name : 'Reality itself',

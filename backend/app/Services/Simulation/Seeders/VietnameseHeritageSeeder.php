@@ -84,7 +84,10 @@ class VietnameseHeritageSeeder implements SeederInterface
             'from_tick' => 0,
             'to_tick' => 0,
             'type' => 'myth',
-            'content' => 'Hạt giống của văn minh Lạc Việt đã được gieo xuống, mang theo hơi thở của đất và hồn của tổ tiên.'
+            'raw_payload' => [
+            'action' => 'legacy_event',
+            'description' => 'Hạt giống của văn minh Lạc Việt đã được gieo xuống, mang theo hơi thở của đất và hồn của tổ tiên.'
+        ]
         ]);
     }
 }

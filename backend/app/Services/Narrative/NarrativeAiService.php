@@ -22,7 +22,8 @@ class NarrativeAiService
         protected EventTriggerMapper $eventMapper,
         protected ResidualInjector $residual,
         protected \App\Services\AI\VectorSearchService $vectorSearch,
-        protected \App\Services\AI\MemoryService $memory
+        protected \App\Services\AI\MemoryService $memory,
+        protected \App\Services\Simulation\MythicResonanceEngine $resonance
     ) {
         $this->config = AgentConfig::first();
     }
@@ -98,11 +99,29 @@ class NarrativeAiService
             'from_tick' => $fromTick,
             'to_tick' => $toTick,
             'type' => $type,
-            'content' => $content,
+            'raw_payload' => [
+                'action' => 'legacy_event',
+                'description' => $content
+            ],
             'perceived_archive_snapshot' => $perceived,
             'embedding' => \Illuminate\Support\Facades\DB::raw("'$vectorString'::vector"),
         ]);
+
+        // Phase 66: Mythic Resonance (§V11)
+        $this->resonance->process($chronicle);
+
+        return $chronicle;
     }
+
+    /**
+     * Generate a short narrative snippet bypassing full contextual archive (§V27).
+     * Used by EventNarrativeService for specific, isolated events.
+     */
+    public function generateSnippet(string $prompt): ?string
+    {
+        return $this->callLlm($prompt);
+    }
+
 
     protected function buildPrompt(array $perceived, int $fromTick, ?int $toTick, array $facts): string
     {
@@ -135,10 +154,22 @@ class NarrativeAiService
         $themes = implode(', ', $this->config->themes ?? ['Tổng quát']);
         $creativity = $this->config->creativity ?? 50;
 
+        $epicIntro = "";
+        $legendaryFocus = "";
+        if (!empty($perceived['agent_reflections'])) {
+            foreach ($perceived['agent_reflections'] as $ref) {
+                 if (!empty($ref['fate_tags'])) {
+                     $tags = implode(', ', $ref['fate_tags']);
+                     $legendaryFocus .= "\nHuyền thoại đang trỗi dậy: {$ref['name']} mang dấu ấn [{$tags}].\n";
+                     $epicIntro = "ĐÂY LÀ MỘT CHƯƠNG SỬ THI (EPIC CHRONICLE). ";
+                 }
+            }
+        }
+
         return <<<EOT
 Bạn là $agentName, một $personality của vũ trụ mô phỏng. 
-Chủ đề trọng tâm: $themes. Mức độ sáng tạo: $creativity%.
-
+$epicIntro Chủ đề trọng tâm: $themes. Mức độ sáng tạo: $creativity%.
+$legendaryFocus
 TRẠNG THÁI BẢN THỂ (Ontological State):
 - Cấp độ: {$perceived['existence']['tier']} ({$perceived['existence']['name']})
 - Mô tả: {$perceived['existence']['description']}
@@ -159,7 +190,7 @@ Trạng thái Thế giới (Cảm quan - Perceived):
 $reflections
 $factsText
 
-NHIỆM VỤ: Hãy viết một đoạn biên niên sử ngắn gọn (2-3 câu). 
+NHIỆM VỤ: Hãy viết một đoạn biên niên sử ngắn gọn. 
 Nếu có 'GIỌNG NÓI TỪ CHIỀU VI MÔ', hãy lồng ghép các suy nghĩ của họ vào lời dẫn chuyện để làm nổi bật sự phản tư của thế giới. 
 Tập trung vào tính nhân quả: sự thay đổi vật chất và văn hóa đã dẫn dắt sự trỗi dậy hoặc sụp đổ của các định chế như thế nào. 
 Nếu chỉ số 'Bất ổn tri thức' cao (>$instability), hãy dùng ngôn từ mờ ảo, thần thoại hóa các sự kiện.
@@ -186,8 +217,14 @@ EOT;
                     ->post('https://api.openai.com/v1/chat/completions', [
                         'model' => $model,
                         'messages' => [
-                            ['role' => 'system', 'content' => "Bạn là WorldOS, người kể chuyện về sự tiến hóa của vũ trụ."],
-                            ['role' => 'user', 'content' => $prompt],
+                            ['role' => 'system', 'raw_payload' => [
+                'action' => 'legacy_event',
+                'description' => "Bạn là WorldOS, người kể chuyện về sự tiến hóa của vũ trụ."]
+            ],
+                            ['role' => 'user', 'raw_payload' => [
+                'action' => 'legacy_event',
+                'description' => $prompt]
+            ],
                         ],
                         'temperature' => 0.7,
                     ]);
@@ -216,7 +253,10 @@ EOT;
             $response = Http::timeout(30)->post($endpoint, [
                 'model' => $model,
                 'messages' => [
-                    ['role' => 'system', 'content' => "Bạn là người ghi chép sáng tạo cho một trò chơi mô phỏng."],
+                    ['role' => 'system', 'raw_payload' => [
+                'action' => 'legacy_event',
+                'description' => "Bạn là người ghi chép sáng tạo cho một trò chơi mô phỏng."]
+            ],
                     ['role' => 'user', 'content' => $prompt]
                 ],
                 'temperature' => 0.7,

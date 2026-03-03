@@ -38,7 +38,10 @@ class RecordEventHorizonAction
             'from_tick' => $currentTick,
             'to_tick' => $currentTick,
             'type' => 'causal_trajectory',
-            'content' => $narrative,
+            'raw_payload' => [
+                'action' => 'legacy_event',
+                'description' => $narrative
+            ],
             'perceived_archive_snapshot' => [
                 'target_tick' => $targetTick,
                 'convergence_type' => $type,

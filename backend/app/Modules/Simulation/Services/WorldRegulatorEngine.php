@@ -75,7 +75,10 @@ class WorldRegulatorEngine
             'from_tick' => (int)$u->current_tick,
             'to_tick' => (int)$u->current_tick,
             'type' => 'myth',
-            'content' => $flavor
+            'raw_payload' => [
+            'action' => 'legacy_event',
+            'description' => $flavor
+        ]
         ]);
     }
 }

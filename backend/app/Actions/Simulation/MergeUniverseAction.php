@@ -60,7 +60,10 @@ class MergeUniverseAction
             'from_tick' => 0,
             'to_tick' => 0,
             'type' => 'genesis_merger',
-            'content' => "THỜI KHẮC HỢP NHẤT: Vũ trụ Prime #{$prime->id} được sinh ra từ sự giao thoa của hai thực tại song song. Lịch sử của cả hai đã được đúc kết thành một khởi đầu mới.",
+            'raw_payload' => [
+                'action' => 'legacy_event',
+                'description' => "THỜI KHẮC HỢP NHẤT: Vũ trụ Prime #{$prime->id} được sinh ra từ sự giao thoa của hai thực tại song song. Lịch sử của cả hai đã được đúc kết thành một khởi đầu mới."
+            ],
         ]);
 
         return $prime;

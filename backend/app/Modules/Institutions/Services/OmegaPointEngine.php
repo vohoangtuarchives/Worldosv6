@@ -52,7 +52,10 @@ class OmegaPointEngine
             'from_tick' => $snapshot->tick,
             'to_tick' => $snapshot->tick,
             'type' => 'myth',
-            'content' => 'ĐIỂM OMEGA ĐÃ THIẾT LẬP. Mọi dòng thời gian hội tụ, mọi ý thức hợp nhất làm một. Thực tại đã đạt tới sự thăng hoa tuyệt đối và bước vào trạng thái tĩnh tại vĩnh hằng.'
+            'raw_payload' => [
+            'action' => 'legacy_event',
+            'description' => 'ĐIỂM OMEGA ĐÃ THIẾT LẬP. Mọi dòng thời gian hội tụ, mọi ý thức hợp nhất làm một. Thực tại đã đạt tới sự thăng hoa tuyệt đối và bước vào trạng thái tĩnh tại vĩnh hằng.'
+        ]
         ]);
 
         event(new \App\Events\Simulation\AnomalyDetected($universe, [

@@ -13,6 +13,9 @@ use App\Services\AI\AnalyticalAiService;
 use App\Services\AI\SearchAiService;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\AgentConfigController;
+use App\Http\Controllers\Api\MultiverseMapController;
+use App\Http\Controllers\Api\CelestialEngineeringController;
+use App\Models\LegendaryAgent;
 
 Route::post('/login', [AuthController::class, 'login'])->name('login');
 Route::post('/register', [AuthController::class, 'register']);
@@ -430,4 +433,17 @@ Route::middleware('auth:sanctum')->prefix('worldos')->group(function () {
         if (!$universe) return response()->json([]);
         return response()->json($action->execute($universe->world_id));
     })->name('worldos.multiverse.tree');
+
+    // Phase 69: Multiverse DAG Map (§V12)
+    Route::get('multiverse/map', [MultiverseMapController::class, 'index'])
+        ->name('worldos.multiverse.map');
+
+    // Phase 69: Legendary Archive (§V12)
+    Route::get('legends', function () {
+        return response()->json(LegendaryAgent::with('universe:id,name')->orderByDesc('tick_discovered')->get());
+    })->name('worldos.legends.index');
+
+    // Phase 88: Observer Console (§V18)
+    Route::get('observer/dashboard', [\App\Http\Controllers\Api\ObserverDashboardController::class, 'getStatus'])
+        ->name('worldos.observer.dashboard');
 });

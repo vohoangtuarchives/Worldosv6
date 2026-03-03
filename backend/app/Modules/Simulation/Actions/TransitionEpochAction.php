@@ -42,7 +42,10 @@ class TransitionEpochAction
             'from_tick' => $tick,
             'to_tick' => $tick,
             'type' => 'epoch_transition',
-            'content' => $narrative,
+            'raw_payload' => [
+                'action' => 'legacy_event',
+                'description' => $narrative
+            ],
             'perceived_archive_snapshot' => [
                 'old_epoch' => $currentEpoch->name,
                 'new_epoch' => $nextEpoch->name,

@@ -67,4 +67,45 @@ class TraitMapper
             default => "Ta cảm nhận được nhịp đập của simulacrum này."
         };
     }
+
+    public function getFateTags(array $traits): array
+    {
+        $tags = [];
+        if (($traits[0] ?? 0) > 0.95 && ($traits[1] ?? 0) > 0.95) $tags[] = "The Conqueror (Kẻ Chinh Phục)";
+        if (($traits[4] ?? 0) > 0.95 && ($traits[13] ?? 0) > 0.95) $tags[] = "The Messiah (Đấng Cứu Thế)";
+        if (($traits[8] ?? 0) > 0.95) $tags[] = "The Void-Seeker (Kẻ Tầm Không)";
+        if (($traits[12] ?? 0) > 0.95) $tags[] = "The Avenger (Kẻ Báo Thù)";
+        if (($traits[9] ?? 0) > 0.95) $tags[] = "The Inquisitor (Kẻ Phán Xét)";
+        
+        // Phase 100: Simulation Self-Awareness (§V22)
+        if (($traits[7] ?? 0) > 0.95 && ($traits[8] ?? 0) > 0.95) {
+            $tags[] = "Awareness_of_the_Clock (Nhận thức Dòng chảy)";
+        }
+        if (($traits[7] ?? 0) > 0.95 && (($traits[9] ?? 0) < 0.1)) {
+            $tags[] = "Simulation_Skepticism (Kẻ Nghi Ngờ Thực Tại)";
+        }
+        
+        return $tags;
+    }
+
+    /**
+     * Kiểm tra xem Agent có cần chuyển đổi Archetype không (§V11).
+     */
+    public function detectArchetypeShift(array $traits, string $currentArchetype): ?string
+    {
+        $ambition = $traits[1] ?? 0;
+        $empathy = $traits[4] ?? 0;
+        $dogmatism = $traits[9] ?? 0;
+        $coercion = $traits[2] ?? 0;
+
+        if ($currentArchetype === 'Commoner') {
+            if ($ambition > 0.8) return 'Opportunist';
+            if ($empathy > 0.8) return 'Sage';
+        }
+
+        if ($currentArchetype === 'Opportunist' && $coercion > 0.8) return 'Warlord';
+        if ($dogmatism > 0.9) return 'Zealot';
+
+        return null;
+    }
 }

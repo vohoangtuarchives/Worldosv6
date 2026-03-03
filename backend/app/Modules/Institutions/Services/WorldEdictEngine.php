@@ -119,7 +119,10 @@ class WorldEdictEngine
             'from_tick' => $tick,
             'to_tick' => $tick,
             'type' => 'edict_decree',
-            'content' => $flavor,
+            'raw_payload' => [
+                'action' => 'legacy_event',
+                'description' => $flavor
+            ],
         ]);
 
         BranchEvent::create([

@@ -34,7 +34,10 @@ class InjectExternalShockAction
             'from_tick' => $tick,
             'to_tick' => $tick,
             'type' => 'external_shock',
-            'content' => "CÚ SỐC NGOẠI LỰC: Một biến cố chấn động xảy ra ngay tại điểm phân tách. {$shockType['description']}",
+            'raw_payload' => [
+                'action' => 'legacy_event',
+                'description' => "CÚ SỐC NGOẠI LỰC: Một biến cố chấn động xảy ra ngay tại điểm phân tách. {$shockType['description']}"
+            ],
         ]);
 
         // 3. Mark the branch event with the shock info

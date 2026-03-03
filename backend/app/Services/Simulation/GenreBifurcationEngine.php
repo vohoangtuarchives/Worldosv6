@@ -143,7 +143,10 @@ class GenreBifurcationEngine
             'from_tick' => $tick,
             'to_tick' => $tick,
             'type' => 'phase_transition',
-            'content' => $flavorText,
+            'raw_payload' => [
+                'action' => 'legacy_event',
+                'description' => $flavorText
+            ],
         ]);
         
         \App\Models\BranchEvent::create([

@@ -72,7 +72,10 @@ class GreatFilterEngine
             'from_tick' => $tick,
             'to_tick' => $tick,
             'type' => 'great_filter_event',
-            'content' => "CẢNH BÁO BỘ LỌC VĨ ĐẠI: {$content}",
+            'raw_payload' => [
+                'action' => 'legacy_event',
+                'description' => "CẢNH BÁO BỘ LỌC VĨ ĐẠI: {$content}"
+            ],
         ]);
 
         // Broadcast as Anomaly

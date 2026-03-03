@@ -62,7 +62,10 @@ class PrimevalSeeder implements SeederInterface
             'from_tick' => 0,
             'to_tick' => 0,
             'type' => 'myth',
-            'content' => 'Thế giới thức tỉnh trong sự vững chãi của đất đá và sự sôi sục của dòng máu nguyên bản. Một hành trình tiến hóa bền bỉ đã bắt đầu.'
+            'raw_payload' => [
+            'action' => 'legacy_event',
+            'description' => 'Thế giới thức tỉnh trong sự vững chãi của đất đá và sự sôi sục của dòng máu nguyên bản. Một hành trình tiến hóa bền bỉ đã bắt đầu.'
+        ]
         ]);
     }
 }

@@ -66,7 +66,10 @@ class AscensionAction
             'from_tick' => $tick,
             'to_tick' => $tick,
             'type' => 'ascension_event',
-            'content' => "SỰ THĂNG HOA TỐI CAO: Định chế {$inst->name} đã vượt ngưỡng phàm trần, trở thành {$supreme->name} cai quản cõi {$supreme->domain}.",
+            'raw_payload' => [
+                'action' => 'legacy_event',
+                'description' => "SỰ THĂNG HOA TỐI CAO: Định chế {$inst->name} đã vượt ngưỡng phàm trần, trở thành {$supreme->name} cai quản cõi {$supreme->domain}."
+            ],
         ]);
 
         // Consume origin institution? Or mark as "Divine Presence"

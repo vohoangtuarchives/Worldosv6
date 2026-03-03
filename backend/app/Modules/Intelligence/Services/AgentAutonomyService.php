@@ -133,7 +133,10 @@ class AgentAutonomyService
                     'from_tick' => $tick,
                     'to_tick' => $tick,
                     'type' => 'myth',
-                    'content' => "{$actor->name} truyền bá đức tin cổ xưa, củng cố sợi dây liên kết vô hình."
+                    'raw_payload' => [
+                    'action' => 'legacy_event',
+                    'description' => "{$actor->name} truyền bá đức tin cổ xưa, củng cố sợi dây liên kết vô hình."
+                ]
                 ]);
                 break;
         }
@@ -182,7 +185,10 @@ class AgentAutonomyService
             'from_tick' => $tick,
             'to_tick' => $tick,
             'type' => 'social_contract',
-            'content' => "GIAO ƯỚC MỚI: {$actor->name} và các đồng minh thiết lập một khế ước tương trợ, đặt nền móng cho trật tự mới.",
+            'raw_payload' => [
+                'action' => 'legacy_event',
+                'description' => "GIAO ƯỚC MỚI: {$actor->name} và các đồng minh thiết lập một khế ước tương trợ, đặt nền móng cho trật tự mới."
+            ],
         ]);
     }
 
@@ -196,7 +202,10 @@ class AgentAutonomyService
             'from_tick' => $tick,
             'to_tick' => $tick,
             'type' => 'revolt',
-            'content' => "BIẾN LOẠN: {$actor->name} công khai phản kháng, tạo ra một cơn sóng bất ổn lan rộng.",
+            'raw_payload' => [
+                'action' => 'legacy_event',
+                'description' => "BIẾN LOẠN: {$actor->name} công khai phản kháng, tạo ra một cơn sóng bất ổn lan rộng."
+            ],
         ]);
     }
 }

@@ -11,13 +11,14 @@ class Universe extends Model
     protected $fillable = [
         'world_id', 'saga_id', 'multiverse_id', 'parent_universe_id',
         'current_tick', 'level', 'epoch', 'status', 'state_vector', 'name',
-        'observation_load', 'last_observed_at',
+        'observation_load', 'last_observed_at', 'observer_bonus',
     ];
 
     protected $casts = [
         'state_vector' => 'array',
         'observation_load' => 'float',
         'last_observed_at' => 'datetime',
+        'observer_bonus' => 'float',
     ];
 
     public function world(): BelongsTo

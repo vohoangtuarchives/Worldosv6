@@ -228,7 +228,10 @@ class EvaluateSimulationResult
             'from_tick' => $snapshot->tick,
             'to_tick' => $snapshot->tick,
             'type' => 'narrative',
-            'content' => $narrative,
+            'raw_payload' => [
+                'action' => 'legacy_event',
+                'description' => $narrative
+            ],
             'perceived_archive_snapshot' => [
                 'noise_level' => $noise,
                 'clarity' => $this->epistemicService->getClarityLabel($noise),

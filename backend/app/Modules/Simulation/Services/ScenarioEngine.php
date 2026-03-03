@@ -97,7 +97,10 @@ class ScenarioEngine
             'from_tick' => $tick,
             'to_tick' => $tick,
             'type' => 'scenario_init',
-            'content' => "KHỞI ĐẦU KỊCH BẢN: {$scenario['name']}. {$scenario['narrative_focus']}",
+            'raw_payload' => [
+                'action' => 'legacy_event',
+                'description' => "KHỞI ĐẦU KỊCH BẢN: {$scenario['name']}. {$scenario['narrative_focus']}"
+            ],
         ]);
 
         BranchEvent::create([

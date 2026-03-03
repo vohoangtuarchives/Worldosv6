@@ -45,7 +45,10 @@ class ManifestRelicAction
             'from_tick' => $tick,
             'to_tick' => $tick,
             'type' => 'relic_discovery',
-            'content' => $narrative,
+            'raw_payload' => [
+                'action' => 'legacy_event',
+                'description' => $narrative
+            ],
             'perceived_archive_snapshot' => [
                 'relic_name' => $relic->name,
                 'relic_rarity' => $relic->rarity,

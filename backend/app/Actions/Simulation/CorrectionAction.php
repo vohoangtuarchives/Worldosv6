@@ -52,7 +52,10 @@ class CorrectionAction
             'from_tick' => $universe->current_tick,
             'to_tick' => $universe->current_tick,
             'type' => 'myth',
-            'content' => $message
+            'raw_payload' => [
+            'action' => 'legacy_event',
+            'description' => $message
+        ]
         ]);
     }
 }

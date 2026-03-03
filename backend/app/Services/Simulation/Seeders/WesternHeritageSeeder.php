@@ -53,7 +53,10 @@ class WesternHeritageSeeder implements SeederInterface
             'from_tick' => 0,
             'to_tick' => 0,
             'type' => 'myth',
-            'content' => 'The foundations of the Realm have been laid, bound by oath and iron.'
+            'raw_payload' => [
+            'action' => 'legacy_event',
+            'description' => 'The foundations of the Realm have been laid, bound by oath and iron.'
+        ]
         ]);
     }
 }

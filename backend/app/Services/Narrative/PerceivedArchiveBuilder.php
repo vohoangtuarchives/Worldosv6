@@ -17,7 +17,8 @@ class PerceivedArchiveBuilder
         protected EventTriggerMapper $events,
         protected ResidualInjector $residual,
         protected TraitMapper $traitMapper,
-        protected \App\Services\AI\EpistemicService $epistemic
+        protected \App\Services\AI\EpistemicService $epistemic,
+        protected \App\Services\Simulation\TheDreamingService $dreaming
     ) {}
 
     /**
@@ -148,6 +149,7 @@ class PerceivedArchiveBuilder
             'branch_events' => $branchEvents,
             'residual_prompt_tail' => $residualTail,
             'agent_reflections' => array_slice($agentReflections, 0, 3), // AI only reflexive monologues for top 3 agents
+            'whispers' => $this->dreaming->generateWhispers($this->getUniverseModel($universeId)),
             'existence' => $existence,
             'metrics' => [
                 'entropy' => round($vector['entropy'] ?? 0, 3),

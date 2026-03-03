@@ -47,7 +47,10 @@ class CausalCorrectionEngine
             'from_tick' => $tick,
             'to_tick' => $tick,
             'type' => 'causal_correction',
-            'content' => $narrative,
+            'raw_payload' => [
+                'action' => 'legacy_event',
+                'description' => $narrative
+            ],
             'perceived_archive_snapshot' => [
                 'rebalanced_entity' => $entity->name,
                 'correction_magnitude' => $correctionMagnitude

@@ -40,7 +40,10 @@ class WorldAxiomAction
                     'from_tick' => $universe->current_tick,
                     'to_tick' => $universe->current_tick,
                     'type' => 'event',
-                    'content' => 'Các hằng số cơ bản của vũ trụ đột ngột biến đổi. Cấu trúc thực tại đang được tái định nghĩa.'
+                    'raw_payload' => [
+                    'action' => 'legacy_event',
+                    'description' => 'Các hằng số cơ bản của vũ trụ đột ngột biến đổi. Cấu trúc thực tại đang được tái định nghĩa.'
+                ]
                 ]);
             }
 

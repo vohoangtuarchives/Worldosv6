@@ -103,7 +103,10 @@ class DiplomaticResonanceEngine
             'from_tick' => $tick,
             'to_tick' => $tick,
             'type' => 'diplomacy',
-            'content' => "NGOẠI GIAO: {$a->name} & {$b->name} [$status] - $content"
+            'raw_payload' => [
+            'action' => 'legacy_event',
+            'description' => "NGOẠI GIAO: {$a->name} & {$b->name} [$status] - $content"
+        ]
         ]);
 
         Log::info("Diplomacy: {$a->name} & {$b->name} shift to $status.");

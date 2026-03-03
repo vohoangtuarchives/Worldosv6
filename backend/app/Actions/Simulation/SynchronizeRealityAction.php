@@ -22,7 +22,10 @@ class SynchronizeRealityAction
             'from_tick' => $tick,
             'to_tick' => $tick,
             'type' => 'multiverse_synchronicity',
-            'content' => $narrative,
+            'raw_payload' => [
+                'action' => 'legacy_event',
+                'description' => $narrative
+            ],
             'perceived_archive_snapshot' => [
                 'linked_universe' => $u2->name,
                 'resonance' => $resonance

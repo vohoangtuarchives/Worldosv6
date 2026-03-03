@@ -56,7 +56,10 @@ class SocialContractEvolutionAction
             'from_tick' => $tick,
             'to_tick' => $tick,
             'type' => 'institutional_emergence',
-            'content' => "TIẾN HÓA XÃ HỘI: Giao ước của một nhóm tác nhân đã kết tinh thành thực thể '{$entity->name}', đánh dấu bước chuyển mình sang giai đoạn tổ chức phức tạp.",
+            'raw_payload' => [
+                'action' => 'legacy_event',
+                'description' => "TIẾN HÓA XÃ HỘI: Giao ước của một nhóm tác nhân đã kết tinh thành thực thể '{$entity->name}', đánh dấu bước chuyển mình sang giai đoạn tổ chức phức tạp."
+            ],
         ]);
     }
 

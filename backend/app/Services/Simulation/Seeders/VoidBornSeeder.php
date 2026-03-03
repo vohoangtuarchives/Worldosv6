@@ -62,7 +62,10 @@ class VoidBornSeeder implements SeederInterface
             'from_tick' => 0,
             'to_tick' => 0,
             'type' => 'myth',
-            'content' => 'Từ trong vực thẳm của Hư Vô, những mảnh vỡ của bóng tối đã tụ lại. Một thế giới kỳ dị và mờ ảo bắt đầu thành hình.'
+            'raw_payload' => [
+            'action' => 'legacy_event',
+            'description' => 'Từ trong vực thẳm của Hư Vô, những mảnh vỡ của bóng tối đã tụ lại. Một thế giới kỳ dị và mờ ảo bắt đầu thành hình.'
+        ]
         ]);
     }
 }

@@ -34,7 +34,10 @@ class TriggerOmegaPointAction
             'from_tick' => (int)$universe->current_tick,
             'to_tick' => (int)$universe->current_tick,
             'type' => 'omega_point',
-            'content' => $content,
+            'raw_payload' => [
+                'action' => 'legacy_event',
+                'description' => $content
+            ],
         ]);
 
         // 2. Technical Singularity: Boost entropy to max and freeze

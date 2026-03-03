@@ -101,7 +101,10 @@ class ConvergenceEngine
             'from_tick' => $tick,
             'to_tick' => $tick,
             'type' => 'convergence_event',
-            'content' => "SỰ HỘI TỤ ĐA VŨ TRỤ: Ranh giới giữa thế giới này và {$b->id} đang sụp đổ. Hai dòng thời gian bắt đầu giao thoa để tìm về một thực tại thống nhất.",
+            'raw_payload' => [
+                'action' => 'legacy_event',
+                'description' => "SỰ HỘI TỤ ĐA VŨ TRỤ: Ranh giới giữa thế giới này và {$b->id} đang sụp đổ. Hai dòng thời gian bắt đầu giao thoa để tìm về một thực tại thống nhất."
+            ],
         ]);
 
         // Execute merge (this will create a new Prime Universe)
@@ -119,7 +122,10 @@ class ConvergenceEngine
                 'from_tick' => $tick,
                 'to_tick' => $tick,
                 'type' => 'omega_point',
-                'content' => "ĐIỂM OMEGA: Vũ trụ đã chạm tới giới hạn tuyệt đối của sự tồn tại. Mọi cấu trúc vật chất và ý thức dần tan biến vào Hư vô vĩnh hằng.",
+                'raw_payload' => [
+                'action' => 'legacy_event',
+                'description' => "ĐIỂM OMEGA: Vũ trụ đã chạm tới giới hạn tuyệt đối của sự tồn tại. Mọi cấu trúc vật chất và ý thức dần tan biến vào Hư vô vĩnh hằng."
+            ],
             ]);
             
             $universe->update(['status' => 'archived']);

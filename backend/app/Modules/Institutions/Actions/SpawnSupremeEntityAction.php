@@ -41,7 +41,10 @@ class SpawnSupremeEntityAction
             'from_tick' => $tick,
             'to_tick' => $tick,
             'type' => 'supreme_emergence',
-            'content' => $flavorText,
+            'raw_payload' => [
+                'action' => 'legacy_event',
+                'description' => $flavorText
+            ],
         ]);
 
         BranchEvent::create([

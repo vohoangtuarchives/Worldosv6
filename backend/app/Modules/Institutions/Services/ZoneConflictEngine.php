@@ -131,7 +131,10 @@ class ZoneConflictEngine
             'from_tick' => $tick,
             'to_tick' => $tick,
             'type' => 'diplomacy',
-            'content' => "KHỦNG HOẢNG BIÊN GIỚI: Quân đội vùng [$zA] áp sát [$zB]. Căng thẳng ngoại giao giữa văn minh #$civA và #$civB đang bùng nổ.",
+            'raw_payload' => [
+                'action' => 'legacy_event',
+                'description' => "KHỦNG HOẢNG BIÊN GIỚI: Quân đội vùng [$zA] áp sát [$zB]. Căng thẳng ngoại giao giữa văn minh #$civA và #$civB đang bùng nổ."
+            ],
         ]);
     }
 
@@ -152,7 +155,10 @@ class ZoneConflictEngine
             'from_tick' => $tick,
             'to_tick' => $tick,
             'type' => 'zone_conflict',
-            'content' => $flavor,
+            'raw_payload' => [
+                'action' => 'legacy_event',
+                'description' => $flavor
+            ],
         ]);
 
         BranchEvent::create([

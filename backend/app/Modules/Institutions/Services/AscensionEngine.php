@@ -56,7 +56,10 @@ class AscensionEngine
             'from_tick' => $snapshot->tick,
             'to_tick' => $snapshot->tick,
             'type' => 'eschaton',
-            'content' => $content,
+            'raw_payload' => [
+                'action' => 'legacy_event',
+                'description' => $content
+            ],
         ]);
 
         BranchEvent::create([
@@ -98,7 +101,10 @@ class AscensionEngine
             'from_tick' => $snapshot->tick,
             'to_tick' => $snapshot->tick,
             'type' => 'ascension',
-            'content' => $content,
+            'raw_payload' => [
+                'action' => 'legacy_event',
+                'description' => $content
+            ],
         ]);
 
         BranchEvent::create([

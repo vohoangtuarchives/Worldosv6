@@ -36,7 +36,10 @@ class DefineEventHorizonAction
             'from_tick' => $tick,
             'to_tick' => $tick,
             'type' => 'event_horizon_defined',
-            'content' => "ĐƯỜNG CHÂN TRỜI SỰ KIỆN: Sử gia đã xác định một điểm hội tụ mới [{$saved->phenomenonDescription}] tại tick {$saved->targetTick}.",
+            'raw_payload' => [
+                'action' => 'legacy_event',
+                'description' => "ĐƯỜNG CHÂN TRỜI SỰ KIỆN: Sử gia đã xác định một điểm hội tụ mới [{$saved->phenomenonDescription}] tại tick {$saved->targetTick}."
+            ],
             'perceived_archive_snapshot' => [
                 'trajectory_id' => $saved->id,
                 'probability' => $saved->probability
