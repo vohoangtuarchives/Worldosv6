@@ -4,6 +4,9 @@ namespace App\Listeners\Simulation;
 
 use App\Events\Simulation\UniverseSimulationPulsed;
 use App\Services\Material\MaterialLifecycleEngine;
+use App\Services\Simulation\MaterialEvolutionEngine;
+use App\Services\Simulation\OmegaEngine;
+use App\Services\Simulation\AscensionEngine;
 use App\Repositories\UniverseRepository;
 use Illuminate\Contracts\Queue\ShouldQueue;
 
@@ -11,6 +14,9 @@ class ProcessMaterialLifecycle implements ShouldQueue
 {
     public function __construct(
         protected MaterialLifecycleEngine $materialLifecycle,
+        protected MaterialEvolutionEngine $materialEvolution,
+        protected OmegaEngine $omegaEngine,
+        protected AscensionEngine $ascensionEngine,
         protected UniverseRepository $universeRepository
     ) {}
 
@@ -23,6 +29,20 @@ class ProcessMaterialLifecycle implements ShouldQueue
         $deltas = $this->materialLifecycle->processTick($universe->id, (int)$snapshot->tick, $context);
         
         if (!empty($deltas)) {
+            // ... (existing delta logic)
+            $this->applyDeltas($universe, $deltas);
+        }
+
+        // V6: Advanced Material Evolution & DAG (§48)
+        $this->materialEvolution->evolve($universe, $context);
+
+        // V6: Omega States & Ascension (§49, §50)
+        $this->omegaEngine->checkOmegaStatus($universe, $context);
+        $this->ascensionEngine->processAscension($universe, $context);
+    }
+
+    protected function applyDeltas($universe, $deltas): void
+    {
             $vec = $universe->state_vector ?? [];
             $vec['entropy'] = ($vec['entropy'] ?? 0.0) + ($deltas['entropy'] ?? 0.0);
             $vec['stability_index'] = ($vec['stability_index'] ?? 0.0) + ($deltas['order'] ?? 0.0);
@@ -35,7 +55,6 @@ class ProcessMaterialLifecycle implements ShouldQueue
             $vec['stability_index'] = max(0.0, min(1.0, (float)$vec['stability_index']));
             
             $this->universeRepository->update($universe->id, ['state_vector' => $vec]);
-        }
     }
 
     protected function buildMaterialContext($snapshot): array

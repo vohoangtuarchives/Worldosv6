@@ -7,7 +7,6 @@ use App\Contracts\UniverseEvaluatorInterface;
 use App\Repositories\UniverseSnapshotRepository;
 use App\Services\Simulation\HttpSimulationEngineClient;
 use App\Services\Simulation\StubSimulationEngineClient;
-use App\Services\Simulation\UniverseEvaluator;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -24,14 +23,8 @@ class AppServiceProvider extends ServiceProvider
             }
             return new StubSimulationEngineClient;
         });
-        $this->app->bind(
-            UniverseEvaluatorInterface::class,
-            UniverseEvaluator::class
-        );
         $this->app->singleton(UniverseSnapshotRepository::class);
         $this->app->singleton(\App\Services\Observer\ObserverService::class);
-        $this->app->singleton(\App\Services\Simulation\CultureDiffusionService::class);
-        $this->app->singleton(\App\Services\Simulation\InstitutionManager::class);
         $this->app->singleton(\App\Services\AI\MemoryService::class);
         $this->app->bind(
             \App\Contracts\GraphProviderInterface::class,
@@ -50,10 +43,6 @@ class AppServiceProvider extends ServiceProvider
         );
         \Illuminate\Support\Facades\Event::listen(
             \App\Events\Simulation\UniverseSimulationPulsed::class,
-            \App\Listeners\Simulation\ManageInstitutions::class
-        );
-        \Illuminate\Support\Facades\Event::listen(
-            \App\Events\Simulation\UniverseSimulationPulsed::class,
             \App\Listeners\Simulation\GenerateNarrative::class
         );
         \Illuminate\Support\Facades\Event::listen(
@@ -67,6 +56,14 @@ class AppServiceProvider extends ServiceProvider
         \Illuminate\Support\Facades\Event::listen(
             \App\Events\Simulation\UniverseSimulationPulsed::class,
             \App\Listeners\Simulation\SyncToGraph::class
+        );
+        \Illuminate\Support\Facades\Event::listen(
+            \App\Events\Simulation\UniverseSimulationPulsed::class,
+            \App\Modules\Intelligence\Listeners\ProcessIntelligenceEvolution::class
+        );
+        \Illuminate\Support\Facades\Event::listen(
+            \App\Events\Simulation\UniverseSimulationPulsed::class,
+            \App\Modules\Institutions\Listeners\ProcessInstitutionalFramework::class
         );
     }
 }

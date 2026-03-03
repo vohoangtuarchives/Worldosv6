@@ -12,19 +12,17 @@ use App\Services\Simulation\CultureDiffusionService;
 use App\Actions\Simulation\DecideUniverseAction;
 use App\Actions\Simulation\ForkUniverseAction;
 use App\Services\Simulation\GenreBifurcationEngine;
-use App\Services\Simulation\SupremeEntityEngine;
 use App\Services\Simulation\ZoneConflictEngine;
 use App\Services\Simulation\WorldEdictEngine;
 use App\Services\Simulation\AscensionEngine;
-
-use App\Services\Simulation\InstitutionalEngine;
 
 class AdvanceSimulationAction
 {
     public function __construct(
         protected UniverseRepositoryInterface $universeRepository,
         protected SimulationEngineClientInterface $engine,
-        protected UniverseSnapshotRepository $snapshots
+        protected UniverseSnapshotRepository $snapshots,
+        protected \App\Services\Simulation\MultiverseSovereigntyService $sovereignty
     ) {}
 
     public function execute(int $universeId, int $ticks): array
@@ -52,6 +50,10 @@ class AdvanceSimulationAction
 
             // Update Universe latest tick
             $this->universeRepository->update($universe->id, ['current_tick' => $savedSnapshot->tick]);
+
+            // Phase 63: Total Sovereignty (§V10)
+            $scars = $snapshotData['metrics']['scars'] ?? [];
+            $this->sovereignty->orchestrate($universe, $scars);
         }
 
         return $response;
@@ -66,6 +68,9 @@ class AdvanceSimulationAction
         $metrics = is_string($snapshot['metrics'] ?? null)
             ? json_decode($snapshot['metrics'], true) ?? []
             : ($snapshot['metrics'] ?? []);
+            
+        $metrics['sci'] = $snapshot['sci'] ?? null;
+        $metrics['instability_gradient'] = $snapshot['instability_gradient'] ?? null;
             
         return $this->snapshots->save($universe, [
             'tick' => $snapshot['tick'],

@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { useWorldStream } from '@/hooks/useWorldStream';
+import { useSimulation } from '@/context/SimulationContext';
 
-export default function GreatFilterAlert({ universeId }: { universeId: number | null }) {
-    const { latestSnapshot } = useWorldStream(universeId);
+export default function GreatFilterAlert({ universeId: _unusedId }: { universeId: number | null }) {
+    const { latestSnapshot } = useSimulation();
     const [activeCrisis, setActiveCrisis] = useState<string | null>(null);
 
     useEffect(() => {

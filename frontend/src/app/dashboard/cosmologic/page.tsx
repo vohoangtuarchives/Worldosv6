@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { api } from "@/lib/api";
-import { useWorldStream } from "@/hooks/useWorldStream";
 import { UniverseHeader } from "@/components/Simulation/UniverseHeader";
 import { MetricGrid } from "@/components/Simulation/MetricGrid";
 import { AxiomConsole } from "@/components/Simulation/AxiomConsole";
@@ -31,38 +30,47 @@ import { ResonanceWeb } from "@/components/Simulation/ResonanceWeb";
 import ObservationMonitor from '@/components/Simulation/ObservationMonitor';
 import ConvergenceMonitor from '@/components/Simulation/ConvergenceMonitor';
 import IntegrityMonitor from '@/components/Simulation/IntegrityMonitor';
-// import EvolutionView - Removed as it does not exist in the current codebase
-
-
+import { UniversalLaw } from "@/components/Simulation/UniversalLaw";
+import { VoidArchive } from "@/components/Simulation/VoidArchive";
+import { EpochNavigator } from "@/components/Simulation/EpochNavigator";
+import { SimulationProvider, useSimulation } from "@/context/SimulationContext";
 
 export default function CosmologicPage() {
-  const [universeId, setUniverseId] = useState<number | null>(null);
+  return (
+    <SimulationProvider>
+      <CosmologicContent />
+    </SimulationProvider>
+  );
+}
+
+function CosmologicContent() {
+  const {
+    universeId, universe, latestSnapshot, setUniverseId, universes,
+    refresh, institutions, actors, chronicles, anomalies, setUniverse,
+    error: simError
+  } = useSimulation();
+
   const [graphData, setGraphData] = useState<{ nodes: any[]; edges: any[] }>({ nodes: [], edges: [] });
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ text: string; type: 'info' | 'error' } | null>(null);
 
-  // Sync universeId from localStorage (UniverseSelector sets it)
+  // Fallback to first universe if none selected
+  useEffect(() => {
+    if (!universeId && universes.length > 0) {
+      const firstId = universes[0].id;
+      setUniverseId(firstId);
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem("universe_id", String(firstId));
+      }
+    }
+  }, [universeId, universes, setUniverseId]);
+
   const syncUniverseId = useCallback(() => {
     if (typeof window !== "undefined") {
       const stored = window.localStorage.getItem("universe_id");
       setUniverseId(stored ? Number(stored) : null);
     }
-  }, []);
-
-  useEffect(() => {
-    syncUniverseId();
-    window.addEventListener("storage", syncUniverseId);
-    // Intersection observer or other tricks can be used if UniverseSelector 
-    // doesn't trigger 'storage' on the same tab.
-    const interval = setInterval(syncUniverseId, 1000);
-
-    return () => {
-      window.removeEventListener("storage", syncUniverseId);
-      clearInterval(interval);
-    };
-  }, [syncUniverseId]);
-
-  const { universe, latestSnapshot, setUniverse, refresh } = useWorldStream(universeId);
+  }, [setUniverseId]);
 
   useEffect(() => {
     if (universeId) {
@@ -173,10 +181,10 @@ export default function CosmologicPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="md:col-span-3">
           {/* Message Feedback */}
-          {message && (
-            <div className={`rounded-lg border px-4 py-3 text-sm flex items-center justify-between ${message.type === 'error' ? 'border-red-500/50 bg-red-500/10 text-red-400' : 'border-blue-500/50 bg-blue-500/10 text-blue-400'
+          {(message || simError) && (
+            <div className={`rounded-lg border px-4 py-3 text-sm flex items-center justify-between ${(message?.type === 'error' || simError) ? 'border-red-500/50 bg-red-500/10 text-red-400' : 'border-blue-500/50 bg-blue-500/10 text-blue-400'
               }`}>
-              <span>{message.text}</span>
+              <span>{message?.text || simError}</span>
               <button onClick={() => setMessage(null)} className="hover:opacity-70">✕</button>
             </div>
           )}

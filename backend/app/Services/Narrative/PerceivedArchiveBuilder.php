@@ -15,7 +15,9 @@ class PerceivedArchiveBuilder
     public function __construct(
         protected FlavorTextMapper $flavor,
         protected EventTriggerMapper $events,
-        protected ResidualInjector $residual
+        protected ResidualInjector $residual,
+        protected TraitMapper $traitMapper,
+        protected \App\Services\AI\EpistemicService $epistemic
     ) {}
 
     /**
@@ -23,23 +25,31 @@ class PerceivedArchiveBuilder
      */
     public function build(int $universeId, array $eventTypes, array $vector, ?int $tick = null): array
     {
-        // Epistemic Instability (Fog of War) logic
-        // If instability is high, some data might be hidden or "mythologized"
-        $instability = $vector['epistemic_instability'] ?? 0;
+        // V6: Determine Existence State via EpistemicService
+        $instability = $vector['instability_gradient'] ?? ($vector['epistemic_instability'] ?? 0);
+        $existence = $this->epistemic->getExistenceState($instability);
         
         $flavorTexts = $this->flavor->mapMany($vector);
         
-        // 1. Get Active Materials (Filtered by visibility if instability > 0.8)
+        // 1. Get Active Materials (Filtered by visibility in Tier IV: Void Echo)
         $materialsQuery = MaterialInstance::with('material')
             ->where('universe_id', $universeId)
             ->where('lifecycle', 'active');
             
-        if ($instability > 0.8) {
+        if ($existence['tier'] === 'IV') {
              $materialsQuery->limit(2); // AI only sees "echoes" of material reality
         }
 
         $materials = $materialsQuery->get()
-            ->map(fn($m) => $m->material->name)
+            ->map(function($m) {
+                $base = $m->material->name;
+                $p = is_array($m->payload) ? $m->payload : json_decode($m->payload, true);
+                if (isset($p['recursive_core'])) {
+                    $layer = $p['recursive_core']['layer'] ?? 1;
+                    return "{$base} [Recursive Layer {$layer}]";
+                }
+                return $base;
+            })
             ->toArray();
 
         // 2. Get Recent Events
@@ -50,8 +60,8 @@ class PerceivedArchiveBuilder
                 ->whereBetween('from_tick', [max(0, $tick - $recentTicks), $tick])
                 ->orderByDesc('from_tick')
                 ->get()
-                ->map(function($e) use ($instability) {
-                    if ($instability > 0.7) {
+                ->map(function($e) use ($existence) {
+                    if ($existence['tier'] === 'III' || $existence['tier'] === 'IV') {
                         return "Dấu vết mờ nhạt của một sự biến tại tick {$e->from_tick}";
                     }
                     if ($e->event_type === 'micro_crisis') {
@@ -66,13 +76,13 @@ class PerceivedArchiveBuilder
                 ->toArray();
         }
 
-        // 3. Get Active Institutional Entities
+        // 3. Get Active Institutional Entities (Foggy in Tier II and above)
         $institutions = \App\Models\InstitutionalEntity::where('universe_id', $universeId)
             ->whereNull('collapsed_at_tick')
             ->get()
-            ->map(function($e) use ($instability) {
+            ->map(function($e) use ($existence) {
                 $cap = round($e->org_capacity, 1);
-                if ($instability > 0.6) {
+                if (in_array($existence['tier'], ['II', 'III', 'IV'])) {
                     return "Phái đoàn bí ẩn: {$e->name}";
                 }
                 return "{$e->name} ({$e->entity_type}, Năng lực: {$cap})";
@@ -101,6 +111,25 @@ class PerceivedArchiveBuilder
             }
         }
 
+        // 5. V6: Agent Reflexivity (§51)
+        $agentReflections = [];
+        $zones = $vector['zones'] ?? [];
+        foreach ($zones as $z) {
+            $agents = $z['state']['agents'] ?? [];
+            foreach ($agents as $agent) {
+                // Focus on high-ambition or high-risk agents for narrative drama
+                $traits = $agent['trait_vector'] ?? array_fill(0, 17, 0);
+                if ($traits[1] > 0.8 || $traits[10] > 0.8 || $traits[13] > 0.8) {
+                    $agentReflections[] = [
+                        'name' => $agent['name'] ?? 'Ẩn danh',
+                        'archetype' => $agent['archetype'] ?? 'Commoner',
+                        'description' => $this->traitMapper->mapToDescription($traits),
+                        'thinking' => $this->traitMapper->generateMonologueSeed($traits, $agent['archetype'] ?? 'Commoner')
+                    ];
+                }
+            }
+        }
+
         // 5. Map Event Triggers
         $eventNames = [];
         foreach ($eventTypes as $type) {
@@ -118,11 +147,20 @@ class PerceivedArchiveBuilder
             'culture' => $avgCulture,
             'branch_events' => $branchEvents,
             'residual_prompt_tail' => $residualTail,
+            'agent_reflections' => array_slice($agentReflections, 0, 3), // AI only reflexive monologues for top 3 agents
+            'existence' => $existence,
             'metrics' => [
                 'entropy' => round($vector['entropy'] ?? 0, 3),
                 'stability' => round($vector['stability_index'] ?? 0, 3),
                 'instability' => round($instability, 3),
+                'sci' => round($vector['sci'] ?? 1.0, 3),
+                'reality_stability' => round($this->epistemic->calculateStability($this->getUniverseModel($universeId)), 3),
             ]
         ];
+    }
+
+    protected function getUniverseModel(int $id): \App\Models\Universe
+    {
+        return \App\Models\Universe::find($id);
     }
 }

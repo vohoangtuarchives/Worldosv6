@@ -8,6 +8,32 @@ option java_package = "worldos.simulation";
 // Simulation engine service: advance universe by N ticks, return snapshot.
 service SimulationEngine {
   rpc Advance(AdvanceRequest) returns (AdvanceResponse);
+  rpc Merge(MergeRequest) returns (MergeResponse);
+  rpc Observe(ObserveRequest) returns (ObserveResponse);
+}
+
+message ObserveRequest {
+  uint64 universe_id = 1;
+  uint32 zone_index = 2;
+  double intensity = 3; // 1.0 = Full observation (Force collapse)
+  bytes state_input = 4;
+}
+
+message ObserveResponse {
+  bool ok = 1;
+  string error_message = 2;
+  UniverseSnapshot snapshot = 3;
+}
+
+message MergeRequest {
+  bytes state_a = 1;
+  bytes state_b = 2;
+}
+
+message MergeResponse {
+  bool ok = 1;
+  string error_message = 2;
+  UniverseSnapshot snapshot = 3;
 }
 
 message AdvanceRequest {
@@ -39,4 +65,6 @@ message UniverseSnapshot {
   double entropy = 4;
   double stability_index = 5;
   string metrics_json = 6;
+  double sci = 7;
+  double instability_gradient = 8;
 }

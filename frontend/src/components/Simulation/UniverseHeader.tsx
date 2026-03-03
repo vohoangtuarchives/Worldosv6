@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { type Universe } from "@/hooks/useWorldStream";
+import { type Universe } from "@/types/simulation";
 
 interface UniverseHeaderProps {
     universe: Universe | null;
@@ -26,7 +26,7 @@ export function UniverseHeader({
         <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0 p-6 rounded-xl border border-border bg-card/30 backdrop-blur-sm">
             <div className="space-y-1">
                 <h2 className="text-2xl font-bold tracking-tight text-gradient-cosmos">
-                    {universe?.world?.name || "Initializing..."}
+                    {universe?.name || universe?.world?.name || "Initializing..."}
                 </h2>
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground font-mono">
                     <span>ID: {universe?.id || "--"}</span>

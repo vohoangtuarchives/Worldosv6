@@ -16,31 +16,16 @@ interface Chronicle {
     };
 }
 
+import { useSimulation } from '@/context/SimulationContext';
+
 export const ChronicleView: React.FC<{ universeId: number }> = ({ universeId }) => {
-    const [chronicles, setChronicles] = useState<Chronicle[]>([]);
-    const [loading, setLoading] = useState(true);
+    const { chronicles } = useSimulation();
     const [searchTerm, setSearchTerm] = useState('');
     const scrollRef = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        fetchChronicles();
-        const interval = setInterval(fetchChronicles, 10000);
-        return () => clearInterval(interval);
-    }, [universeId]);
-
-    const fetchChronicles = async () => {
-        try {
-            const response = await api.chronicle(universeId);
-            setChronicles(response.data);
-        } catch (error) {
-            console.error("Failed to fetch chronicles:", error);
-        } finally {
-            setLoading(false);
-        }
-    };
+    const loading = chronicles.length === 0;
 
     const filteredChronicles = chronicles.filter(c =>
-        c.content.toLowerCase().includes(searchTerm.toLowerCase())
+        (c.content || '').toLowerCase().includes((searchTerm || '').toLowerCase())
     );
 
     return (

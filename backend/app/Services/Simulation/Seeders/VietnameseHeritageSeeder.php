@@ -6,6 +6,7 @@ use App\Contracts\Simulation\SeederInterface;
 use App\Models\Universe;
 use App\Models\Material;
 use App\Models\MaterialInstance;
+use App\Models\MaterialMutation;
 use App\Models\Chronicle;
 
 class VietnameseHeritageSeeder implements SeederInterface
@@ -17,6 +18,7 @@ class VietnameseHeritageSeeder implements SeederInterface
 
     public function seed(Universe $universe): void
     {
+        // 1. Core Materials
         $materials = [
             [
                 'slug' => 'nong-nghiep-lua-nuoc',
@@ -33,14 +35,15 @@ class VietnameseHeritageSeeder implements SeederInterface
                 'pressure' => ['order' => 0.3, 'innovation' => -0.1, 'stability' => 0.1]
             ],
             [
-                'slug' => 'lang-xa-tu-tri',
-                'name' => 'Làng xã Tự trị',
-                'ontology' => 'institutional',
-                'description' => 'Tính tự quản cao của các đơn vị hành chính nhỏ.',
-                'pressure' => ['order' => -0.1, 'stability' => 0.2, 'resistance' => 0.1]
+                'slug' => 'thuy-loi-so-khai',
+                'name' => 'Thủy lợi Sơ khai',
+                'ontology' => 'physical',
+                'description' => 'Hệ thống đê điều và kênh rạch buổi đầu.',
+                'pressure' => ['order' => 0.1, 'growth' => 0.2, 'entropy' => 0.1]
             ]
         ];
 
+        $materialModels = [];
         foreach ($materials as $m) {
             $model = Material::firstOrCreate(
                 ['slug' => $m['slug']],
@@ -48,21 +51,33 @@ class VietnameseHeritageSeeder implements SeederInterface
                     'name' => $m['name'],
                     'ontology' => $m['ontology'],
                     'description' => $m['description'],
-                    'pressure_coefficients' => $m['pressure']
+                    'pressure_coefficients' => $m['pressure'],
+                    'lifecycle' => 'dormant'
                 ]
             );
+            $materialModels[$m['slug']] = $model;
+        }
 
+        // 2. Initial Instances (Starting materials are Active)
+        $startingSlugs = ['nong-nghiep-lua-nuoc', 'tho-cung-to-tien'];
+        foreach ($startingSlugs as $slug) {
             MaterialInstance::create([
                 'universe_id' => $universe->id,
-                'material_id' => $model->id,
+                'material_id' => $materialModels[$slug]->id,
                 'lifecycle' => 'active',
-                'context' => [
-                    'location' => ['x' => 0, 'y' => 0, 'z' => 0],
-                    'quantity' => 100,
-                    'origin' => 'Vietnamese'
-                ]
+                'context' => ['origin' => 'Vietnamese']
             ]);
         }
+
+        // 3. Mutation DAG (§8.4)
+        // Nong nghiep lua nuoc -> Thuy loi so khai
+        MaterialMutation::firstOrCreate([
+            'parent_material_id' => $materialModels['nong-nghiep-lua-nuoc']->id,
+            'child_material_id' => $materialModels['thuy-loi-so-khai']->id,
+        ], [
+            'trigger_condition' => 'ip_score > 0.5',
+            'context_constraint' => ['origin' => 'Vietnamese']
+        ]);
 
         Chronicle::create([
             'universe_id' => $universe->id,

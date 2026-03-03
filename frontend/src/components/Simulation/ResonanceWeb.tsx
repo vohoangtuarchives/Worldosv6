@@ -23,29 +23,11 @@ interface Interaction {
     universe_b?: { name: string };
 }
 
+import { useSimulation } from '@/context/SimulationContext';
+
 export function ResonanceWeb({ universeId }: { universeId: number }) {
-    const [interactions, setInteractions] = useState<Interaction[]>([]);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        const fetchResonance = async () => {
-            try {
-                const res = await api.universe(universeId);
-                const world = res.data?.world;
-                if (world && world.interactions) {
-                    setInteractions(world.interactions);
-                }
-            } catch (err) {
-                console.error("Failed to fetch Resonance data:", err);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchResonance();
-        const interval = setInterval(fetchResonance, 12000);
-        return () => clearInterval(interval);
-    }, [universeId]);
+    const { interactions, loading: contextLoading } = useSimulation();
+    const loading = contextLoading && interactions.length === 0;
 
     if (loading) return <div className="flex justify-center p-4"><Loader2 className="w-4 h-4 animate-spin text-slate-500" /></div>;
     if (interactions.length === 0) return null;

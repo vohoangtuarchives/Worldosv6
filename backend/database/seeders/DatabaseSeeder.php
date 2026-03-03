@@ -28,6 +28,8 @@ class DatabaseSeeder extends Seeder
             CosmologySeeder::class,
             MaterialSeeder::class,
             SymbolicMaterialSeeder::class,
+            FlavorTextSeeder::class,
+            EventTriggerSeeder::class
         ]);
     }
 }

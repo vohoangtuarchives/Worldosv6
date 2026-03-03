@@ -18,44 +18,28 @@ interface TimelineDiff {
     }
 }
 
+import { useSimulation } from '@/context/SimulationContext';
+
 export function TimelineComparison({ universeId }: { universeId: number }) {
-    const [timelines, setTimelines] = useState<TimelineDiff[]>([]);
-    const [loading, setLoading] = useState(true);
+    const { universe, universes } = useSimulation();
+    const worldId = universe?.world?.id;
 
-    useEffect(() => {
-        const fetchTimelines = async () => {
-            try {
-                // Fetch all universes in the same world
-                const statusRes = await api.universe(universeId);
-                const worldId = statusRes.data?.world?.id;
-                if (!worldId) return;
-
-                const res = await api.universes({}); // Assuming this can be filtered or just get all
-                const filtered = res.data
-                    .filter((u: any) => u.world_id === worldId)
-                    .map((u: any) => ({
-                        id: u.id,
-                        name: u.name || `Universe #${u.id}`,
-                        divergence: Math.random() * 0.5, // Mock divergence for now
-                        status: u.status,
-                        last_tick: u.current_tick,
-                        metrics: {
-                            entropy: u.state_vector?.entropy || 0.5,
-                            innovation: u.state_vector?.innovation || 0.1
-                        }
-                    }));
-                setTimelines(filtered);
-            } catch (err) {
-                console.error("Failed to fetch timelines:", err);
-            } finally {
-                setLoading(false);
+    // Derived timelines from the shared universes list
+    const timelines: TimelineDiff[] = (universes || [])
+        .filter((u: any) => u.world_id === worldId)
+        .map((u: any) => ({
+            id: u.id,
+            name: u.name || `Universe #${u.id}`,
+            divergence: u.state_vector?.divergence || Math.random() * 0.2, // Use real or fallback
+            status: u.status,
+            last_tick: u.current_tick,
+            metrics: {
+                entropy: u.state_vector?.entropy || 0.5,
+                innovation: u.state_vector?.innovation || 0.1
             }
-        };
+        }));
 
-        fetchTimelines();
-        const interval = setInterval(fetchTimelines, 20000);
-        return () => clearInterval(interval);
-    }, [universeId]);
+    const loading = universes.length === 0;
 
     return (
         <Card className="bg-slate-900/60 border-indigo-500/20 backdrop-blur-xl h-full flex flex-col">

@@ -51,9 +51,9 @@ export const ArchitectThrone: React.FC<{ universeId: number; currentTick: number
     };
 
     const getEdictIcon = (id: string) => {
-        if (id.includes('tribulation')) return <Flame className="w-4 h-4 text-red-500" />;
-        if (id.includes('revival')) return <Sparkles className="w-4 h-4 text-green-500" />;
-        if (id.includes('chaos')) return <ShieldAlert className="w-4 h-4 text-amber-500" />;
+        if (id?.includes('tribulation')) return <Flame className="w-4 h-4 text-red-500" />;
+        if (id?.includes('revival')) return <Sparkles className="w-4 h-4 text-green-500" />;
+        if (id?.includes('chaos')) return <ShieldAlert className="w-4 h-4 text-amber-500" />;
         return <Zap className="w-4 h-4 text-cyan-500" />;
     };
 

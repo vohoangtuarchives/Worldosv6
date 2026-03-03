@@ -6,6 +6,7 @@ use App\Models\Saga;
 use App\Models\Universe;
 use App\Models\World;
 use App\Services\Simulation\UniverseRuntimeService;
+use Illuminate\Support\Facades\Log;
 
 class SagaService
 {
@@ -58,6 +59,20 @@ class SagaService
         // Phase 26: Inject Meta-Edicts from World Axiom
         $axiom = $world->axiom ?? [];
         $metaEdicts = $axiom['meta_edicts'] ?? [];
+        
+        // Phase 64: Inspiration Recycling (§V10)
+        $seed = $world->world_seed ?? [];
+        if (!empty($seed['inspiration_pool']) && $seed['inspiration_pool'] > 0) {
+            $initialState = $initialState ?? [];
+            $boost = $seed['inspiration_pool'];
+            $initialState['entropy'] = max(0, ($initialState['entropy'] ?? 1.0) - $boost);
+            Log::info("SOVEREIGNTY: Applying Inspiration Boost of {$boost} to new Universe.");
+            
+            // Consume the pool
+            $seed['inspiration_pool'] = 0;
+            $world->update(['world_seed' => $seed]);
+        }
+
         if (!empty($metaEdicts)) {
             $initialState = $initialState ?? [];
             // We store them in a temporary structure that WorldEdictEngine will pick up
@@ -89,7 +104,26 @@ class SagaService
             $this->originSeeder->seed($universe);
         }
 
+        // Phase 62: Axiom Inheritance (§V9)
+        if ($parentUniverseId && !empty($branchPayload['inherit_axioms'])) {
+            $this->inheritAxioms($parentUniverseId, $universe->id);
+        }
+
         return $universe;
+    }
+
+    protected function inheritAxioms(int $parentId, int $childId): void
+    {
+        $axioms = \App\Models\DiscoveredAxiom::where('universe_id', $parentId)
+            ->where('status', 'confirmed')
+            ->get();
+
+        foreach ($axioms as $axiom) {
+            $new = $axiom->replicate();
+            $new->universe_id = $childId;
+            $new->tick = 0; // Reset tick for child
+            $new->save();
+        }
     }
 
     /**

@@ -1,0 +1,37 @@
+# [PLAN] WorldOS V7: The Epistemic Breach
+
+V7 tiến hóa từ việc giả lập vật lý sang giả lập nhận thức và thực tại lượng tử.
+
+## User Review Required
+
+> [!IMPORTANT]
+> **Axiom Discovery**: AI sẽ có quyền đề xuất thay đổi `Axioms` của thế giới dựa trên dữ liệu. Bạn (Kiến Trúc Sư) cần phê duyệt các "Lý thuyết" này trước khi chúng có hiệu lực.
+> **Quantum Changes**: Cơ chế `ProbabilisticZone` trong Rust sẽ làm thay đổi bản chất của Snapshot. Kết quả quan sát sẽ không còn cố định cho đến khi bị "Pulse".
+
+## Proposed Changes
+
+### [Laravel] Epistemic Discovery Engine
+- **Files**:
+    - `backend/app/Services/AI/TheorySynthesisService.php` [NEW]
+    - `backend/app/Actions/AI/ProposeAxiomAction.php` [NEW]
+    - `backend/database/migrations/create_discovered_axioms_table.php` [NEW]
+- **Goal**: Sử dụng LLM phân tích các "Huyền Sử" (Tier III) để tìm ra các quy luật tiềm ẩn. Tạo ra các `DiscoveredAxiom` có thể nâng cấp `World Axioms`.
+
+### [Rust] Quantum core (worldos-core)
+- **Files**:
+    - [engine/worldos-core/src/types.rs](file:///c:/projects/IPFactory/engine/worldos-core/src/types.rs): Thêm `QuantumOverlay`.
+    - [engine/worldos-core/src/universe.rs](file:///c:/projects/IPFactory/engine/worldos-core/src/universe.rs): Cập nhật [ZoneState](file:///c:/projects/IPFactory/engine/worldos-core/src/types.rs#46-74) để hỗ trợ trạng thái chồng chập.
+- **Goal**: Zone không định hình vật chất cho đến khi SCI vượt ngưỡng hoặc bị Observer tác động.
+
+### [Laravel] Observer Effect logic
+- **File**: [backend/app/Services/Simulation/HttpSimulationEngineClient.php](file:///c:/projects/IPFactory/backend/app/Services/Simulation/HttpSimulationEngineClient.php)
+- **Goal**: Gửi lệnh `observe` kèm theo chi phí [Entropy](file:///c:/projects/IPFactory/backend/app/Actions/Simulation/CelestialEngineeringAction.php#85-103) khi người dùng xem chi tiết Zone.
+
+## Verification Plan
+
+### Automated Tests
+- **Discovery Test**: Verify AI suggests a valid Axiom string from a low-stability snapshot.
+- **Quantum Test (Rust)**: Verify `get_state()` returns varying results for a probabilistic zone before collapse.
+
+### Manual Verification
+- Thực hiện "Quan sát" một vùng không gian và kiểm tra xem chỉ số Entropy của vùng đó có tăng lên do "Hiệu ứng người quan sát" hay không.

@@ -19,26 +19,11 @@ interface SupremeEntity {
     ascended_at_tick: number;
 }
 
+import { useSimulation } from '@/context/SimulationContext';
+
 export function SupremeEntityList({ universeId }: { universeId: number }) {
-    const [entities, setEntities] = useState<SupremeEntity[]>([]);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        const fetchEntities = async () => {
-            try {
-                const res = await api.supremeEntities(universeId);
-                setEntities(res || []);
-            } catch (err) {
-                console.error("Failed to fetch supreme entities:", err);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchEntities();
-        const interval = setInterval(fetchEntities, 10000);
-        return () => clearInterval(interval);
-    }, [universeId]);
+    const { supremeEntities: entities, loading: contextLoading } = useSimulation();
+    const loading = contextLoading && entities.length === 0;
 
     if (loading && entities.length === 0) {
         return (
@@ -96,7 +81,7 @@ export function SupremeEntityList({ universeId }: { universeId: number }) {
 
                                 {/* Alignment Visualization */}
                                 <div className="grid grid-cols-2 gap-2">
-                                    {Object.entries(entity.alignment || {}).map(([dim, val]) => (
+                                    {(Object.entries(entity.alignment || {}) as [string, number][]).map(([dim, val]) => (
                                         <div key={dim} className="space-y-1">
                                             <div className="flex justify-between text-[8px] uppercase tracking-tighter text-slate-500">
                                                 <span>{dim}</span>

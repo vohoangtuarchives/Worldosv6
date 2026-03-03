@@ -8,6 +8,11 @@ use App\Actions\Simulation\ApplyMythScarAction;
 use App\Actions\Simulation\RunMicroModeAction;
 use App\Actions\Simulation\ForkUniverseAction;
 use App\Repositories\UniverseRepository;
+use App\Modules\Simulation\Contracts\UniverseRepositoryInterface;
+use App\Modules\Simulation\Services\VoidExplorationEngine;
+use App\Modules\Simulation\Services\EpochEngine;
+use App\Modules\Simulation\Services\ObservationInterferenceEngine;
+use App\Modules\Simulation\Services\TrajectoryModelingEngine;
 use Illuminate\Contracts\Queue\ShouldQueue;
 
 class EvaluateSimulationResult
@@ -18,25 +23,24 @@ class EvaluateSimulationResult
         protected RunMicroModeAction $runMicroModeAction,
         protected ForkUniverseAction $forkUniverseAction,
         protected UniverseRepository $universeRepository,
-        protected \App\Services\Simulation\HeroicActorService $heroicService,
-        protected \App\Services\Simulation\PressureCalculator $pressureCalculator,
-        protected \App\Services\Simulation\GreatFilterEngine $greatFilterEngine,
-        protected \App\Services\Simulation\AscensionEngine $ascensionEngine,
-        protected \App\Services\Simulation\SupremeEntityEngine $supremeEntityEngine,
-        protected \App\Services\Simulation\ConvergenceEngine $convergenceEngine,
-        protected \App\Services\Simulation\WorldEdictEngine $worldEdictEngine,
-        protected \App\Services\Simulation\OmegaPointEngine $omegaPointEngine,
-        protected \App\Services\Simulation\CivilizationEngine $civilizationEngine,
-        protected \App\Services\Simulation\DiplomacyEngine $diplomacyEngine,
-        protected \App\Services\Simulation\ZoneConflictEngine $zoneConflictEngine,
-        protected \App\Services\Simulation\VoidExplorationEngine $voidExplorationEngine,
-        protected \App\Services\Simulation\EpochEngine $epochEngine,
-        protected \App\Services\Simulation\CausalCorrectionEngine $causalCorrectionEngine,
-        protected \App\Services\Simulation\ResonanceEngine $resonanceEngine,
-        protected \App\Services\Simulation\ObservationInterferenceEngine $observationInterferenceEngine,
-        protected \App\Services\Simulation\TrajectoryModelingEngine $trajectoryModelingEngine,
+        protected UniverseRepositoryInterface $simulationUniverseRepository,
+        protected \App\Modules\Simulation\Services\PressureCalculator $pressureCalculator,
+        protected \App\Modules\Institutions\Services\GreatFilterEngine $greatFilterEngine,
+        protected \App\Modules\Institutions\Services\AscensionEngine $ascensionEngine,
+        protected \App\Modules\Simulation\Services\ConvergenceEngine $convergenceEngine,
+        protected \App\Modules\Institutions\Services\WorldEdictEngine $worldEdictEngine,
+        protected \App\Modules\Institutions\Services\OmegaPointEngine $omegaPointEngine,
+        protected \App\Modules\Institutions\Services\ZoneConflictEngine $zoneConflictEngine,
+        protected VoidExplorationEngine $voidExplorationEngine,
+        protected EpochEngine $epochEngine,
+        protected \App\Modules\Simulation\Services\CausalCorrectionEngine $causalCorrectionEngine,
+        protected \App\Modules\Simulation\Services\ResonanceEngine $resonanceEngine,
+        protected ObservationInterferenceEngine $observationInterferenceEngine,
+        protected TrajectoryModelingEngine $trajectoryModelingEngine,
         protected \App\Services\AI\EpistemicService $epistemicService,
-        protected \App\Services\AI\NarrativeCompiler $narrativeCompiler
+        protected \App\Services\AI\NarrativeCompiler $narrativeCompiler,
+        protected \App\Modules\Simulation\Services\MultiverseInteractionService $multiverseInteractionService,
+        protected \App\Modules\Simulation\Services\WorldRegulatorEngine $worldRegulatorEngine
     ) {}
 
     public function handle(UniverseSimulationPulsed $event): void
@@ -45,11 +49,7 @@ class EvaluateSimulationResult
         $snapshot = $event->snapshot;
 
         try {
-            // 1. Actors Lifecycle (Heroic Service)
-            $this->heroicService->spawnFromEvents($universe, (int)$snapshot->tick);
-            $this->heroicService->evolve($universe, (int)$snapshot->tick);
-
-            // 2. Strategic Decision
+            // Strategic Decision
             $decisionData = $this->decideUniverseAction->execute($snapshot);
             $action = $decisionData['action'] ?? 'continue';
 
@@ -59,16 +59,24 @@ class EvaluateSimulationResult
             // 4. Run Micro Mode
             $this->runMicroModeAction->execute($universe, $snapshot, $decisionData);
 
-            // 5. Emerging Civilizations (Multi-Civilization Dynamics)
-            $this->civilizationEngine->process($universe, $snapshot);
-            $this->diplomacyEngine->process($universe, $snapshot);
+            // Emerging Civilizations (Handled by Institutions Module)
             $this->zoneConflictEngine->resolveConflicts($universe, $snapshot);
-            $this->voidExplorationEngine->explore($universe, $snapshot);
+
+            // Simulation Module Processing (DDD)
+            $universeEntity = $this->simulationUniverseRepository->findById($universe->id);
+            if ($universeEntity) {
+                $this->voidExplorationEngine->process($universeEntity, (int)$snapshot->tick);
+                $this->epochEngine->process($universeEntity, $snapshot);
+                
+                $isBeingObserved = $universe->last_observed_at && 
+                                   $universe->last_observed_at->diffInSeconds(now()) < 30;
+                $this->observationInterferenceEngine->process($universeEntity, (int)$snapshot->tick, $isBeingObserved);
+                $this->trajectoryModelingEngine->process($universeEntity, (int)$snapshot->tick);
+            }
+
             $this->convergenceEngine->process($universe, $snapshot);
             $this->causalCorrectionEngine->process($universe, $snapshot);
             $this->resonanceEngine->process($universe, $snapshot);
-            $this->observationInterferenceEngine->process($universe, $snapshot);
-            $this->trajectoryModelingEngine->process($universe, $snapshot);
 
             // 6. Strategic Actions (Fork/Archive)
             if ($action === 'fork') {
@@ -88,15 +96,20 @@ class EvaluateSimulationResult
             // 8. World Edicts (Governance)
             $this->worldEdictEngine->decree($universe, $snapshot);
 
-            // 9. Great Filter, Ascension, Supreme Entities & Convergence (Cosmic Layer)
+            // 9. Great Filter, Ascension, Supreme Entities & Convergence (Handled by Institutions Module)
             $this->greatFilterEngine->process($universe, (int)$snapshot->tick, $snapshot->state_vector ?? []);
-            $this->supremeEntityEngine->process($universe, $snapshot);
             $this->convergenceEngine->process($universe, (int)$snapshot->tick);
             $this->ascensionEngine->evaluate($universe, $snapshot);
             $this->omegaPointEngine->process($universe, $snapshot);
 
-            // 10. AI Narrative (Epistemic Instability)
-            $this->createNarrativeChronicle($universe, $snapshot);
+        // 10. AI Narrative (Epistemic Instability)
+        $this->createNarrativeChronicle($universe, $snapshot);
+
+        // 11. Multiverse Interaction
+        $this->multiverseInteractionService->detectResonance($universe);
+
+        // 12. World Autonomic Regulation
+        $this->worldRegulatorEngine->process($universe->world);
 
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error("Simulation evaluation failed in listener: " . $e->getMessage());

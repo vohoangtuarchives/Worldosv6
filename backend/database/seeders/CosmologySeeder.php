@@ -36,6 +36,9 @@ class CosmologySeeder extends Seeder
                 ],
                 'world_seed' => ['archetypes' => []],
                 'origin' => 'Vietnamese',
+                'is_autonomic' => true,
+                'current_genre' => 'urban',
+                'base_genre' => 'urban',
             ]
         );
 

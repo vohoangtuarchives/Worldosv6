@@ -39,9 +39,16 @@ class NarrativeAiService
 
         $latest = $universe->snapshots()->orderByDesc('tick')->first();
         $vector = $latest?->state_vector ?? [];
+        $metrics = $latest?->metrics ?? [];
+        
+        // Merge V6 metrics into vector for PerceivedArchiveBuilder
+        if (is_array($vector) && is_array($metrics)) {
+            $vector = array_merge($vector, $metrics);
+        }
 
-        // Flatten vector if necessary
-        if (is_array($vector) && isset($vector[0]['state'])) {
+        // V6: Keep zone structure, do NOT flatten if zones exist
+        // Flattening was for V5 legacy, V6 needs zone context for agents
+        if (is_array($vector) && !isset($vector['zones']) && isset($vector[0]['state'])) {
             $flat = [];
             foreach ($vector as $z) {
                 $flat = array_merge($flat, $z['state'] ?? []);
@@ -50,7 +57,7 @@ class NarrativeAiService
         }
 
         // Tier 1 & 2 are handled within PerceivedArchiveBuilder (mapping flavor and events)
-        $eventTypes = ['crisis', 'unrest', 'formation', 'collapse', 'myth_scar', 'secession'];
+        $eventTypes = ['crisis', 'unrest', 'formation', 'collapse', 'myth_scar', 'secession', 'micro_mode', 'meta_cycle'];
         $perceived = $this->perceived->build($universeId, $eventTypes, (array)$vector, $toTick);
 
         // Tier 3: Residual Injection is already in PerceivedArchiveBuilder's output
@@ -107,7 +114,16 @@ class NarrativeAiService
         $branches = implode('; ', $perceived['branch_events'] ?? []);
         $entropy = $perceived['metrics']['entropy'] ?? 'unknown';
         $instability = $perceived['metrics']['instability'] ?? 0;
+        $sci = $perceived['metrics']['sci'] ?? 1.0;
         $tail = $perceived['residual_prompt_tail'] ?? '';
+        
+        $reflections = '';
+        if (!empty($perceived['agent_reflections'])) {
+            $reflections = "\nGIỌNG NÓI TỪ CHIỀU VI MÔ (Internal Monologues):\n";
+            foreach ($perceived['agent_reflections'] as $ref) {
+                $reflections .= "- [{$ref['name']} - {$ref['archetype']}]: {$ref['thinking']} (Người này {$ref['description']})\n";
+            }
+        }
         
         $factsText = '';
         if (!empty($facts)) {
@@ -122,6 +138,12 @@ class NarrativeAiService
         return <<<EOT
 Bạn là $agentName, một $personality của vũ trụ mô phỏng. 
 Chủ đề trọng tâm: $themes. Mức độ sáng tạo: $creativity%.
+
+TRẠNG THÁI BẢN THỂ (Ontological State):
+- Cấp độ: {$perceived['existence']['tier']} ({$perceived['existence']['name']})
+- Mô tả: {$perceived['existence']['description']}
+- Hiệu ứng thực tại: {$perceived['existence']['effect']}
+- Độ ổn định thực tại (Reality Stability): {$perceived['metrics']['reality_stability']}
 Ngôn ngữ phản hồi: TIẾNG VIỆT (Tông giọng trang trọng, huyền bí hoặc khoa học viễn tưởng).
 
 Thời kỳ: Tick $fromTick đến $toTick.
@@ -134,9 +156,11 @@ Trạng thái Thế giới (Cảm quan - Perceived):
 - Sự kiện ghi nhận: $events
 - Biến động dòng thời gian: $branches
 - Không khí (Flavor): $flavor
+$reflections
 $factsText
 
 NHIỆM VỤ: Hãy viết một đoạn biên niên sử ngắn gọn (2-3 câu). 
+Nếu có 'GIỌNG NÓI TỪ CHIỀU VI MÔ', hãy lồng ghép các suy nghĩ của họ vào lời dẫn chuyện để làm nổi bật sự phản tư của thế giới. 
 Tập trung vào tính nhân quả: sự thay đổi vật chất và văn hóa đã dẫn dắt sự trỗi dậy hoặc sụp đổ của các định chế như thế nào. 
 Nếu chỉ số 'Bất ổn tri thức' cao (>$instability), hãy dùng ngôn từ mờ ảo, thần thoại hóa các sự kiện.
 $tail

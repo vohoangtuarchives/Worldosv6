@@ -18,28 +18,14 @@ interface Civilization {
     spawned_at_tick: number;
 }
 
+import { useSimulation } from '@/context/SimulationContext';
+
 export function CivilizationList({ universeId }: { universeId: number }) {
-    const [civs, setCivs] = useState<Civilization[]>([]);
-    const [loading, setLoading] = useState(true);
+    const { institutions } = useSimulation();
 
-    useEffect(() => {
-        const fetchCivs = async () => {
-            try {
-                const res = await api.institutions(universeId);
-                // Filter specifically for civilizations
-                const filtered = (res || []).filter((e: any) => e.entity_type === 'CIVILIZATION');
-                setCivs(filtered);
-            } catch (err) {
-                console.error("Failed to fetch civilizations:", err);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchCivs();
-        const interval = setInterval(fetchCivs, 8000);
-        return () => clearInterval(interval);
-    }, [universeId]);
+    // Filter specifically for civilizations from the shared context
+    const civs = (institutions || []).filter((e: any) => e.entity_type === 'CIVILIZATION');
+    const loading = institutions.length === 0;
 
     if (loading && civs.length === 0) {
         return (
@@ -117,7 +103,7 @@ export function CivilizationList({ universeId }: { universeId: number }) {
 
                                     {/* Cultural Fingerprint */}
                                     <div className="grid grid-cols-5 gap-1 pt-1">
-                                        {Object.entries(civ.ideology_vector || {}).map(([key, val]) => (
+                                        {(Object.entries(civ.ideology_vector || {}) as [string, number][]).map(([key, val]) => (
                                             <div
                                                 key={key}
                                                 className="h-1 rounded-sm bg-slate-800 overflow-hidden"

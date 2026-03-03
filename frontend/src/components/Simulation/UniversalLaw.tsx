@@ -15,37 +15,22 @@ interface MetaEdict {
     multiplier: number;
 }
 
+import { useSimulation } from '@/context/SimulationContext';
+
 export function UniversalLaw({ universeId }: { universeId: number }) {
-    const [metaLaws, setMetaLaws] = useState<MetaEdict[]>([]);
-    const [loading, setLoading] = useState(true);
+    const { latestSnapshot, loading: contextLoading } = useSimulation();
 
-    useEffect(() => {
-        const fetchLaws = async () => {
-            try {
-                // Fetch universe detail to get metrics or world axioms
-                const res = await api.universe(universeId);
-                const metrics = res.data?.latest_snapshot?.metrics || {};
-                const activeEdicts = metrics.active_edicts || {};
+    // Derive laws from the shared snapshot metrics
+    const metrics = latestSnapshot?.metrics || {};
+    const activeEdicts = metrics.active_edicts || {};
+    const metaLaws = Object.values(activeEdicts).filter((e: any) => e.is_meta === true) as MetaEdict[];
 
-                // Filter for meta edicts
-                const meta = Object.values(activeEdicts).filter((e: any) => e.is_meta === true) as MetaEdict[];
-                setMetaLaws(meta);
-            } catch (err) {
-                console.error("Failed to fetch Universal Laws:", err);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchLaws();
-        const interval = setInterval(fetchLaws, 10000);
-        return () => clearInterval(interval);
-    }, [universeId]);
+    const loading = contextLoading && !latestSnapshot;
 
     const getLawIcon = (id: string) => {
-        if (id.includes('reiki')) return <Zap className="w-4 h-4 text-emerald-400" />;
-        if (id.includes('tribulation')) return <Flame className="w-4 h-4 text-red-500" />;
-        if (id.includes('divine')) return <ShieldCheck className="w-4 h-4 text-blue-400" />;
+        if (id?.includes('reiki')) return <Zap className="w-4 h-4 text-emerald-400" />;
+        if (id?.includes('tribulation')) return <Flame className="w-4 h-4 text-red-500" />;
+        if (id?.includes('divine')) return <ShieldCheck className="w-4 h-4 text-blue-400" />;
         return <Scale className="w-4 h-4 text-amber-400" />;
     };
 

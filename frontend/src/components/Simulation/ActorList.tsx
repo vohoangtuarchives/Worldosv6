@@ -118,20 +118,11 @@ function ActorCard({ actor }: { actor: Actor }) {
     );
 }
 
-export function ActorList({ universeId }: { universeId: number | null }) {
-    const [actors, setActors] = useState<Actor[]>([]);
-    const [loading, setLoading] = useState(false);
+import { useSimulation } from "@/context/SimulationContext";
 
-    useEffect(() => {
-        if (!universeId) return;
-        setLoading(true);
-        fetch(`${process.env.NEXT_PUBLIC_API_URL || "/api"}/worldos/universes/${universeId}/actors`,
-            { headers: { "Content-Type": "application/json" } })
-            .then(r => r.json())
-            .then(data => setActors(data || []))
-            .catch(console.error)
-            .finally(() => setLoading(false));
-    }, [universeId]);
+export function ActorList({ universeId }: { universeId: number | null }) {
+    const { actors, loading: contextLoading } = useSimulation();
+    const loading = contextLoading && actors.length === 0;
 
     return (
         <div className="rounded-xl border border-amber-900/20 bg-slate-900/50 overflow-hidden shadow-2xl shadow-black">

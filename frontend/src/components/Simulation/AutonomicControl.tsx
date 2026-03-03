@@ -16,40 +16,25 @@ interface AutonomicLog {
     timestamp: string;
 }
 
-export function AutonomicControl({ universeId, axioms }: { universeId: number, axioms: Record<string, any> }) {
-    const [logs, setLogs] = useState<AutonomicLog[]>([]);
-    const [loading, setLoading] = useState(true);
+import { useSimulation } from '@/context/SimulationContext';
 
-    // Mocking some autonomic logs for visualization until a dedicated endpoint is ready
-    // In a real scenario, this would come from a database log table
-    useEffect(() => {
-        const fetchLogs = async () => {
-            setLoading(true);
-            try {
-                // For now, let's use recent chronicles of type 'myth' or 'omega_point' as logs
-                const res = await api.chronicle(universeId);
-                const filtered = res.data
-                    .filter((c: any) => c.type === 'myth' || c.type === 'convergence_event' || c.content.includes('THIÊN ĐẠO'))
-                    .map((c: any) => ({
-                        id: c.id,
-                        type: c.type === 'myth' ? 'AXIOM_SHIFT' : 'DECISION',
-                        action: c.content.includes('NGHỊCH LÝ') ? 'PARADOX' : 'REGULATE',
-                        details: c.content,
-                        tick: c.from_tick,
-                        timestamp: c.created_at
-                    }));
-                setLogs(filtered || []);
-            } catch (err) {
-                console.error("Failed to fetch autonomic logs:", err);
-            } finally {
-                setLoading(false);
-            }
-        };
+export function AutonomicControl({ universeId: _unusedId, axioms: _unusedAxioms }: { universeId: number, axioms: Record<string, any> }) {
+    const { chronicles, universe, loading: contextLoading, isPaused, setIsPaused } = useSimulation();
+    const axioms = universe?.world?.axiom || {};
 
-        fetchLogs();
-        const interval = setInterval(fetchLogs, 15000);
-        return () => clearInterval(interval);
-    }, [universeId]);
+    // Derive autonomic logs from chronicles
+    const logs = (chronicles || [])
+        .filter((c: any) => c.type === 'myth' || c.type === 'convergence_event' || (c.content && c.content.includes('THIÊN ĐẠO')))
+        .map((c: any) => ({
+            id: c.id,
+            type: c.type === 'myth' ? 'AXIOM_SHIFT' : 'DECISION',
+            action: (c.content && c.content.includes('NGHỊCH LÝ')) ? 'PARADOX' : 'REGULATE',
+            details: c.content,
+            tick: c.from_tick,
+            timestamp: c.created_at
+        }));
+
+    const loading = contextLoading && chronicles.length === 0;
 
     return (
         <Card className="bg-slate-900/80 border-cyan-500/30 backdrop-blur-xl overflow-hidden shadow-2xl shadow-cyan-900/20">
@@ -60,6 +45,15 @@ export function AutonomicControl({ universeId, axioms }: { universeId: number, a
                         Linh Cơ & Thiên Đạo
                     </CardTitle>
                     <div className="flex gap-2">
+                        <button
+                            onClick={() => setIsPaused(!isPaused)}
+                            className={`flex items-center gap-1.5 px-2 py-0.5 rounded border text-[9px] font-bold transition-all duration-300 ${isPaused
+                                ? 'bg-amber-500/20 border-amber-500/40 text-amber-200'
+                                : 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400 opacity-60 hover:opacity-100'}`}
+                        >
+                            <Zap className={`w-3 h-3 ${isPaused ? '' : 'animate-pulse'}`} />
+                            {isPaused ? 'SYNC PAUSED' : 'SYNC ACTIVE'}
+                        </button>
                         <Badge variant="outline" className="text-[9px] border-cyan-500/40 text-cyan-200">
                             AUTONOMIC: ON
                         </Badge>

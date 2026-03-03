@@ -18,4 +18,9 @@ interface SimulationEngineClientInterface
      * @return array{ok: bool, snapshot?: array, error_message?: string}
      */
     public function advance(int $universeId, int $ticks, string $stateInput = '', ?array $worldConfig = null): array;
+
+    /**
+     * Merge two universes into one.
+     */
+    public function merge(string $stateA, string $stateB): array;
 }

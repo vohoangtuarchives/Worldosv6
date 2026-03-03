@@ -10,10 +10,10 @@ export type Anomaly = {
     tick: number;
 };
 
-import { useWorldStream } from "@/hooks/useWorldStream";
+import { useSimulation } from "@/context/SimulationContext";
 
-export function EventFeed({ universeId }: { universeId: number | null }) {
-    const { anomalies } = useWorldStream(universeId);
+export function EventFeed({ universeId: _unusedId }: { universeId: number | null }) {
+    const { anomalies } = useSimulation();
 
     return (
         <div className="rounded-xl border border-border bg-card/50 p-6 backdrop-blur h-full">

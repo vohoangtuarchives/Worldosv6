@@ -9,4 +9,4 @@ Artisan::command('inspire', function () {
 
 use Illuminate\Support\Facades\Schedule;
 
-Schedule::command('worldos:pulse --ticks=10')->everyMinute();
+Schedule::command('worldos:autonomic-pulse --ticks=1')->everyMinute();

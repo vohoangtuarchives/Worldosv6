@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { type Snapshot } from "@/hooks/useWorldStream";
+import { type Snapshot } from "@/types/simulation";
 
 interface MetricGridProps {
     snapshot: Snapshot | null;

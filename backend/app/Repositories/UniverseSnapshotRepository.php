@@ -9,7 +9,8 @@ use App\Services\Observer\ObserverService;
 class UniverseSnapshotRepository
 {
     public function __construct(
-        protected ?ObserverService $observer = null
+        protected ?ObserverService $observer = null,
+        protected \App\Services\AI\EpistemicService $epistemic
     ) {}
 
     /**
@@ -55,9 +56,11 @@ class UniverseSnapshotRepository
      */
     public function getAtTick(int $universeId, int $tick): ?UniverseSnapshot
     {
-        return UniverseSnapshot::where('universe_id', $universeId)
+        $snap = UniverseSnapshot::where('universe_id', $universeId)
             ->where('tick', $tick)
             ->first();
+            
+        return $snap ? $this->enrich($snap) : null;
     }
 
     /**
@@ -65,8 +68,24 @@ class UniverseSnapshotRepository
      */
     public function getLatest(int $universeId): ?UniverseSnapshot
     {
-        return UniverseSnapshot::where('universe_id', $universeId)
+        $snap = UniverseSnapshot::where('universe_id', $universeId)
             ->orderByDesc('tick')
             ->first();
+            
+        return $snap ? $this->enrich($snap) : null;
+    }
+
+    protected function enrich(UniverseSnapshot $snapshot): UniverseSnapshot
+    {
+        $instability = $snapshot->metrics['instability_gradient'] ?? ($snapshot->state_vector['epistemic_instability'] ?? 0);
+        $snapshot->existence_state = $this->epistemic->getExistenceState((float)$instability);
+        
+        // Dynamic stability check
+        $universe = Universe::find($snapshot->universe_id);
+        if ($universe) {
+            $snapshot->reality_stability = $this->epistemic->calculateStability($universe);
+        }
+
+        return $snapshot;
     }
 }

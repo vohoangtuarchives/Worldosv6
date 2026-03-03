@@ -145,5 +145,17 @@ export const api = {
       body: JSON.stringify({ scenario_id: scenarioId }),
     });
   },
+  async actors(id: number) {
+    return apiFetch(`/worldos/universes/${id}/actors`);
+  },
+  async topology(id: number) {
+    return apiFetch(`/worldos/universes/${id}/topology`);
+  },
+  async branchEvents(id: number) {
+    return apiFetch(`/worldos/universes/${id}/branch-events`);
+  },
+  async socialContracts(id: number) {
+    return apiFetch(`/worldos/universes/${id}/social-contracts`);
+  },
 };
 

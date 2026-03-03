@@ -19,26 +19,11 @@ interface ConvergenceMonitorProps {
     currentTick: number;
 }
 
+import { useSimulation } from '@/context/SimulationContext';
+
 const ConvergenceMonitor: React.FC<ConvergenceMonitorProps> = ({ universeId, currentTick }) => {
-    const [trajectories, setTrajectories] = useState<Trajectory[]>([]);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        const fetchTrajectories = async () => {
-            try {
-                const response = await api.trajectories(universeId);
-                setTrajectories(response.data || []);
-            } catch (error) {
-                console.error("Failed to fetch trajectories:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchTrajectories();
-        const interval = setInterval(fetchTrajectories, 5000);
-        return () => clearInterval(interval);
-    }, [universeId]);
+    const { trajectories, loading } = useSimulation();
+    const isDataEmpty = !trajectories || trajectories.length === 0;
 
     if (loading && trajectories.length === 0) return null;
 

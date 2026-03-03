@@ -14,39 +14,23 @@ interface DiplomaticRelation {
     participants: [number, number];
 }
 
+import { useSimulation } from '@/context/SimulationContext';
+
 export function WarRoom({ universeId }: { universeId: number }) {
-    const [relations, setRelations] = useState<Record<string, DiplomaticRelation>>({});
-    const [civs, setCivs] = useState<Record<number, string>>({});
-    const [loading, setLoading] = useState(true);
+    const { universe, institutions } = useSimulation();
 
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                // Fetch universe to get state_vector (diplomacy)
-                const uniRes = await api.universe(universeId);
-                const diplomacy = uniRes.data?.state_vector?.diplomacy || {};
-                setRelations(diplomacy);
+    // Derive relations from universe state_vector
+    const relations = universe?.state_vector?.diplomacy || {};
 
-                // Fetch institutions to get civ names
-                const instRes = await api.institutions(universeId);
-                const civMap: Record<number, string> = {};
-                (instRes || []).forEach((e: any) => {
-                    if (e.entity_type === 'CIVILIZATION') {
-                        civMap[e.id] = e.name;
-                    }
-                });
-                setCivs(civMap);
-            } catch (err) {
-                console.error("WarRoom failed to fetch data:", err);
-            } finally {
-                setLoading(false);
-            }
-        };
+    // Derive civMap from institutions
+    const civs: Record<number, string> = {};
+    (institutions || []).forEach((e: any) => {
+        if (e.entity_type === 'CIVILIZATION') {
+            civs[e.id] = e.name;
+        }
+    });
 
-        fetchData();
-        const interval = setInterval(fetchData, 10000);
-        return () => clearInterval(interval);
-    }, [universeId]);
+    const loading = !universe;
 
     const getStatusIcon = (status: string) => {
         switch (status) {
@@ -87,7 +71,7 @@ export function WarRoom({ universeId }: { universeId: number }) {
                         </div>
                     ) : (
                         <div className="space-y-3">
-                            {Object.entries(relations).map(([key, rel]) => (
+                            {Object.entries(relations).map(([key, rel]: [string, any]) => (
                                 <div
                                     key={key}
                                     className={`p-4 rounded-xl border transition-all hover:scale-[1.02] ${getStatusColor(rel.status)}`}

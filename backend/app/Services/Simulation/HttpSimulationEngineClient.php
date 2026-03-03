@@ -58,6 +58,8 @@ class HttpSimulationEngineClient implements SimulationEngineClientInterface
                 'entropy' => $snapshotData['entropy'] ?? null,
                 'stability_index' => $snapshotData['stability_index'] ?? null,
                 'metrics' => $snapshotData['metrics'] ?? '{}',
+                'sci' => $snapshotData['sci'] ?? null,
+                'instability_gradient' => $snapshotData['instability_gradient'] ?? null,
             ];
         }
 
@@ -65,6 +67,48 @@ class HttpSimulationEngineClient implements SimulationEngineClientInterface
             'ok' => $ok,
             'snapshot' => $snapshot,
             'error_message' => $errorMessage,
+        ];
+    }
+
+    public function merge(string $stateA, string $stateB): array
+    {
+        $url = rtrim($this->baseUrl, '/').'/merge';
+        $payload = [
+            'state_a' => $stateA,
+            'state_b' => $stateB,
+        ];
+
+        try {
+            $response = Http::timeout(60)->post($url, $payload);
+        } catch (\Throwable $e) {
+            return ['ok' => false, 'snapshot' => null, 'error_message' => $e->getMessage()];
+        }
+
+        if (!$response->successful()) {
+            return ['ok' => false, 'snapshot' => null, 'error_message' => $response->body() ?: 'HTTP '.$response->status()];
+        }
+
+        $data = $response->json();
+        $snapshotData = $data['snapshot'] ?? null;
+        $snapshot = null;
+
+        if ($snapshotData && is_array($snapshotData)) {
+            $snapshot = [
+                'universe_id' => 0,
+                'tick' => $snapshotData['tick'] ?? 0,
+                'state_vector' => $snapshotData['state_vector'] ?? '{}',
+                'entropy' => $snapshotData['entropy'] ?? null,
+                'stability_index' => $snapshotData['stability_index'] ?? null,
+                'metrics' => $snapshotData['metrics'] ?? '{}',
+                'sci' => $snapshotData['sci'] ?? null,
+                'instability_gradient' => $snapshotData['instability_gradient'] ?? null,
+            ];
+        }
+
+        return [
+            'ok' => $data['ok'] ?? false,
+            'snapshot' => $snapshot,
+            'error_message' => $data['error_message'] ?? '',
         ];
     }
 }

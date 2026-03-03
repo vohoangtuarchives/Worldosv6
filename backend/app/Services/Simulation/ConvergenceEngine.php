@@ -3,126 +3,74 @@
 namespace App\Services\Simulation;
 
 use App\Models\Universe;
+use App\Models\UniverseSnapshot;
 use App\Models\UniverseInteraction;
-use App\Models\Chronicle;
-use App\Actions\Simulation\MergeUniverseAction;
+use Illuminate\Support\Facades\Log;
 
-/**
- * Convergence Engine: Orchestrates the merging of multiverse timelines.
- * Driven by alignment resonance and stability thresholds.
- */
 class ConvergenceEngine
 {
-    public function __construct(
-        protected ?MergeUniverseAction $mergeAction = null
-    ) {}
-
     /**
-     * Process a universe to check for convergence opportunities.
+     * Tính toán sự cộng hưởng (Resonance) giữa hai vũ trụ (§5.3).
      */
-    public function process(Universe $universe, int $tick): void
+    public function calculateResonance(Universe $u1, Universe $u2): float
     {
-        $multiverseId = $universe->multiverse_id;
-        if (!$multiverseId) return;
+        $snap1 = $u1->latestSnapshot;
+        $snap2 = $u2->latestSnapshot;
 
-        // 1. Identify high-resonance partners
-        // Criteria: Same World, status active, and high resonance recorded in interactions
-        $partners = UniverseInteraction::where('interaction_type', 'resonance')
-            ->where(function($q) use ($universe) {
-                $q->where('universe_a_id', $universe->id)
-                  ->orWhere('universe_b_id', $universe->id);
-            })
-            ->where('created_at', '>=', now()->subHours(24))
-            ->get()
-            ->map(function($interaction) use ($universe) {
-                return $interaction->universe_a_id === $universe->id 
-                    ? $interaction->universe_b_id 
-                    : $interaction->universe_a_id;
-            })->unique();
+        if (!$snap1 || !$snap2) return 0.0;
 
-        foreach ($partners as $partnerId) {
-            $partner = Universe::find($partnerId);
-            if (!$partner || $partner->status !== 'active') continue;
+        // 1. State Vector Similarity (Simplified Cosine Similarity on major metrics)
+        $sim = $this->compareStateVectors($snap1->state_vector, $snap2->state_vector);
 
-            if ($this->shouldConverge($universe, $partner)) {
-                $this->triggerConvergence($universe, $partner, $tick);
+        // 2. Cultural Resonance
+        $cultSim = $this->compareCulturalVectors($snap1->state_vector, $snap2->state_vector);
+
+        // Resonance = (State Similarity * 0.4) + (Cultural Similarity * 0.6)
+        $resonance = ($sim * 0.4 + $cultSim * 0.6);
+
+        Log::info("Resonance Calculated: Universe [{$u1->id}] <-> [{$u2->id}] = {$resonance}");
+
+        return (float) $resonance;
+    }
+
+    protected function compareStateVectors(array $v1, array $v2): float
+    {
+        $metrics = ['global_entropy', 'knowledge_core', 'sci'];
+        $sum = 0.0;
+        $count = 0;
+
+        foreach ($metrics as $m) {
+            if (isset($v1[$m]) && isset($v2[$m])) {
+                $diff = abs($v1[$m] - $v2[$m]);
+                $sum += (1.0 - $diff);
+                $count++;
             }
         }
 
-        // 2. Check for Omega Point (Global Multiverse Collapse)
-        $this->checkOmegaPoint($universe, $tick);
+        return $count > 0 ? $sum / $count : 0.0;
+    }
+
+    protected function compareCulturalVectors(array $v1, array $v2): float
+    {
+        // Extract averages if available or compare zones
+        // For now, let's look at global aggregates if we have them, else pick random zone comparison
+        return 0.5; // Placeholder for complex zone-by-zone comparison
     }
 
     /**
-     * Convergence occurs if two universes have very similar alignments and high IP scores.
+     * Ghi nhận tương tác cộng hưởng vào DB (§5.1).
      */
-    protected function shouldConverge(Universe $a, Universe $b): bool
+    public function recordInteraction(Universe $u1, Universe $u2, float $resonance): void
     {
-        // Fetch latest snapshots for metrics
-        $snapA = $a->snapshots()->orderByDesc('tick')->first();
-        $snapB = $b->snapshots()->orderByDesc('tick')->first();
-
-        if (!$snapA || !$snapB) return false;
-
-        $alignA = $snapA->metrics['alignment'] ?? null;
-        $alignB = $snapB->metrics['alignment'] ?? null;
-
-        if (!$alignA || !$alignB) return false;
-
-        // Similarity check: Difference in all 3 axes < 0.05
-        $diff = abs($alignA['spirituality'] - $alignB['spirituality']) +
-                abs($alignA['hardtech'] - $alignB['hardtech']) +
-                abs($alignA['entropy'] - $alignB['entropy']);
-
-        return $diff < 0.15; // Threshold for convergence
-    }
-
-    protected function triggerConvergence(Universe $a, Universe $b, int $tick): void
-    {
-        if (!$this->mergeAction) return;
-
-        // Only trigger if no pending merges exist
-        $exists = UniverseInteraction::where('interaction_type', 'convergence_initiated')
-            ->where(function($q) use ($a, $b) {
-                $q->where('universe_a_id', $a->id)->where('universe_b_id', $b->id);
-            })->exists();
-
-        if ($exists) return;
-
-        UniverseInteraction::create([
-            'universe_a_id' => $a->id,
-            'universe_b_id' => $b->id,
-            'interaction_type' => 'convergence_initiated',
-            'payload' => ['tick' => $tick]
-        ]);
-
-        Chronicle::create([
-            'universe_id' => $a->id,
-            'from_tick' => $tick,
-            'to_tick' => $tick,
-            'type' => 'convergence_event',
-            'content' => "SỰ HỘI TỤ ĐA VŨ TRỤ: Ranh giới giữa thế giới này và {$b->id} đang sụp đổ. Hai dòng thời gian bắt đầu giao thoa để tìm về một thực tại thống nhất.",
-        ]);
-
-        // Execute merge (this will create a new Prime Universe)
-        $this->mergeAction->execute($a, $b, $tick);
-    }
-
-    protected function checkOmegaPoint(Universe $universe, int $tick): void
-    {
-        $vec = $universe->state_vector ?? [];
-        $entropy = (float)($vec['entropy'] ?? 0.0);
-
-        if ($entropy > 0.99) {
-            Chronicle::create([
-                'universe_id' => $universe->id,
-                'from_tick' => $tick,
-                'to_tick' => $tick,
-                'type' => 'omega_point',
-                'content' => "ĐIỂM OMEGA: Vũ trụ đã chạm tới giới hạn tuyệt đối của sự tồn tại. Mọi cấu trúc vật chất và ý thức dần tan biến vào Hư vô vĩnh hằng.",
+        if ($resonance > 0.8) {
+            UniverseInteraction::create([
+                'universe_a_id' => $u1->id,
+                'universe_b_id' => $u2->id,
+                'interaction_type' => 'resonance',
+                'resonance_level' => $resonance,
+                'synchronicity_score' => $resonance * 0.9,
+                'payload' => ['tick' => $u1->current_tick]
             ]);
-            
-            $universe->update(['status' => 'archived']);
         }
     }
 }

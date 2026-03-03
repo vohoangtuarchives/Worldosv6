@@ -16,26 +16,11 @@ interface Interaction {
     universe_b?: { name: string };
 }
 
+import { useSimulation } from '@/context/SimulationContext';
+
 export const ConvergenceView: React.FC<{ universeId: number }> = ({ universeId }) => {
-    const [interactions, setInteractions] = useState<Interaction[]>([]);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        const fetchInteractions = async () => {
-            try {
-                const data = await api.interactions(universeId);
-                setInteractions(data);
-            } catch (error) {
-                console.error("Failed to fetch interactions", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchInteractions();
-        const interval = setInterval(fetchInteractions, 10000);
-        return () => clearInterval(interval);
-    }, [universeId]);
+    const { interactions, loading: contextLoading } = useSimulation();
+    const loading = contextLoading && interactions.length === 0;
 
     if (loading) return <div className="animate-pulse text-cyan-500 font-mono">Đang quét tần số đa vũ trụ...</div>;
 

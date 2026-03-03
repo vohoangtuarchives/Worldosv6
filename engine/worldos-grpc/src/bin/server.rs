@@ -4,7 +4,9 @@ use std::net::SocketAddr;
 use tonic::{Request, Response, Status};
 use worldos_core::{tick_with_cascade, UniverseState, WorldConfig};
 use worldos_grpc::{
-    simulation_engine_server::SimulationEngine, simulation_engine_server::SimulationEngineServer, AdvanceRequest, AdvanceResponse, UniverseSnapshot,
+    simulation_engine_server::SimulationEngine, simulation_engine_server::SimulationEngineServer, 
+    AdvanceRequest, AdvanceResponse, MergeRequest, MergeResponse, 
+    ObserveRequest, ObserveResponse, UniverseSnapshot,
 };
 
 use axum::{routing::post, Json, Router};
@@ -12,7 +14,7 @@ use serde::{Deserialize, Serialize};
 
 struct EngineService;
 
-fn run_advance(universe_id: u64, ticks: u64, state_input: &[u8], world_meta: Option<worldos_grpc::WorldConfig>) -> Result<(u64, String, f64, f64, String), String> {
+fn run_advance(universe_id: u64, ticks: u64, state_input: &[u8], world_meta: Option<worldos_grpc::WorldConfig>) -> Result<(u64, String, f64, f64, String, f64, f64), String> {
     let mut state: UniverseState = if state_input.is_empty() {
         UniverseState::with_one_zone(universe_id, 100.0)
     } else {
@@ -35,8 +37,10 @@ fn run_advance(universe_id: u64, ticks: u64, state_input: &[u8], world_meta: Opt
         }
     };
 
+    let mut all_events = Vec::new();
     for _ in 0..ticks {
-        tick_with_cascade(&mut state, &world, 4);
+        let events = tick_with_cascade(&mut state, &world, 4);
+        all_events.extend(events);
     }
 
     let snap = state.to_snapshot();
@@ -45,7 +49,27 @@ fn run_advance(universe_id: u64, ticks: u64, state_input: &[u8], world_meta: Opt
     let entropy = snap.entropy.unwrap_or(0.0);
     let stability_index = snap.stability_index.unwrap_or(0.0);
 
-    Ok((snap.tick, state_vector_json, entropy, stability_index, metrics_json))
+    let sci = state.sci;
+    let instability_gradient = state.instability_gradient;
+
+    Ok((snap.tick, state_vector_json, entropy, stability_index, metrics_json, sci, instability_gradient))
+}
+
+fn run_merge(state_a_input: &[u8], state_b_input: &[u8]) -> Result<(u64, String, f64, f64, String, f64, f64), String> {
+    let mut state_a: UniverseState = serde_json::from_slice(state_a_input).map_err(|e| format!("state_a json: {}", e))?;
+    let state_b: UniverseState = serde_json::from_slice(state_b_input).map_err(|e| format!("state_b json: {}", e))?;
+
+    state_a.merge(state_b);
+
+    let snap = state_a.to_snapshot();
+    let state_vector_json = serde_json::to_string(&snap.state_vector).unwrap_or_else(|_| "{}".to_string());
+    let metrics_json = serde_json::to_string(&snap.metrics).unwrap_or_else(|_| "{}".to_string());
+    let entropy = snap.entropy.unwrap_or(0.0);
+    let stability_index = snap.stability_index.unwrap_or(0.0);
+    let sci = state_a.sci;
+    let instability_gradient = state_a.instability_gradient;
+
+    Ok((snap.tick, state_vector_json, entropy, stability_index, metrics_json, sci, instability_gradient))
 }
 
 #[tonic::async_trait]
@@ -57,7 +81,7 @@ impl SimulationEngine for EngineService {
         let req = request.into_inner();
         let state_input = req.state_input.as_slice();
         match run_advance(req.universe_id, req.ticks, state_input, req.world_config) {
-            Ok((tick, state_vector_json, entropy, stability_index, metrics_json)) => {
+            Ok((tick, state_vector_json, entropy, stability_index, metrics_json, sci, instability_gradient)) => {
                 let snapshot = UniverseSnapshot {
                     universe_id: req.universe_id,
                     tick,
@@ -65,8 +89,64 @@ impl SimulationEngine for EngineService {
                     entropy,
                     stability_index,
                     metrics_json,
+                    sci,
+                    instability_gradient,
                 };
                 Ok(Response::new(AdvanceResponse {
+                    ok: true,
+                    error_message: String::new(),
+                    snapshot: Some(snapshot),
+                }))
+            }
+            Err(e) => Err(Status::invalid_argument(e)),
+        }
+    }
+
+    async fn merge(
+        &self,
+        request: Request<MergeRequest>,
+    ) -> Result<Response<MergeResponse>, Status> {
+        let req = request.into_inner();
+        match run_merge(&req.state_a, &req.state_b) {
+            Ok((tick, state_vector_json, entropy, stability_index, metrics_json, sci, instability_gradient)) => {
+                let snapshot = UniverseSnapshot {
+                    universe_id: 0, // Merged result ID handled by Laravel
+                    tick,
+                    state_vector_json,
+                    entropy,
+                    stability_index,
+                    metrics_json,
+                    sci,
+                    instability_gradient,
+                };
+                Ok(Response::new(MergeResponse {
+                    ok: true,
+                    error_message: String::new(),
+                    snapshot: Some(snapshot),
+                }))
+            }
+            Err(e) => Err(Status::invalid_argument(e)),
+        }
+    }
+
+    async fn observe(
+        &self,
+        request: Request<ObserveRequest>,
+    ) -> Result<Response<ObserveResponse>, Status> {
+        let req = request.into_inner();
+        match run_observe(req.universe_id, req.zone_index, req.intensity, &req.state_input) {
+            Ok((tick, state_vector_json, entropy, stability_index, metrics_json, sci, instability_gradient)) => {
+                let snapshot = UniverseSnapshot {
+                    universe_id: req.universe_id,
+                    tick,
+                    state_vector_json,
+                    entropy,
+                    stability_index,
+                    metrics_json,
+                    sci,
+                    instability_gradient,
+                };
+                Ok(Response::new(ObserveResponse {
                     ok: true,
                     error_message: String::new(),
                     snapshot: Some(snapshot),
@@ -103,6 +183,8 @@ struct AdvanceHttpSnapshot {
     entropy: f64,
     stability_index: f64,
     metrics: String,
+    sci: f64,
+    instability_gradient: f64,
 }
 
 #[derive(Debug, Serialize)]
@@ -127,7 +209,7 @@ async fn advance_http(Json(body): Json<AdvanceHttpRequest>) -> Json<AdvanceHttpR
     });
 
     match run_advance(body.universe_id, body.ticks, state_input, world_meta) {
-        Ok((tick, state_vector, entropy, stability_index, metrics)) => Json(AdvanceHttpResponse {
+        Ok((tick, state_vector, entropy, stability_index, metrics, sci, instability_gradient)) => Json(AdvanceHttpResponse {
             ok: true,
             error_message: String::new(),
             snapshot: Some(AdvanceHttpSnapshot {
@@ -137,6 +219,69 @@ async fn advance_http(Json(body): Json<AdvanceHttpRequest>) -> Json<AdvanceHttpR
                 entropy,
                 stability_index,
                 metrics,
+                sci,
+                instability_gradient,
+            }),
+        }),
+        Err(e) => Json(AdvanceHttpResponse {
+            ok: false,
+            error_message: e,
+            snapshot: None,
+        }),
+    }
+}
+
+#[derive(Debug, Deserialize)]
+struct ObserveHttpRequest {
+    universe_id: u64,
+    zone_index: u32,
+    intensity: f64,
+    state_input: String,
+}
+
+async fn observe_http(Json(body): Json<ObserveHttpRequest>) -> Json<AdvanceHttpResponse> {
+    match run_observe(body.universe_id, body.zone_index, body.intensity, body.state_input.as_bytes()) {
+        Ok((tick, state_vector, entropy, stability_index, metrics, sci, instability_gradient)) => Json(AdvanceHttpResponse {
+            ok: true,
+            error_message: String::new(),
+            snapshot: Some(AdvanceHttpSnapshot {
+                universe_id: body.universe_id,
+                tick,
+                state_vector,
+                entropy,
+                stability_index,
+                metrics,
+                sci,
+                instability_gradient,
+            }),
+        }),
+        Err(e) => Json(AdvanceHttpResponse {
+            ok: false,
+            error_message: e,
+            snapshot: None,
+        }),
+    }
+}
+#[derive(Debug, Deserialize)]
+struct MergeHttpRequest {
+    state_a: String,
+    state_b: String,
+}
+
+async fn merge_http(Json(body): Json<MergeHttpRequest>) -> Json<AdvanceHttpResponse> {
+    match run_merge(body.state_a.as_bytes(), body.state_b.as_bytes()) {
+        Ok((tick, state_vector, entropy, stability_index, metrics, sci, instability_gradient)) => Json(AdvanceHttpResponse {
+            ok: true,
+            error_message: String::new(),
+            snapshot: Some(AdvanceHttpSnapshot {
+                universe_id: 0,
+                tick,
+                state_vector,
+                entropy,
+                stability_index,
+                metrics,
+                sci,
+                instability_gradient,
             }),
         }),
         Err(e) => Json(AdvanceHttpResponse {
@@ -157,7 +302,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let svc = SimulationEngineServer::new(EngineService);
     let grpc_server = tonic::transport::Server::builder().add_service(svc).serve(grpc_addr);
 
-    let http_app = Router::new().route("/advance", post(advance_http));
+    let http_app = Router::new()
+        .route("/advance", post(advance_http))
+        .route("/merge", post(merge_http))
+        .route("/observe", post(observe_http));
     let http_server = axum::serve(
         tokio::net::TcpListener::bind(http_addr).await?,
         http_app,
