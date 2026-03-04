@@ -4,6 +4,7 @@ namespace App\Modules\Intelligence\Listeners;
 
 use App\Events\Simulation\UniverseSimulationPulsed;
 use App\Modules\Intelligence\Actions\ProcessActorSurvivalAction;
+use App\Modules\Intelligence\Actions\SpawnFromEventsAction;
 
 class ProcessIntelligenceEvolution
 {
@@ -28,6 +29,6 @@ class ProcessIntelligenceEvolution
         $this->autonomyService->process($event->universe, $tick);
 
         // 4. Survival logic
-        $this->survivalAction->handle($event->universe, $event->response);
+        $this->survivalAction->handle($event->universe, $event->engineResponse);
     }
 }

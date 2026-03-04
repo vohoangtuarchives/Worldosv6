@@ -31,7 +31,7 @@ class ProcessActorSurvivalAction
             $actor->driftTraits();
             
             // 3. Life cycle (Aging/Risk)
-            $actor->applyLifeCycle();
+            $actor->applyLifeCycle($entropy);
 
             if ($oldState && !$actor->isAlive) {
                 $deathCount++;

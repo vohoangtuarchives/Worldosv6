@@ -129,9 +129,25 @@ services:
     networks:
       - internal
 
+  bloom:
+    build:
+      context: ../bloom
+      dockerfile: ../deployment/bloom.prod.Dockerfile
+      provenance: false
+    restart: always
+    environment:
+      PORT: 3001
+    depends_on:
+      - backend
+    networks:
+      - internal
+
   # Engine (Rust)
   engine:
-    build: ../engine
+    build: 
+      context: ../engine
+      dockerfile: ../deployment/engine.prod.Dockerfile
+      provenance: false
     restart: always
     environment:
       GRPC_ADDR: 0.0.0.0:50051
@@ -140,6 +156,25 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    networks:
+      - internal
+
+  # NarrativeLoom (Python/LangGraph)
+  narrative_loom:
+    build: 
+      context: ../narrative-loom
+      dockerfile: Dockerfile
+      provenance: false
+    restart: always
+    environment:
+      WORLDOS_API_URL: http://backend:9000/api
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      LOCAL_LLM_URL: ${LOCAL_LLM_URL:-}
+    depends_on:
+      - backend
     networks:
       - internal
 

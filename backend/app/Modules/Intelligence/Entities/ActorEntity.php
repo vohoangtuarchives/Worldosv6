@@ -4,6 +4,26 @@ namespace App\Modules\Intelligence\Entities;
 
 class ActorEntity
 {
+    public const TRAIT_DIMENSIONS = [
+        'Dominance',    // 0
+        'Ambition',     // 1
+        'Coercion',     // 2
+        'Loyalty',      // 3
+        'Empathy',      // 4
+        'Solidarity',   // 5
+        'Conformity',   // 6
+        'Pragmatism',   // 7
+        'Curiosity',    // 8
+        'Dogmatism',    // 9
+        'RiskTolerance',// 10
+        'Fear',         // 11
+        'Vengeance',    // 12
+        'Hope',         // 13
+        'Grief',        // 14
+        'Pride',        // 15
+        'Shame',        // 16
+    ];
+
     public function __construct(
         public readonly ?int $id,
         public readonly int $universeId,

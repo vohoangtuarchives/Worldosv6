@@ -74,7 +74,7 @@ class EvaluateSimulationResult
                 $this->trajectoryModelingEngine->process($universeEntity, (int)$snapshot->tick);
             }
 
-            $this->convergenceEngine->process($universe, $snapshot);
+            $this->convergenceEngine->process($universe, (int)$snapshot->tick);
             $this->causalCorrectionEngine->process($universe, $snapshot);
             $this->resonanceEngine->process($universe, $snapshot);
 

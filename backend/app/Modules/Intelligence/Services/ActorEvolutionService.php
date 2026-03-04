@@ -47,16 +47,11 @@ class ActorEvolutionService
      */
     public function evolve(Universe $universe, int $tick): void
     {
-        $actors = \App\Models\Actor::where('universe_id', $universe->id)->where('is_alive', true)->get();
+        $actors = $this->actorRepository->findByUniverse($universe->id);
 
         foreach ($actors as $actor) {
-            $traits = $actor->traits;
-            
-            // Trait drift (±2%)
-            foreach ($traits as &$val) {
-                $val = max(0, min(1, $val + (rand(-2, 2) / 100)));
-            }
-            $actor->traits = $traits;
+            // $actor is ActorEntity
+            $actor->driftTraits(0.02);
             
             // Random life record (chance 20% per pulse)
             if (rand(1, 100) > 80) {
@@ -68,7 +63,7 @@ class ActorEvolutionService
             $chanceOfDeath = $influence > 5.0 ? 0.02 : 0.005;
 
             if (rand(0, 1000) / 1000 < $chanceOfDeath) {
-                $actor->is_alive = false;
+                $actor->isAlive = false;
                 $actor->biography .= "\n- T" . $tick . ": Kết thúc một chương huyền thoại.";
             }
 
@@ -79,7 +74,7 @@ class ActorEvolutionService
     public function generateRandomTraits(): array
     {
         $traits = [];
-        $dimsCount = count(\App\Services\Simulation\HeroicActorService::TRAIT_DIMENSIONS);
+        $dimsCount = count(\App\Modules\Intelligence\Entities\ActorEntity::TRAIT_DIMENSIONS);
         for ($i = 0; $i < $dimsCount; $i++) {
             $traits[] = rand(0, 100) / 100.0;
         }

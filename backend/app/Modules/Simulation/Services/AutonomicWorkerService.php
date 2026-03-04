@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Log;
 class AutonomicWorkerService
 {
     public function __construct(
-        protected \App\Services\Simulation\WorldAutonomicEngine $worldAutonomicEngine,
+        protected \App\Modules\Simulation\Services\WorldRegulatorEngine $worldAutonomicEngine,
         protected \App\Services\Simulation\SurvivalPruningService $pruningService
     ) {}
 

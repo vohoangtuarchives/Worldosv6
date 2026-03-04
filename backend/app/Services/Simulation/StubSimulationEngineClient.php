@@ -32,4 +32,20 @@ class StubSimulationEngineClient implements SimulationEngineClientInterface
             'error_message' => '',
         ];
     }
+
+    public function merge(string $stateA, string $stateB): array
+    {
+        return [
+            'ok' => true,
+            'snapshot' => [
+                'universe_id' => 0,
+                'tick' => 0,
+                'state_vector' => '{}',
+                'entropy' => 0.5,
+                'stability_index' => 0.5,
+                'metrics' => '{}',
+            ],
+            'error_message' => '',
+        ];
+    }
 }

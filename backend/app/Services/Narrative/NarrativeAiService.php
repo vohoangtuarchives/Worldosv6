@@ -94,11 +94,12 @@ class NarrativeAiService
         }
         $vectorString = '[' . implode(',', $vector) . ']';
 
-        return Chronicle::create([
+        $chronicle = Chronicle::create([
             'universe_id' => $universeId,
             'from_tick' => $fromTick,
             'to_tick' => $toTick,
             'type' => $type,
+            'content' => $content,
             'raw_payload' => [
                 'action' => 'legacy_event',
                 'description' => $content
@@ -108,7 +109,11 @@ class NarrativeAiService
         ]);
 
         // Phase 66: Mythic Resonance (§V11)
-        $this->resonance->process($chronicle);
+        try {
+            $this->resonance->process($chronicle);
+        } catch (\Throwable $e) {
+            Log::warning("Mythic Resonance processing failed: " . $e->getMessage());
+        }
 
         return $chronicle;
     }
@@ -217,14 +222,8 @@ EOT;
                     ->post('https://api.openai.com/v1/chat/completions', [
                         'model' => $model,
                         'messages' => [
-                            ['role' => 'system', 'raw_payload' => [
-                'action' => 'legacy_event',
-                'description' => "Bạn là WorldOS, người kể chuyện về sự tiến hóa của vũ trụ."]
-            ],
-                            ['role' => 'user', 'raw_payload' => [
-                'action' => 'legacy_event',
-                'description' => $prompt]
-            ],
+                            ['role' => 'system', 'content' => "Bạn là WorldOS, người kể chuyện về sự tiến hóa của vũ trụ."],
+                            ['role' => 'user', 'content' => $prompt],
                         ],
                         'temperature' => 0.7,
                     ]);
@@ -253,10 +252,7 @@ EOT;
             $response = Http::timeout(30)->post($endpoint, [
                 'model' => $model,
                 'messages' => [
-                    ['role' => 'system', 'raw_payload' => [
-                'action' => 'legacy_event',
-                'description' => "Bạn là người ghi chép sáng tạo cho một trò chơi mô phỏng."]
-            ],
+                    ['role' => 'system', 'content' => "Bạn là người ghi chép sáng tạo cho một trò chơi mô phỏng."],
                     ['role' => 'user', 'content' => $prompt]
                 ],
                 'temperature' => 0.7,

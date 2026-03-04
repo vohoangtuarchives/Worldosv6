@@ -38,7 +38,7 @@ class OmegaEngine
         
         BranchEvent::create([
             'universe_id' => $universe->id,
-            'tick' => $universe->current_tick,
+            'from_tick' => $universe->current_tick,
             'event_type' => 'heat_death',
             'description' => "Vũ trụ đã chạm tới Entropy tuyệt đối. Mọi cấu trúc tan rã.",
         ]);
@@ -50,7 +50,7 @@ class OmegaEngine
 
         BranchEvent::create([
             'universe_id' => $universe->id,
-            'tick' => $universe->current_tick,
+            'from_tick' => $universe->current_tick,
             'event_type' => 'apotheosis',
             'description' => "Thăng hoa toàn thể (Collective Ascension). Nền văn minh đã vượt qua giới hạn vật chất.",
             'payload' => ['is_eternal' => true]

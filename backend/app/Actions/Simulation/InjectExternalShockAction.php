@@ -5,7 +5,7 @@ namespace App\Actions\Simulation;
 use App\Models\Universe;
 use App\Models\Chronicle;
 use App\Models\BranchEvent;
-use App\Services\Simulation\WorldEdictEngine;
+use App\Modules\Institutions\Services\WorldEdictEngine;
 
 class InjectExternalShockAction
 {

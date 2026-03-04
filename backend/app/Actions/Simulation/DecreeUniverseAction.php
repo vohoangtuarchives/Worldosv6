@@ -4,7 +4,7 @@ namespace App\Actions\Simulation;
 
 use App\Models\Universe;
 use App\Models\UniverseSnapshot;
-use App\Services\Simulation\WorldEdictEngine;
+use App\Modules\Institutions\Services\WorldEdictEngine;
 
 class DecreeUniverseAction
 {

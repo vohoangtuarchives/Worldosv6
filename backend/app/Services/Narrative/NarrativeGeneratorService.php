@@ -43,11 +43,11 @@ class NarrativeGeneratorService
         $creativity = $this->config->creativity ?? 50;
         
         return "You are a {$personality} narrator focusing on themes: {$themes}. Creativity Level: {$creativity}%.
-        Generate a single short sentence (under 20 words) describing a significant life event for a character.
+        Generate a single short sentence (under 50 words) describing a significant life event for a character.
         Character: {$actorName} ({$archetype}).
         Traits: " . json_encode($traits) . ".
         World Context: " . json_encode($worldContext) . ".
-        Output ONLY the event description.";
+        Output ONLY the event description and in Vietnamese.";
     }
 
     protected function callLocalAI(string $prompt): string
@@ -60,18 +60,33 @@ class NarrativeGeneratorService
             $endpoint = str_replace('localhost', 'host.docker.internal', $endpoint);
         }
 
-        $response = Http::timeout(5)->post($endpoint, [
+        $response = Http::timeout(30)->post($endpoint, [
             'model' => $model,
             'messages' => [
-                ['role' => 'system', 'content' => 'You are a creative writer for a simulation game.'],
+                ['role' => 'system', 'content' => 'You are a creative writer.'],
                 ['role' => 'user', 'content' => $prompt]
             ],
             'temperature' => 0.7,
-            'max_tokens' => 50
         ]);
 
         if ($response->successful()) {
-            $content = $response->json('choices.0.message.content');
+            $content = trim($response->json('choices.0.message.content') ?? '');
+            
+            // Reasoning models (e.g. gpt-oss-20b) sometimes output the answer inside
+            // the `reasoning` field and leave `content` empty. Extract it as fallback.
+            if ($content === '') {
+                $reasoning = $response->json('choices.0.message.reasoning') ?? '';
+                // Grab the last quoted phrase from the reasoning as the final answer
+                if (preg_match_all('/["\u201c\u201d\u2018\u2019]([^""\u201c\u201d\u2018\u2019]{10,})["\u201c\u201d\u2018\u2019]/', $reasoning, $matches)) {
+                    $content = end($matches[1]);
+                } elseif (preg_match('/(?:craft|output|sentence)[:\s]+(.{15,}?)(?:\.|$)/iu', $reasoning, $m)) {
+                    $content = trim($m[1]);
+                }
+                if ($content !== '') {
+                    Log::info("NarrativeGenerator: Extracted content from reasoning field.");
+                }
+            }
+            
             return trim(str_replace(['"', "'"], '', $content));
         }
 

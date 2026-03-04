@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Log;
 class CosmogenesisService
 {
     public function __construct(
-        protected UniverseBranchAction $branchAction
+        protected ForkUniverseAction $branchAction
     ) {}
 
     /**

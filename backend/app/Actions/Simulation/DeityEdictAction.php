@@ -24,7 +24,7 @@ class DeityEdictAction
 
         BranchEvent::create([
             'universe_id' => $universe->id,
-            'tick' => $universe->current_tick,
+            'from_tick' => $universe->current_tick,
             'event_type' => 'deity_edict',
             'description' => "THIÊN LỆNH: {$description}",
             'payload' => [

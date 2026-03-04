@@ -3,7 +3,7 @@
 namespace App\Actions\Simulation;
 
 use App\Models\Universe;
-use App\Services\Simulation\WorldEdictEngine;
+use App\Modules\Institutions\Services\WorldEdictEngine;
 use App\Services\AI\AnalyticalAiService;
 use Illuminate\Support\Facades\Log;
 

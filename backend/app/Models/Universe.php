@@ -12,6 +12,7 @@ class Universe extends Model
         'world_id', 'saga_id', 'multiverse_id', 'parent_universe_id',
         'current_tick', 'level', 'epoch', 'status', 'state_vector', 'name',
         'observation_load', 'last_observed_at', 'observer_bonus',
+        'structural_coherence', 'entropy',
     ];
 
     protected $casts = [
@@ -19,6 +20,8 @@ class Universe extends Model
         'observation_load' => 'float',
         'last_observed_at' => 'datetime',
         'observer_bonus' => 'float',
+        'structural_coherence' => 'float',
+        'entropy' => 'float',
     ];
 
     public function world(): BelongsTo
@@ -59,6 +62,11 @@ class Universe extends Model
     public function supremeEntities(): HasMany
     {
         return $this->hasMany(SupremeEntity::class);
+    }
+
+    public function materialInstances(): HasMany
+    {
+        return $this->hasMany(MaterialInstance::class);
     }
 
     // --- Domain Logic removed (Moved to UniverseEntity) ---

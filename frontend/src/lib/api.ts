@@ -157,5 +157,21 @@ export const api = {
   async socialContracts(id: number) {
     return apiFetch(`/worldos/universes/${id}/social-contracts`);
   },
+  async exportWorld(id: number) {
+    const data = await apiFetch(`/worldos/worlds/${id}/export`);
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `world-${id}-export.json`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  },
+  async importWorld(payload: any) {
+    return apiFetch("/worldos/worlds/import", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
 };
 

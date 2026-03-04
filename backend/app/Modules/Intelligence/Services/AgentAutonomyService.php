@@ -2,15 +2,19 @@
 
 namespace App\Modules\Intelligence\Services;
 
-use App\Models\Actor;
 use App\Models\Universe;
 use App\Models\AgentDecision;
 use App\Models\SocialContract;
 use App\Models\Chronicle;
+use App\Modules\Intelligence\Contracts\ActorRepositoryInterface;
+use App\Modules\Intelligence\Entities\ActorEntity;
 use Illuminate\Support\Facades\DB;
 
 class AgentAutonomyService
 {
+    public function __construct(
+        private ActorRepositoryInterface $actorRepository
+    ) {}
     protected array $actionWeights = [
         'form_contract' => [
             'Solidarity' => 0.8,
@@ -53,7 +57,7 @@ class AgentAutonomyService
 
     public function process(Universe $universe, int $tick): void
     {
-        $actors = Actor::where('universe_id', $universe->id)->where('is_alive', true)->get();
+        $actors = $this->actorRepository->findByUniverse($universe->id);
         $globalEntropy = (float)($universe->state_vector['entropy'] ?? 0.0);
 
         foreach ($actors as $actor) {
@@ -64,10 +68,10 @@ class AgentAutonomyService
         }
     }
 
-    protected function makeDecision(Actor $actor, float $globalEntropy): ?array
+    protected function makeDecision(ActorEntity $actor, float $globalEntropy): ?array
     {
         $traits = $actor->traits; 
-        $dimensions = \App\Services\Simulation\HeroicActorService::TRAIT_DIMENSIONS;
+        $dimensions = ActorEntity::TRAIT_DIMENSIONS;
         
         $utilities = [];
         foreach ($this->actionWeights as $action => $weights) {
@@ -102,7 +106,7 @@ class AgentAutonomyService
         return null;
     }
 
-    protected function applyDecision(Actor $actor, array $decision, Universe $universe, int $tick): void
+    protected function applyDecision(ActorEntity $actor, array $decision, Universe $universe, int $tick): void
     {
         $impact = [];
         $vec = $universe->state_vector ?? [];
@@ -122,7 +126,7 @@ class AgentAutonomyService
                 break;
             case 'migrate':
                 $actor->biography .= "\n- T{$tick}: Quyết định dời bước khỏi chốn cũ, tìm kiếm chân trời mới.";
-                $actor->save();
+                $this->actorRepository->save($actor);
                 break;
             case 'propagate_myth':
                 $currentMyth = $vec['metrics']['myth_intensity'] ?? 0;
@@ -154,17 +158,16 @@ class AgentAutonomyService
         ]);
     }
 
-    protected function handleSocialContract(Actor $actor, Universe $universe, int $tick): void
+    protected function handleSocialContract(ActorEntity $actor, Universe $universe, int $tick): void
     {
-        $others = Actor::where('universe_id', $universe->id)
-            ->where('id', '!=', $actor->id)
-            ->where('is_alive', true)
-            ->limit(3)
-            ->get();
+        $others = $this->actorRepository->findByUniverse($universe->id);
+        $others = array_filter($others, fn($o) => $o->id != $actor->id && $o->isAlive);
+        $others = array_slice($others, 0, 3);
 
-        if ($others->isEmpty()) return;
+        if (empty($others)) return;
 
-        $participants = $others->pluck('id')->push($actor->id)->toArray();
+        $participants = array_map(fn($o) => $o->id, $others);
+        $participants[] = $actor->id;
 
         SocialContract::create([
             'universe_id' => $universe->id,
@@ -176,9 +179,9 @@ class AgentAutonomyService
             'expires_at_tick' => $tick + 100,
         ]);
 
-        $names = $others->pluck('name')->implode(', ');
+        $names = implode(', ', array_map(fn($o) => $o->name, $others));
         $actor->biography .= "\n- T{$tick}: Ký kết giao ước liên thủ với {$names}.";
-        $actor->save();
+        $this->actorRepository->save($actor);
 
         Chronicle::create([
             'universe_id' => $universe->id,
@@ -192,10 +195,10 @@ class AgentAutonomyService
         ]);
     }
 
-    protected function handleRevolt(Actor $actor, Universe $universe, int $tick): void
+    protected function handleRevolt(ActorEntity $actor, Universe $universe, int $tick): void
     {
         $actor->biography .= "\n- T{$tick}: Bùng nổ nộ khí, công khai phản kháng lại trật tự hiện hành.";
-        $actor->save();
+        $this->actorRepository->save($actor);
 
         Chronicle::create([
             'universe_id' => $universe->id,

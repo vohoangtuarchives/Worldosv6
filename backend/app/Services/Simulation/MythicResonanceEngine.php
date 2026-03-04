@@ -4,7 +4,7 @@ namespace App\Services\Simulation;
 
 use App\Models\Universe;
 use App\Models\Chronicle;
-use App\Services\Simulation\WorldEdictEngine;
+use App\Modules\Institutions\Services\WorldEdictEngine;
 use Illuminate\Support\Facades\Log;
 
 /**

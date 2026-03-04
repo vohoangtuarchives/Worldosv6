@@ -1,68 +1,99 @@
-# Laravel
-/src/backend/vendor/
-/src/backend/node_modules/
-/src/backend/.env
-/src/backend/.env.backup
-/src/backend/.phpunit.result.cache
-/src/backend/Homestead.json
-/src/backend/Homestead.yaml
-/src/backend/npm-debug.log
-/src/backend/yarn-error.log
-/src/backend/storage/*.key
-/src/backend/storage/logs/*
-/src/backend/storage/framework/cache/*
-/src/backend/storage/framework/sessions/*
-/src/backend/storage/framework/testing/*
-/src/backend/storage/framework/views/*
-/src/backend/bootstrap/cache/*
-/src/backend/public/assets/
+# =============================================================================
+# WORLDOS - .gitignore
+# =============================================================================
 
-*# Next.js
-/src/frontend/.next/
-/src/frontend/node_modules/
-/src/frontend/.env.local
-/src/frontend/.env.development.local
-/src/frontend/.env.test.local
-/src/frontend/.env.production.local
-/src/frontend/npm-debug.log*
-/src/frontend/yarn-debug.log*
-/src/frontend/yarn-error.log*
-/src/frontend/build
-/src/frontend/out
-/src/frontend/.DS_Store
-/src/frontend/*.pem
+# ─── Environment & Secrets ────────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.p12
+*.pfx
 
-/node_modules
-/.next
+# ─── Laravel (backend/) ───────────────────────────────────────────────────────
+backend/vendor/
+backend/.env
+backend/.env.*
+backend/.phpunit.result.cache
+backend/storage/logs/*
+backend/storage/framework/cache/*
+backend/storage/framework/sessions/*
+backend/storage/framework/testing/*
+backend/storage/framework/views/*
+backend/bootstrap/cache/*
+backend/public/hot
+backend/public/storage
 
-# IDE and Editor files
+# ─── Next.js (frontend/, bloom/) ──────────────────────────────────────────────
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/.env.local
+frontend/.env.*.local
+
+bloom/node_modules/
+bloom/.next/
+bloom/out/
+bloom/.env.local
+bloom/.env.*.local
+
+# ─── Rust Engine (engine/) ────────────────────────────────────────────────────
+engine/target/
+
+# ─── Python / Narrative Loom (narrative-loom/) ────────────────────────────────
+narrative-loom/__pycache__/
+narrative-loom/*.pyc
+narrative-loom/*.pyo
+narrative-loom/.venv/
+narrative-loom/venv/
+narrative-loom/.env
+
+# ─── Node.js (general) ────────────────────────────────────────────────────────
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+package-lock.json.backup
+
+# ─── Docker ───────────────────────────────────────────────────────────────────
+.docker/data/
+docker-compose.override.yml
+
+# ─── IDE & Editor ─────────────────────────────────────────────────────────────
 .idea/
 .vscode/
 *.swp
 *.swo
 *.swn
+*~
+
+# ─── OS ───────────────────────────────────────────────────────────────────────
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
 Thumbs.db
+ehthumbs.db
+Desktop.ini
 
-# Docker
-.docker/data/
-docker-compose.override.yml
-
-# Logs
+# ─── Logs & Debug ─────────────────────────────────────────────────────────────
 *.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+logs/
 
-# Testing
-/coverage
-.nyc_output
+# ─── Test & Coverage ──────────────────────────────────────────────────────────
+coverage/
+.nyc_output/
+.phpunit.cache/
 
-# Misc
+# ─── Build Artifacts ──────────────────────────────────────────────────────────
+dist/
+build/
 *.bak
 *.cache
-*.env
-*.local
+*.tmp
 
-# Editor backup files
-*~
+# ─── Composer ─────────────────────────────────────────────────────────────────
+.composer/

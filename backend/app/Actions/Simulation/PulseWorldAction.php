@@ -12,7 +12,7 @@ class PulseWorldAction
 {
     public function __construct(
         protected UniverseRuntimeService $runtime,
-        protected \App\Services\Simulation\WorldAutonomicEngine $autonomicEngine,
+        protected \App\Modules\Simulation\Services\WorldRegulatorEngine $autonomicEngine,
         protected TemporalSyncService $temporalSync,
         protected AnomalyGeneratorService $anomalyGenerator
     ) {}

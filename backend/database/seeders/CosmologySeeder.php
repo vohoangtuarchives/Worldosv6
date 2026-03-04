@@ -39,6 +39,7 @@ class CosmologySeeder extends Seeder
                 'is_autonomic' => true,
                 'current_genre' => 'urban',
                 'base_genre' => 'urban',
+                'global_tick' => 0,
             ]
         );
 

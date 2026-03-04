@@ -54,7 +54,7 @@ class TimelineMergeAction
             // 3. Record Convergence Event
             BranchEvent::create([
                 'universe_id' => $prime->id,
-                'tick' => $prime->current_tick,
+                'from_tick' => $prime->current_tick,
                 'event_type' => 'convergence',
                 'description' => "Timeline synthesis of [{$uA->id}] and [{$uB->id}] into Prime Timeline.",
                 'payload' => [

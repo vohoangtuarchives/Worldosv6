@@ -16,7 +16,7 @@ use App\Actions\Simulation\DecideUniverseAction;
 use App\Actions\Simulation\ForkUniverseAction;
 use App\Services\Simulation\GenreBifurcationEngine;
 use App\Services\Simulation\ZoneConflictEngine;
-use App\Services\Simulation\WorldEdictEngine;
+use App\Modules\Institutions\Services\WorldEdictEngine;
 use App\Services\Simulation\AscensionEngine;
 use App\Actions\Simulation\DemiurgeAutonomousAction;
 use App\Services\Simulation\ConvergenceEngine;
@@ -79,13 +79,25 @@ class AdvanceSimulationAction
             $this->temporalSync->advanceGlobalClock($universe->world, $ticks);
             $this->temporalSync->synchronize($universe);
 
-            $savedSnapshot = $this->saveSnapshot($universe, $snapshotData);
+            $interval = $universe->world->snapshot_interval ?? 1;
+            $shouldSave = ($snapshotData['tick'] % $interval === 0) || ($snapshotData['tick'] == 0);
+            
+            $savedSnapshot = null;
+            if ($shouldSave) {
+                $savedSnapshot = $this->saveSnapshot($universe, $snapshotData);
+            }
 
             // FIRE EVENT: Decoupled logic handled by Listeners
-            event(new \App\Events\Simulation\UniverseSimulationPulsed($universe, $savedSnapshot, $response));
+            // Note: If snapshot wasn't saved, we pass a mockup or the previous one, 
+            // but GenerateNarrative needs current data. For now, we pass the raw data if savedSnapshot is null.
+            event(new \App\Events\Simulation\UniverseSimulationPulsed(
+                $universe, 
+                $savedSnapshot ?? $universe->snapshots()->orderByDesc('tick')->first(), 
+                $response
+            ));
 
             // Update Universe latest tick
-            $this->universeRepository->update($universe->id, ['current_tick' => $savedSnapshot->tick]);
+            $this->universeRepository->update($universe->id, ['current_tick' => $snapshotData['tick']]);
 
             // Phase 93: Internal Resonance (§V20)
             // The simulation now audits itself without Architect intervention

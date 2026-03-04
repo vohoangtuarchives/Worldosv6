@@ -4,7 +4,7 @@ namespace App\Services\Simulation;
 
 use App\Models\Demiurge;
 use App\Models\Universe;
-use App\Actions\Saga\SagaService;
+use App\Services\Saga\SagaService;
 use Illuminate\Support\Facades\Log;
 
 /**

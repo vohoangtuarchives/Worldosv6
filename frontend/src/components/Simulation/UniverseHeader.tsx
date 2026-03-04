@@ -9,6 +9,7 @@ interface UniverseHeaderProps {
     onFork: () => void;
     onPulse: (ticks: number) => void;
     onToggleAutonomic: () => void;
+    onExport?: () => void;
     busy?: boolean;
 }
 
@@ -18,6 +19,7 @@ export function UniverseHeader({
     onFork,
     onPulse,
     onToggleAutonomic,
+    onExport,
     busy,
 }: UniverseHeaderProps) {
     const [pulseTicks, setPulseTicks] = React.useState(5);
@@ -73,6 +75,14 @@ export function UniverseHeader({
                     className="h-9 rounded-md border border-input bg-background px-4 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors disabled:opacity-50"
                 >
                     Fork
+                </button>
+
+                <button
+                    onClick={onExport}
+                    disabled={busy || !universe}
+                    className="h-9 rounded-md border border-blue-500/50 bg-blue-500/10 text-blue-400 px-4 text-sm font-medium hover:bg-blue-500/20 transition-colors disabled:opacity-50"
+                >
+                    Export
                 </button>
             </div>
         </div>

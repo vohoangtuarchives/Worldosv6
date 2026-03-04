@@ -12,6 +12,11 @@ interface ActorRepositoryInterface
      * @return ActorEntity[]
      */
     public function findByUniverse(int $universeId): array;
+
+    /**
+     * @return ActorEntity[]
+     */
+    public function findActiveByUniverse(int $universeId): array;
     
     public function save(ActorEntity $actor): void;
     

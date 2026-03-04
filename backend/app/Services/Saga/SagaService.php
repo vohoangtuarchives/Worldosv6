@@ -75,8 +75,8 @@ class SagaService
 
         if (!empty($metaEdicts)) {
             $initialState = $initialState ?? [];
-            // We store them in a temporary structure that WorldEdictEngine will pick up
-            // or we can just let WorldEdictEngine::decree handle it.
+            // We store them in a temporary structure that Institutions/WorldEdictEngine will pick up
+            // or we can just let Institutions/WorldEdictEngine::decree handle it.
             // For immediate effect in the very first tick, we ensure they are considered.
             $initialState['inherited_meta_edicts'] = array_keys($metaEdicts);
         }

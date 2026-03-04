@@ -72,6 +72,40 @@ fn run_merge(state_a_input: &[u8], state_b_input: &[u8]) -> Result<(u64, String,
     Ok((snap.tick, state_vector_json, entropy, stability_index, metrics_json, sci, instability_gradient))
 }
 
+fn run_observe(universe_id: u64, zone_index: u32, intensity: f64, state_input: &[u8]) -> Result<(u64, String, f64, f64, String, f64, f64), String> {
+    let mut state: UniverseState = if state_input.is_empty() {
+        UniverseState::with_one_zone(universe_id, 100.0)
+    } else {
+        serde_json::from_slice(state_input).map_err(|e| format!("state_input json: {}", e))?
+    };
+
+    // Apply observer effect: boost entropy (disorder) in the observed zone
+    if let Some(zone) = state.zones.get_mut(zone_index as usize) {
+        zone.state.entropy = (zone.state.entropy + intensity * 0.05).min(1.0);
+    }
+
+    let world = WorldConfig {
+        world_id: 0,
+        origin: "observed".to_string(),
+        axiom: None,
+        world_seed: None,
+    };
+
+    let _events = tick_with_cascade(&mut state, &world, 4);
+
+    let snap = state.to_snapshot();
+    let state_vector_json = serde_json::to_string(&snap.state_vector).unwrap_or_else(|_| "{}".to_string());
+    let metrics_json = serde_json::to_string(&snap.metrics).unwrap_or_else(|_| "{}".to_string());
+    let entropy = snap.entropy.unwrap_or(0.0);
+    let stability_index = snap.stability_index.unwrap_or(0.0);
+    let sci = state.sci;
+    let instability_gradient = state.instability_gradient;
+
+    Ok((snap.tick, state_vector_json, entropy, stability_index, metrics_json, sci, instability_gradient))
+}
+
+
+
 #[tonic::async_trait]
 impl SimulationEngine for EngineService {
     async fn advance(

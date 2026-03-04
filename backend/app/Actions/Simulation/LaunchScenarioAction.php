@@ -3,7 +3,7 @@
 namespace App\Actions\Simulation;
 
 use App\Models\Universe;
-use App\Services\Simulation\ScenarioEngine;
+use App\Modules\Simulation\Services\ScenarioEngine;
 
 class LaunchScenarioAction
 {

@@ -75,7 +75,7 @@ class CelestialEngineeringAction
         foreach ($world->universes()->where('status', 'active')->get() as $universe) {
             BranchEvent::create([
                 'universe_id' => $universe->id,
-                'tick' => $universe->current_tick,
+                'from_tick' => $universe->current_tick,
                 'event_type' => 'axiom_shift',
                 'description' => "Cosmological constant shift: " . json_encode($payload),
             ]);
@@ -90,7 +90,7 @@ class CelestialEngineeringAction
         foreach ($world->universes()->where('status', 'active')->get() as $universe) {
             BranchEvent::create([
                 'universe_id' => $universe->id,
-                'tick' => $universe->current_tick,
+                'from_tick' => $universe->current_tick,
                 'event_type' => 'macro_edict',
                 'description' => "Grand Edict: {$edictName}",
                 'payload' => $payload

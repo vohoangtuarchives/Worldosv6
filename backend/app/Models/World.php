@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class World extends Model
 {
-    protected $fillable = ['multiverse_id', 'name', 'slug', 'axiom', 'world_seed', 'origin', 'current_genre', 'base_genre', 'active_genre_weights', 'is_autonomic', 'global_tick', 'is_chaotic'];
+    protected $fillable = ['multiverse_id', 'name', 'slug', 'axiom', 'world_seed', 'origin', 'current_genre', 'base_genre', 'active_genre_weights', 'is_autonomic', 'global_tick', 'is_chaotic', 'snapshot_interval'];
 
     protected $casts = [
         'axiom' => 'array',
@@ -17,6 +17,7 @@ class World extends Model
         'is_autonomic' => 'boolean',
         'global_tick' => 'integer',
         'is_chaotic' => 'boolean',
+        'snapshot_interval' => 'integer',
     ];
 
     public function multiverse(): BelongsTo

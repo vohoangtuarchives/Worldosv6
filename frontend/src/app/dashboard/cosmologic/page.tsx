@@ -6,10 +6,7 @@ import { UniverseHeader } from "@/components/Simulation/UniverseHeader";
 import { MetricGrid } from "@/components/Simulation/MetricGrid";
 import { AxiomConsole } from "@/components/Simulation/AxiomConsole";
 import { SimulationTopology } from "@/components/Simulation/SimulationTopology";
-import { EventFeed } from "@/components/Simulation/EventFeed";
 import FactionList from "@/components/Simulation/FactionList";
-import { ChronicleView } from "@/components/Simulation/ChronicleView";
-import MaterialSystemView from "@/components/Simulation/MaterialSystemView";
 import GreatFilterAlert from "@/components/Simulation/GreatFilterAlert";
 import { SupremeEntityList } from "@/components/Simulation/SupremeEntityList";
 import { ConvergenceView } from "@/components/Simulation/ConvergenceView";
@@ -150,6 +147,45 @@ function CosmologicContent() {
     }
   };
 
+  const handleExport = async () => {
+    if (!universe?.world?.id) return;
+    setBusy(true);
+    try {
+      await api.exportWorld(universe.world.id);
+      setMessage({ text: "Dữ liệu World đã được xuất thành công", type: 'info' });
+    } catch (e) {
+      setMessage({ text: "Export thất bại", type: 'error' });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setBusy(true);
+    try {
+      const reader = new FileReader();
+      const content = await new Promise<string>((resolve) => {
+        reader.onload = (ev) => resolve(ev.target?.result as string);
+        reader.readAsText(file);
+      });
+
+      const payload = JSON.parse(content);
+      await api.importWorld(payload);
+      await refresh();
+      setMessage({ text: "Dữ liệu World đã được nhập thành công", type: 'info' });
+    } catch (e) {
+      setMessage({ text: "Import thất bại: Định dạng file không hợp lệ", type: 'error' });
+    } finally {
+      setBusy(false);
+      e.target.value = ""; // Reset input
+    }
+  };
+
+  const [activeTab, setActiveTab] = useState<'overview' | 'entities' | 'intervention'>('overview');
+
   if (!universeId) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-4">
@@ -175,8 +211,16 @@ function CosmologicContent() {
         onFork={handleFork}
         onPulse={handlePulse}
         onToggleAutonomic={handleToggleAutonomic}
+        onExport={handleExport}
         busy={busy}
       />
+
+      <div className="flex items-center justify-end mb-4">
+        <label className="cursor-pointer h-9 rounded-md bg-green-600/20 border border-green-500/50 text-green-400 px-4 text-sm font-medium flex items-center hover:bg-green-600/30 transition-all">
+          <span>Import World (JSON)</span>
+          <input type="file" className="hidden" accept=".json" onChange={handleImport} disabled={busy} />
+        </label>
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div className="md:col-span-3">
@@ -189,86 +233,107 @@ function CosmologicContent() {
             </div>
           )}
         </div>
-        <div className="md:col-span-1 space-y-6">
-          <OriginDiagnostic
-            origin={universe?.world?.origin || 'Default'}
-          />
-          <ResonanceMonitor universeId={universeId} />
-          <AutonomicControl
-            universeId={universeId}
-            axioms={universe?.world?.axiom || {}}
-          />
-        </div>
       </div>
 
-      {/* Main Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        <div className="lg:col-span-3 space-y-6">
-          <ResonanceWeb universeId={universeId} />
-          <ConvergenceMonitor universeId={universeId} currentTick={latestSnapshot?.tick || 0} />
-          <EpochNavigator universeId={universeId} />
-          <MetricGrid snapshot={latestSnapshot} />
+      {/* Tabs Navigation */}
+      <div className="flex items-center space-x-2 border-b border-border pb-px overflow-x-auto">
+        <button
+          onClick={() => setActiveTab('overview')}
+          className={`px-4 py-2 font-medium text-sm transition-colors border-b-2 whitespace-nowrap ${activeTab === 'overview'
+            ? 'border-primary text-primary'
+            : 'border-transparent text-muted-foreground hover:text-foreground hover:border-muted'
+            }`}
+        >
+          Macroscopic Overview
+        </button>
+        <button
+          onClick={() => setActiveTab('entities')}
+          className={`px-4 py-2 font-medium text-sm transition-colors border-b-2 whitespace-nowrap ${activeTab === 'entities'
+            ? 'border-primary text-primary'
+            : 'border-transparent text-muted-foreground hover:text-foreground hover:border-muted'
+            }`}
+        >
+          Entities & Simulation
+        </button>
+        <button
+          onClick={() => setActiveTab('intervention')}
+          className={`px-4 py-2 font-medium text-sm transition-colors border-b-2 whitespace-nowrap ${activeTab === 'intervention'
+            ? 'border-primary text-primary'
+            : 'border-transparent text-muted-foreground hover:text-foreground hover:border-muted'
+            }`}
+        >
+          Divine Intervention
+        </button>
+      </div>
 
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
-            <div className="col-span-4 h-full">
+      {/* Sub-Layout: Overview Segment */}
+      {activeTab === 'overview' && (
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 animate-in slide-in-from-left-2 fade-in">
+          <div className="lg:col-span-3 space-y-6">
+            <EpochNavigator universeId={universeId} />
+            <MetricGrid snapshot={latestSnapshot} />
+            <div className="col-span-4 h-[500px]">
               <SimulationTopology universeId={universeId} />
             </div>
-            <div className="col-span-3 h-full">
-              <EventFeed universeId={universeId} />
+            <div className="col-span-4 h-[500px]">
+              <GraphView
+                nodes={graphData.nodes || []}
+                edges={graphData.edges || []}
+              />
             </div>
           </div>
-        </div>
-
-        <div className="lg:col-span-1 border-l border-white/5 pl-4 space-y-6">
-          <ObservationMonitor observationLoad={universe?.observation_load || 0} />
-          <IntegrityMonitor entities={universe?.supreme_entities || []} />
-          <UniversalLaw universeId={universeId} />
-          <VoidArchive universeId={universeId} />
-          <TimelineComparison universeId={universeId} />
-          <WarRoom universeId={universeId} />
-        </div>
-      </div>
-
-      <div className="grid gap-6">
-
-        {/* Row 3: Advanced Controls */}
-        <div className="grid gap-6 lg:grid-cols-2">
-          <AxiomConsole
-            initialAxioms={universe?.world?.axiom || {}}
-            onUpdate={handleUpdateAxioms}
-            busy={busy}
-          />
-          <SupremeEntityList universeId={universeId} />
-          <CivilizationList universeId={universeId} />
-          <FactionList universeId={universeId} />
-          <ConvergenceView universeId={universeId} />
-          <ArchitectThrone
-            universeId={universeId}
-            currentTick={latestSnapshot?.tick || 0}
-            activeEdicts={latestSnapshot?.metrics?.active_edicts || {}}
-          />
-          <ScenarioSelector universeId={universeId} />
-          <ActorList universeId={universeId} />
-        </div>
-
-        {/* Row 4: Material System & Mutations */}
-        <div className="grid gap-6 lg:grid-cols-2">
-          <div className="h-[600px] border border-emerald-500/20 rounded-xl overflow-hidden bg-slate-900/40">
-            <MaterialSystemView universeId={universeId} />
+          <div className="lg:col-span-1 border-l border-white/5 pl-4 space-y-6">
+            <OriginDiagnostic origin={universe?.world?.origin || 'Default'} />
+            <AutonomicControl universeId={universeId} axioms={universe?.world?.axiom || {}} />
+            <ObservationMonitor observationLoad={universe?.observation_load || 0} />
+            <TimelineComparison universeId={universeId} />
           </div>
-          <div className="h-[600px]">
-            <GraphView
-              nodes={graphData.nodes || []}
-              edges={graphData.edges || []}
+        </div>
+      )}
+
+      {/* Sub-Layout: Entities Segment */}
+      {activeTab === 'entities' && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in slide-in-from-left-2 fade-in">
+          <div className="lg:col-span-2 space-y-6">
+            <ResonanceWeb universeId={universeId} />
+            <SupremeEntityList universeId={universeId} />
+            <CivilizationList universeId={universeId} />
+            <ActorList universeId={universeId} />
+          </div>
+          <div className="lg:col-span-1 border-l border-white/5 pl-4 space-y-6">
+            <IntegrityMonitor entities={universe?.supreme_entities || []} />
+            <FactionList universeId={universeId} />
+            <ConvergenceMonitor universeId={universeId} currentTick={latestSnapshot?.tick || 0} />
+          </div>
+        </div>
+      )}
+
+      {/* Sub-Layout: Divine Intervention Segment */}
+      {activeTab === 'intervention' && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-in slide-in-from-left-2 fade-in">
+          <div className="space-y-6">
+            <AxiomConsole
+              initialAxioms={universe?.world?.axiom || {}}
+              onUpdate={handleUpdateAxioms}
+              busy={busy}
             />
+            <ScenarioSelector universeId={universeId} />
+            <ResonanceMonitor universeId={universeId} />
+          </div>
+          <div className="space-y-6 border-l border-white/5 pl-4">
+            <ArchitectThrone
+              universeId={universeId}
+              currentTick={latestSnapshot?.tick || 0}
+              activeEdicts={latestSnapshot?.metrics?.active_edicts || {}}
+            />
+            <UniversalLaw universeId={universeId} />
+            <VoidArchive universeId={universeId} />
+            <WarRoom universeId={universeId} />
+            <ConvergenceView universeId={universeId} />
           </div>
         </div>
+      )}
 
-        {/* Row 5: Narrative History */}
-        <div className="h-[400px]">
-          <ChronicleView universeId={universeId} />
-        </div>
-      </div>
     </div>
   );
 }

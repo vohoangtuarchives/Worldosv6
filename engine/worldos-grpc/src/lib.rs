@@ -5,4 +5,7 @@ pub mod worldos {
 }
 
 pub use worldos::simulation::simulation_engine_server;
-pub use worldos::simulation::{AdvanceRequest, AdvanceResponse, UniverseSnapshot, WorldConfig};
+pub use worldos::simulation::{
+    AdvanceRequest, AdvanceResponse, UniverseSnapshot, WorldConfig,
+    MergeRequest, MergeResponse, ObserveRequest, ObserveResponse,
+};

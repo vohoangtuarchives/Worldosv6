@@ -12,7 +12,7 @@ class AutonomicPulseAction
         protected AdvanceSimulationAction $advanceAction,
         protected AutonomicDecisionEngine $autonomicEngine,
         protected \App\Services\Simulation\CulturalDynamicsService $culturalService,
-        protected \App\Services\Simulation\WorldAutonomicEngine $worldAutonomicEngine
+        protected \App\Modules\Simulation\Services\WorldRegulatorEngine $worldAutonomicEngine
     ) {}
 
     /**

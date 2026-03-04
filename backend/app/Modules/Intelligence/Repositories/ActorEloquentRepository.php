@@ -22,6 +22,15 @@ class ActorEloquentRepository implements ActorRepositoryInterface
             ->toArray();
     }
 
+    public function findActiveByUniverse(int $universeId): array
+    {
+        return ActorModel::where('universe_id', $universeId)
+            ->where('is_alive', true)
+            ->get()
+            ->map(fn($model) => $this->mapToEntity($model))
+            ->toArray();
+    }
+
     public function save(ActorEntity $entity): void
     {
         $data = [

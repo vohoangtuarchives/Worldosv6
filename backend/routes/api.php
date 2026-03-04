@@ -20,6 +20,9 @@ use App\Models\LegendaryAgent;
 Route::post('/login', [AuthController::class, 'login'])->name('login');
 Route::post('/register', [AuthController::class, 'register']);
 
+// Phase 124: Bloom UI DAG Data (Public Endpoint)
+Route::get('/bloom/multiverse', [MultiverseMapController::class, 'bloom'])->name('worldos.bloom.multiverse.public');
+
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'me']);
@@ -140,6 +143,20 @@ Route::middleware('auth:sanctum')->prefix('worldos')->group(function () {
         return response()->json($contracts);
     })->name('worldos.universes.social-contracts');
 
+    /*
+    |--------------------------------------------------------------------------
+    | SCRIPTORIUM BRIDGE API (V24)
+    |--------------------------------------------------------------------------
+    | Endpoints for the external NarrativeLoom (LangGraph) architecture.
+    | Provides raw, semantic-rich data for AI narrative generation.
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('loom/v1/narrative')->group(function () {
+        Route::get('chronicles', [\App\Http\Controllers\Api\Loom\LoomChronicleController::class, 'index']);
+        Route::get('characters/{character_id}', [\App\Http\Controllers\Api\Loom\LoomCharacterController::class, 'show']);
+        Route::get('state-snapshot/{world_id}', [\App\Http\Controllers\Api\Loom\LoomWorldStateController::class, 'show']);
+    });
+
     Route::get('universes/{id}/supreme-entities', function (string $id) {
         $entities = \App\Models\SupremeEntity::where('universe_id', (int) $id)
             ->orderBy('entity_type')
@@ -156,7 +173,7 @@ Route::middleware('auth:sanctum')->prefix('worldos')->group(function () {
         return response()->json($entities);
     })->name('worldos.universes.institutional-entities');
 
-    Route::get('edicts', function (\App\Services\Simulation\WorldEdictEngine $engine) {
+    Route::get('edicts', function (\App\Modules\Institutions\Services\WorldEdictEngine $engine) {
         return response()->json($engine->getEdictDictionary());
     })->name('worldos.edicts.list');
 
@@ -192,7 +209,7 @@ Route::middleware('auth:sanctum')->prefix('worldos')->group(function () {
         return response()->json(['data' => $trajectories]);
     })->name('worldos.universes.causal-trajectories');
 
-    Route::get('scenarios', function (\App\Services\Simulation\ScenarioEngine $engine) {
+    Route::get('scenarios', function (\App\Modules\Simulation\Services\ScenarioEngine $engine) {
         return response()->json($engine->getScenarioList());
     })->name('worldos.scenarios.list');
 
@@ -347,6 +364,15 @@ Route::middleware('auth:sanctum')->prefix('worldos')->group(function () {
         return response()->json($result);
     })->name('worldos.worlds.axiom');
 
+    Route::get('worlds/{id}/export', function (string $id, \App\Actions\Simulation\ExportWorldAction $action) {
+        return response()->json($action->execute($id));
+    })->name('worldos.worlds.export');
+
+    Route::post('worlds/import', function (\Illuminate\Http\Request $request, \App\Actions\Simulation\ImportWorldAction $action) {
+        $world = $action->execute($request->all());
+        return response()->json($world, 201);
+    })->name('worldos.worlds.import');
+
     // Legacy Saga Routes (DEPRECATED - No ticking allowed here)
     // saga/run-batch and saga/genesis-v3 removed as they represent archaic saga-centric ticking
 
@@ -442,6 +468,8 @@ Route::middleware('auth:sanctum')->prefix('worldos')->group(function () {
     Route::get('legends', function () {
         return response()->json(LegendaryAgent::with('universe:id,name')->orderByDesc('tick_discovered')->get());
     })->name('worldos.legends.index');
+
+    // Phase 124 API mapping moved to public space
 
     // Phase 88: Observer Console (§V18)
     Route::get('observer/dashboard', [\App\Http\Controllers\Api\ObserverDashboardController::class, 'getStatus'])
