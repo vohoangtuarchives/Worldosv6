@@ -26,6 +26,7 @@ class PressureResolverTest extends TestCase
             'axiom' => [],
             'world_seed' => [],
             'origin' => 'generic',
+            'global_tick' => 0,
         ]);
         $saga = Saga::create(['world_id' => $world->id, 'name' => 'S', 'status' => 'active']);
         return Universe::create([

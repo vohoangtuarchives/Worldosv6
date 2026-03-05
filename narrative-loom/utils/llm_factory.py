@@ -38,5 +38,14 @@ def get_llm(provider: str = "openai", model_name: str = None) -> BaseChatModel:
             api_key="not-needed",
             temperature=0.7
         )
+    elif provider in ("alibaba", "dashscope", "qwen"):
+        # Alibaba DashScope — compatible with OpenAI API format
+        dashscope_key = os.getenv("DASHSCOPE_API_KEY", os.getenv("ALIBABA_API_KEY", ""))
+        return ChatOpenAI(
+            model_name=model_name or "qwen-max",
+            base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
+            api_key=dashscope_key,
+            temperature=0.7
+        )
     else:
         raise ValueError(f"Provider {provider} chưa được hỗ trợ.")

@@ -10,9 +10,7 @@ use Illuminate\Support\Facades\DB;
 
 abstract class BaseArchetype implements ActorArchetypeInterface
 {
-    public function __construct(
-        protected ApplyMythScarAction $applyMythScarAction
-    ) {}
+    public function __construct() {}
 
     abstract public function getName(): string;
 
@@ -25,15 +23,13 @@ abstract class BaseArchetype implements ActorArchetypeInterface
      */
     protected function createScar(Universe $universe, UniverseSnapshot $snapshot, string $name, string $desc, float $severity = 0.5): void
     {
-        $this->applyMythScarAction->execute($universe, $snapshot, [
-            'meta' => [
-                'mutation_suggestion' => [
-                    'add_scar' => $name,
-                    'scar_description' => $desc,
-                    'scar_severity' => $severity
-                ]
-            ]
-        ]);
+        event(new \App\Modules\Intelligence\Events\ArchetypeImpactEvent(
+            $universe,
+            $snapshot,
+            $name,
+            $desc,
+            $severity
+        ));
     }
 
     /**

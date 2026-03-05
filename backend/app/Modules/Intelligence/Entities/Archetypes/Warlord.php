@@ -24,9 +24,17 @@ class Warlord extends BaseArchetype
         return 0.7 * (1 - $stability);
     }
 
-    public function applyImpact(Universe $universe, UniverseSnapshot $snapshot, array $winnerAgent): string
+    public function applyImpact(Universe $universe, UniverseSnapshot $snapshot, array $winnerAgent): array
     {
-        $this->createScar($universe, $snapshot, 'Huyết Chiến', 'Một cuộc thanh trừng quy mô lớn đã diễn ra.', 0.8);
-        return "Binh đao loạn lạc, kẻ mạnh sinh tồn.";
+        return [
+            new \App\Modules\Intelligence\Events\ArchetypeImpactEvent(
+                $universe,
+                $snapshot,
+                'Huyết Chiến',
+                'Một cuộc thanh trừng quy mô lớn đã diễn ra.',
+                0.8,
+                "Binh đao loạn lạc, kẻ mạnh sinh tồn."
+            )
+        ];
     }
 }

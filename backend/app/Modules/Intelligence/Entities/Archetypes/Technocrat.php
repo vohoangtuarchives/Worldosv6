@@ -24,8 +24,17 @@ class Technocrat extends BaseArchetype
         return 0.6 * $stability;
     }
 
-    public function applyImpact(Universe $universe, UniverseSnapshot $snapshot, array $winnerAgent): string
+    public function applyImpact(Universe $universe, UniverseSnapshot $snapshot, array $winnerAgent): array
     {
-        return "Trật tự và hiệu suất được ưu tiên hàng đầu.";
+        return [
+            new \App\Modules\Intelligence\Events\ArchetypeImpactEvent(
+                $universe,
+                $snapshot,
+                'Trật Tự Kỷ Nguyên',
+                'Máy móc thay thế một phần quyền lực.',
+                0.5,
+                "Trật tự và hiệu suất được ưu tiên hàng đầu."
+            )
+        ];
     }
 }

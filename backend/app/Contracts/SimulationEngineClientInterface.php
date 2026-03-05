@@ -13,11 +13,11 @@ interface SimulationEngineClientInterface
      *
      * @param  int  $universeId
      * @param  int  $ticks
-     * @param  string  $stateInput  Optional serialized state to load (empty = load from store).
+     * @param  array  $stateInput  Optional state vector array.
      * @param  array|null  $worldConfig Optional world metadata (origin, axioms, etc.)
      * @return array{ok: bool, snapshot?: array, error_message?: string}
      */
-    public function advance(int $universeId, int $ticks, string $stateInput = '', ?array $worldConfig = null): array;
+    public function advance(int $universeId, int $ticks, array $stateInput = [], ?array $worldConfig = null): array;
 
     /**
      * Merge two universes into one.

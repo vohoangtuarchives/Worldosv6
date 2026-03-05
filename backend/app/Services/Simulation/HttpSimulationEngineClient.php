@@ -16,7 +16,7 @@ class HttpSimulationEngineClient implements SimulationEngineClientInterface
         protected string $baseUrl
     ) {}
 
-    public function advance(int $universeId, int $ticks, string $stateInput = '', ?array $worldConfig = null): array
+    public function advance(int $universeId, int $ticks, array $stateInput = [], ?array $worldConfig = null): array
     {
         $url = rtrim($this->baseUrl, '/').'/advance';
         $payload = [

@@ -30,7 +30,8 @@ class SagaServiceTest extends TestCase
             'status' => 'active',
             'axiom' => [],
             'world_seed' => [],
-            'origin' => 'generic'
+            'origin' => 'generic',
+            'global_tick' => 0,
         ]);
 
         $runtime = Mockery::mock(UniverseRuntimeService::class);

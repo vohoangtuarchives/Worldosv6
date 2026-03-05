@@ -18,17 +18,14 @@ class TraitSystemTest extends TestCase
     {
         $elder = new VillageElder();
         
-        $vietnameseWorld = World::factory()->create([
-            'evolution_genome' => ['origin_heritage' => 'Vietnamese']
-        ]);
+        $vietnameseWorld = new World();
+        $vietnameseWorld->evolution_genome = ['origin_heritage' => 'Vietnamese'];
         
-        $spiritualWorld = World::factory()->create([
-            'evolution_genome' => ['spirituality' => 0.8]
-        ]);
+        $spiritualWorld = new World();
+        $spiritualWorld->evolution_genome = ['spirituality' => 0.8];
         
-        $normalWorld = World::factory()->create([
-            'evolution_genome' => ['origin_heritage' => 'Western', 'spirituality' => 0.1]
-        ]);
+        $normalWorld = new World();
+        $normalWorld->evolution_genome = ['origin_heritage' => 'Western', 'spirituality' => 0.1];
 
         $this->assertTrue($elder->isEligible($vietnameseWorld));
         $this->assertTrue($elder->isEligible($spiritualWorld));
@@ -51,7 +48,7 @@ class TraitSystemTest extends TestCase
         $warlord = new \App\Domain\Simulation\Actors\Archetypes\Warlord();
         
         // Warlord cực kỳ mạnh khi ổn định thấp (1.6 - stability)
-        $this->assertEquals(1.5, $warlord->getBaseUtility(0.1));
-        $this->assertEquals(0.7, $warlord->getBaseUtility(0.9));
+        $this->assertEqualsWithDelta(1.5, $warlord->getBaseUtility(0.1), 0.001);
+        $this->assertEqualsWithDelta(0.7, $warlord->getBaseUtility(0.9), 0.001);
     }
 }

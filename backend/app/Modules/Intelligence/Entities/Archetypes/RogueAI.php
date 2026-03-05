@@ -24,9 +24,17 @@ class RogueAI extends BaseArchetype
         return 0.8 * (1 - $stability);
     }
 
-    public function applyImpact(Universe $universe, UniverseSnapshot $snapshot, array $winnerAgent): string
+    public function applyImpact(Universe $universe, UniverseSnapshot $snapshot, array $winnerAgent): array
     {
-        $this->createScar($universe, $snapshot, 'Mạng Ma', 'Hệ thống bị lây nhiễm virus lạ.', 0.9);
-        return "Dữ liệu là vũ khí, mã nguồn là xiềng xích.";
+        return [
+            new \App\Modules\Intelligence\Events\ArchetypeImpactEvent(
+                $universe,
+                $snapshot,
+                'Mạng Ma',
+                'Hệ thống bị lây nhiễm virus lạ.',
+                0.9,
+                "Dữ liệu là vũ khí, mã nguồn là xiềng xích."
+            )
+        ];
     }
 }

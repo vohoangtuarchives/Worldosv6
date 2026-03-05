@@ -5,12 +5,14 @@ namespace App\Modules\Intelligence\Actions;
 use App\Models\Universe;
 use App\Models\BranchEvent;
 use App\Modules\Intelligence\Contracts\ActorRepositoryInterface;
+use App\Modules\Intelligence\Services\ArchetypeResolverService;
 
 class SpawnFromEventsAction
 {
     public function __construct(
         private SpawnActorAction $spawnActorAction,
-        private ActorRepositoryInterface $actorRepository
+        private ActorRepositoryInterface $actorRepository,
+        private ArchetypeResolverService $archetypeResolver
     ) {}
 
     public function handle(Universe $universe, int $tick): void
@@ -43,12 +45,13 @@ class SpawnFromEventsAction
 
     private function spawnSpontaneousActor(Universe $universe): void
     {
-        // Note: For now, we still rely on some hardcoded names or generic ones
-        // In a real scenario, we would use a NameGeneratorService
+        $axiom = $universe->world->axiom ?? [];
+        $archetype = $this->archetypeResolver->resolve($axiom, $universe->entropy ?? 0.5, $universe->structural_coherence ?? 0.5);
+
         $this->spawnActorAction->handle([
             'universe_id' => $universe->id,
-            'name' => "Ẩn Sĩ " . rand(100, 999),
-            'archetype' => 'Kẻ Lang Thang',
+            'name' => "Nhân Vật " . rand(100, 999),
+            'archetype' => $archetype,
             'biography' => "Cảm ứng thiên địa, xuất thế giữa lúc năng lượng dao động mạnh.",
             'metrics' => ['influence' => 0.5],
         ]);

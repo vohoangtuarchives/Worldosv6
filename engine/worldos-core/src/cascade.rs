@@ -33,7 +33,7 @@ pub fn tick_with_cascade(
             if p > 0.8 {
                 events.push(SimEvent::MicroMode);
                 state.trigger_micro_mode(i);
-                state.scars.push(format!("Tick {}: Micro-Mode Triggered (Zone {})", state.tick, i));
+                state.scars.push(format!("Tick {}: Micro-Mode Triggered (Zone {})", state.tick, i).into());
             }
             // Apply one cascade step: increase entropy/trauma in this zone
             state.zones[i].state.entropy = (state.zones[i].state.entropy + 0.05).min(1.0);
@@ -59,7 +59,7 @@ pub fn tick_with_cascade(
         for (agent_id, trait_idx) in deity_interventions {
             events.push(SimEvent::DeityIntervention);
             state.perform_deity_intervention(i, trait_idx);
-            state.scars.push(format!("Tick {}: DEITY INTERVENTION by Agent {} (Trait {})", state.tick, agent_id, trait_idx));
+            state.scars.push(format!("Tick {}: DEITY INTERVENTION by Agent {} (Trait {})", state.tick, agent_id, trait_idx).into());
         }
 
         // Phase 57: Quantum Realities & Observer Effect (§57)
@@ -95,7 +95,7 @@ pub fn tick_with_cascade(
 
         if collapse_triggered {
             events.push(SimEvent::WavefunctionCollapse);
-            state.scars.push(format!("Tick {}: Wavefunction Collapse (Zone {})", state.tick, i));
+            state.scars.push(format!("Tick {}: Wavefunction Collapse (Zone {})", state.tick, i).into());
         }
 
         // Phase 61: Spontaneous Birth Trigger (§V9)
@@ -107,7 +107,7 @@ pub fn tick_with_cascade(
             let seed = (state.tick + i as u64) % 1000;
             if seed == 0 {
                 events.push(SimEvent::Cosmogenesis);
-                state.scars.push(format!("Tick {}: CƠN SỐT SÁNG THẾ (Cosmogenesis) tại Zone {}", state.tick, i));
+                state.scars.push(format!("Tick {}: CƠN SỐT SÁNG THẾ (Cosmogenesis) tại Zone {}", state.tick, i).into());
             }
         }
     }

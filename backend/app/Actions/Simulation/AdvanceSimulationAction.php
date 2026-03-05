@@ -61,7 +61,7 @@ class AdvanceSimulationAction
         $universe = $this->universeRepository->find($universeId);
 
         if (!$universe || $universe->status === 'halted') {
-            return ['ok' => false, 'error' => 'Universe not found or is halted'];
+            return ['ok' => false, 'error_message' => 'Universe not found or is halted'];
         }
 
         $stateInput = $this->prepareEngineStateInput($universe);
@@ -119,14 +119,14 @@ class AdvanceSimulationAction
             $this->processAlignments($universe);
 
             // Phase 76 & 82 & 85: Autonomous Will, Empowerment & Miracles (§V14, §V16, §V17)
-            if ($savedSnapshot->tick % 5 === 0) {
+            if ($savedSnapshot && $savedSnapshot->tick % 5 === 0) {
                 $this->empowerDemiurges->execute();
                 $this->demiurgeAction->execute();
                 $this->triggerRandomMiracles($universe);
             }
 
             // Phase 86 & 95: Cosmic Balance & Self-Evolving Axioms (§V17, §V20)
-            if ($savedSnapshot->tick % 50 === 0) {
+            if ($savedSnapshot && $savedSnapshot->tick % 50 === 0) {
                 $this->heatDeath->monitor();
                 $this->axiomMutation->execute($universe->world);
             }
@@ -221,7 +221,7 @@ class AdvanceSimulationAction
         ]);
     }
 
-    private function prepareEngineStateInput($universe): string
+    private function prepareEngineStateInput($universe): array
     {
         $vec = is_array($universe->state_vector) ? $universe->state_vector : [];
         $zones = [];
@@ -255,7 +255,7 @@ class AdvanceSimulationAction
             ])->toArray(),
         ];
 
-        return json_encode($stateObj);
+        return $stateObj;
     }
 
     private function prepareWorldConfig($universe): array
@@ -264,8 +264,8 @@ class AdvanceSimulationAction
         return [
             'world_id' => (int) $world->id,
             'origin' => (string) $world->current_origin ?? 'generic',
-            'axiom_json' => json_encode($world->evolution_genome ?? []),
-            'world_seed_json' => json_encode($world->world_seed ?? []),
+            'axiom' => $world->evolution_genome ?? [],
+            'world_seed' => $world->world_seed ?? [],
         ];
     }
 }

@@ -5,15 +5,10 @@ namespace App\Modules\Intelligence\Entities;
 use App\Models\World;
 use App\Models\Universe;
 use App\Models\UniverseSnapshot;
-use App\Actions\Simulation\ApplyMythScarAction;
 use App\Modules\Intelligence\Entities\Contracts\ActorArchetypeInterface;
 
 abstract class BaseArchetype implements ActorArchetypeInterface
 {
-    public function __construct(
-        protected ApplyMythScarAction $applyMythScarAction
-    ) {}
-
     abstract public function getName(): string;
 
     abstract public function isEligible(World $world): bool;
@@ -21,23 +16,23 @@ abstract class BaseArchetype implements ActorArchetypeInterface
     abstract public function getBaseUtility(float $stability): float;
 
     /**
-     * Tiện ích hỗ trợ tạo sẹo lịch sử.
+     * Tiện ích hỗ trợ tạo sẹo lịch sử (qua Domain Event).
      */
-    protected function createScar(Universe $universe, UniverseSnapshot $snapshot, string $name, string $desc, float $severity = 0.5): void
+    protected function createScarEvent(Universe $universe, UniverseSnapshot $snapshot, string $name, string $desc, float $severity = 0.5): \App\Modules\Intelligence\Events\ArchetypeImpactEvent
     {
-        $this->applyMythScarAction->execute($universe, $snapshot, [
-            'meta' => [
-                'mutation_suggestion' => [
-                    'add_scar' => $name,
-                    'scar_description' => $desc,
-                    'scar_severity' => $severity
-                ]
-            ]
-        ]);
+        return new \App\Modules\Intelligence\Events\ArchetypeImpactEvent(
+            universe: $universe,
+            snapshot: $snapshot,
+            scarName: $name,
+            scarDesc: $desc,
+            severity: $severity
+        );
     }
 
     /**
-     * Mặc định tác động chung: để lại một dấu ấn trong Chronicle.
+     * Mặc định tác động chung: trả về mảng các event cần dispatch, hoặc cấu trúc dữ liệu mô tả impact.
+     * Để không break code cũ, ta có thể giữ interface cũ, nhưng lý tưởng là trả về array các objects
+     * cho Engine gọi Event::dispatch().
      */
-    abstract public function applyImpact(Universe $universe, UniverseSnapshot $snapshot, array $winnerAgent): string;
+    abstract public function applyImpact(Universe $universe, UniverseSnapshot $snapshot, array $winnerAgent): array;
 }

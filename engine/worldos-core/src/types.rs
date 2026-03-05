@@ -188,7 +188,7 @@ pub struct SimulationMetrics {
     pub knowledge_frontier_avg: f64,
     pub instability_gradient: f64,
     pub zone_count: u32,
-    pub scars: Vec<String>,
+    pub scars: Vec<serde_json::Value>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

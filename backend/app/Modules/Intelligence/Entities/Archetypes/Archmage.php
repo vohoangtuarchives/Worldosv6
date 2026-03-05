@@ -24,8 +24,17 @@ class Archmage extends BaseArchetype
         return 0.5;
     }
 
-    public function applyImpact(Universe $universe, UniverseSnapshot $snapshot, array $winnerAgent): string
+    public function applyImpact(Universe $universe, UniverseSnapshot $snapshot, array $winnerAgent): array
     {
-        return "Linh khí dao động, phép tắc thiên địa thay đổi.";
+        return [
+            new \App\Modules\Intelligence\Events\ArchetypeImpactEvent(
+                $universe,
+                $snapshot,
+                'Sóng Cổ Phép',
+                'Linh khí dao động mạnh',
+                0.5,
+                "Linh khí dao động, phép tắc thiên địa thay đổi."
+            )
+        ];
     }
 }

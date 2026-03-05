@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Crimson_Pro, JetBrains_Mono, Space_Grotesk } from "next/font/google";
 import "./globals.css";
+import StarField from "@/components/StarField";
 
 const display = Space_Grotesk({
   variable: "--font-display",
@@ -30,9 +31,10 @@ export default function RootLayout({
   return (
     <html lang="vi">
       <body
-        className={`${display.variable} ${narrative.variable} ${mono.variable} antialiased`}
+        className={`${display.variable} ${narrative.variable} ${mono.variable} antialiased relative`}
       >
-        {children}
+        <StarField />
+        <div className="relative z-10">{children}</div>
       </body>
     </html>
   );

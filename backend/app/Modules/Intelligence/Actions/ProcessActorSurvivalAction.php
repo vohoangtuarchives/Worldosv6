@@ -9,7 +9,8 @@ use Illuminate\Support\Facades\Log;
 class ProcessActorSurvivalAction
 {
     public function __construct(
-        private ActorRepositoryInterface $actorRepository
+        private ActorRepositoryInterface $actorRepository,
+        private \App\Modules\Intelligence\Services\ActorTransitionSystem $transitionSystem
     ) {}
 
     public function handle(Universe $universe, array $simulationResponse): void
@@ -24,14 +25,17 @@ class ProcessActorSurvivalAction
 
             $oldState = $actor->isAlive;
             
-            // 1. Core Survival (Entropy/Stability)
-            $actor->processSurvival($entropy, $worldStability);
+            // Generate seeded RNG for this survival check
+            $rng = new \App\Modules\Intelligence\Domain\Rng\SimulationRng(
+                $universe->seed ?? 0,
+                $universe->current_tick ?? 0,
+                $actor->id
+            );
             
-            // 2. Trait Drift
-            $actor->driftTraits();
-            
-            // 3. Life cycle (Aging/Risk)
-            $actor->applyLifeCycle($entropy);
+            // Convert to State -> Process -> Convert back to Entity
+            $state = $actor->toState();
+            $state = $this->transitionSystem->processSurvival($state, $entropy, $rng);
+            $actor->fromState($state);
 
             if ($oldState && !$actor->isAlive) {
                 $deathCount++;

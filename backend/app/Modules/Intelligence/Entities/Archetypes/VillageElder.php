@@ -24,8 +24,17 @@ class VillageElder extends BaseArchetype
         return 0.4 * $stability;
     }
 
-    public function applyImpact(Universe $universe, UniverseSnapshot $snapshot, array $winnerAgent): string
+    public function applyImpact(Universe $universe, UniverseSnapshot $snapshot, array $winnerAgent): array
     {
-        return "Kinh nghiệm là tài sản quý báu nhất của bộ lạc.";
+        return [
+            new \App\Modules\Intelligence\Events\ArchetypeImpactEvent(
+                $universe,
+                $snapshot,
+                'Thư Viện Cổ',
+                'Kinh nghiệm truyền lại cho thế hệ sau.',
+                0.2,
+                "Kinh nghiệm là tài sản quý báu nhất của bộ lạc."
+            )
+        ];
     }
 }

@@ -6,13 +6,16 @@ use App\Modules\Intelligence\Contracts\ActorRepositoryInterface;
 use App\Modules\Intelligence\Actions\SpawnActorAction;
 use App\Models\Universe;
 use App\Services\Narrative\NarrativeGeneratorService;
+use App\Modules\Intelligence\Services\ArchetypeResolverService;
 
 class ActorEvolutionService
 {
     public function __construct(
         private ActorRepositoryInterface $actorRepository,
         private SpawnActorAction $spawnAction,
-        private NarrativeGeneratorService $narrativeService
+        private NarrativeGeneratorService $narrativeService,
+        private ArchetypeResolverService $archetypeResolver,
+        private \App\Modules\Intelligence\Actions\RunMicroCycleAction $runMicroCycleAction
     ) {}
 
     /**
@@ -43,32 +46,46 @@ class ActorEvolutionService
     }
 
     /**
-     * Evolve existing actors: update traits, age them, or record life events.
+     * Evolve existing actors by orchestrating the Phase 6 Meta-Cycle
      */
     public function evolve(Universe $universe, int $tick): void
     {
-        $actors = $this->actorRepository->findByUniverse($universe->id);
+        $actorEntities = $this->actorRepository->findByUniverse($universe->id);
+        
+        if (count($actorEntities) === 0) return;
 
-        foreach ($actors as $actor) {
-            // $actor is ActorEntity
-            $actor->driftTraits(0.02);
-            
-            // Random life record (chance 20% per pulse)
-            if (rand(1, 100) > 80) {
-                $this->recordLifeEvent($actor->id, $tick, []);
-            }
-
-            // Life cycle
-            $influence = $actor->metrics['influence'] ?? 0;
-            $chanceOfDeath = $influence > 5.0 ? 0.02 : 0.005;
-
-            if (rand(0, 1000) / 1000 < $chanceOfDeath) {
-                $actor->isAlive = false;
-                $actor->biography .= "\n- T" . $tick . ": Kết thúc một chương huyền thoại.";
-            }
-
-            $this->actorRepository->save($actor);
+        // Convert Entities to States
+        $actorStates = [];
+        $actorMap = [];
+        foreach ($actorEntities as $entity) {
+            $state = $entity->toState();
+            $actorStates[] = $state;
+            $actorMap[$entity->id] = $entity;
         }
+
+        // Run Phase 6 Micro Cycle
+        $worldAxiom = $universe->world->axiom ?? [];
+        $result = $this->runMicroCycleAction->handle($universe, $tick, $actorStates, $worldAxiom);
+        
+        $nextActorStates = $result['actors'];
+        $updatedUniverse = $result['universe'];
+
+        // Persist Actor States back
+        foreach ($nextActorStates as $state) {
+            $entity = $actorMap[$state->id];
+            $entity->fromState($state);
+            
+            // Random life record (chance 10% per pulse for active ones)
+            if ($entity->isAlive && rand(1, 100) > 90) {
+                // Not ideal putting narrative call here but works for legacy flow mapping
+                $this->recordLifeEvent($entity->id, $tick, []);
+            }
+            
+            $this->actorRepository->save($entity);
+        }
+
+        // Save Universe Macro metrics
+        $updatedUniverse->save();
     }
 
     public function generateRandomTraits(): array
@@ -86,10 +103,13 @@ class ActorEvolutionService
         $count = $this->actorRepository->getActiveCount($universe->id);
         
         while ($count < $min) {
+            $axiom = $universe->world->axiom ?? [];
+            $archetype = $this->archetypeResolver->resolve($axiom, $universe->entropy ?? 0.5, $universe->structural_coherence ?? 0.5);
+
             $this->spawnAction->handle([
                 'universe_id' => $universe->id,
-                'name' => "Ẩn Sĩ " . rand(100, 999),
-                'archetype' => 'Kẻ Lang Thang',
+                'name' => "Nhân Vật " . rand(100, 999),
+                'archetype' => $archetype,
                 'traits' => $this->generateRandomTraits(),
                 'biography' => "Cảm ứng thiên địa, xuất thế giữa lúc năng lượng dao động mạnh.",
                 'metrics' => ['influence' => 0.5],

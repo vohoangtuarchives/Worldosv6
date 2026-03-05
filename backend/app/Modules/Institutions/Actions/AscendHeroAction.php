@@ -21,7 +21,7 @@ class AscendHeroAction
         
         foreach ($candidates as $actor) {
              // We work with ActorEntity here if using repository, else update repository to filter
-             if ($actor->metrics['influence'] > 85.0) {
+             if (($actor->metrics['influence'] ?? 0) > 85.0) {
                  $traits = $actor->traits ?? [];
                  if (($traits[1] ?? 0) > 0.95 || ($traits[8] ?? 0) > 0.95) {
                      if (rand(1, 100) <= 20) {

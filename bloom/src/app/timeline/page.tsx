@@ -464,7 +464,7 @@ export default function SacredTimeline() {
     }
 
     return (
-        <div style={{ width: '100vw', height: '100vh', background: '#09090b' }}>
+        <div style={{ width: '100vw', height: '100vh' }}>
             <ReactFlow
                 nodes={graphData.nodes}
                 edges={graphData.edges}
@@ -472,7 +472,7 @@ export default function SacredTimeline() {
                 fitView
                 fitViewOptions={{ padding: 0.15 }}
             >
-                <Background gap={24} size={1} color="#222" />
+                <Background gap={24} size={1} color="#222" style={{ background: 'transparent' }} />
                 <Controls style={{ background: '#18181b', border: '1px solid #333' }} />
                 <MiniMap
                     nodeColor={(n) =>

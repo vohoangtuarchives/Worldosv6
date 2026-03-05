@@ -22,7 +22,7 @@ pub struct UniverseState {
     #[serde(default)]
     pub sci: f64, // Structural Coherence Index (§4.3)
     #[serde(default)]
-    pub scars: Vec<String>,
+    pub scars: Vec<serde_json::Value>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -323,7 +323,7 @@ impl UniverseState {
                 z.state.entropy = (z.state.entropy + 0.5).min(1.0);
                 z.state.active_materials.clear(); 
             }
-            self.scars.push(format!("Phát động Meta-Cycle tại tick {}", self.tick));
+            self.scars.push(format!("Phát động Meta-Cycle tại tick {}", self.tick).into());
             return true;
         }
         false

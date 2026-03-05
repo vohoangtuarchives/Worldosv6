@@ -3,15 +3,12 @@
 namespace App\Actions\Simulation;
 
 use App\Models\Universe;
-use App\Services\Simulation\AutonomicDecisionEngine;
 use Illuminate\Support\Facades\Log;
 
 class AutonomicPulseAction
 {
     public function __construct(
         protected AdvanceSimulationAction $advanceAction,
-        protected AutonomicDecisionEngine $autonomicEngine,
-        protected \App\Services\Simulation\CulturalDynamicsService $culturalService,
         protected \App\Modules\Simulation\Services\WorldRegulatorEngine $worldAutonomicEngine
     ) {}
 
@@ -41,7 +38,7 @@ class AutonomicPulseAction
                     if ($response['ok'] ?? false) {
                         $results[$universe->id] = 'success';
                     } else {
-                        $results[$universe->id] = 'failed: ' . ($response['error'] ?? 'unknown');
+                        $results[$universe->id] = 'failed: ' . ($response['error_message'] ?? $response['error'] ?? 'unknown');
                     }
                 } catch (\Throwable $e) {
                     Log::error("Pulse error for Universe {$universe->id}: " . $e->getMessage());

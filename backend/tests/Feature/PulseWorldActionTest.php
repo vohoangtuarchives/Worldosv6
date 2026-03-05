@@ -30,7 +30,8 @@ class PulseWorldActionTest extends TestCase
             'status' => 'active',
             'axiom' => [],
             'world_seed' => [],
-            'origin' => 'generic'
+            'origin' => 'generic',
+            'global_tick' => 0,
         ]);
 
         $u1 = Universe::create([
@@ -64,7 +65,17 @@ class PulseWorldActionTest extends TestCase
             ->andReturn(['ok' => true]);
 
         // 3. Run Action
-        $action = new PulseWorldAction($runtime);
+        $autonomicEngine = Mockery::mock(\App\Modules\Simulation\Services\WorldRegulatorEngine::class);
+        $autonomicEngine->shouldReceive('process')->with($world)->once()->andReturnNull();
+
+        $temporalSync = Mockery::mock(\App\Services\Simulation\TemporalSyncService::class);
+        $temporalSync->shouldReceive('advanceGlobalClock')->with($world, 10)->once();
+        $temporalSync->shouldReceive('synchronize')->twice();
+
+        $anomalyGen = Mockery::mock(\App\Services\Simulation\AnomalyGeneratorService::class);
+        $anomalyGen->shouldReceive('generate')->andReturnNull();
+
+        $action = new PulseWorldAction($runtime, $autonomicEngine, $temporalSync, $anomalyGen);
         $results = $action->execute($world, 10);
 
         // 4. Assertions

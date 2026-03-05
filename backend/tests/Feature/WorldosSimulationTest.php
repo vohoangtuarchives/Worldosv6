@@ -36,6 +36,7 @@ class WorldosSimulationTest extends TestCase
             'axiom' => [],
             'world_seed' => [],
             'origin' => 'generic',
+            'global_tick' => 0,
         ]);
         $saga = Saga::create(['world_id' => $world->id, 'name' => 'Test Saga', 'status' => 'active']);
         Universe::create([

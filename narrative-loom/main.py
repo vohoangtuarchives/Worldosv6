@@ -78,8 +78,32 @@ async def weave_chronicles(req: ChronicleRequest):
     return {
         "message": "Narrative Synthesis Complete.",
         "chronicles_count": len(data.get("data", [])),
-        "supported_models": ["openai", "anthropic", "google", "groq", "local"],
+        "supported_models": ["openai", "anthropic", "google", "groq", "local", "alibaba"],
         "historical_outline": final_state.get("historical_outline"),
         "storyboard": final_state.get("storyboard"),
         "final_prose": final_state.get("final_prose")
     }
+
+
+# ── Actor Intent Endpoint ─────────────────────────────────────────────────────
+
+from agents.intent_agent import ActorIntentRequest, ActorIntentResponse, intent_agent
+
+@app.post("/actor-intent", response_model=ActorIntentResponse)
+async def actor_intent(req: ActorIntentRequest):
+    """
+    Real-time LLM decision: nhận actor state + universe context,
+    trả về hành động AI quyết định + reasoning dùng làm biography entry.
+
+    Default: local Ollama (qwen2.5:7b).
+    Override bằng cách truyền provider="alibaba" để dùng DashScope.
+    Laravel phải fallback về DecisionEngine nếu endpoint trả về 503.
+    """
+    try:
+        return await intent_agent(req)
+    except Exception as e:
+        from fastapi import HTTPException
+        raise HTTPException(
+            status_code=503,
+            detail=f"Intent agent failed: {str(e)}"
+        )

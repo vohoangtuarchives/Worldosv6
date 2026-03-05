@@ -198,6 +198,7 @@ services:
     restart: always
     ports:
       - "80:80"
+      - "3001:3001"
     volumes:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
       - backend_public:/var/www/public:ro # Read-only public files

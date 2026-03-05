@@ -10,13 +10,13 @@ use App\Contracts\SimulationEngineClientInterface;
  */
 class StubSimulationEngineClient implements SimulationEngineClientInterface
 {
-    public function advance(int $universeId, int $ticks, string $stateInput = '', ?array $worldConfig = null): array
+    public function advance(int $universeId, int $ticks, array $stateInput = [], ?array $worldConfig = null): array
     {
         // Simple mock of a simulation advance
         $tick = (int) (time() / 100);
-        $state = json_decode($stateInput, true) ?? [];
+        $state = $stateInput;
         $currentTick = $state['tick'] ?? 0;
-        $entropy = $state['entropy'] ?? 0.1;
+        $entropy = $state['global_entropy'] ?? $state['entropy'] ?? 0.1;
         $stability = $state['stability_index'] ?? 1.0;
         
         return [
@@ -24,7 +24,7 @@ class StubSimulationEngineClient implements SimulationEngineClientInterface
             'snapshot' => [
                 'universe_id' => $universeId,
                 'tick' => $currentTick + $ticks,
-                'state_vector' => json_encode($state),
+                'state_vector' => $state,
                 'entropy' => $entropy,
                 'stability_index' => $stability,
                 'metrics' => $state['metrics'] ?? [],

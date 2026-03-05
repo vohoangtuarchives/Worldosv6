@@ -14,6 +14,8 @@ class AgentDecision extends Model
         'target_id',
         'utility_score',
         'impact',
+        'reasoning',
+        'confidence',
         'traits_snapshot',
         'context_snapshot',
     ];
@@ -23,6 +25,7 @@ class AgentDecision extends Model
         'context_snapshot' => 'array',
         'impact' => 'array',
         'utility_score' => 'float',
+        'confidence' => 'float',
     ];
 
     public function actor()

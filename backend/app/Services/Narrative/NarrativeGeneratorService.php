@@ -60,7 +60,7 @@ class NarrativeGeneratorService
             $endpoint = str_replace('localhost', 'host.docker.internal', $endpoint);
         }
 
-        $response = Http::timeout(30)->post($endpoint, [
+        $response = Http::timeout(5)->post($endpoint, [
             'model' => $model,
             'messages' => [
                 ['role' => 'system', 'content' => 'You are a creative writer.'],

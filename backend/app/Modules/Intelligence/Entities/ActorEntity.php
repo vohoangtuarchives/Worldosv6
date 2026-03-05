@@ -2,6 +2,8 @@
 
 namespace App\Modules\Intelligence\Entities;
 
+use App\Modules\Intelligence\Entities\ActorState;
+
 class ActorEntity
 {
     public const TRAIT_DIMENSIONS = [
@@ -37,75 +39,51 @@ class ActorEntity
     ) {}
 
     /**
-     * Trait drift: Ngẫu nhiên thay đổi nhỏ các chỉ số tích cách.
+     * Increment the influence metric.
      */
-    public function driftTraits(float $variance = 0.02): void
-    {
-        if (!$this->isAlive) return;
-        
-        foreach ($this->traits as $key => &$val) {
-            $drift = (rand(-100, 100) / 100.0) * $variance;
-            $val = max(0, min(1, $val + $drift));
-        }
-    }
-
-    /**
-     * Life cycle: Kiểm tra sự lão hóa hoặc kết thúc vòng đời.
-     */
-    public function applyLifeCycle(float $entropy): void
-    {
-        if (rand(0, 100) < ($entropy * 50)) {
-            $this->isAlive = false;
-        }
-    }
-
-    public function applyAscension(int $tick): void
-    {
-        $this->isAlive = false;
-        $this->biography .= " [ĐÃ PHI THĂNG TẠI TICK $tick]";
-    }
-
     public function incrementInfluence(float $delta = 0.1): void
     {
         $this->metrics['influence'] = ($this->metrics['influence'] ?? 0) + $delta;
     }
 
     /**
-     * Logic sinh tồn: Kiểm tra xem actor có còn sống sót qua tick này hay không.
+     * Mark actor as ascended.
      */
-    public function processSurvival(float $entropy, float $worldStability): void
+    public function applyAscension(int $tick): void
     {
-        if (!$this->isAlive) return;
-
-        // Logic đơn giản: Nếu entropy quá cao và may mắn thấp -> Chết
-        $survivalThreshold = 0.9 * (1 - $worldStability);
-        $deathRoll = ($this->traits['luck'] ?? 0.5) * (1 - $entropy);
-
-        if ($deathRoll < $survivalThreshold) {
-            $this->isAlive = false;
-        }
+        $this->isAlive = false;
+        $this->biography .= " [ĐÃ PHI THĂNG TẠI TICK $tick]";
     }
 
     /**
-     * Logic phát triển: Cập nhật các chỉ số dựa trên hành động thành công.
+     * Convert this Entity to the Immutable ActorState used by the Engine.
      */
-    public function evolveTraits(array $successfulActions): void
+    public function toState(): ActorState
     {
-        foreach ($successfulActions as $action) {
-            $trait = $this->mapActionToTrait($action);
-            if ($trait) {
-                $this->traits[$trait] = min(1.0, ($this->traits[$trait] ?? 0.1) + 0.05);
-            }
-        }
+        return new ActorState(
+            id: $this->id,
+            universeId: $this->universeId,
+            name: $this->name,
+            archetype: $this->archetype,
+            traits: $this->traits,
+            metrics: $this->metrics,
+            isAlive: $this->isAlive,
+            generation: $this->generation,
+            biography: $this->biography
+        );
     }
 
-    private function mapActionToTrait(string $action): ?string
+    /**
+     * Hydrate Entity from an Immutable ActorState.
+     */
+    public function fromState(ActorState $state): void
     {
-        return match($action) {
-            'combat' => 'strength',
-            'research' => 'intelligence',
-            'trade' => 'charisma',
-            default => null
-        };
+        $this->name = $state->name;
+        $this->archetype = $state->archetype;
+        $this->traits = $state->traits;
+        $this->metrics = $state->metrics;
+        $this->isAlive = $state->isAlive;
+        $this->generation = $state->generation;
+        $this->biography = $state->biography;
     }
 }

@@ -24,8 +24,17 @@ class TribalLeader extends BaseArchetype
         return 0.6;
     }
 
-    public function applyImpact(Universe $universe, UniverseSnapshot $snapshot, array $winnerAgent): string
+    public function applyImpact(Universe $universe, UniverseSnapshot $snapshot, array $winnerAgent): array
     {
-        return "Sức mạnh tập thể vượt qua mọi rào cản.";
+        return [
+            new \App\Modules\Intelligence\Events\ArchetypeImpactEvent(
+                $universe,
+                $snapshot,
+                'Đại Hội Bộ Lạc',
+                'Sức mạnh tập thể.',
+                0.3,
+                "Sức mạnh tập thể vượt qua mọi rào cản."
+            )
+        ];
     }
 }
