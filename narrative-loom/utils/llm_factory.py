@@ -15,7 +15,8 @@ def get_llm(provider: str = "openai", model_name: str = None) -> BaseChatModel:
         return ChatOpenAI(
             model_name=model_name or "gpt-4o",
             temperature=0.7,
-            api_key=os.getenv("OPENAI_API_KEY")
+            api_key=os.getenv("OPENAI_API_KEY"),
+            timeout=20
         )
     elif provider == "anthropic":
         return ChatAnthropic(
@@ -31,12 +32,17 @@ def get_llm(provider: str = "openai", model_name: str = None) -> BaseChatModel:
         )
     elif provider == "local":
         # Sử dụng OpenAI client trỏ về local endpoint (e.g. LM Studio, Ollama)
-        local_url = os.getenv("LOCAL_LLM_URL", "http://localhost:1234/v1")
+        local_url = os.getenv("LOCAL_LLM_URL") or "http://host.docker.internal:1234/v1"
+        # os.environ["OPENAI_API_BASE"] = local_url
+        print(f"DEBUG: Initializing local LLM provider: {local_url} with model {model_name}")
         return ChatOpenAI(
-            model_name=model_name or "local-model",
+            model_name=model_name or "qwen/qwen3.5-9b",
             base_url=local_url,
-            api_key="not-needed",
-            temperature=0.7
+            # openai_api_base=local_url,
+            api_key="lm-studio",
+            temperature=0.7,
+            timeout=30.0,
+            max_retries=0
         )
     elif provider in ("alibaba", "dashscope", "qwen"):
         # Alibaba DashScope — compatible with OpenAI API format
@@ -45,7 +51,8 @@ def get_llm(provider: str = "openai", model_name: str = None) -> BaseChatModel:
             model_name=model_name or "qwen-max",
             base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
             api_key=dashscope_key,
-            temperature=0.7
+            temperature=0.7,
+            timeout=20
         )
     else:
         raise ValueError(f"Provider {provider} chưa được hỗ trợ.")

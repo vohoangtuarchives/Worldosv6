@@ -1,0 +1,18 @@
+{
+    "actor_id": 1,
+    "actor_name": "Valerius",
+    "archetype": "Chiến Binh",
+    "traits": {
+        "Dominance": 0.5,
+        "Ambition": 0.5
+    },
+    "universe_context": {
+        "entropy": 0.5,
+        "stability_index": 1.0,
+        "myth_intensity": 0.5,
+        "tick": 10
+    },
+    "recent_biography": "",
+    "provider": "local",
+    "model_name": "qwen/qwen3.5-9b"
+}

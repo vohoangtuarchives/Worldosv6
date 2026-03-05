@@ -33,7 +33,7 @@ class LoomIntentClient
         $traits = $this->buildTraitMap($actor);
 
         try {
-            $response = Http::timeout(3)
+            $response = Http::timeout(120)
                 ->post("{$this->baseUrl}/actor-intent", [
                     'actor_id'          => $actor->id,
                     'actor_name'        => $actor->name,
@@ -52,7 +52,7 @@ class LoomIntentClient
                     ],
                     // Local Ollama default — can be overridden via config
                     'provider'   => config('services.narrative_loom.provider', 'local'),
-                    'model_name' => config('services.narrative_loom.model', 'qwen2.5:7b'),
+                    'model_name' => config('services.narrative_loom.model', 'qwen/qwen3.5-9b'),
                 ]);
 
             if ($response->failed()) {

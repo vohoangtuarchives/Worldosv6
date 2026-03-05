@@ -103,8 +103,11 @@ async def intent_agent(req: ActorIntentRequest) -> ActorIntentResponse:
         "actions_formatted": actions_formatted,
     }
 
-    # Force mock for this verification environment
-    if True: 
+    # Use real LLM by default, but allow mock via env var
+    use_mock = os.getenv("USE_MOCK_LLM", "false").lower() == "true"
+    print(f"DEBUG: Intent Agent call - provider={req.provider}, model={req.model_name}, use_mock={use_mock}")
+
+    if use_mock:
         # Mock response for local/unconfigured environments
         action = random.choice(req.available_actions)
         raw = json.dumps({
@@ -114,10 +117,23 @@ async def intent_agent(req: ActorIntentRequest) -> ActorIntentResponse:
             "confidence": 0.99
         })
     else:
-        llm = get_llm(provider=req.provider, model_name=req.model_name)
-        chain = _prompt | llm
-        result = await chain.ainvoke(prompt_values)
-        raw = result.content if hasattr(result, "content") else str(result)
+        try:
+            import asyncio
+            llm = get_llm(provider=req.provider, model_name=req.model_name)
+            chain = _prompt | llm
+            result = await asyncio.to_thread(chain.invoke, prompt_values)
+            raw = result.content if hasattr(result, "content") else str(result)
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            # Fallback on mock if LLM fails
+            action = random.choice(req.available_actions)
+            raw = json.dumps({
+                "action": action,
+                "intensity": 0.5,
+                "reasoning": f"Fallback error: {repr(e)}",
+                "confidence": 0.5
+            })
 
     # Parse JSON — strip markdown fences if present
     raw = re.sub(r"```json|```", "", raw).strip()
