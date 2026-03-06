@@ -7,6 +7,7 @@ use App\Models\UniverseSnapshot;
 use App\Models\Chronicle;
 use App\Models\BranchEvent;
 use App\Models\MaterialInstance;
+use App\Simulation\Support\SimulationRandom;
 use Illuminate\Support\Facades\DB;
 
 class AscensionEngine
@@ -17,20 +18,24 @@ class AscensionEngine
     public function evaluate(Universe $universe, UniverseSnapshot $snapshot): void
     {
         $metrics = $snapshot->metrics ?? [];
+        $stateVector = $snapshot->state_vector ?? [];
         $entropy = (float) ($snapshot->entropy ?? 0);
         
         // Extract order and energy_level from metrics or state_vector
         $order = (float) ($metrics['order'] ?? 0);
         $energyLevel = (float) ($metrics['energy_level'] ?? 0);
 
-        // 1. Eschaton (Tịch Diệt) - Entropy death
-        if ($entropy >= 0.99) {
+        // 1. Eschaton (Tịch Diệt) - collapse_pressure (phase) or entropy/entropy pressure
+        $collapsePressure = (float) ($stateVector['pressures']['collapse_pressure'] ?? 0);
+        $entropyPressure = (float) ($stateVector['pressures']['entropy'] ?? 0);
+        if ($entropy >= 0.99 || $entropyPressure > 0.95 || $collapsePressure > 0.95) {
             $this->triggerEschaton($universe, $snapshot);
             return;
         }
 
-        // 2. Ascension (Phi Thăng) - Transcending the phase space
-        if ($order >= 0.95 && $energyLevel >= 0.95) {
+        // 2. Ascension (Phi Thăng) - ascension_pressure (phase) or order+energy/ascension pressure
+        $ascensionPressure = (float) ($stateVector['pressures']['ascension_pressure'] ?? $stateVector['pressures']['ascension'] ?? 0);
+        if (($order >= 0.95 && $energyLevel >= 0.95) || $ascensionPressure > 0.9) {
             $this->triggerAscension($universe, $snapshot);
             return;
         }
@@ -73,9 +78,19 @@ class AscensionEngine
             ],
         ]);
 
-        // Hard Reset: Clear all material instances (they dissolve in entropy death)
-        MaterialInstance::where('universe_id', $universe->id)->delete();
-        
+        // Material survivability: each instance rolls vs ontology-based rate; survivors persist into new epoch
+        $survivabilityRates = config('worldos.eschaton_survivability', []);
+        $defaultRate = (float) ($survivabilityRates['default'] ?? 0.1);
+        $rng = new SimulationRandom((int) ($universe->seed ?? 0), (int) $snapshot->tick, 1);
+        $instances = MaterialInstance::where('universe_id', $universe->id)->with('material')->get();
+        foreach ($instances as $instance) {
+            $ontology = $instance->material?->ontology ?? 'default';
+            $rate = (float) ($survivabilityRates[$ontology] ?? $defaultRate);
+            if ($rate <= 0 || $rng->float(0, 1) >= $rate) {
+                $instance->delete();
+            }
+        }
+
         // Update snapshot metrics to reflect the reset for the next tick
         $metrics = $snapshot->metrics ?? [];
         $metrics['order'] = 0.05;

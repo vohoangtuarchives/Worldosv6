@@ -1,6 +1,7 @@
 //! Universe state: zones (SlotMap), global_entropy, knowledge_core.
 //! 3-phase tick: (1) zone local update, (2) aggregate, (3) diffusion.
 
+use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 
 use crate::constants;
@@ -86,43 +87,37 @@ impl UniverseState {
             z.state.structured_mass = z.state.structured_mass.max(0.0);
 
             // Material Pressure Resolver (WorldOS V6 §8.3)
-            // DeltaEntropy = k * Output * pressure_entropy
-            // Resonance: If >1 material, multiplier = 1.0 + 0.1 * (count - 1)
+            // Resonance: >=2 materials same slug -> 1.5x effect; else 1.0
             let mat_count = z.state.active_materials.len();
+            let mut material_stress_delta = 0.0_f64;
             if mat_count > 0 {
-                let resonance_mult = 1.0 + 0.1 * (mat_count as f64 - 1.0);
+                let count_by_slug: HashMap<String, u32> = z.state.active_materials.iter()
+                    .fold(HashMap::new(), |mut m, mat| {
+                        *m.entry(mat.slug.clone()).or_insert(0) += 1;
+                        m
+                    });
                 for mat in &mut z.state.active_materials {
-                    let impact = mat.output * resonance_mult * 0.01; // Scale factor per tick
-                    
-                    // Entropy impact
+                    let same_slug_count = *count_by_slug.get(&mat.slug).unwrap_or(&0);
+                    let resonance_mult = if same_slug_count >= 2 { 1.5 } else { 1.0 };
+                    let impact = mat.output * resonance_mult * 0.01;
+
                     z.state.entropy += mat.pressure_coefficients.entropy * impact;
-                    
-                    // Order impact (reduces entropy or increases stability - here mapped to entropy reduction)
                     if mat.pressure_coefficients.order > 0.0 {
                         z.state.entropy -= mat.pressure_coefficients.order * impact * 0.5;
                     }
-
-                    // Innovation/Knowledge impact
                     z.state.embodied_knowledge += mat.pressure_coefficients.innovation * impact * 10.0;
-                    
-                    // Growth impact (increases structured_mass organization rate or free_energy)
                     if mat.pressure_coefficients.growth > 0.0 {
                         z.state.free_energy += mat.pressure_coefficients.growth * impact * 5.0;
                     }
+                    material_stress_delta += mat.pressure_coefficients.entropy * mat.output * resonance_mult * 0.02;
 
-                    // Phase 59: Recursive Simulation (§59.2)
                     if let Some(core) = &mut mat.recursive_core {
-                        // Virtual simulation ticks inside the material
-                        let precision = mat.output; 
+                        let precision = mat.output;
                         core.virtual_entropy = (core.virtual_entropy + 0.005 * (1.0 - precision)).min(1.0);
                         core.virtual_knowledge = (core.virtual_knowledge + 0.01 * precision).min(1.0);
-
-                        // Feedback loop to parent zone
                         if core.virtual_knowledge > 0.5 {
                             z.state.embodied_knowledge += core.virtual_knowledge * core.feedback_loop * 0.1;
                         }
-
-                        // Paradox: High virtual entropy leaks instability
                         if core.virtual_entropy > 0.9 {
                             z.state.entropy += core.virtual_entropy * core.feedback_loop * 0.05;
                             z.state.material_stress = (z.state.material_stress + 0.1).min(1.0);
@@ -132,12 +127,12 @@ impl UniverseState {
             }
 
             z.state.enforce_invariant();
-            
-            // Tech Evolution (§4.2): Frontier expands towards Ceiling
+
             let growth_rate = 0.001 * (z.state.tech_ceiling - z.state.knowledge_frontier).max(0.0);
             z.state.knowledge_frontier = (z.state.knowledge_frontier + growth_rate).min(z.state.tech_ceiling);
-            
+
             z.state.update_material_stress();
+            z.state.material_stress = (z.state.material_stress + material_stress_delta).clamp(0.0, 1.0);
         }
 
         // Phase 2: aggregate global_entropy, knowledge_core, SCI
@@ -168,7 +163,7 @@ impl UniverseState {
         }
 
         // Phase 3: Diffusion (Entropy, Tech, Culture) (§3, §4.4)
-        let beta = 0.05; // Base diffusion coefficient
+        let beta = constants::BETA_DIFFUSION;
         let mut entropy_deltas = vec![0.0; self.zones.len()];
         let mut tech_deltas = vec![0.0; self.zones.len()];
         let mut culture_deltas = vec![CulturalVector::default(); self.zones.len()];
@@ -408,17 +403,54 @@ impl UniverseState {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::types::{ActiveMaterial, PressureCoefficients, WorldConfig};
 
     #[test]
     fn test_micro_mode_trigger() {
         let mut state = UniverseState::with_one_zone(1, 100.0);
         assert_eq!(state.zones[0].state.agents.len(), 0);
-        
-        // Inject stress
+
         state.zones[0].state.material_stress = 0.8;
         state.trigger_micro_mode(0);
-        
+
         assert_eq!(state.zones[0].state.agents.len(), 1);
         assert_eq!(state.zones[0].state.agents[0].archetype, crate::agent::Archetype::Opportunist);
+    }
+
+    #[test]
+    fn test_material_resonance_same_slug_amplifies_effect() {
+        let world = WorldConfig { world_id: 1, axiom: None, world_seed: None, origin: String::new() };
+        let coeff = PressureCoefficients { entropy: 0.5, order: 0.0, innovation: 0.0, growth: 0.0 };
+
+        let mut state_one = UniverseState::with_one_zone(1, 100.0);
+        state_one.zones[0].state.active_materials.push(ActiveMaterial {
+            slug: "test_material".to_string(),
+            output: 0.5,
+            pressure_coefficients: PressureCoefficients { entropy: 0.5, order: 0.0, innovation: 0.0, growth: 0.0 },
+            recursive_core: None,
+        });
+        let entropy_before_one = state_one.zones[0].state.entropy;
+        state_one.tick(&world);
+        let delta_one = state_one.zones[0].state.entropy - entropy_before_one;
+
+        let mut state_two = UniverseState::with_one_zone(1, 100.0);
+        state_two.zones[0].state.active_materials.push(ActiveMaterial {
+            slug: "test_material".to_string(),
+            output: 0.5,
+            pressure_coefficients: coeff,
+            recursive_core: None,
+        });
+        state_two.zones[0].state.active_materials.push(ActiveMaterial {
+            slug: "test_material".to_string(),
+            output: 0.5,
+            pressure_coefficients: PressureCoefficients { entropy: 0.5, order: 0.0, innovation: 0.0, growth: 0.0 },
+            recursive_core: None,
+        });
+        let entropy_before_two = state_two.zones[0].state.entropy;
+        state_two.tick(&world);
+        let delta_two = state_two.zones[0].state.entropy - entropy_before_two;
+
+        assert!(delta_two > delta_one, "two same-slug materials should produce larger entropy delta (1.5x resonance)");
+        assert!(delta_two >= 1.4 * delta_one, "resonance multiplier should be ~1.5x for >=2 same slug");
     }
 }

@@ -9,6 +9,8 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@xyflow/react": "^12.3.6",
+    "dagre": "^0.8.5",
     "framer-motion": "^12.34.4",
     "next": "16.1.6",
     "react": "19.2.3",
@@ -19,6 +21,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/dagre": "^0.7.52",
     "@types/node": "^20.19.35",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",

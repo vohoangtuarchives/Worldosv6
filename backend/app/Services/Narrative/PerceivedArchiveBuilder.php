@@ -5,6 +5,7 @@ namespace App\Services\Narrative;
 use App\Models\UniverseSnapshot;
 use App\Models\MaterialInstance;
 use App\Models\BranchEvent;
+use App\Models\MythScar;
 
 /**
  * Perceived Archive: data layer that AI is allowed to see (filtered by Epistemic Instability).
@@ -140,6 +141,15 @@ class PerceivedArchiveBuilder
 
         $residualTail = $this->residual->buildPromptTail($universeId, $tick);
 
+        // Scars: state_vector + MythScar for narrative context
+        $scarsContext = $this->buildScarsContext($universeId, $vector);
+
+        // Entropy trend: from pressures or optional previous snapshot
+        $entropyTrend = $this->inferEntropyTrend($vector);
+
+        // Event prompt templates for Crisis, GoldenAge, Fork (narrative prompts)
+        $eventTemplates = $this->buildEventTemplates($eventTypes, $vector);
+
         return [
             'flavor' => $flavorTexts,
             'events' => $eventNames,
@@ -148,9 +158,12 @@ class PerceivedArchiveBuilder
             'culture' => $avgCulture,
             'branch_events' => $branchEvents,
             'residual_prompt_tail' => $residualTail,
-            'agent_reflections' => array_slice($agentReflections, 0, 3), // AI only reflexive monologues for top 3 agents
+            'agent_reflections' => array_slice($agentReflections, 0, 3),
             'whispers' => $this->dreaming->generateWhispers($this->getUniverseModel($universeId)),
             'existence' => $existence,
+            'scars' => $scarsContext,
+            'entropy_trend' => $entropyTrend,
+            'event_prompt_templates' => $eventTemplates,
             'metrics' => [
                 'entropy' => round($vector['entropy'] ?? 0, 3),
                 'stability' => round($vector['stability_index'] ?? 0, 3),
@@ -159,6 +172,66 @@ class PerceivedArchiveBuilder
                 'reality_stability' => round($this->epistemic->calculateStability($this->getUniverseModel($universeId)), 3),
             ]
         ];
+    }
+
+    /**
+     * Build scars context for narrative: state_vector scars + MythScar records.
+     */
+    protected function buildScarsContext(int $universeId, array $vector): array
+    {
+        $out = [];
+        $vecScars = $vector['scars'] ?? [];
+        if (is_array($vecScars)) {
+            foreach ($vecScars as $s) {
+                $out[] = is_string($s) ? $s : ($s['description'] ?? $s['name'] ?? json_encode($s));
+            }
+        }
+        $dbScars = MythScar::where('universe_id', $universeId)
+            ->whereNull('resolved_at_tick')
+            ->get();
+        foreach ($dbScars as $scar) {
+            $out[] = $scar->description ?: $scar->name;
+        }
+        return array_values(array_unique(array_filter($out)));
+    }
+
+    /**
+     * Infer entropy trend from pressures or metrics (rising / falling / stable).
+     */
+    protected function inferEntropyTrend(array $vector): string
+    {
+        $pressures = $vector['pressures'] ?? [];
+        $collapse = (float) ($pressures['collapse_pressure'] ?? 0);
+        $ascension = (float) ($pressures['ascension_pressure'] ?? 0);
+        $entropy = (float) ($vector['entropy'] ?? $vector['metrics']['entropy'] ?? 0.5);
+        if ($collapse > 0.7 || $entropy > 0.8) {
+            return 'rising';
+        }
+        if ($ascension > 0.7 && $entropy < 0.3) {
+            return 'falling';
+        }
+        return 'stable';
+    }
+
+    /**
+     * Build prompt fragments for Crisis, GoldenAge, Fork for use in narrative generation.
+     */
+    protected function buildEventTemplates(array $eventTypes, array $vector): array
+    {
+        $templates = [
+            'crisis' => 'Thế giới đang trong khủng hoảng: áp lực tích tụ, định chế rạn nứt. Hãy phản ánh sự bất ổn và khả năng sụp đổ.',
+            'golden_age' => 'Thời kỳ hoàng kim: trật tự và năng lượng đạt đỉnh, văn minh thịnh vượng. Hãy phản ánh sự hưng thịnh và hy vọng.',
+            'fork' => 'Khoảnh khắc phân nhánh: vũ trụ đứng trước ngã ba, một quyết định có thể tách thành nhiều thực tại.',
+        ];
+        foreach (['crisis', 'golden_age', 'fork'] as $key) {
+            if (in_array($key, $eventTypes)) {
+                $fragment = $this->events->getPromptFragment($key, $vector);
+                if ($fragment !== '') {
+                    $templates[$key] = $fragment;
+                }
+            }
+        }
+        return $templates;
     }
 
     protected function getUniverseModel(int $id): \App\Models\Universe

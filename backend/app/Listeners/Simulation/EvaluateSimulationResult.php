@@ -8,11 +8,15 @@ use App\Actions\Simulation\ApplyMythScarAction;
 use App\Actions\Simulation\RunMicroModeAction;
 use App\Actions\Simulation\ForkUniverseAction;
 use App\Repositories\UniverseRepository;
+use App\Services\Simulation\AttractorEngine;
+use App\Services\Simulation\DynamicAttractorEngine;
+use App\Services\Simulation\EventTriggerProcessor;
 use App\Modules\Simulation\Contracts\UniverseRepositoryInterface;
 use App\Modules\Simulation\Services\VoidExplorationEngine;
 use App\Modules\Simulation\Services\EpochEngine;
 use App\Modules\Simulation\Services\ObservationInterferenceEngine;
 use App\Modules\Simulation\Services\TrajectoryModelingEngine;
+use App\Simulation\Support\SimulationRandom;
 use Illuminate\Contracts\Queue\ShouldQueue;
 
 class EvaluateSimulationResult
@@ -40,7 +44,10 @@ class EvaluateSimulationResult
         protected \App\Services\AI\EpistemicService $epistemicService,
         protected \App\Services\AI\NarrativeCompiler $narrativeCompiler,
         protected \App\Modules\Simulation\Services\MultiverseInteractionService $multiverseInteractionService,
-        protected \App\Modules\Simulation\Services\WorldRegulatorEngine $worldRegulatorEngine
+        protected \App\Modules\Simulation\Services\WorldRegulatorEngine $worldRegulatorEngine,
+        protected AttractorEngine $attractorEngine,
+        protected DynamicAttractorEngine $dynamicAttractorEngine,
+        protected EventTriggerProcessor $eventTriggerProcessor
     ) {}
 
     public function handle(UniverseSimulationPulsed $event): void
@@ -59,8 +66,22 @@ class EvaluateSimulationResult
             // 4. Run Micro Mode
             $this->runMicroModeAction->execute($universe, $snapshot, $decisionData);
 
+            // Seeded RNG for deterministic simulation (replayable)
+            $rng = new SimulationRandom((int) ($universe->seed ?? 0), (int) $snapshot->tick, 0);
+
             // Emerging Civilizations (Handled by Institutions Module)
-            $this->zoneConflictEngine->resolveConflicts($universe, $snapshot);
+            $this->zoneConflictEngine->resolveConflicts($universe, $snapshot, $rng);
+
+            // Attractor field: evaluate active attractors, persist to state_vector for event modulation
+            $this->attractorEngine->evaluate($universe, $snapshot);
+            $universe->refresh();
+
+            // Dynamic attractors: decay instances, spawn from rules, merge into active_attractors
+            $this->dynamicAttractorEngine->process($universe, $snapshot, $rng);
+            $universe->refresh();
+
+            // Event trigger processing (data-driven: rules, cooldown, probability → BranchEvent)
+            $this->eventTriggerProcessor->process($universe, $snapshot, $rng);
 
             // Simulation Module Processing (DDD)
             $universeEntity = $this->simulationUniverseRepository->findById($universe->id);
@@ -97,7 +118,7 @@ class EvaluateSimulationResult
             $this->worldEdictEngine->decree($universe, $snapshot);
 
             // 9. Great Filter, Ascension, Supreme Entities & Convergence (Handled by Institutions Module)
-            $this->greatFilterEngine->process($universe, (int)$snapshot->tick, $snapshot->state_vector ?? []);
+            $this->greatFilterEngine->process($universe, (int)$snapshot->tick, $snapshot->state_vector ?? [], $rng);
             $this->convergenceEngine->process($universe, (int)$snapshot->tick);
             $this->ascensionEngine->evaluate($universe, $snapshot);
             $this->omegaPointEngine->process($universe, $snapshot);

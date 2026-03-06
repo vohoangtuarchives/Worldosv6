@@ -154,6 +154,9 @@ export const api = {
   async branchEvents(id: number) {
     return apiFetch(`/worldos/universes/${id}/branch-events`);
   },
+  async mythScars(id: number) {
+    return apiFetch(`/worldos/universes/${id}/myth-scars`) as Promise<{ id: number; name: string; description: string | null; severity: string }[]>;
+  },
   async socialContracts(id: number) {
     return apiFetch(`/worldos/universes/${id}/social-contracts`);
   },
@@ -172,6 +175,14 @@ export const api = {
       method: "POST",
       body: JSON.stringify(payload),
     });
+  },
+  /** Redis Streams: read observer events (last_id, multiverse_id?, count?) */
+  async observerStream(params: { lastId?: string; multiverseId?: number | null; count?: number } = {}) {
+    const q = new URLSearchParams();
+    q.set("last_id", params.lastId ?? "0");
+    if (params.multiverseId != null) q.set("multiverse_id", String(params.multiverseId));
+    q.set("count", String(params.count ?? 50));
+    return apiFetch(`/worldos/observer/stream?${q.toString()}`) as Promise<{ entries: { id: string; data: Record<string, string> }[] }>;
   },
 };
 

@@ -29,7 +29,9 @@ class DatabaseSeeder extends Seeder
             MaterialSeeder::class,
             SymbolicMaterialSeeder::class,
             FlavorTextSeeder::class,
-            EventTriggerSeeder::class
+            EventTriggerSeeder::class,
+            CivilizationAttractorSeeder::class,
+            AttractorSpawnRuleSeeder::class,
         ]);
     }
 }

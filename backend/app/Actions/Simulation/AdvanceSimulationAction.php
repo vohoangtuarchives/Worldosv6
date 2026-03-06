@@ -30,6 +30,9 @@ use App\Actions\Simulation\AgentSovereigntyAction;
 use App\Services\Simulation\CelestialAntibodyEngine;
 use App\Services\Simulation\ChaosEngine;
 use App\Services\Simulation\TransmigrationEngine;
+use App\Simulation\SimulationKernel;
+use App\Simulation\Support\SnapshotLoader;
+use App\Simulation\Support\SimulationRandom;
 
 class AdvanceSimulationAction
 {
@@ -53,7 +56,9 @@ class AdvanceSimulationAction
         protected AgentSovereigntyAction $agentSovereignty,
         protected CelestialAntibodyEngine $antibodyEngine,
         protected ChaosEngine $chaosEngine,
-        protected TransmigrationEngine $transmigrationEngine
+        protected TransmigrationEngine $transmigrationEngine,
+        protected SimulationKernel $simulationKernel,
+        protected SnapshotLoader $snapshotLoader
     ) {}
 
     public function execute(int $universeId, int $ticks): array
@@ -85,6 +90,19 @@ class AdvanceSimulationAction
             $savedSnapshot = null;
             if ($shouldSave) {
                 $savedSnapshot = $this->saveSnapshot($universe, $snapshotData);
+                // Optional: run Simulation Kernel and overwrite snapshot (deterministic, effect-based)
+                if ($savedSnapshot && config('worldos.simulation_kernel_post_tick')) {
+                    $state = $this->snapshotLoader->fromSnapshot($universe, $savedSnapshot);
+                    $rng = new SimulationRandom((int) ($universe->seed ?? 0), (int) $savedSnapshot->tick, 0);
+                    $newState = $this->simulationKernel->runTick($state, $rng);
+                    $savedSnapshot = $this->snapshots->save($universe, [
+                        'tick' => $newState->getTick(),
+                        'state_vector' => $newState->getStateVector(),
+                        'entropy' => $newState->getEntropy(),
+                        'stability_index' => $newState->getStateVectorKey('stability_index') ?? $newState->getMetric('stability_index'),
+                        'metrics' => $newState->getMetrics(),
+                    ]);
+                }
             }
 
             // FIRE EVENT: Decoupled logic handled by Listeners

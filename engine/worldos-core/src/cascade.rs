@@ -1,11 +1,22 @@
-//! Event-driven cascade: when Pressure > COLLAPSE_THRESHOLD, emit event and cascade 3–4 steps.
+//! Event-driven cascade: when Pressure > COLLAPSE_THRESHOLD, emit event and cascade Famine → Riots → Collapse.
 
 use crate::constants;
 use crate::universe::UniverseState;
-use crate::types::WorldConfig;
+use crate::types::{CascadePhase, WorldConfig};
+
+fn phase_name(p: CascadePhase) -> &'static str {
+    match p {
+        CascadePhase::Normal => "Normal",
+        CascadePhase::Famine => "Famine",
+        CascadePhase::Riots => "Riots",
+        CascadePhase::Collapse => "Collapse",
+    }
+}
 
 pub enum SimEvent {
     Crisis,
+    Famine,
+    Riots,
     Collapse,
     RegimeShift,
     MicroMode,
@@ -27,20 +38,43 @@ pub fn tick_with_cascade(
 
     for i in 0..state.zones.len() {
         let p = state.pressure_at_zone(i);
+        let phase = state.zones[i].state.cascade_phase;
+
         if p >= constants::COLLAPSE_THRESHOLD {
-            events.push(SimEvent::Crisis);
+            // Advance cascade: Normal → Famine → Riots → Collapse
+            let (next_phase, event) = match phase {
+                CascadePhase::Normal => (CascadePhase::Famine, SimEvent::Famine),
+                CascadePhase::Famine => (CascadePhase::Riots, SimEvent::Riots),
+                CascadePhase::Riots => (CascadePhase::Collapse, SimEvent::Collapse),
+                CascadePhase::Collapse => (CascadePhase::Collapse, SimEvent::Crisis), // hold Collapse, still emit Crisis
+            };
+            state.zones[i].state.cascade_phase = next_phase;
+            events.push(event);
+            if phase == CascadePhase::Normal {
+                events.push(SimEvent::Crisis);
+            }
             // Trigger Micro Mode if pressure is extremely high (§3.2)
             if p > 0.8 {
                 events.push(SimEvent::MicroMode);
                 state.trigger_micro_mode(i);
                 state.scars.push(format!("Tick {}: Micro-Mode Triggered (Zone {})", state.tick, i).into());
             }
-            // Apply one cascade step: increase entropy/trauma in this zone
-            state.zones[i].state.entropy = (state.zones[i].state.entropy + 0.05).min(1.0);
-            state.zones[i].state.trauma = (state.zones[i].state.trauma + 0.03).min(1.0);
+            // Escalating entropy/trauma: Famine light, Riots stronger, Collapse heaviest
+            let (entropy_step, trauma_step) = match next_phase {
+                CascadePhase::Famine => (0.03, 0.02),
+                CascadePhase::Riots => (0.05, 0.04),
+                CascadePhase::Collapse => (0.08, 0.06),
+                CascadePhase::Normal => (0.05, 0.03),
+            };
+            state.zones[i].state.entropy = (state.zones[i].state.entropy + entropy_step).min(1.0);
+            state.zones[i].state.trauma = (state.zones[i].state.trauma + trauma_step).min(1.0);
             state.zones[i].state.update_material_stress();
+            state.scars.push(format!("Tick {}: {} (Zone {})", state.tick, phase_name(next_phase), i).into());
+            if next_phase == CascadePhase::Collapse {
+                state.zones[i].state.active_materials.clear();
+            }
         } else {
-            // If pressure is low and we have agents, resolve them (§3.2)
+            state.zones[i].state.cascade_phase = CascadePhase::Normal;
             if !state.zones[i].state.agents.is_empty() && p < 0.4 {
                 state.resolve_micro_mode(i);
             }
@@ -121,4 +155,46 @@ pub fn tick_with_cascade(
         events.truncate(max_cascade);
     }
     events
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::types::WorldConfig;
+    use crate::universe::UniverseState;
+
+    fn world_config() -> WorldConfig {
+        WorldConfig { world_id: 1, axiom: None, world_seed: None, origin: String::new() }
+    }
+
+    fn set_high_pressure(state: &mut UniverseState, zone_idx: usize) {
+        let z = &mut state.zones[zone_idx].state;
+        z.entropy = 0.95;
+        z.trauma = 0.95;
+        z.material_stress = 0.95;
+        z.inequality = 0.95;
+    }
+
+    #[test]
+    fn test_cascade_phase_famine_riots_collapse() {
+        let world = world_config();
+        let mut state = UniverseState::with_one_zone(1, 100.0);
+        set_high_pressure(&mut state, 0);
+        assert!(state.pressure_at_zone(0) >= constants::COLLAPSE_THRESHOLD);
+
+        let ev1 = tick_with_cascade(&mut state, &world, 20);
+        assert_eq!(state.zones[0].state.cascade_phase, CascadePhase::Famine);
+        assert!(ev1.iter().any(|e| matches!(e, SimEvent::Famine)));
+
+        set_high_pressure(&mut state, 0);
+        let ev2 = tick_with_cascade(&mut state, &world, 20);
+        assert_eq!(state.zones[0].state.cascade_phase, CascadePhase::Riots);
+        assert!(ev2.iter().any(|e| matches!(e, SimEvent::Riots)));
+
+        set_high_pressure(&mut state, 0);
+        let ev3 = tick_with_cascade(&mut state, &world, 20);
+        assert_eq!(state.zones[0].state.cascade_phase, CascadePhase::Collapse);
+        assert!(ev3.iter().any(|e| matches!(e, SimEvent::Collapse)));
+        assert!(state.zones[0].state.active_materials.is_empty());
+    }
 }

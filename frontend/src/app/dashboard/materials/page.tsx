@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
 import { api } from "@/lib/api";
+import { MaterialDagGraph, type MaterialDagNode, type MaterialDagEdge } from "@/components/Simulation/MaterialDagGraph";
 
 type UIMaterial = {
   id: string;
@@ -13,10 +14,15 @@ type UIMaterial = {
   culture?: string;
 };
 
+type DagView = "library" | "dag";
+
 export default function MaterialsPage() {
   const [filter, setFilter] = useState("All");
   const [materials, setMaterials] = useState<UIMaterial[]>([]);
   const [universeId, setUniverseId] = useState<number | null>(null);
+  const [view, setView] = useState<DagView>("library");
+  const [dagNodes, setDagNodes] = useState<MaterialDagNode[]>([]);
+  const [dagEdges, setDagEdges] = useState<MaterialDagEdge[]>([]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -24,11 +30,13 @@ export default function MaterialsPage() {
       setUniverseId(stored ? Number(stored) : null);
     }
   }, []);
-  type NodeResp = { id: string; data?: { label?: string; ontology?: string; culture?: string; description?: string; lifecycle?: string } };
+  type NodeResp = { id: string; position?: { x: number; y: number }; data?: { label?: string; ontology?: string; culture?: string; description?: string; lifecycle?: string } };
+  type EdgeResp = { id: string; source: string; target: string; label?: string };
   useEffect(() => {
     if (!universeId) return;
-    api.materialDag(universeId).then((res: { nodes: NodeResp[] }) => {
-      const list: UIMaterial[] = (res.nodes || []).map((n: NodeResp) => ({
+    api.materialDag(universeId).then((res: { ok?: boolean; nodes: NodeResp[]; edges?: EdgeResp[] }) => {
+      const nodes = res.nodes || [];
+      const list: UIMaterial[] = nodes.map((n: NodeResp) => ({
         id: n.id,
         name: n.data?.label || `Material ${n.id}`,
         type: n.data?.ontology || "unknown",
@@ -39,6 +47,8 @@ export default function MaterialsPage() {
         universe: "This Universe",
       }));
       setMaterials(list);
+      setDagNodes(nodes.map((n) => ({ id: n.id, position: n.position ?? { x: 0, y: 0 }, data: n.data ?? {} })));
+      setDagEdges((res.edges || []).map((e) => ({ id: e.id, source: e.source, target: e.target, label: e.label })));
     });
   }, [universeId]);
 
@@ -107,10 +117,34 @@ export default function MaterialsPage() {
 
       {/* Main Content */}
       <div className="flex-1 overflow-y-auto p-8 pt-6">
-        <div className="flex items-center justify-between space-y-2 mb-6">
+        <div className="flex items-center justify-between mb-6">
           <h2 className="text-3xl font-bold tracking-tight text-gradient-cosmos">Material Library</h2>
+          <div className="flex rounded-lg border border-border bg-muted/30 p-0.5">
+            <button
+              type="button"
+              onClick={() => setView("library")}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${view === "library" ? "bg-background text-foreground shadow" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              Library
+            </button>
+            <button
+              type="button"
+              onClick={() => setView("dag")}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${view === "dag" ? "bg-background text-foreground shadow" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              Material DAG
+            </button>
+          </div>
         </div>
-      
+
+        {view === "dag" && (
+          <div className="mb-8">
+            <p className="text-sm text-muted-foreground mb-2">Đồ thị tiến hóa vật chất (parent → child). Node viền xanh = đang active trong universe này.</p>
+            <MaterialDagGraph nodes={dagNodes} edges={dagEdges} className="w-full" />
+          </div>
+        )}
+
+        {view === "library" && (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {filteredMaterials.map((material) => (
           <div 
@@ -155,8 +189,9 @@ export default function MaterialsPage() {
             </div>
           </div>
         ))}
+        </div>
+        )}
       </div>
     </div>
-  </div>
   );
 }

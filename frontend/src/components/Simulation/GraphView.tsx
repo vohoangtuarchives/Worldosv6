@@ -1,12 +1,12 @@
-import React, { useMemo } from 'react';
-import { motion } from 'framer-motion';
-import { GitBranch, Box, Flame, Share2 } from 'lucide-react';
+import React, { useMemo, useState, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { GitBranch, Box, Flame, Share2, X } from 'lucide-react';
 
 interface Node {
     id: string;
     type: 'Universe' | 'Snapshot' | 'MythScar';
     label: string;
-    data: any;
+    data: Record<string, unknown>;
     x: number;
     y: number;
 }
@@ -24,8 +24,7 @@ interface GraphViewProps {
 }
 
 export const GraphView: React.FC<GraphViewProps> = ({ nodes, edges }) => {
-    // Simple force-directed layout simulation (placeholder)
-    // In a real app, we would use reactflow or d3-force
+    const [quickViewNode, setQuickViewNode] = useState<Node | null>(null);
 
     const processedNodes = useMemo(() => {
         return nodes.map((node, i) => ({
@@ -35,7 +34,10 @@ export const GraphView: React.FC<GraphViewProps> = ({ nodes, edges }) => {
         }));
     }, [nodes]);
 
-    const findNode = (id: string) => processedNodes.find(n => n.id === id);
+    const findNode = useCallback((id: string) => processedNodes.find(n => n.id === id), [processedNodes]);
+    const onNodeClick = useCallback((node: Node) => {
+        setQuickViewNode((prev) => (prev?.id === node.id ? null : node));
+    }, []);
 
     return (
         <div className="relative w-full h-[600px] bg-slate-900/50 rounded-xl border border-slate-800 overflow-hidden p-4">
@@ -70,7 +72,12 @@ export const GraphView: React.FC<GraphViewProps> = ({ nodes, edges }) => {
 
                 {/* Render Nodes */}
                 {processedNodes.map((node) => (
-                    <g key={node.id}>
+                    <g
+                        key={node.id}
+                        onClick={() => onNodeClick(node)}
+                        className="cursor-pointer"
+                        style={{ cursor: 'pointer' }}
+                    >
                         <motion.circle
                             initial={{ scale: 0 }}
                             animate={{ scale: 1 }}
@@ -80,7 +87,7 @@ export const GraphView: React.FC<GraphViewProps> = ({ nodes, edges }) => {
                             className={`${node.type === 'Universe' ? 'fill-blue-500' :
                                     node.type === 'Snapshot' ? 'fill-slate-600' :
                                         'fill-red-500'
-                                } cursor-pointer hover:stroke-white stroke-2 transition-all`}
+                                } hover:stroke-white stroke-2 transition-all ${quickViewNode?.id === node.id ? 'stroke-amber-400 ring-2 ring-amber-400/50' : ''}`}
                         />
                         <foreignObject x={node.x + 15} y={node.y - 10} width="120" height="40">
                             <div className="text-[10px] text-slate-300 font-mono leading-tight">
@@ -113,6 +120,43 @@ export const GraphView: React.FC<GraphViewProps> = ({ nodes, edges }) => {
                     <span>MYTHIC SCAR</span>
                 </div>
             </div>
+
+            <AnimatePresence>
+                {quickViewNode && (
+                    <motion.div
+                        key={quickViewNode.id}
+                        initial={{ opacity: 0, x: 80 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 80 }}
+                        className="absolute top-4 right-4 w-64 rounded-lg border border-slate-600 bg-slate-900/95 shadow-xl backdrop-blur p-4 z-10"
+                    >
+                        <div className="flex items-center justify-between mb-2">
+                            <span className="text-xs font-mono uppercase text-slate-400">Quick View</span>
+                            <button
+                                type="button"
+                                onClick={() => setQuickViewNode(null)}
+                                className="p-1 rounded hover:bg-slate-700 text-slate-400 hover:text-white"
+                                aria-label="Close"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+                        <div className="space-y-2 text-sm">
+                            <div><span className="text-slate-500 font-mono">ID</span> <span className="text-slate-200">{quickViewNode.id}</span></div>
+                            <div><span className="text-slate-500 font-mono">Type</span> <span className="text-slate-200">{quickViewNode.type}</span></div>
+                            <div><span className="text-slate-500 font-mono">Label</span> <span className="text-slate-200 truncate block" title={quickViewNode.label}>{quickViewNode.label}</span></div>
+                            {quickViewNode.data && Object.keys(quickViewNode.data).length > 0 && (
+                                <div className="pt-2 border-t border-slate-700">
+                                    <div className="text-slate-500 font-mono text-xs mb-1">Data</div>
+                                    <pre className="text-[10px] text-slate-400 overflow-auto max-h-24 font-mono whitespace-pre-wrap break-words">
+                                        {JSON.stringify(quickViewNode.data, null, 2)}
+                                    </pre>
+                                </div>
+                            )}
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };

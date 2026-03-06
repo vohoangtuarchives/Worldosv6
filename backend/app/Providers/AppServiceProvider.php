@@ -2,8 +2,10 @@
 
 namespace App\Providers;
 
+use App\Contracts\LlmNarrativeClientInterface;
 use App\Contracts\SimulationEngineClientInterface;
 use App\Contracts\UniverseEvaluatorInterface;
+use App\Services\Narrative\OpenAINarrativeService;
 use App\Repositories\UniverseSnapshotRepository;
 use App\Services\Simulation\HttpSimulationEngineClient;
 use App\Services\Simulation\StubSimulationEngineClient;
@@ -30,6 +32,7 @@ class AppServiceProvider extends ServiceProvider
             \App\Contracts\GraphProviderInterface::class,
             \App\Services\Graph\RelationalGraphProvider::class
         );
+        $this->app->singleton(LlmNarrativeClientInterface::class, OpenAINarrativeService::class);
     }
 
     /**

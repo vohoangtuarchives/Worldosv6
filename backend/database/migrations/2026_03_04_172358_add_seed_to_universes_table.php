@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('universes', function (Blueprint $table) {
-            $table->unsignedBigInteger('seed')->default(0)->after('id');
+            $table->unsignedBigInteger('seed')->default(0)->comment('Universe Seed for Deterministic Simulation');
         });
     }
 

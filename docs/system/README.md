@@ -13,9 +13,12 @@ Bộ tài liệu này mô tả **WorldOS v3** — kiến trúc simulation-first,
 - [04 Physics Engine](04-physics-engine.md)
 - [08 Governance System](08-governance-system.md)
 - [09 Material System](09-material-system.md)
+- [16 Simulation Kernel & Potential Field (V6)](16-simulation-kernel-and-potential-field.md) — Kernel effect-based, Potential Field, Time-Scale, Phase Pressure, topology
+- [20 Rust Engine: Material & Cascade (V6)](20-rust-engine-material-cascade.md) — Resonance theo slug, material_stress, Famine→Riots→Collapse, BETA_DIFFUSION
 
 ### 3. Narrative Layer (The Story)
 - [05 Narrative Engine (Resonance)](05-narrative-engine.md)
+- [17 Narrative LLM & Event Triggers (V6)](17-narrative-llm-and-events.md) — LLM connector, EventTriggerMapper, PerceivedArchiveBuilder
 - [10 Genre System](10-genre-system.md)
 - [11 IP Factory (Feedback Loop)](11-ip-factory.md)
 - [12 Narrative Series System](12-narrative-series.md)
@@ -23,8 +26,10 @@ Bộ tài liệu này mô tả **WorldOS v3** — kiến trúc simulation-first,
 
 - [14 Future Roadmap](14-future-roadmap.md)
 
-### 4. Reference
+### 4. Reference & Operations
 - [07 API & Metrics](07-api-reference.md)
+- [18 Observer & Redis Streams (V6)](18-observer-and-redis-streams.md) — Redis Streams consumer, useObserver hook, TimescaleDB
+- [19 Frontend Visualization (V6)](19-frontend-visualization-v6.md) — Material DAG, Timeline/Chronicles, Graph Quick View
 - [06 Legacy Systems (Deprecated)](06-legacy-systems.md)
 - [Gap Analysis (V3 vs Vision)](../../../../.gemini/antigravity/brain/d7a26bc4-6f03-4186-863d-c6efe75f4980/gap_analysis.md)
 - [Foundation Analysis (Rules Check)](../../../../.gemini/antigravity/brain/d7a26bc4-6f03-4186-863d-c6efe75f4980/foundation_analysis.md)

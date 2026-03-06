@@ -2,6 +2,10 @@
 
 Civilizational Dynamics Engine — Kiến trúc & triển khai theo [WORLDOS_V6.md](WORLDOS_V6.md).
 
+## Tự tiến hóa và quan sát
+
+WorldOS V6 mặc định chạy ở chế độ **tự tiến hóa**: thế giới advance theo xung (scheduler `worldos:autonomic-pulse` mỗi phút), fork và sự kiện nảy sinh từ trạng thái mô phỏng (DecisionEngine, criticality). Dashboard dùng để **quan sát** dòng thời gian và đa vũ trụ; can thiệp thủ công (Advance, Fork) chỉ để thí nghiệm hoặc debug.
+
 ## Quick Start (Demo V6)
 
 Cách nhanh nhất để trải nghiệm WorldOS V6 với đầy đủ tính năng (Graph, Narrative, Forking, Scars):
@@ -11,7 +15,7 @@ Cách nhanh nhất để trải nghiệm WorldOS V6 với đầy đủ tính nă
    docker compose up -d
    ```
 
-2. **Chạy kịch bản Demo tự động** (trong terminal mới):
+2. **Chạy kịch bản Demo** (tạo thế giới mẫu; sau đó thế giới tiếp tục **tự tiến hóa** theo scheduler):
    ```bash
    # Build backend container (nếu chưa)
    docker compose build backend
@@ -20,7 +24,7 @@ Cách nhanh nhất để trải nghiệm WorldOS V6 với đầy đủ tính nă
    docker compose exec backend php artisan worldos:demo-scenario
    ```
 
-3. **Xem kết quả trên Dashboard**:
+3. **Quan sát trên Dashboard**:
    - Truy cập: http://localhost:3000
    - Bạn sẽ thấy:
      - **Multiverse Graph**: Hiển thị vũ trụ gốc và nhánh con vừa được tạo (Fork).
@@ -32,9 +36,11 @@ Cách nhanh nhất để trải nghiệm WorldOS V6 với đầy đủ tính nă
 ## Cấu trúc repo
 
 - **backend/** — Laravel (Orchestration, DDD, API)
-- **frontend/** — Next.js 14 (Dashboard, Writer UI)
+- **frontend/** — Next.js 16 (Dashboard, Writer UI)
 - **engine/** — Rust (Simulation Engine, gRPC server)
 - **docs/** — Tài liệu hệ thống
+  - [docs/system/](docs/system/) — Tài liệu kỹ thuật (architecture, simulation, narrative, API)
+  - **V6 bổ sung**: [Simulation Kernel & Potential Field](docs/system/16-simulation-kernel-and-potential-field.md), [Narrative LLM & Events](docs/system/17-narrative-llm-and-events.md), [Observer & Redis Streams](docs/system/18-observer-and-redis-streams.md), [Frontend Visualization](docs/system/19-frontend-visualization-v6.md)
 
 ## Chạy local (Phase 1)
 

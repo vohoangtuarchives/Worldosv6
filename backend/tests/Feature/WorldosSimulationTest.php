@@ -84,4 +84,27 @@ class WorldosSimulationTest extends TestCase
         ]);
         $response->assertStatus(422);
     }
+
+    public function test_fork_creates_child_universe_and_branch_event(): void
+    {
+        $universe = Universe::firstOrFail();
+        $countBefore = Universe::count();
+        $branchEventsBefore = \App\Models\BranchEvent::where('universe_id', $universe->id)->where('event_type', 'fork')->count();
+
+        $response = $this->postJson("/api/worldos/universes/{$universe->id}/fork", [
+            'tick' => $universe->current_tick,
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('ok', true);
+        $response->assertJsonStructure(['child_universe_id']);
+
+        $this->assertSame($countBefore + 1, Universe::count());
+        $childId = $response->json('child_universe_id');
+        $child = Universe::find($childId);
+        $this->assertNotNull($child);
+        $this->assertSame((int) $universe->id, (int) $child->parent_universe_id);
+
+        $this->assertGreaterThan($branchEventsBefore, \App\Models\BranchEvent::where('universe_id', $universe->id)->where('event_type', 'fork')->count());
+    }
 }

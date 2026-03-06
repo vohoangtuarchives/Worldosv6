@@ -11,3 +11,6 @@ pub const META_CYCLE_SCI_THRESHOLD: f64 = 0.2;
 
 /// Micro mode: instability gradient above this triggers Crisis Window (§3).
 pub const INSTABILITY_GRADIENT_THRESHOLD: f64 = 0.7;
+
+/// Diffusion coefficient for entropy/tech/culture between neighboring zones (§4.4).
+pub const BETA_DIFFUSION: f64 = 0.05;

@@ -2,6 +2,7 @@
 
 namespace App\Services\Narrative;
 
+use App\Contracts\LlmNarrativeClientInterface;
 use App\Models\Chronicle;
 use App\Models\Universe;
 use App\Models\AgentConfig;
@@ -23,9 +24,13 @@ class NarrativeAiService
         protected ResidualInjector $residual,
         protected \App\Services\AI\VectorSearchService $vectorSearch,
         protected \App\Services\AI\MemoryService $memory,
-        protected \App\Services\Simulation\MythicResonanceEngine $resonance
+        protected \App\Services\Simulation\MythicResonanceEngine $resonance,
+        protected ?LlmNarrativeClientInterface $llmClient = null
     ) {
         $this->config = AgentConfig::first();
+        if ($this->llmClient === null && app()->bound(LlmNarrativeClientInterface::class)) {
+            $this->llmClient = app(LlmNarrativeClientInterface::class);
+        }
     }
 
     /**
@@ -33,7 +38,7 @@ class NarrativeAiService
      */
     public function generateChronicle(int $universeId, int $fromTick, ?int $toTick = null, string $type = 'chronicle'): ?Chronicle
     {
-        $universe = Universe::find($universeId);
+        $universe = Universe::with('world')->find($universeId);
         if (! $universe) {
             return null;
         }
@@ -57,9 +62,24 @@ class NarrativeAiService
             $vector = $flat;
         }
 
-        // Tier 1 & 2 are handled within PerceivedArchiveBuilder (mapping flavor and events)
-        $eventTypes = ['crisis', 'unrest', 'formation', 'collapse', 'myth_scar', 'secession', 'micro_mode', 'meta_cycle'];
+        // Tier 1 & 2: detect event types from threshold_rules (entropy, stability_index, etc.) then map to names
+        $detected = $this->eventMapper->detectTriggeredEvents((array) $vector);
+        $eventTypes = !empty($detected)
+            ? $detected
+            : ['crisis', 'unrest', 'formation', 'collapse', 'myth_scar', 'secession', 'micro_mode', 'meta_cycle'];
         $perceived = $this->perceived->build($universeId, $eventTypes, (array)$vector, $toTick);
+
+        // Genre from World for narrative tone (MVP: at least 3 genres produce different voice)
+        $world = $universe->world;
+        $genreKey = $world ? ($world->current_genre ?? $world->base_genre ?? 'wuxia') : 'wuxia';
+        $genreConfig = config('worldos_genres.genres.' . $genreKey, []);
+        $genreName = $genreConfig['name'] ?? $genreKey;
+        $genreDescription = $genreConfig['description'] ?? '';
+        $perceived['narrative_genre'] = [
+            'key' => $genreKey,
+            'name' => $genreName,
+            'description' => $genreDescription,
+        ];
 
         // Tier 3: Residual Injection is already in PerceivedArchiveBuilder's output
         
@@ -78,7 +98,7 @@ class NarrativeAiService
             Log::warning("Memory search failed: " . $e->getMessage());
         }
 
-        $prompt = $this->buildPrompt($perceived, $fromTick, $toTick, $facts);
+        $prompt = $this->buildPrompt($perceived, $fromTick, $toTick ?? $fromTick, $facts);
         $content = $this->callLlm($prompt);
 
         if ($content === null) {
@@ -159,6 +179,12 @@ class NarrativeAiService
         $themes = implode(', ', $this->config->themes ?? ['Tổng quát']);
         $creativity = $this->config->creativity ?? 50;
 
+        $genreBlock = '';
+        if (!empty($perceived['narrative_genre'])) {
+            $g = $perceived['narrative_genre'];
+            $genreBlock = "\nThể loại (Genre): {$g['name']}. " . ($g['description'] ? "{$g['description']}. " : '') . "Viết biên niên theo phong cách và không khí của thể loại này.";
+        }
+
         $epicIntro = "";
         $legendaryFocus = "";
         if (!empty($perceived['agent_reflections'])) {
@@ -172,8 +198,9 @@ class NarrativeAiService
         }
 
         return <<<EOT
-Bạn là $agentName, một $personality của vũ trụ mô phỏng. 
-$epicIntro Chủ đề trọng tâm: $themes. Mức độ sáng tạo: $creativity%.
+Bạn là $agentName, một $personality của vũ trụ mô phỏng.
+$epicIntro Chủ đề trọng tâm: $themes. Mức độ sáng tạo: $creativity%.$genreBlock
+
 $legendaryFocus
 TRẠNG THÁI BẢN THỂ (Ontological State):
 - Cấp độ: {$perceived['existence']['tier']} ({$perceived['existence']['name']})
@@ -205,12 +232,14 @@ EOT;
 
     protected function callLlm(string $prompt): ?string
     {
-        // Check if using local AI
+        if ($this->llmClient?->isAvailable()) {
+            return $this->llmClient->generate($prompt);
+        }
+
         if ($this->config && $this->config->model_type === 'local') {
             return $this->callLocalAI($prompt);
         }
 
-        // Fallback to OpenAI if configured
         $apiKey = $this->config->api_key ?? config('services.openai.key');
         
         if ($apiKey) {

@@ -7,6 +7,7 @@ use App\Models\InstitutionalEntity as InstitutionalModel;
 use App\Models\Actor;
 use App\Models\Chronicle;
 use App\Models\BranchEvent;
+use App\Simulation\Support\SimulationRandom;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -22,16 +23,18 @@ class GreatFilterEngine
 
     /**
      * Process global state to detect and handle Great Filter events.
+     * When $rng is provided, randomness is deterministic (replayable).
      */
-    public function process(Universe $universe, int $tick, array $stateVector): array
+    public function process(Universe $universe, int $tick, array $stateVector, ?SimulationRandom $rng = null): array
     {
         $crises = [];
 
-        // 1. Singularity Paradox: Innovation > 0.9 AND Trust < 0.3
+        // 1. Singularity Paradox: Innovation > 0.9 AND Trust < 0.3, or cosmic pressure
         $innovation = $stateVector['innovation'] ?? 0;
         $trust = $this->calculateAverageTrust($universe);
-        if ($innovation > 0.9 && $trust < 0.3) {
-            $crises[] = $this->triggerCrisis($universe, $tick, self::CRISIS_SINGULARITY);
+        $innovationPressure = (float) ($stateVector['pressures']['innovation'] ?? 0);
+        if (($innovation > 0.9 && $trust < 0.3) || $innovationPressure > 0.85) {
+            $crises[] = $this->triggerCrisis($universe, $tick, self::CRISIS_SINGULARITY, $rng);
         }
 
         // 2. Institutional Rigidity: Tradition > 0.8 AND Average Capacity < 5.0
@@ -40,19 +43,20 @@ class GreatFilterEngine
             ->whereNull('collapsed_at_tick')
             ->avg('org_capacity') ?? 10.0;
         if ($tradition > 0.8 && $avgCapacity < 5.0) {
-            $crises[] = $this->triggerCrisis($universe, $tick, self::CRISIS_STAGNATION);
+            $crises[] = $this->triggerCrisis($universe, $tick, self::CRISIS_STAGNATION, $rng);
         }
 
-        // 3. Void Breach: Entropy > 0.95
+        // 3. Void Breach: Entropy > 0.95 or cosmic entropy pressure
         $entropy = $stateVector['entropy'] ?? 0;
-        if ($entropy > 0.95) {
-            $crises[] = $this->triggerCrisis($universe, $tick, self::CRISIS_VOID_BREACH);
+        $entropyPressure = (float) ($stateVector['pressures']['entropy'] ?? 0);
+        if ($entropy > 0.95 || $entropyPressure > 0.9) {
+            $crises[] = $this->triggerCrisis($universe, $tick, self::CRISIS_VOID_BREACH, $rng);
         }
 
         return $crises;
     }
 
-    protected function triggerCrisis(Universe $universe, int $tick, string $type): array
+    protected function triggerCrisis(Universe $universe, int $tick, string $type, ?SimulationRandom $rng = null): array
     {
         // Prevent immediate re-triggering (cooldown or status check)
         $vec = $universe->state_vector ?? [];
@@ -86,7 +90,7 @@ class GreatFilterEngine
         ]));
 
         // Apply immediate effects
-        $this->applyCrisisEffects($universe, $type, $tick);
+        $this->applyCrisisEffects($universe, $type, $tick, $rng);
 
         // Record in state_vector
         $vec = $universe->fresh()->state_vector; // Get fresh state
@@ -101,7 +105,7 @@ class GreatFilterEngine
         return ['type' => $type, 'status' => 'triggered'];
     }
 
-    protected function applyCrisisEffects(Universe $universe, string $type, int $tick): void
+    protected function applyCrisisEffects(Universe $universe, string $type, int $tick, ?SimulationRandom $rng = null): void
     {
         switch ($type) {
             case self::CRISIS_SINGULARITY:
@@ -149,10 +153,19 @@ class GreatFilterEngine
                 foreach ($civs as $civ) {
                     $map = $civ->influence_map ?? [];
                     if (count($map) > 1) {
-                        // Randomly remove 20-40% of zones
-                        $removeCount = (int)(count($map) * rand(20, 40) / 100);
-                        shuffle($map);
-                        $remaining = array_slice($map, $removeCount);
+                        $pct = $rng ? $rng->int(20, 40) : rand(20, 40);
+                        $removeCount = (int)(count($map) * $pct / 100);
+                        if ($rng) {
+                            $withKeys = [];
+                            foreach ($map as $i => $v) {
+                                $withKeys[] = ['v' => $v, 'r' => $rng->nextFloat()];
+                            }
+                            usort($withKeys, fn ($a, $b) => $a['r'] <=> $b['r']);
+                            $remaining = array_slice(array_column($withKeys, 'v'), $removeCount);
+                        } else {
+                            shuffle($map);
+                            $remaining = array_slice($map, $removeCount);
+                        }
                         $civ->update(['influence_map' => $remaining]);
                     }
                 }

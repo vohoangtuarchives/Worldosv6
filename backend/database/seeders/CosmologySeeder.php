@@ -36,7 +36,7 @@ class CosmologySeeder extends Seeder
                 ],
                 'world_seed' => ['archetypes' => []],
                 'origin' => 'Vietnamese',
-                'is_autonomic' => true,
+                'is_autonomic' => true, // World tự tiến hóa theo scheduler (worldos:autonomic-pulse)
                 'current_genre' => 'urban',
                 'base_genre' => 'urban',
                 'global_tick' => 0,

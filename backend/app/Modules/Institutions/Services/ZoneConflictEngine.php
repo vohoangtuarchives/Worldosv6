@@ -9,13 +9,15 @@ use App\Models\Chronicle;
 use App\Models\BranchEvent;
 use App\Models\InstitutionalEntity;
 use Illuminate\Support\Facades\DB;
+use App\Simulation\Support\SimulationRandom;
 
 class ZoneConflictEngine
 {
     /**
      * Scan zones within a universe and resolve conflicts between nodes.
+     * When $rng is provided, all randomness is deterministic (replayable).
      */
-    public function resolveConflicts(Universe $universe, UniverseSnapshot $snapshot): void
+    public function resolveConflicts(Universe $universe, UniverseSnapshot $snapshot, ?SimulationRandom $rng = null): void
     {
         $stateVector = is_string($snapshot->state_vector) ? json_decode($snapshot->state_vector, true) : ($snapshot->state_vector ?? []);
         $zones = $stateVector['zones'] ?? [];
@@ -85,7 +87,8 @@ class ZoneConflictEngine
                     $conflictsOccurred = true;
                 } else {
                     // Diplomatic Crisis instead of War
-                    if (rand(1, 100) <= 20) {
+                    $roll = $rng ? $rng->int(1, 100) : rand(1, 100);
+                    if ($roll <= 20) {
                         $this->triggerDiplomaticCrisis($universe, (int)$snapshot->tick, $civAId, $civBId, $zoneA['id'], $zoneB['id']);
                     }
                 }

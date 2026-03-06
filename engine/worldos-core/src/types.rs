@@ -29,6 +29,17 @@ pub struct CulturalVector {
     pub myth_belief: f64,
 }
 
+/// Cascade phase per zone: pressure above threshold advances Normal → Famine → Riots → Collapse.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum CascadePhase {
+    #[default]
+    Normal,
+    Famine,
+    Riots,
+    Collapse,
+}
+
 impl CulturalVector {
     pub fn clamp_mut(&mut self) {
         let clamp = |v: &mut f64| *v = v.clamp(0.0, 1.0);
@@ -72,6 +83,8 @@ pub struct ZoneState {
     pub regional_scars: f64, // Normalized scar pressure (0.0 - 1.0)
     #[serde(default)]
     pub quantum_overlay: Option<QuantumOverlay>,
+    #[serde(default)]
+    pub cascade_phase: CascadePhase,
 }
 
 /// Quantum Overlay: Controls probabilistic state and observer effect (§57).
@@ -130,6 +143,7 @@ impl ZoneState {
             agents: Vec::new(),
             regional_scars: 0.0,
             quantum_overlay: None,
+            cascade_phase: CascadePhase::Normal,
         }
     }
 

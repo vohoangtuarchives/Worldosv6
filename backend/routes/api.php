@@ -322,6 +322,7 @@ Route::middleware('auth:sanctum')->prefix('worldos')->group(function () {
                 'origin' => 'Vietnamese',
                 'current_genre' => 'urban',
                 'base_genre' => 'urban',
+                'is_autonomic' => true,
             ]
         );
         // Auto-spawn Universe (Saga created implicitly)
@@ -474,4 +475,13 @@ Route::middleware('auth:sanctum')->prefix('worldos')->group(function () {
     // Phase 88: Observer Console (§V18)
     Route::get('observer/dashboard', [\App\Http\Controllers\Api\ObserverDashboardController::class, 'getStatus'])
         ->name('worldos.observer.dashboard');
+
+    // Redis Streams: consume observer events (last_id, multiverse_id, count for long-poll)
+    Route::get('observer/stream', function (\App\Services\Observer\ObserverService $observer) {
+        $lastId = request()->query('last_id', '0');
+        $multiverseId = request()->query('multiverse_id') ? (int) request()->query('multiverse_id') : null;
+        $count = min(100, max(1, (int) request()->query('count', 50)));
+        $entries = $observer->readStream($multiverseId, $lastId, $count);
+        return response()->json(['entries' => $entries]);
+    })->name('worldos.observer.stream');
 });

@@ -33,6 +33,54 @@ class SimulationServiceProvider extends ServiceProvider
             \App\Contracts\UniverseEvaluatorInterface::class,
             \App\Modules\Simulation\Services\StrategicDecisionEngine::class
         );
+
+        // Simulation Kernel (effect-based, deterministic tick)
+        $this->app->singleton(\App\Simulation\EffectResolver::class);
+        $this->app->singleton(\App\Simulation\Support\SnapshotLoader::class);
+        $this->app->singleton(\App\Simulation\Services\ZonePressureCalculator::class);
+        $this->app->singleton(\App\Simulation\Services\TopologyResolver::class);
+        $this->app->singleton(\App\Simulation\Services\CosmicSignalCollector::class);
+        $this->app->singleton(\App\Simulation\Services\PhasePressureCalculator::class);
+        $this->app->singleton(\App\Simulation\Engines\PotentialFieldEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\CosmicPressureEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\ZoneConflictEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\StructuralDecayEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\LawEvolutionEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\CulturalDriftEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\AdaptiveTopologyEngine::class);
+        $this->app->singleton(\App\Simulation\SimulationKernel::class, function ($app) {
+            $kernel = new \App\Simulation\SimulationKernel($app->make(\App\Simulation\EffectResolver::class));
+            $factors = config('worldos.time_scale_factors', []);
+            $kernel->registerEngine(
+                $app->make(\App\Simulation\Engines\PotentialFieldEngine::class),
+                $factors['potential_field'] ?? 1
+            );
+            $kernel->registerEngine(
+                $app->make(\App\Simulation\Engines\ZoneConflictEngine::class),
+                $factors['zone_conflict'] ?? 1
+            );
+            $kernel->registerEngine(
+                $app->make(\App\Simulation\Engines\CosmicPressureEngine::class),
+                $factors['cosmic_pressure'] ?? 1
+            );
+            $kernel->registerEngine(
+                $app->make(\App\Simulation\Engines\StructuralDecayEngine::class),
+                $factors['structural_decay'] ?? 5
+            );
+            $kernel->registerEngine(
+                $app->make(\App\Simulation\Engines\CulturalDriftEngine::class),
+                $factors['cultural_drift'] ?? 3
+            );
+            $kernel->registerEngine(
+                $app->make(\App\Simulation\Engines\LawEvolutionEngine::class),
+                $factors['law_evolution'] ?? 20
+            );
+            $kernel->registerEngine(
+                $app->make(\App\Simulation\Engines\AdaptiveTopologyEngine::class),
+                $factors['adaptive_topology'] ?? 50
+            );
+            return $kernel;
+        });
     }
 
     public function boot(): void

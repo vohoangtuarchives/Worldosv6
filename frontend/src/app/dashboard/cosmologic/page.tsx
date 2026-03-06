@@ -30,6 +30,8 @@ import IntegrityMonitor from '@/components/Simulation/IntegrityMonitor';
 import { UniversalLaw } from "@/components/Simulation/UniversalLaw";
 import { VoidArchive } from "@/components/Simulation/VoidArchive";
 import { EpochNavigator } from "@/components/Simulation/EpochNavigator";
+import { WorldScarsList } from "@/components/Simulation/WorldScarsList";
+import { ChronicleTimelineView } from "@/components/Simulation/ChronicleTimelineView";
 import { SimulationProvider, useSimulation } from "@/context/SimulationContext";
 
 export default function CosmologicPage() {
@@ -48,6 +50,7 @@ function CosmologicContent() {
   } = useSimulation();
 
   const [graphData, setGraphData] = useState<{ nodes: any[]; edges: any[] }>({ nodes: [], edges: [] });
+  const [mythScars, setMythScars] = useState<{ id: number; name: string; description: string | null }[]>([]);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ text: string; type: 'info' | 'error' } | null>(null);
 
@@ -74,6 +77,9 @@ function CosmologicContent() {
       api.graph(universeId).then(data => {
         setGraphData(data);
       }).catch(console.error);
+      api.mythScars(universeId).then(setMythScars).catch(() => setMythScars([]));
+    } else {
+      setMythScars([]);
     }
   }, [universeId, latestSnapshot?.tick]);
 
@@ -205,15 +211,20 @@ function CosmologicContent() {
       <OmegaVortex reached={universe?.status === 'apotheosis' || universe?.state_vector?.omega_point_reached === true} />
 
       {/* Header Section */}
-      <UniverseHeader
-        universe={universe}
-        onAdvance={handleAdvance}
-        onFork={handleFork}
-        onPulse={handlePulse}
-        onToggleAutonomic={handleToggleAutonomic}
-        onExport={handleExport}
-        busy={busy}
-      />
+      <section className="rounded-xl border border-border bg-card/20 p-4">
+        <p className="text-xs text-muted-foreground mb-3">
+          Thế giới tự chạy theo xung autonomic. Các nút dưới đây chỉ để thí nghiệm hoặc can thiệp thủ công.
+        </p>
+        <UniverseHeader
+          universe={universe}
+          onAdvance={handleAdvance}
+          onFork={handleFork}
+          onPulse={handlePulse}
+          onToggleAutonomic={handleToggleAutonomic}
+          onExport={handleExport}
+          busy={busy}
+        />
+      </section>
 
       <div className="flex items-center justify-end mb-4">
         <label className="cursor-pointer h-9 rounded-md bg-green-600/20 border border-green-500/50 text-green-400 px-4 text-sm font-medium flex items-center hover:bg-green-600/30 transition-all">
@@ -244,7 +255,7 @@ function CosmologicContent() {
             : 'border-transparent text-muted-foreground hover:text-foreground hover:border-muted'
             }`}
         >
-          Macroscopic Overview
+          Quan sát / Dòng thời gian
         </button>
         <button
           onClick={() => setActiveTab('entities')}
@@ -262,7 +273,7 @@ function CosmologicContent() {
             : 'border-transparent text-muted-foreground hover:text-foreground hover:border-muted'
             }`}
         >
-          Divine Intervention
+          Can thiệp (tùy chọn)
         </button>
       </div>
 
@@ -272,6 +283,14 @@ function CosmologicContent() {
           <div className="lg:col-span-3 space-y-6">
             <EpochNavigator universeId={universeId} />
             <MetricGrid snapshot={latestSnapshot} />
+            <WorldScarsList
+              scars={(() => {
+                const vec = universe?.state_vector?.scars;
+                const fromVec = Array.isArray(vec) ? vec.map((s: unknown) => typeof s === "string" ? s : (s as { name?: string; description?: string })?.description ?? (s as { name?: string })?.name ?? String(s)) : [];
+                const fromDb = mythScars.map(m => m.description || m.name);
+                return Array.from(new Set([...fromVec, ...fromDb].filter(Boolean)));
+              })()}
+            />
             <div className="col-span-4 h-[500px]">
               <SimulationTopology universeId={universeId} />
             </div>
@@ -283,10 +302,24 @@ function CosmologicContent() {
             </div>
           </div>
           <div className="lg:col-span-1 border-l border-white/5 pl-4 space-y-6">
+            {universe?.world && (
+              <div className="rounded-xl border bg-card text-card-foreground shadow-sm p-3 backdrop-blur">
+                <h3 className="text-xs font-medium text-muted-foreground mb-1">Trạng thái</h3>
+                <div className="flex items-center gap-2">
+                  <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${universe.world.is_autonomic ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 'bg-slate-500/15 text-slate-400 border border-slate-500/30'}`}>
+                    Tự tiến hóa: {universe.world.is_autonomic ? 'Bật' : 'Tắt'}
+                  </span>
+                  {latestSnapshot?.tick != null && (
+                    <span className="text-xs text-muted-foreground font-mono">Tick {latestSnapshot.tick}</span>
+                  )}
+                </div>
+              </div>
+            )}
             <OriginDiagnostic origin={universe?.world?.origin || 'Default'} />
             <AutonomicControl universeId={universeId} axioms={universe?.world?.axiom || {}} />
             <ObservationMonitor observationLoad={universe?.observation_load || 0} />
             <TimelineComparison universeId={universeId} />
+            {universeId && <ChronicleTimelineView universeId={universeId} className="mt-4" />}
           </div>
         </div>
       )}
@@ -308,9 +341,12 @@ function CosmologicContent() {
         </div>
       )}
 
-      {/* Sub-Layout: Divine Intervention Segment */}
+      {/* Sub-Layout: Can thiệp (tùy chọn) */}
       {activeTab === 'intervention' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-in slide-in-from-left-2 fade-in">
+          <p className="lg:col-span-2 text-sm text-muted-foreground">
+            Dùng khi muốn thử nghiệm thay đổi axiom hoặc sắc lệnh; không cần cho vận hành bình thường (thế giới tự tiến hóa).
+          </p>
           <div className="space-y-6">
             <AxiomConsole
               initialAxioms={universe?.world?.axiom || {}}
