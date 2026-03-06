@@ -74,7 +74,7 @@ class WorldAdvisorService
         // 5. Material Synthesis: suggest a new emergent material
         try {
             $latest   = $universe->snapshots()->orderByDesc('tick')->first();
-            $scars    = (array) ($latest?->state_vector['scars'] ?? []);
+            $scars    = (array) (($latest?->state_vector ?? [])['scars'] ?? []);
             $matNames = \App\Models\MaterialInstance::where('universe_id', $universe->id)
                 ->where('lifecycle', 'active')
                 ->with('material')

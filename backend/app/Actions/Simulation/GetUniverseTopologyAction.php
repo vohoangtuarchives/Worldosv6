@@ -3,11 +3,13 @@
 namespace App\Actions\Simulation;
 
 use App\Models\UniverseSnapshot;
+use App\Models\Universe;
 
 class GetUniverseTopologyAction
 {
     /**
      * Lấy danh sách các Zone và tọa độ hóa (nếu cần) từ Snapshot mới nhất.
+     * Nếu snapshot không có zones thì fallback sang state_vector của universe (sau khi bootstrap trong advance).
      */
     public function execute(int $universeId): array
     {
@@ -15,27 +17,36 @@ class GetUniverseTopologyAction
             ->orderBy('tick', 'desc')
             ->first();
 
-        if (!$snapshot) {
-            return [];
+        $stateVector = [];
+        if ($snapshot) {
+            $stateVector = is_string($snapshot->state_vector)
+                ? (json_decode($snapshot->state_vector, true) ?? [])
+                : ($snapshot->state_vector ?? []);
         }
 
-        $stateVector = is_string($snapshot->state_vector) 
-            ? json_decode($snapshot->state_vector, true) 
-            : $snapshot->state_vector;
-
         $zones = [];
-
-        // Parse from Rust Format `[{"id":0,"neighbors":[],"state":{...}}]`
         if (is_array($stateVector) && isset($stateVector[0]['state'])) {
             $zones = $stateVector;
-        } 
-        // Parse from Old Format `{"zones": [...]}`
-        elseif (isset($stateVector['zones']) && is_array($stateVector['zones'])) {
+        } elseif (isset($stateVector['zones']) && is_array($stateVector['zones'])) {
             $zones = $stateVector['zones'];
         }
 
-        $topologyData = [];
+        // Fallback: snapshot không có zones hoặc chưa có snapshot; lấy từ universe (sau bootstrap trong advance).
+        if (empty($zones)) {
+            $universe = Universe::find($universeId);
+            if ($universe) {
+                $uv = $universe->state_vector ?? [];
+                if (isset($uv['zones']) && is_array($uv['zones']) && count($uv['zones']) > 0) {
+                    $zones = $uv['zones'];
+                }
+            }
+        }
 
+        if (empty($zones)) {
+            return [];
+        }
+
+        $topologyData = [];
         $institutions = \App\Models\InstitutionalEntity::where('universe_id', $universeId)
             ->whereNull('collapsed_at_tick')
             ->get();

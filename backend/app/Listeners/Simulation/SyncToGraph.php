@@ -18,14 +18,14 @@ class SyncToGraph
         $snapshot = $event->snapshot;
 
         try {
-            // Đồng bộ Snapshot mới vào Đồ thị (Virtual hoặc Neo4j)
+            // Đồng bộ Snapshot mới vào Đồ thị (Virtual hoặc Neo4j). Snapshot ảo có id null.
             $this->graphProvider->sync($universe->id, [
-                'snapshot_id' => $snapshot->id,
+                'snapshot_id' => $snapshot->exists ? $snapshot->id : null,
                 'tick' => $snapshot->tick,
-                'state' => $snapshot->state_vector,
+                'state' => $snapshot->state_vector ?? [],
             ]);
 
-            Log::debug("SyncToGraph: Snapshot {$snapshot->id} synced for Universe {$universe->id}");
+            Log::debug("SyncToGraph: Universe {$universe->id} synced at tick {$snapshot->tick}" . ($snapshot->exists ? " (snapshot_id={$snapshot->id})" : ' (virtual)'));
         } catch (\Throwable $e) {
             Log::error("SyncToGraph failed for Universe {$universe->id}: " . $e->getMessage());
         }

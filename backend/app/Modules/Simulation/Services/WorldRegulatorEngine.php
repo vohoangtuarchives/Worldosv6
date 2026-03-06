@@ -20,10 +20,10 @@ class WorldRegulatorEngine
         $activeUniverses = $world->universes->where('status', 'active');
         if ($activeUniverses->isEmpty()) return;
 
-        $avgEntropy = $activeUniverses->avg(fn($u) => (float)($u->state_vector['entropy'] ?? 0.5));
-        $avgTech = $activeUniverses->avg(fn($u) => (float)($u->state_vector['innovation'] ?? 0.1));
-        $avgStability = $activeUniverses->avg(fn($u) => (float)($u->state_vector['stability_index'] ?? 0.5));
-        $avgPop = $activeUniverses->avg(fn($u) => (float)($u->state_vector['population'] ?? 100));
+        $avgEntropy = $activeUniverses->avg(fn($u) => (float)(($u->state_vector ?? [])['entropy'] ?? 0.5));
+        $avgTech = $activeUniverses->avg(fn($u) => (float)(($u->state_vector ?? [])['innovation'] ?? 0.1));
+        $avgStability = $activeUniverses->avg(fn($u) => (float)(($u->state_vector ?? [])['stability_index'] ?? 0.5));
+        $avgPop = $activeUniverses->avg(fn($u) => (float)(($u->state_vector ?? [])['population'] ?? 100));
 
         $currentAxioms = $world->axiom ?? [];
         $newAxioms = [];

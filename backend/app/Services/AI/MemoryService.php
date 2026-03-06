@@ -18,7 +18,7 @@ class MemoryService
         if ($universeId) {
             $universe = \App\Models\Universe::find($universeId);
             if ($universe) {
-                $noise = $this->epistemicService->calculateNoise($universe, (float)($universe->state_vector['entropy'] ?? 0));
+                $noise = $this->epistemicService->calculateNoise($universe, (float)(($universe->state_vector ?? [])['entropy'] ?? 0));
                 if ($noise > 0.3) {
                     $content = "[SYSTEM PERCEPTION: " . $this->epistemicService->getClarityLabel($noise) . "]\n" . $content;
                     // Note: Full content distortion could be done here if needed

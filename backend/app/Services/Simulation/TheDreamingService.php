@@ -20,7 +20,7 @@ class TheDreamingService
         $latest = $universe->snapshots()->orderByDesc('tick')->first();
         if (!$latest) return [];
 
-        $zones = $latest->state_vector['zones'] ?? [];
+        $zones = ($latest->state_vector ?? [])['zones'] ?? [];
         $whispers = [];
 
         foreach ($zones as $z) {

@@ -23,7 +23,7 @@ class OvermindEvolutionAction
      */
     public function execute(Universe $universe): void
     {
-        if (!$universe->world->is_autonomic) return;
+        if (!$universe->world || !$universe->world->is_autonomic) return;
 
         $latest = $universe->snapshots()->orderByDesc('tick')->first();
         if (!$latest) return;

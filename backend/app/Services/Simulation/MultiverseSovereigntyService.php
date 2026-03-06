@@ -26,7 +26,7 @@ class MultiverseSovereigntyService
      */
     public function orchestrate(Universe $universe, array $events): void
     {
-        if (!$universe->world->is_autonomic) return;
+        if (!$universe->world || !$universe->world->is_autonomic) return;
 
         // 1. Birth: Check Rust events for Cosmogenesis
         $this->cosmogenesis->handleEvents($universe, $events);
@@ -55,11 +55,12 @@ class MultiverseSovereigntyService
 
     protected function recycleKnowledge(Universe $universe, $snapshot): void
     {
-        $knowledge = $snapshot->state_vector['knowledge_core'] ?? 0.0;
+        $knowledge = ($snapshot->state_vector ?? [])['knowledge_core'] ?? 0.0;
         if ($knowledge > 0.3) {
             Log::info("SOVEREIGNTY: Recycling {$knowledge} knowledge from collapsed Universe #{$universe->id}");
             // Store this in Multiverse metadata or World legacy for next spawn
             $world = $universe->world;
+            if (!$world) return;
             $legacy = $world->world_seed ?? [];
             $legacy['inspiration_pool'] = ($legacy['inspiration_pool'] ?? 0.0) + ($knowledge * 0.1);
             $world->update(['world_seed' => $legacy]);

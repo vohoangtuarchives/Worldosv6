@@ -55,7 +55,7 @@ class AnomalyGeneratorService
             case 'axiom_duplication':
                 // Duplicate an axiom rule randomly
                 if (isset($vec['axioms'])) {
-                    $worldAxioms = $universe->world->axiom ?? [];
+                    $worldAxioms = $universe->world?->axiom ?? [];
                     if (!empty($worldAxioms)) {
                         $randomAxiom = $worldAxioms[array_rand($worldAxioms)] ?? 'gravity_shift';
                         $vec['axioms'][] = $randomAxiom; // Apply an effect twice

@@ -77,7 +77,7 @@ class UniverseSnapshotRepository
 
     protected function enrich(UniverseSnapshot $snapshot): UniverseSnapshot
     {
-        $instability = $snapshot->metrics['instability_gradient'] ?? ($snapshot->state_vector['epistemic_instability'] ?? 0);
+        $instability = ($snapshot->metrics ?? [])['instability_gradient'] ?? (($snapshot->state_vector ?? [])['epistemic_instability'] ?? 0);
         $snapshot->existence_state = $this->epistemic->getExistenceState((float)$instability);
         
         // Dynamic stability check

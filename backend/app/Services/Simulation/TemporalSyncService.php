@@ -26,7 +26,9 @@ class TemporalSyncService
      */
     public function synchronize(Universe $universe): void
     {
-        $masterTick = $universe->world->global_tick;
+        $world = $universe->world;
+        if (!$world) return;
+        $masterTick = $world->global_tick;
         
         if ($universe->current_tick !== $masterTick) {
             $universe->update(['current_tick' => $masterTick]);

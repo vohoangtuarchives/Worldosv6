@@ -35,6 +35,8 @@ class ResonanceEngine
 
     protected function calculateResonance(Universe $u1, Universe $u2, UniverseSnapshot $s1): float
     {
+        if (!$u1->world || !$u2->world) return 0;
+
         // 1. Đồng bộ Kỷ nguyên (Epoch Synchronicity)
         $e1 = $u1->world->epochs()->where('status', 'active')->first();
         $e2 = $u2->world->epochs()->where('status', 'active')->first(); 
@@ -45,8 +47,8 @@ class ResonanceEngine
         $s2 = $u2->latestSnapshot;
         if (!$s2) return 0;
 
-        $v1 = $s1->state_vector;
-        $v2 = $s2->state_vector;
+        $v1 = $s1->state_vector ?? [];
+        $v2 = $s2->state_vector ?? [];
 
         $entropyDiff = abs(($v1['entropy'] ?? 0) - ($v2['entropy'] ?? 0));
         $orderDiff = abs(($v1['order'] ?? 0) - ($v2['order'] ?? 0));

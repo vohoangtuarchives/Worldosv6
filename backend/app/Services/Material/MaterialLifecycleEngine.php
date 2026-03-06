@@ -24,14 +24,17 @@ class MaterialLifecycleEngine
         // Calculate Ontology Resonance
         $ontologyCounts = [];
         foreach ($instances as $instance) {
-            if ($instance->lifecycle === 'active') {
-                $ontology = $instance->material->ontology;
+            if ($instance->lifecycle === 'active' && $instance->material) {
+                $ontology = $instance->material->ontology ?? 'physical';
                 $ontologyCounts[$ontology] = ($ontologyCounts[$ontology] ?? 0) + 1;
             }
         }
         $context['ontology_counts'] = $ontologyCounts;
 
         foreach ($instances as $instance) {
+            if (!$instance->material) {
+                continue;
+            }
             if ($instance->lifecycle === 'dormant') {
                 if ($this->canActivate($instance, $context)) {
                     $this->activate($instance, $tick);
@@ -58,6 +61,7 @@ class MaterialLifecycleEngine
 
     protected function checkMutations(MaterialInstance $instance, int $tick, array $context): bool
     {
+        if (!$instance->material) return false;
         // 10% chance to check mutations to avoid heavy load every tick
         if (mt_rand(0, 9) > 0) return false;
 
@@ -128,6 +132,7 @@ class MaterialLifecycleEngine
     protected function canActivate(MaterialInstance $instance, array $context): bool
     {
         $material = $instance->material;
+        if (!$material) return false;
         $inputs = $material->inputs ?? [];
         foreach ($inputs as $key => $minValue) {
             $val = $context[$key] ?? 0;
@@ -150,7 +155,9 @@ class MaterialLifecycleEngine
 
     protected function shouldBecomeObsolete(MaterialInstance $instance, array $context): bool
     {
-        $outputs = $instance->material->outputs ?? [];
+        $material = $instance->material;
+        if (!$material) return false;
+        $outputs = $material->outputs ?? [];
         foreach ($outputs as $key => $minRequired) {
             $val = $context[$key] ?? 0;
             if (is_numeric($minRequired) && $val < $minRequired * 0.2) {

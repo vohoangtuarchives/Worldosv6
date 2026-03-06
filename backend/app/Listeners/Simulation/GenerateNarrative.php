@@ -31,6 +31,10 @@ class GenerateNarrative implements ShouldQueue
         
         $fromTick = (int)$universe->current_tick;
         $toTick = (int)$snapshot->tick;
+        $ticks = (int) ($event->engineResponse['_ticks'] ?? 1);
+        if ($fromTick >= $toTick && $ticks > 0) {
+            $fromTick = max(0, $toTick - $ticks);
+        }
 
         if ($toTick > $fromTick) {
             try {

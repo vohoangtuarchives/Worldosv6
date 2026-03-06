@@ -97,8 +97,18 @@ class ZoneConflictEngine
 
         if ($conflictsOccurred) {
             $stateVector['zones'] = $zones;
-            $snapshot->state_vector = $stateVector;
-            $snapshot->save();
+            if ($snapshot->exists) {
+                $snapshot->state_vector = $stateVector;
+                $snapshot->save();
+            } else {
+                $uv = $universe->state_vector ?? [];
+                $uv['zones'] = $zones;
+                if (isset($stateVector['diplomacy'])) {
+                    $uv['diplomacy'] = $stateVector['diplomacy'];
+                }
+                $universe->state_vector = $uv;
+                $universe->save();
+            }
         }
     }
 

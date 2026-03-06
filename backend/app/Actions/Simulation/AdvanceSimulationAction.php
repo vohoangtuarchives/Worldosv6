@@ -72,6 +72,9 @@ class AdvanceSimulationAction
         if (!$universe || $universe->status === 'halted') {
             return ['ok' => false, 'error_message' => 'Universe not found or is halted'];
         }
+        if (!$universe->world) {
+            return ['ok' => false, 'error_message' => 'Universe has no world'];
+        }
 
         $stateInput = $this->prepareEngineStateInput($universe);
         $worldConfig = $this->prepareWorldConfig($universe);
@@ -83,14 +86,21 @@ class AdvanceSimulationAction
 
         $snapshotData = $response['snapshot'] ?? [];
         if (! empty($snapshotData)) {
+            // Bootstrap zones nếu engine không trả về: stub/engine có thể không tạo zones → topology và map trống.
+            $this->ensureStateVectorHasZones($snapshotData);
+
             // Phase 96: Absolute Chronos (§V21)
-            // Increment the world's master clock and sync the universe
             $this->temporalSync->advanceGlobalClock($universe->world, $ticks);
             $this->temporalSync->synchronize($universe);
 
             $interval = $universe->world->snapshot_interval ?? 1;
             $shouldSave = ($snapshotData['tick'] % $interval === 0) || ($snapshotData['tick'] == 0);
-            
+
+            // Luôn đồng bộ state từ engine về universe mỗi tick, để lần advance tiếp theo
+            // gửi state mới (entropy/stability thay đổi). Nếu không sync khi !shouldSave,
+            // engine sẽ nhận mãi state cũ → entropy không đổi.
+            $this->syncUniverseFromSnapshotData($universe, $snapshotData);
+
             $savedSnapshot = null;
             if ($shouldSave) {
                 $savedSnapshot = $this->saveSnapshot($universe, $snapshotData);
@@ -107,18 +117,20 @@ class AdvanceSimulationAction
                         'metrics' => $newState->getMetrics(),
                     ]);
                 }
+            } else {
+                // Snapshot không được lưu (tick % interval !== 0): tạo virtual snapshot từ snapshotData
+                // để listener nhận đúng tick/entropy/stability hiện tại, tránh dùng snapshot cũ từ DB.
+                $savedSnapshot = $this->makeVirtualSnapshot($universe, $snapshotData);
             }
 
-            // FIRE EVENT: Decoupled logic handled by Listeners
-            // Note: If snapshot wasn't saved, we pass a mockup or the previous one, 
-            // but GenerateNarrative needs current data. For now, we pass the raw data if savedSnapshot is null.
+            // FIRE EVENT: Luôn dùng snapshot đúng tick (saved hoặc virtual). Truyền thêm _ticks để listener tính fromTick.
             event(new \App\Events\Simulation\UniverseSimulationPulsed(
-                $universe, 
-                $savedSnapshot ?? $universe->snapshots()->orderByDesc('tick')->first(), 
-                $response
+                $universe,
+                $savedSnapshot,
+                array_merge($response, ['_ticks' => $ticks])
             ));
 
-            // Update Universe latest tick
+            // Update Universe latest tick (state_vector đã được sync trong syncUniverseFromSnapshotData)
             $this->universeRepository->update($universe->id, ['current_tick' => $snapshotData['tick']]);
 
             // Phase 93: Internal Resonance (§V20)
@@ -176,10 +188,10 @@ class AdvanceSimulationAction
             }
 
             // ==========================================
-            // LEVEL 7: CIVILIZATION ATTRACTOR FIELD ENGINE
+            // LEVEL 7: CIVILIZATION ATTRACTOR FIELD ENGINE (chỉ khi đã lưu snapshot)
             // ==========================================
-            
-            if ($savedSnapshot) {
+
+            if ($shouldSave && $savedSnapshot && $savedSnapshot->exists) {
                 // Phase 120: Field Genesis (§V30)
                 // Calculate 5 core fields (Survival, Power, Wealth, Knowledge, Meaning)
                 $fields = $this->fieldEngine->computeAndStore($universe, $savedSnapshot);
@@ -261,19 +273,46 @@ class AdvanceSimulationAction
         }
     }
 
+    /**
+     * Tạo snapshot ảo (không lưu DB) từ snapshotData khi tick % interval !== 0.
+     * Listener nhận đúng tick/entropy/stability hiện tại.
+     */
+    private function makeVirtualSnapshot($universe, array $snapshotData): \App\Models\UniverseSnapshot
+    {
+        $stateVector = is_string($snapshotData['state_vector'] ?? null)
+            ? json_decode($snapshotData['state_vector'], true) ?? []
+            : ($snapshotData['state_vector'] ?? []);
+        $metrics = is_string($snapshotData['metrics'] ?? null)
+            ? json_decode($snapshotData['metrics'], true) ?? []
+            : ($snapshotData['metrics'] ?? []);
+        $metrics['sci'] = $snapshotData['sci'] ?? null;
+        $metrics['instability_gradient'] = $snapshotData['instability_gradient'] ?? null;
+
+        $snap = new \App\Models\UniverseSnapshot([
+            'universe_id' => $universe->id,
+            'tick' => $snapshotData['tick'],
+            'state_vector' => $stateVector,
+            'entropy' => $snapshotData['entropy'] ?? null,
+            'stability_index' => $snapshotData['stability_index'] ?? null,
+            'metrics' => $metrics,
+        ]);
+        $snap->setRelation('universe', $universe);
+        return $snap;
+    }
+
     private function saveSnapshot($universe, array $snapshot)
     {
          $stateVector = is_string($snapshot['state_vector'] ?? null)
             ? json_decode($snapshot['state_vector'], true) ?? []
             : ($snapshot['state_vector'] ?? []);
-            
+
         $metrics = is_string($snapshot['metrics'] ?? null)
             ? json_decode($snapshot['metrics'], true) ?? []
             : ($snapshot['metrics'] ?? []);
-            
+
         $metrics['sci'] = $snapshot['sci'] ?? null;
         $metrics['instability_gradient'] = $snapshot['instability_gradient'] ?? null;
-            
+
         return $this->snapshots->save($universe, [
             'tick' => $snapshot['tick'],
             'state_vector' => $stateVector,
@@ -281,6 +320,23 @@ class AdvanceSimulationAction
             'stability_index' => $snapshot['stability_index'] ?? null,
             'metrics' => $metrics,
         ]);
+    }
+
+    /**
+     * Đồng bộ state từ engine về universe mỗi tick (không tạo snapshot row).
+     * Đảm bảo lần advance() tiếp theo engine nhận state mới → entropy/stability có thể thay đổi.
+     */
+    private function syncUniverseFromSnapshotData($universe, array $snapshotData): void
+    {
+        $stateVector = is_string($snapshotData['state_vector'] ?? null)
+            ? json_decode($snapshotData['state_vector'], true) ?? []
+            : ($snapshotData['state_vector'] ?? []);
+
+        $this->universeRepository->update($universe->id, [
+            'current_tick' => $snapshotData['tick'],
+            'state_vector' => $stateVector,
+        ]);
+        $universe->refresh();
     }
 
     private function prepareEngineStateInput($universe): array
@@ -325,10 +381,39 @@ class AdvanceSimulationAction
         $world = $universe->world;
         return [
             'world_id' => (int) $world->id,
-            'origin' => (string) $world->current_origin ?? 'generic',
+            'origin' => (string) ($world->current_origin ?? $world->origin ?? 'generic'),
             'axiom' => $world->evolution_genome ?? [],
             'world_seed' => $world->world_seed ?? [],
             'genome' => $universe->kernel_genome ?? [],
         ];
+    }
+
+    /**
+     * Đảm bảo state_vector có ít nhất một zone khi engine không trả về.
+     * Stub và một số engine không tạo zones → topology/civilization map trống sau nhiều tick.
+     */
+    private function ensureStateVectorHasZones(array &$snapshotData): void
+    {
+        $raw = $snapshotData['state_vector'] ?? null;
+        $stateVector = is_string($raw) ? (json_decode($raw, true) ?? []) : (is_array($raw) ? $raw : []);
+        $zones = $stateVector['zones'] ?? [];
+        if (is_array($zones) && count($zones) > 0) {
+            return;
+        }
+        $tick = (int) ($snapshotData['tick'] ?? 0);
+        $entropy = (float) ($snapshotData['entropy'] ?? 0.3);
+        $order = 1.0 - $entropy * 0.5;
+        $stateVector['zones'] = [
+            [
+                'id' => 0,
+                'state' => [
+                    'entropy' => $entropy,
+                    'order' => max(0, min(1, $order)),
+                    'base_mass' => 100,
+                ],
+                'neighbors' => [],
+            ],
+        ];
+        $snapshotData['state_vector'] = $stateVector;
     }
 }

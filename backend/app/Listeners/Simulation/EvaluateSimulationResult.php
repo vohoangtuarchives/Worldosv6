@@ -130,7 +130,9 @@ class EvaluateSimulationResult
         $this->multiverseInteractionService->detectResonance($universe);
 
         // 12. World Autonomic Regulation
-        $this->worldRegulatorEngine->process($universe->world);
+        if ($universe->world) {
+            $this->worldRegulatorEngine->process($universe->world);
+        }
 
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error("Simulation evaluation failed in listener: " . $e->getMessage());
@@ -187,16 +189,34 @@ class EvaluateSimulationResult
     protected function storePressureMetrics($universe, $snapshot): void
     {
         $state = $snapshot->state_vector ?? [];
+        // Đưa entropy/stability từ snapshot vào state để PressureCalculator dùng (fallback energy_level).
+        if (!isset($state['entropy'])) {
+            $state['entropy'] = $snapshot->entropy ?? 0;
+        }
+        if (!isset($state['stability_index'])) {
+            $state['stability_index'] = $snapshot->stability_index ?? 0;
+        }
+
         $stress = $this->pressureCalculator->calculateMaterialStress($state);
-        
+        $cosmic = $this->pressureCalculator->calculateCosmicMetrics($state);
+
         $metrics = $snapshot->metrics ?? [];
         $metrics['material_stress'] = $stress;
-        
-        // Calculate Cosmic Metrics (Order, Energy Level)
-        $cosmic = $this->pressureCalculator->calculateCosmicMetrics($state);
         $metrics['order'] = $cosmic['order'];
         $metrics['energy_level'] = $cosmic['energy_level'];
-        
+
+        // Snapshot ảo (chưa lưu DB): cập nhật metrics vào bản ghi snapshot mới nhất để dashboard có số liệu gần đúng.
+        if (!$snapshot->exists) {
+            $latest = \App\Models\UniverseSnapshot::where('universe_id', $universe->id)
+                ->orderByDesc('tick')
+                ->first();
+            if ($latest) {
+                $latest->metrics = array_merge($latest->metrics ?? [], $metrics);
+                $latest->save();
+            }
+            return;
+        }
+
         $snapshot->metrics = $metrics;
         $snapshot->save();
     }
@@ -218,7 +238,7 @@ class EvaluateSimulationResult
                 'description' => 'Chỉ số ổn định thấp kỷ lục ('.round($stability, 4).'). Các định chế đang tan rã.',
                 'severity' => 'CRITICAL'
             ]));
-        } elseif ($snapshot->metrics['material_stress'] > 0.8) {
+        } elseif (($snapshot->metrics['material_stress'] ?? 0) > 0.8) {
              event(new \App\Events\Simulation\AnomalyDetected($universe, [
                 'title' => 'Căng thẳng Vật chất Cực độ',
                 'description' => 'Áp lực lên hạ tầng vượt ngưỡng an toàn. Nguy cơ ly khai diện rộng.',

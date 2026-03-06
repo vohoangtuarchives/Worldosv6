@@ -25,7 +25,7 @@ class InstitutionEvolutionService
     {
         $tick = (int) $snapshot->tick;
         $entities = $this->institutionalRepository->findActiveByUniverse($universe->id);
-        $zones = $universe->state_vector['zones'] ?? [];
+        $zones = ($universe->state_vector ?? [])['zones'] ?? [];
         $instability = (float) ($snapshot->stability_index ?? 1.0);
 
         // 1. Evolution of existing entities

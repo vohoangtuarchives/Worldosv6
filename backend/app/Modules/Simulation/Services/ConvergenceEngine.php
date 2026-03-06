@@ -64,10 +64,10 @@ class ConvergenceEngine
 
         if (!$snapA || !$snapB) return false;
 
-        $alignA = $snapA->metrics['alignment'] ?? null;
-        $alignB = $snapB->metrics['alignment'] ?? null;
+        $alignA = ($snapA->metrics ?? [])['alignment'] ?? null;
+        $alignB = ($snapB->metrics ?? [])['alignment'] ?? null;
 
-        if (!$alignA || !$alignB) return false;
+        if (!$alignA || !$alignB || !is_array($alignA) || !is_array($alignB)) return false;
 
         // Similarity check: Difference in all 3 axes < 0.05
         $diff = abs($alignA['spirituality'] - $alignB['spirituality']) +

@@ -21,7 +21,7 @@ class OmegaPointEngine
         $metrics = $snapshot->metrics ?? [];
         $order = (float)($metrics['order'] ?? 0);
         $energy = (float)($metrics['energy_level'] ?? 0);
-        $innovation = (float)($snapshot->state_vector['innovation'] ?? 0);
+        $innovation = (float)(($snapshot->state_vector ?? [])['innovation'] ?? 0);
 
         // Điều kiện Apotheosis: Trật tự cao, Năng lượng dồi dào và Đổi mới đạt cực hạn
         if ($order > 0.9 && $energy > 0.8 && $innovation > 0.95) {

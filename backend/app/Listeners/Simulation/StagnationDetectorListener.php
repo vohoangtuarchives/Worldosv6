@@ -33,8 +33,8 @@ class StagnationDetectorListener
         }
 
         // Tính toán sự thay đổi (Inertia)
-        $deltaEntropy = abs($snapshot->entropy - $previousSnapshot->entropy);
-        $deltaStability = abs($snapshot->stability_index - $previousSnapshot->stability_index);
+        $deltaEntropy = abs(($snapshot->entropy ?? 0) - ($previousSnapshot->entropy ?? 0));
+        $deltaStability = abs(($snapshot->stability_index ?? 0) - ($previousSnapshot->stability_index ?? 0));
 
         // Nếu thay đổi quá nhỏ (< 0.005) sau 10 ticks -> Coi như bị kẹt (Stagnant)
         if ($deltaEntropy < 0.005 && $deltaStability < 0.005) {

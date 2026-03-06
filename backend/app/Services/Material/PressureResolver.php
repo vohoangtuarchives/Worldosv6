@@ -15,6 +15,9 @@ class PressureResolver
     public function apply(MaterialInstance $instance, array $context): array
     {
         $material = $instance->material;
+        if (!$material) {
+            return [];
+        }
         $coefficients = $material->pressure_coefficients ?? [];
         if (empty($coefficients)) {
             $material->load('pressures');

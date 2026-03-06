@@ -46,6 +46,10 @@ class WorldEdictEngine
      */
     public function decree(Universe $universe, UniverseSnapshot $snapshot): void
     {
+        if (!$universe->world) {
+            return;
+        }
+
         $metrics = is_string($snapshot->metrics) ? json_decode($snapshot->metrics, true) : ($snapshot->metrics ?? []);
         
         // 1. Sync Meta-Edicts from World Axiom
@@ -57,9 +61,19 @@ class WorldEdictEngine
         // 3. Check Expiry (Meta-Edicts are exempt)
         $this->processExpiry($snapshot->tick, $metrics);
 
-        // Save back
-        $snapshot->metrics = $metrics;
-        $snapshot->save();
+        // Save back: only persist when snapshot exists (avoid saving virtual snapshot)
+        if ($snapshot->exists) {
+            $snapshot->metrics = $metrics;
+            $snapshot->save();
+        } else {
+            $latest = \App\Models\UniverseSnapshot::where('universe_id', $universe->id)
+                ->orderByDesc('tick')
+                ->first();
+            if ($latest) {
+                $latest->metrics = array_merge($latest->metrics ?? [], $metrics);
+                $latest->save();
+            }
+        }
     }
 
     protected function syncMetaEdicts(Universe $universe, array &$metrics): void

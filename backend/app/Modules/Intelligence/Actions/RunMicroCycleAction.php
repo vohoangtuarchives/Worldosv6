@@ -116,7 +116,7 @@ class RunMicroCycleAction
         $cohesion = $this->metricsCalculator->calculateSocialCohesion($actorStates, $polarization);
         $phase = $this->phaseDetector->detect($universe->entropy ?? 0.5, $polarization, $universe->level ?? 1);
         
-        $historicalPhaseScores = $universe->state_vector['historical_phase_scores'] ?? [];
+        $historicalPhaseScores = ($universe->state_vector ?? [])['historical_phase_scores'] ?? [];
         $historicalPhaseScores[] = $phase->toArray();
         if (count($historicalPhaseScores) > 5) {
             array_shift($historicalPhaseScores); // Keep window of 5

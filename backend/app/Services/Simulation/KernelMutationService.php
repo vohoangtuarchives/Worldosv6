@@ -62,7 +62,7 @@ class KernelMutationService
      */
     public function calculateFitness(Universe $universe): float
     {
-        $metrics = $universe->state_vector['metrics'] ?? [];
+        $metrics = ($universe->state_vector ?? [])['metrics'] ?? [];
         
         $order = 1.0 - ($universe->entropy ?? 0.5);
         $knowledge = $metrics['knowledge_core'] ?? 0.1;

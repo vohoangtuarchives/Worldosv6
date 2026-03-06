@@ -32,6 +32,7 @@ class MultiverseInteractionService
 
     protected function isResonant(Universe $a, Universe $b): bool
     {
+        if (!$a->world || !$b->world) return false;
         // Resonance if same World Origin and similar entropy levels
         if ($a->world->origin !== $b->world->origin) return false;
 
@@ -91,7 +92,7 @@ class MultiverseInteractionService
         $snapshot = $source->snapshots()->orderByDesc('tick')->first();
         if (!$snapshot) return;
 
-        $agents = $snapshot->state_vector['agents'] ?? [];
+        $agents = ($snapshot->state_vector ?? [])['agents'] ?? [];
         $migrants = [];
         $remaining = [];
 

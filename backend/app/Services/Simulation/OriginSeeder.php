@@ -29,8 +29,9 @@ class OriginSeeder
      */
     public function seed(Universe $universe): void
     {
-        $origin = $universe->world->origin;
-        if (!$origin) return;
+        $world = $universe->world;
+        if (!$world || !$world->origin) return;
+        $origin = $world->origin;
 
         $seeder = $this->seeders->first(fn(SeederInterface $s) => $s->supports($origin));
 

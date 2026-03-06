@@ -73,21 +73,27 @@ class PressureCalculator
     /**
      * Calculate global cosmic metrics: Order and Energy Level.
      * Order = 1 - entropy
-     * Energy Level = base_mass utilization + innovation boost
+     * Energy Level = base_mass utilization + innovation boost; fallback from order/stability khi state không có structured_mass/innovation.
      */
     public function calculateCosmicMetrics(array $state): array
     {
         $entropy = (float) ($state['entropy'] ?? 0);
         $order = max(0, 1 - $entropy);
-        
+
         $baseMass = (float) ($state['base_mass'] ?? 1000);
         $structuredMass = (float) ($state['structured_mass'] ?? 0);
         $innovation = (float) ($state['innovation'] ?? 0);
-        
+
         // Energy Level: derived from structure and innovation
         $structureRatio = ($baseMass > 0) ? ($structuredMass / $baseMass) : 0;
         $energyLevel = ($structureRatio * 0.7) + ($innovation * 0.3);
-        
+
+        // Fallback: engine thường không trả structured_mass/innovation → energy_level = 0. Suy từ order + stability để có giá trị hiển thị.
+        if ($energyLevel <= 0) {
+            $stability = (float) ($state['stability_index'] ?? 0.5);
+            $energyLevel = ($order * 0.5) + ($stability * 0.5);
+        }
+
         return [
             'order' => $order,
             'energy_level' => min(1.0, $energyLevel),

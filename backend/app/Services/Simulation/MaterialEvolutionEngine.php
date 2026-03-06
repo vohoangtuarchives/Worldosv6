@@ -30,6 +30,7 @@ class MaterialEvolutionEngine
 
         foreach ($instances as $instance) {
             $material = $instance->material;
+            if (!$material) continue;
 
             // Simple logic: If order is high, stabilize materials. If entropy is high, degrade them.
             if ($instance->lifecycle === Material::LIFECYCLE_DORMANT) {
@@ -56,10 +57,12 @@ class MaterialEvolutionEngine
         // High IP-score (Innovation) triggers mutation discovery
         if ($ipScore > 0.7) {
             $activeInstances = $universe->materialInstances()
+                ->with('material')
                 ->where('lifecycle', Material::LIFECYCLE_ACTIVE)
                 ->get();
 
             foreach ($activeInstances as $instance) {
+                if (!$instance->material) continue;
                 $possibleMutations = MaterialMutation::where('parent_material_id', $instance->material_id)
                     ->whereDoesntHave('childMaterial.instances', function ($q) use ($universe) {
                         $q->where('universe_id', $universe->id);
@@ -68,6 +71,8 @@ class MaterialEvolutionEngine
                     ->get();
 
                 foreach ($possibleMutations as $mutation) {
+                    $childMaterial = $mutation->childMaterial ?? null;
+                    if (!$childMaterial) continue;
                     // 20% chance to discover child material per high-IP tick
                     if (mt_rand(0, 100) < 20) {
                         $universe->materialInstances()->create([
@@ -75,7 +80,7 @@ class MaterialEvolutionEngine
                             'lifecycle' => Material::LIFECYCLE_DORMANT,
                             'context' => ['origin_parent' => $instance->id],
                         ]);
-                        Log::info("Mutation Discovered: {$mutation->childMaterial->name} from {$instance->material->name}");
+                        Log::info("Mutation Discovered: {$childMaterial->name} from " . ($instance->material?->name ?? 'unknown'));
                     }
                 }
             }

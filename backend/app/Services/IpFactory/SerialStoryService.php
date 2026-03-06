@@ -151,7 +151,7 @@ class SerialStoryService
         // Tạo MythScar để đưa chapter vào memory của vũ trụ
         try {
             $latestSnapshot = $series->universe->snapshots()->orderByDesc('tick')->first();
-            $zones = is_array($latestSnapshot?->state_vector) ? ($latestSnapshot->state_vector['zones'] ?? []) : [];
+            $zones = ($latestSnapshot?->state_vector ?? [])['zones'] ?? [];
             $zoneId = is_array($zones) && isset($zones[0]['id']) ? (string) $zones[0]['id'] : 'root';
             MythScar::create([
                 'universe_id'     => $series->universe_id,

@@ -42,7 +42,7 @@ class RelationalGraphProvider implements GraphProviderInterface
                 'data' => [
                     'entropy' => $s->entropy,
                     'stability' => $s->stability_index,
-                    'material_stress' => $s->metrics['material_stress'] ?? 0,
+                    'material_stress' => ($s->metrics ?? [])['material_stress'] ?? 0,
                 ]
             ];
         }

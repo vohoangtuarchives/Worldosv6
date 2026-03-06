@@ -25,10 +25,10 @@ class SoulAnchorService
             // Anchor them to the 'Void' (World level) temporarily
             // Here we just mark their universe as null, conceptually putting them in transit
             $agent->update([
-                'universe_id' => null, 
+                'universe_id' => null,
                 'soul_metadata' => array_merge($agent->soul_metadata ?? [], [
                     'last_universe_id' => $dyingUniverse->id,
-                    'anchored_at_tick' => $dyingUniverse->world->global_tick
+                    'anchored_at_tick' => $dyingUniverse->world?->global_tick ?? 0
                 ])
             ]);
             

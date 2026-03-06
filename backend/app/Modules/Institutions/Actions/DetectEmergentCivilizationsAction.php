@@ -20,7 +20,7 @@ class DetectEmergentCivilizationsAction
 
     public function handle(Universe $universe, UniverseSnapshot $snapshot): void
     {
-        $zones = $universe->state_vector['zones'] ?? [];
+        $zones = ($universe->state_vector ?? [])['zones'] ?? [];
         if (empty($zones)) return;
 
         // 1. Find cultural clusters

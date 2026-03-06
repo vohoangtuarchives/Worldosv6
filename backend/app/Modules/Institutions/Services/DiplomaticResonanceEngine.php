@@ -32,16 +32,23 @@ class DiplomaticResonanceEngine
 
         for ($i = 0; $i < count($civsArray); $i++) {
             for ($j = $i + 1; $j < count($civsArray); $j++) {
-                $civA = $civArray[$i];
-                $civB = $civArray[$j];
+                $civA = $civsArray[$i];
+                $civB = $civsArray[$j];
                 
                 $this->processBilateralRelation($universe, (int)$snapshot->tick, $civA, $civB, $relations);
             }
         }
 
         $stateVector['diplomacy'] = $relations;
-        $snapshot->state_vector = $stateVector;
-        $snapshot->save();
+        if ($snapshot->exists) {
+            $snapshot->state_vector = $stateVector;
+            $snapshot->save();
+        } else {
+            $uv = $universe->state_vector ?? [];
+            $uv['diplomacy'] = $relations;
+            $universe->state_vector = $uv;
+            $universe->save();
+        }
     }
 
     protected function processBilateralRelation(Universe $universe, int $tick, InstitutionalEntity $civA, InstitutionalEntity $civB, array &$relations): void

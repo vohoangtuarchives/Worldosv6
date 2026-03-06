@@ -10,6 +10,46 @@ use Illuminate\Support\Facades\Log;
 class ConvergenceEngine
 {
     /**
+     * Tìm các cặp universe trong cùng world có cộng hưởng cao, đủ điều kiện merge (§5.3).
+     * Trả về mảng [ ['a' => idA, 'b' => idB], ... ].
+     */
+    public function findMergeCandidates(int $worldId): array
+    {
+        $universeIds = Universe::where('world_id', $worldId)
+            ->where('status', 'active')
+            ->pluck('id')
+            ->toArray();
+
+        if (count($universeIds) < 2) {
+            return [];
+        }
+
+        $interactions = UniverseInteraction::where('interaction_type', 'resonance')
+            ->where('resonance_level', '>=', 0.8)
+            ->whereIn('universe_a_id', $universeIds)
+            ->whereIn('universe_b_id', $universeIds)
+            ->get();
+
+        $seen = [];
+        $candidates = [];
+        foreach ($interactions as $i) {
+            $a = (int) $i->universe_a_id;
+            $b = (int) $i->universe_b_id;
+            if ($a === $b) {
+                continue;
+            }
+            $key = $a < $b ? "{$a}_{$b}" : "{$b}_{$a}";
+            if (isset($seen[$key])) {
+                continue;
+            }
+            $seen[$key] = true;
+            $candidates[] = ['a' => $a, 'b' => $b];
+        }
+
+        return $candidates;
+    }
+
+    /**
      * Tính toán sự cộng hưởng (Resonance) giữa hai vũ trụ (§5.3).
      */
     public function calculateResonance(Universe $u1, Universe $u2): float

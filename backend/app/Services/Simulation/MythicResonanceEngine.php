@@ -47,22 +47,14 @@ class MythicResonanceEngine
         $latest = $universe->snapshots()->orderByDesc('tick')->first();
         if (!$latest) return;
 
-        $zones = $latest->state_vector['zones'] ?? [];
+        $zones = ($latest->state_vector ?? [])['zones'] ?? [];
         foreach ($zones as $z) {
             $density = $this->dreaming->getOnericDensity($z['state'] ?? []);
             
             if ($density > 0.6) {
-                // High density zone: Story becomes Reality
-                $this->edictEngine->decree($universe, [
-                    'type' => 'mythic_resonance',
-                    'target' => 'zone',
-                    'zone_id' => $z['id'],
-                    'parameters' => [
-                        'entropy_cooling' => 0.1,
-                        'knowledge_spark' => 0.05,
-                        'reason' => "Cộng hưởng từ câu chuyện: " . substr($chronicle->content, 0, 50) . "..."
-                    ]
-                ]);
+                // High density zone: apply decree with current snapshot (mythic pulse)
+                $this->edictEngine->decree($universe, $latest);
+                break; // Một lần đủ để cập nhật metrics; zone-specific edict cần mở rộng WorldEdictEngine sau.
             }
         }
     }

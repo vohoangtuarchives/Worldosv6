@@ -8,6 +8,7 @@ use App\Services\Narrative\TraitMapper;
 use App\Services\AI\HeroImageService;
 use App\Actions\Simulation\ApplyVisualMutationAction;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 
 /**
  * ArchetypeShiftAction: Manages agent evolution based on their life experiences (traits) (§V11).
@@ -29,7 +30,7 @@ class ArchetypeShiftAction
         $latest = $universe->snapshots()->orderByDesc('tick')->first();
         if (!$latest) return;
 
-        $zones = $latest->state_vector['zones'] ?? [];
+        $zones = ($latest->state_vector ?? [])['zones'] ?? [];
         $hasChanges = false;
 
         foreach ($zones as &$z) {
@@ -75,7 +76,7 @@ class ArchetypeShiftAction
                 'archetype' => $agent['archetype'] ?? 'Commoner',
                 'fate_tags' => $fateTags,
                 'tick_discovered' => $tick,
-                'is_transcendental' => \DB::raw("is_transcendental OR {$isTranscendental}") // Once transcendental, always transcendental
+                'is_transcendental' => DB::raw("is_transcendental OR {$isTranscendental}") // Once transcendental, always transcendental
             ]
         );
 

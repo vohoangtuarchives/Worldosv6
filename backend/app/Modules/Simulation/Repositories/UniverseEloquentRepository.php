@@ -20,8 +20,8 @@ class UniverseEloquentRepository implements UniverseRepositoryInterface
             id: $model->id,
             worldId: $model->world_id,
             name: $model->name,
-            entropy: (float) ($model->state_vector['entropy'] ?? 0.0),
-            stabilityIndex: (float) ($model->state_vector['stability_index'] ?? 0.0),
+            entropy: (float) (($model->state_vector ?? [])['entropy'] ?? 0.0),
+            stabilityIndex: (float) (($model->state_vector ?? [])['stability_index'] ?? 0.0),
             observationLoad: (float) ($model->observation_load ?? 0.0),
             stateVector: $model->state_vector ?? [],
             status: $model->status

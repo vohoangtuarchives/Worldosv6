@@ -33,9 +33,9 @@ class LoomWorldStateController extends Controller
                 'observer_effect_intensity' => $universe->observer_effect_intensity,
                 'active_demiurges' => \App\Models\Demiurge::where('universe_id', $universe->id)->count(),
                 'state_vector_summary' => [
-                    'zones_count' => count($universe->state_vector['zones'] ?? []),
-                    'axioms' => count($universe->state_vector['axioms'] ?? []),
-                    'scars' => count($universe->state_vector['scars'] ?? [])
+                    'zones_count' => count(($universe->state_vector ?? [])['zones'] ?? []),
+                    'axioms' => count(($universe->state_vector ?? [])['axioms'] ?? []),
+                    'scars' => count(($universe->state_vector ?? [])['scars'] ?? [])
                 ]
             ];
         }

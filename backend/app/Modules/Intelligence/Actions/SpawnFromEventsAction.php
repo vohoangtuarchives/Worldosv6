@@ -45,7 +45,7 @@ class SpawnFromEventsAction
 
     private function spawnSpontaneousActor(Universe $universe): void
     {
-        $axiom = $universe->world->axiom ?? [];
+        $axiom = $universe->world?->axiom ?? [];
         $archetype = $this->archetypeResolver->resolve($axiom, $universe->entropy ?? 0.5, $universe->structural_coherence ?? 0.5);
 
         $this->spawnActorAction->handle([

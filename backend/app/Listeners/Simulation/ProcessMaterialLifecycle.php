@@ -60,13 +60,13 @@ class ProcessMaterialLifecycle implements ShouldQueue
     protected function buildMaterialContext($snapshot): array
     {
         $metrics = $snapshot->metrics ?? [];
-        return array_merge($metrics, [
+        return array_merge($metrics ?? [], [
             'entropy' => (float)($snapshot->entropy ?? 0),
             'order' => (float)($snapshot->stability_index ?? 0),
             'innovation' => $metrics['innovation'] ?? 0,
             'growth' => $metrics['growth'] ?? 0,
             'trauma' => $metrics['trauma'] ?? 0,
-            'scars' => $snapshot->state_vector['scars'] ?? [],
+            'scars' => ($snapshot->state_vector ?? [])['scars'] ?? [],
         ]);
     }
 }
