@@ -15,6 +15,8 @@ import {
     Loader2
 } from 'lucide-react';
 
+import { Universe } from '@/types/simulation';
+
 interface Epoch {
     id: number;
     name: string;
@@ -35,7 +37,7 @@ export function EpochNavigator({ universeId }: { universeId: number }) {
                 const res = await api.universe(universeId);
                 const world = res.data?.world;
                 if (world && world.epochs) {
-                    const active = world.epochs.find((e: any) => e.status === 'active');
+                    const active = world.epochs.find((e: { status: string }) => e.status === 'active');
                     setCurrentEpoch(active || null);
                 }
                 setTick(res.data?.latest_snapshot?.tick || 0);
@@ -88,7 +90,7 @@ export function EpochNavigator({ universeId }: { universeId: number }) {
                 </div>
 
                 <p className="text-[10px] text-slate-400 italic mb-4 leading-relaxed line-clamp-2">
-                    "{currentEpoch.description}"
+                    {`"${currentEpoch.description}"`}
                 </p>
 
                 <div className="space-y-4">

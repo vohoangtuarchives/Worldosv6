@@ -12,7 +12,7 @@ class Universe extends Model
         'world_id', 'saga_id', 'multiverse_id', 'parent_universe_id', 'seed',
         'current_tick', 'level', 'epoch', 'status', 'state_vector', 'name',
         'observation_load', 'last_observed_at', 'observer_bonus',
-        'structural_coherence', 'entropy',
+        'structural_coherence', 'entropy', 'kernel_genome', 'fitness_score',
     ];
 
     protected $casts = [
@@ -22,6 +22,8 @@ class Universe extends Model
         'observer_bonus' => 'float',
         'structural_coherence' => 'float',
         'entropy' => 'float',
+        'kernel_genome' => 'array',
+        'fitness_score' => 'float',
     ];
 
     public function world(): BelongsTo

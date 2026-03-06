@@ -77,18 +77,18 @@ export const OmegaVortex: React.FC<OmegaVortexProps> = ({ reached }) => {
                 <motion.div
                     key={i}
                     initial={{
-                        x: Math.random() * window.innerWidth,
-                        y: Math.random() * window.innerHeight,
+                        x: (i * 137.5) % 100 + "%", // Use percentages or fixed based on i
+                        y: (i * 149.2) % 100 + "%",
                         opacity: 0
                     }}
                     animate={{
-                        y: [null, Math.random() * -100],
+                        y: [null, -100],
                         opacity: [0, 1, 0]
                     }}
                     transition={{
-                        duration: 5 + Math.random() * 5,
+                        duration: 5 + (i % 5),
                         repeat: Infinity,
-                        delay: Math.random() * 5
+                        delay: (i % 5)
                     }}
                     className="absolute w-1 h-1 bg-white rounded-full blur-[1px]"
                 />

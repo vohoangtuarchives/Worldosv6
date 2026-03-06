@@ -19,12 +19,13 @@ interface Civilization {
 }
 
 import { useSimulation } from '@/context/SimulationContext';
+import { Institution } from '@/types/simulation';
 
 export function CivilizationList({ universeId }: { universeId: number }) {
     const { institutions } = useSimulation();
 
     // Filter specifically for civilizations from the shared context
-    const civs = (institutions || []).filter((e: any) => e.entity_type === 'CIVILIZATION');
+    const civs = (institutions || []).filter((e: Institution) => e.entity_type === 'CIVILIZATION');
     const loading = institutions.length === 0;
 
     if (loading && civs.length === 0) {
@@ -79,7 +80,7 @@ export function CivilizationList({ universeId }: { universeId: number }) {
                                         </div>
                                         <div className="text-right">
                                             <div className="text-xs font-mono text-indigo-400">
-                                                {(civ.org_capacity * 100).toFixed(1)}%
+                                                {((civ.org_capacity ?? 0) * 100).toFixed(1)}%
                                             </div>
                                             <div className="text-[9px] uppercase tracking-tighter text-slate-500">
                                                 Capacity
@@ -91,12 +92,12 @@ export function CivilizationList({ universeId }: { universeId: number }) {
                                     <div className="space-y-1 mb-3">
                                         <div className="flex justify-between text-[9px] text-slate-400">
                                             <span>Chính danh (Legitimacy)</span>
-                                            <span>{(civ.legitimacy * 100).toFixed(0)}%</span>
+                                            <span>{((civ.legitimacy ?? 0) * 100).toFixed(0)}%</span>
                                         </div>
                                         <div className="h-1 w-full bg-slate-800 rounded-full overflow-hidden">
                                             <div
                                                 className="h-full bg-indigo-500 transition-all duration-500"
-                                                style={{ width: `${civ.legitimacy * 100}%` }}
+                                                style={{ width: `${(civ.legitimacy ?? 0) * 100}%` }}
                                             />
                                         </div>
                                     </div>

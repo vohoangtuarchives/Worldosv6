@@ -47,15 +47,19 @@ class PressureResolver
         $scars = $context['scars'] ?? [];
         $activeEdicts = $context['active_edicts'] ?? [];
 
+        $scarTypes = array_map(function($s) {
+            return is_array($s) ? ($s['type'] ?? '') : (is_string($s) ? $s : ($s->type ?? ''));
+        }, $scars);
+
         $deltas = [];
         foreach ($coefficients as $vectorKey => $coef) {
             $val = $this->k * $output * (is_numeric($coef) ? $coef : 0) * $resonanceFactor;
 
             // Apply specific scar effects
-            if ($vectorKey === 'order' && in_array('civil_war_scar', $scars)) {
+            if ($vectorKey === 'order' && in_array('civil_war_scar', $scarTypes)) {
                 $val *= 0.5; // Order is harder to build after civil war
             }
-            if ($vectorKey === 'entropy' && in_array('nuclear_fallout', $scars)) {
+            if ($vectorKey === 'entropy' && in_array('nuclear_fallout', $scarTypes)) {
                 $val *= 1.5; // Entropy increases faster
             }
 

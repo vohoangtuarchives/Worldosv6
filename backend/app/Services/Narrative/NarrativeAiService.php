@@ -25,6 +25,7 @@ class NarrativeAiService
         protected \App\Services\AI\VectorSearchService $vectorSearch,
         protected \App\Services\AI\MemoryService $memory,
         protected \App\Services\Simulation\MythicResonanceEngine $resonance,
+        protected GenrePromptBridge $genreBridge,
         protected ?LlmNarrativeClientInterface $llmClient = null
     ) {
         $this->config = AgentConfig::first();
@@ -69,16 +70,17 @@ class NarrativeAiService
             : ['crisis', 'unrest', 'formation', 'collapse', 'myth_scar', 'secession', 'micro_mode', 'meta_cycle'];
         $perceived = $this->perceived->build($universeId, $eventTypes, (array)$vector, $toTick);
 
-        // Genre from World for narrative tone (MVP: at least 3 genres produce different voice)
+        // Genre from World — full context via GenrePromptBridge
         $world = $universe->world;
         $genreKey = $world ? ($world->current_genre ?? $world->base_genre ?? 'wuxia') : 'wuxia';
+        $genreContext = $this->genreBridge->buildGenreContext($genreKey);
+
+        // Legacy: still set perceived['narrative_genre'] for backward compat
         $genreConfig = config('worldos_genres.genres.' . $genreKey, []);
-        $genreName = $genreConfig['name'] ?? $genreKey;
-        $genreDescription = $genreConfig['description'] ?? '';
         $perceived['narrative_genre'] = [
-            'key' => $genreKey,
-            'name' => $genreName,
-            'description' => $genreDescription,
+            'key'         => $genreKey,
+            'name'        => $genreConfig['name'] ?? $genreKey,
+            'description' => $genreConfig['description'] ?? '',
         ];
 
         // Tier 3: Residual Injection is already in PerceivedArchiveBuilder's output
@@ -98,8 +100,8 @@ class NarrativeAiService
             Log::warning("Memory search failed: " . $e->getMessage());
         }
 
-        $prompt = $this->buildPrompt($perceived, $fromTick, $toTick ?? $fromTick, $facts);
-        $content = $this->callLlm($prompt);
+        $prompt = $this->buildPrompt($perceived, $fromTick, $toTick ?? $fromTick, $facts, $genreContext);
+        $content = $this->callLlm($prompt, $genreContext);
 
         if ($content === null) {
             $content = $this->generateMockNarrative($prompt);
@@ -148,7 +150,7 @@ class NarrativeAiService
     }
 
 
-    protected function buildPrompt(array $perceived, int $fromTick, ?int $toTick, array $facts): string
+    protected function buildPrompt(array $perceived, int $fromTick, ?int $toTick, array $facts, array $genreContext = []): string
     {
         $flavor = implode(' ', $perceived['flavor'] ?? []);
         $events = implode(', ', array_values($perceived['events'] ?? []));
@@ -159,6 +161,14 @@ class NarrativeAiService
         $entropy = $perceived['metrics']['entropy'] ?? 'unknown';
         $instability = $perceived['metrics']['instability'] ?? 0;
         $sci = $perceived['metrics']['sci'] ?? 1.0;
+        $fields = $perceived['metrics']['civ_fields'] ?? [];
+        $fields = array_merge([
+            'survival' => 0.0,
+            'power' => 0.0,
+            'wealth' => 0.0,
+            'knowledge' => 0.0,
+            'meaning' => 0.0,
+        ], is_array($fields) ? $fields : []);
         $tail = $perceived['residual_prompt_tail'] ?? '';
         
         $reflections = '';
@@ -179,10 +189,17 @@ class NarrativeAiService
         $themes = implode(', ', $this->config->themes ?? ['Tổng quát']);
         $creativity = $this->config->creativity ?? 50;
 
+        // Genre context block — full voice guide (replaces old 1-line genreBlock)
         $genreBlock = '';
-        if (!empty($perceived['narrative_genre'])) {
+        if (!empty($genreContext)) {
+            $genreBlock = $genreContext['voice_block'] ?? '';
+            $genreBlock .= $genreContext['archetype_context'] ?? '';
+            $genreBlock .= $genreContext['naming_hint'] ?? '';
+            $genreBlock .= $genreContext['forbidden_block'] ?? '';
+        } elseif (!empty($perceived['narrative_genre'])) {
+            // Fallback khi không có genreContext
             $g = $perceived['narrative_genre'];
-            $genreBlock = "\nThể loại (Genre): {$g['name']}. " . ($g['description'] ? "{$g['description']}. " : '') . "Viết biên niên theo phong cách và không khí của thể loại này.";
+            $genreBlock = "\nThe loai ({$g['name']}): " . ($g['description'] ? "{$g['description']}. " : '') . "Viet bien nien theo phong cach va khong khi cua the loai nay.";
         }
 
         $epicIntro = "";
@@ -200,6 +217,13 @@ class NarrativeAiService
         return <<<EOT
 Bạn là $agentName, một $personality của vũ trụ mô phỏng.
 $epicIntro Chủ đề trọng tâm: $themes. Mức độ sáng tạo: $creativity%.$genreBlock
+
+TRƯỜNG HẤP DẪN VĂN MINH (Civilization Attractor Fields):
+- Sinh tồn (Survival): {$fields['survival']}
+- Quyền lực (Power): {$fields['power']}
+- Thịnh vượng (Wealth): {$fields['wealth']}
+- Tri thức (Knowledge): {$fields['knowledge']}
+- Ý nghĩa (Meaning): {$fields['meaning']}
 
 $legendaryFocus
 TRẠNG THÁI BẢN THỂ (Ontological State):
@@ -222,40 +246,50 @@ Trạng thái Thế giới (Cảm quan - Perceived):
 $reflections
 $factsText
 
-NHIỆM VỤ: Hãy viết một đoạn biên niên sử ngắn gọn. 
-Nếu có 'GIỌNG NÓI TỪ CHIỀU VI MÔ', hãy lồng ghép các suy nghĩ của họ vào lời dẫn chuyện để làm nổi bật sự phản tư của thế giới. 
-Tập trung vào tính nhân quả: sự thay đổi vật chất và văn hóa đã dẫn dắt sự trỗi dậy hoặc sụp đổ của các định chế như thế nào. 
-Nếu chỉ số 'Bất ổn tri thức' cao (>$instability), hãy dùng ngôn từ mờ ảo, thần thoại hóa các sự kiện.
-$tail
+        NHIỆM VỤ: Hãy viết một chương sử thi chi tiết và giàu hình ảnh (Epic Chronicle). 
+        Đừng ngần ngại viết dài (3-5 đoạn văn), tập trung vào sự hùng tráng, bi kịch và tính nhân quả của lịch sử.
+        Hãy miêu tả chi tiết: sự thay đổi vật chất và văn hóa đã dẫn dắt sự trỗi dậy hoặc sụp đổ của các định chế như thế nào. 
+        Dựa vào 'TRƯỜNG HẤP DẪN VĂN MINH' để miêu tả khát vọng chủ đạo của thời đại này (ví dụ: nếu Quyền lực cao, hãy viết về những cuộc chinh phạt đẫm máu hoặc sự bành chướng uy quyền; nếu Ý nghĩa cao, hãy viết về những triết thuyết chấn động hoặc đức tin tận hiến).
+        Nếu có 'GIỌNG NÓI TỪ CHIỀU VI MÔ', hãy lồng ghép các suy nghĩ của họ vào lời dẫn chuyện như những 'lời sấm truyền' hoặc 'tiếng vang của nội tâm' để làm nổi bật sự phản tư của thế giới. 
+        Nếu chỉ số 'Bất ổn tri thức' cao (>$instability), hãy dùng ngôn từ huyền ảo, sương khói, biến những sự kiện thành thần thoại hóa.
+        $tail
 EOT;
     }
 
-    protected function callLlm(string $prompt): ?string
+    protected function callLlm(string $prompt, array $genreContext = []): ?string
     {
+        $temperature = $genreContext['temperature'] ?? 0.7;
+        $systemPersona = $genreContext['system_persona']
+            ?? 'Ban la WorldOS, nguoi ke chuyen ve su tien hoa cua vu tru.';
+
         if ($this->llmClient?->isAvailable()) {
             return $this->llmClient->generate($prompt);
         }
 
         if ($this->config && $this->config->model_type === 'local') {
-            return $this->callLocalAI($prompt);
+            return $this->callLocalAI($prompt, $temperature);
         }
 
-        $apiKey = $this->config->api_key ?? config('services.openai.key');
-        
-        if ($apiKey) {
+        $apiKey = $this->config->api_key ?? env('NARRATIVE_LLM_KEY') ?? config('services.openai.key');
+        $endpoint = env('NARRATIVE_LLM_URL', 'https://api.openai.com/v1/chat/completions');
+
+        if ($apiKey || str_contains($endpoint, 'localhost') || str_contains($endpoint, 'host.docker.internal')) {
             try {
-                $model = $this->config->model_name ?? config('services.openai.model', 'gpt-4o');
-                
-                $response = Http::withToken($apiKey)
-                    ->timeout(30)
-                    ->post('https://api.openai.com/v1/chat/completions', [
-                        'model' => $model,
-                        'messages' => [
-                            ['role' => 'system', 'content' => "Bạn là WorldOS, người kể chuyện về sự tiến hóa của vũ trụ."],
-                            ['role' => 'user', 'content' => $prompt],
-                        ],
-                        'temperature' => 0.7,
-                    ]);
+                $model = $this->config->model_name ?? env('NARRATIVE_LLM_MODEL', 'gpt-4o');
+
+                $request = Http::timeout(30);
+                if ($apiKey) {
+                    $request = $request->withToken($apiKey);
+                }
+
+                $response = $request->post($endpoint, [
+                    'model'    => $model,
+                    'messages' => [
+                        ['role' => 'system', 'content' => $systemPersona],
+                        ['role' => 'user',   'content' => $prompt],
+                    ],
+                    'temperature' => $temperature,
+                ]);
 
                 if ($response->successful()) {
                     return $response->json('choices.0.message.content');
@@ -268,10 +302,11 @@ EOT;
         return null;
     }
 
-    protected function callLocalAI(string $prompt): ?string
+    protected function callLocalAI(string $prompt, float $temperature = 0.7, string $systemPersona = ''): ?string
     {
         $endpoint = $this->config->local_endpoint ?? 'http://host.docker.internal:11434/v1/chat/completions';
         $model = $this->config->model_name ?? 'mistral';
+        $persona = $systemPersona ?: 'Ban la nguoi ghi chep sang tao cho mot tro choi mo phong.';
 
         if (str_contains($endpoint, 'localhost')) {
             $endpoint = str_replace('localhost', 'host.docker.internal', $endpoint);
@@ -281,10 +316,10 @@ EOT;
             $response = Http::timeout(30)->post($endpoint, [
                 'model' => $model,
                 'messages' => [
-                    ['role' => 'system', 'content' => "Bạn là người ghi chép sáng tạo cho một trò chơi mô phỏng."],
+                    ['role' => 'system', 'content' => $persona],
                     ['role' => 'user', 'content' => $prompt]
                 ],
-                'temperature' => 0.7,
+                'temperature' => $temperature,
             ]);
 
             if ($response->successful()) {
@@ -308,11 +343,11 @@ EOT;
         $materials = $mMat[1] ?? 'hư không';
         
         if ($entropy > 0.8) {
-            return "Hỗn loạn ngự trị. Cấu trúc của $materials sụp đổ dưới sức nặng của sự gia tăng entropy ($entropy). Xã hội tan rã thành những mảnh vỡ sinh tồn biệt lập.";
+            return "Hỗn loạn ngự trị trong sự điên cuồng của hư không. Cấu trúc của $materials sụp đổ tan tành dưới sức nặng của sự gia tăng entropy ($entropy). Những định chế hùng mạnh một thời nay chỉ còn là đống tro tàn, xã hội tan rã thành những mảnh vỡ sinh tồn biệt lập trong bóng tối mịt mù. Đây là buổi hoàng hôn của một kỷ nguyên.";
         } elseif ($entropy > 0.5) {
-            return "Căng thẳng leo thang. Thời đại của $materials đối mặt với sự trì trệ khi entropy chạm ngưỡng $entropy. Những lời thì thầm về sự thay đổi vang vọng khắp hệ thống.";
+            return "Căng thẳng leo thang đến mức nghẹt thở. Thời đại của $materials đối mặt với sự trì trệ và mục nát khi entropy chạm ngưỡng $entropy. Những lời thì thầm về cuộc đại biến vang vọng khắp các ngõ ngách của hệ thống, trong khi những kẻ nắm quyền cố gắng bám víu lấy những mảnh trật tự cuối cùng.";
         } else {
-            return "Một thời kỳ hoàng kim. $materials hưng thịnh trong một trật tự ổn định (Entropy: $entropy). Nền văn minh mở rộng sự phức hợp với niềm tin vững chãi.";
+            return "Một thời kỳ hoàng kim rực rỡ đã bắt đầu. Sự dung hợp của $materials tạo nên một trật tự ổn định tuyệt mỹ (Entropy: $entropy). Nền văn minh mở rộng sự phức hợp của mình lên những tầm cao mới, nơi niềm tin vững chãi và sự sáng tạo không giới hạn dẫn dắt vạn vật hướng tới một tương lai vĩnh hằng.";
         }
     }
 }

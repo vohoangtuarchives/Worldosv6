@@ -43,7 +43,7 @@ export default function DashboardLayout({
               </Link>
               <a
                 className="transition-colors hover:text-cyan-300 text-cyan-400 flex items-center gap-1"
-                href="http://localhost:3001/timeline"
+                href="/timeline"
                 target="_blank"
                 rel="noopener noreferrer"
               >

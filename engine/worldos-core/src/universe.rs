@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 
 use crate::constants;
-use crate::types::{CulturalVector, SimulationMetrics, UniverseSnapshot, ZoneState};
+use crate::types::{CivilizationFields, CulturalVector, SimulationMetrics, UniverseSnapshot, ZoneState};
 
 /// Opaque zone key (for future SlotMap use).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -22,6 +22,8 @@ pub struct UniverseState {
     pub instability_gradient: f64,
     #[serde(default)]
     pub sci: f64, // Structural Coherence Index (§4.3)
+    #[serde(default)]
+    pub global_fields: CivilizationFields,
     #[serde(default)]
     pub scars: Vec<serde_json::Value>,
 }
@@ -43,6 +45,7 @@ impl UniverseState {
             knowledge_core: 0.0,
             instability_gradient: 0.0,
             sci: 1.0,
+            global_fields: CivilizationFields::default(),
             scars: Vec::new(),
         }
     }
@@ -63,14 +66,16 @@ impl UniverseState {
             knowledge_core: 0.0,
             instability_gradient: 0.0,
             sci: 1.0,
+            global_fields: CivilizationFields::default(),
             scars: Vec::new(),
         }
     }
 
     /// Run one 3-phase tick (simplified: no SlotMap in this struct; we use vec for serialization).
-    pub fn tick(&mut self, _world: &crate::types::WorldConfig) {
+    pub fn tick(&mut self, world: &crate::types::WorldConfig) {
+        let genome = world.genome.clone().unwrap_or_default();
         // Phase 1: local zone update (entropy, organization, decay)
-        let k1 = constants::K1_ENTROPY_PER_STRUCTURED;
+        let k1 = genome.entropy_coefficient * constants::K1_ENTROPY_PER_STRUCTURED;
         for z in &mut self.zones {
             let base = z.state.base_mass;
             let structured = z.state.structured_mass;
@@ -133,6 +138,16 @@ impl UniverseState {
 
             z.state.update_material_stress();
             z.state.material_stress = (z.state.material_stress + material_stress_delta).clamp(0.0, 1.0);
+
+            // Level 7: Civilization Field Genesis (M1 Migration)
+            let s = &mut z.state;
+            let structured_ratio = s.structured_mass / (s.base_mass + 1e-6);
+            
+            s.civ_fields.survival = (structured_ratio * 0.4 + (1.0 - s.entropy) * 0.6).clamp(0.0, 1.0);
+            s.civ_fields.power = (structured_ratio * 0.7 + s.embodied_knowledge * 0.3).clamp(0.0, 1.0);
+            s.civ_fields.wealth = (structured_ratio * 0.8 + s.free_energy / (s.base_mass * 2.0 + 1e-6)).clamp(0.0, 1.0);
+            s.civ_fields.knowledge = (s.embodied_knowledge * 0.7 + s.knowledge_frontier * 0.3).clamp(0.0, 1.0);
+            s.civ_fields.meaning = (s.cultural.myth_belief * 0.6 + (1.0 - s.material_stress) * 0.2 + s.entropy * 0.2).clamp(0.0, 1.0);
         }
 
         // Phase 2: aggregate global_entropy, knowledge_core, SCI
@@ -155,18 +170,28 @@ impl UniverseState {
             let _avg_ceiling: f64 = self.zones.iter().map(|z| z.state.tech_ceiling).sum::<f64>() / n;
             
             // SCI = 1.0 - (average material stress * entropy weight)
+            // Tuning (§V23): Reduced decay weights from 0.7/0.3 to 0.4/0.2 to prevent premature collapse at tick 96.
             let avg_stress: f64 = self.zones.iter().map(|z| z.state.material_stress).sum::<f64>() / n;
-            self.sci = (1.0 - (avg_stress * 0.7 + self.global_entropy * 0.3)).clamp(0.0, 1.0);
+            self.sci = (1.0 - (avg_stress * 0.4 + self.global_entropy * 0.2)).clamp(0.0, 1.0);
             
-            // Trigger Micro Mode if gradient is high
+            
+            // Toggle Micro Mode if gradient is high
             self.instability_gradient = (avg_stress - 0.5).max(0.0) * 2.0; 
+
+            // Aggregate Global Fields
+            self.global_fields.survival = self.zones.iter().map(|z| z.state.civ_fields.survival).sum::<f64>() / n;
+            self.global_fields.power = self.zones.iter().map(|z| z.state.civ_fields.power).sum::<f64>() / n;
+            self.global_fields.wealth = self.zones.iter().map(|z| z.state.civ_fields.wealth).sum::<f64>() / n;
+            self.global_fields.knowledge = self.zones.iter().map(|z| z.state.civ_fields.knowledge).sum::<f64>() / n;
+            self.global_fields.meaning = self.zones.iter().map(|z| z.state.civ_fields.meaning).sum::<f64>() / n;
         }
 
         // Phase 3: Diffusion (Entropy, Tech, Culture) (§3, §4.4)
-        let beta = constants::BETA_DIFFUSION;
+        let beta = genome.diffusion_rate;
         let mut entropy_deltas = vec![0.0; self.zones.len()];
         let mut tech_deltas = vec![0.0; self.zones.len()];
         let mut culture_deltas = vec![CulturalVector::default(); self.zones.len()];
+        let mut civ_field_deltas = vec![CivilizationFields::default(); self.zones.len()];
 
         for i in 0..self.zones.len() {
             let zone = &self.zones[i];
@@ -208,6 +233,23 @@ impl UniverseState {
             culture_deltas[i].violence_tolerance = beta * c_diff_sum.violence_tolerance / n_len;
             culture_deltas[i].institutional_respect = beta * c_diff_sum.institutional_respect / n_len;
             culture_deltas[i].myth_belief = beta * c_diff_sum.myth_belief / n_len;
+
+            // Civ Field Diffusion (M2 Migration)
+            let mut civ_diff_sum = CivilizationFields::default();
+            for &j in &neighbors {
+                let neighbor = &self.zones[j];
+                civ_diff_sum.survival += neighbor.state.civ_fields.survival - zone.state.civ_fields.survival;
+                civ_diff_sum.power += neighbor.state.civ_fields.power - zone.state.civ_fields.power;
+                civ_diff_sum.wealth += neighbor.state.civ_fields.wealth - zone.state.civ_fields.wealth;
+                civ_diff_sum.knowledge += neighbor.state.civ_fields.knowledge - zone.state.civ_fields.knowledge;
+                civ_diff_sum.meaning += neighbor.state.civ_fields.meaning - zone.state.civ_fields.meaning;
+            }
+
+            civ_field_deltas[i].survival = beta * civ_diff_sum.survival / n_len;
+            civ_field_deltas[i].power = beta * civ_diff_sum.power / n_len;
+            civ_field_deltas[i].wealth = beta * civ_diff_sum.wealth / n_len;
+            civ_field_deltas[i].knowledge = beta * civ_diff_sum.knowledge / n_len;
+            civ_field_deltas[i].meaning = beta * civ_diff_sum.meaning / n_len;
         }
 
         // Apply all deltas
@@ -222,6 +264,12 @@ impl UniverseState {
             z.state.cultural.violence_tolerance = (z.state.cultural.violence_tolerance + culture_deltas[i].violence_tolerance).clamp(0.0, 1.0);
             z.state.cultural.institutional_respect = (z.state.cultural.institutional_respect + culture_deltas[i].institutional_respect).clamp(0.0, 1.0);
             z.state.cultural.myth_belief = (z.state.cultural.myth_belief + culture_deltas[i].myth_belief).clamp(0.0, 1.0);
+
+            z.state.civ_fields.survival = (z.state.civ_fields.survival + civ_field_deltas[i].survival).clamp(0.0, 1.0);
+            z.state.civ_fields.power = (z.state.civ_fields.power + civ_field_deltas[i].power).clamp(0.0, 1.0);
+            z.state.civ_fields.wealth = (z.state.civ_fields.wealth + civ_field_deltas[i].wealth).clamp(0.0, 1.0);
+            z.state.civ_fields.knowledge = (z.state.civ_fields.knowledge + civ_field_deltas[i].knowledge).clamp(0.0, 1.0);
+            z.state.civ_fields.meaning = (z.state.civ_fields.meaning + civ_field_deltas[i].meaning).clamp(0.0, 1.0);
         }
 
         self.tick += 1;
@@ -306,6 +354,7 @@ impl UniverseState {
             knowledge_frontier_avg: self.zones.iter().map(|z| z.state.knowledge_frontier).sum::<f64>() / (self.zones.len() as f64).max(1.0),
             instability_gradient: self.instability_gradient,
             zone_count: self.zones.len() as u32,
+            civ_fields: self.global_fields.clone(),
             scars: self.scars.clone(),
         }
     }
@@ -318,7 +367,11 @@ impl UniverseState {
                 z.state.entropy = (z.state.entropy + 0.5).min(1.0);
                 z.state.active_materials.clear(); 
             }
-            self.scars.push(format!("Phát động Meta-Cycle tại tick {}", self.tick).into());
+            self.scars.push(serde_json::json!({
+                "type": "meta_cycle",
+                "description": format!("Phát động Meta-Cycle tại tick {}", self.tick),
+                "tick": self.tick
+            }));
             return true;
         }
         false
@@ -419,7 +472,7 @@ mod tests {
 
     #[test]
     fn test_material_resonance_same_slug_amplifies_effect() {
-        let world = WorldConfig { world_id: 1, axiom: None, world_seed: None, origin: String::new() };
+        let world = WorldConfig { world_id: 1, axiom: None, world_seed: None, origin: String::new(), genome: None };
         let coeff = PressureCoefficients { entropy: 0.5, order: 0.0, innovation: 0.0, growth: 0.0 };
 
         let mut state_one = UniverseState::with_one_zone(1, 100.0);

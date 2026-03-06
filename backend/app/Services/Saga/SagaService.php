@@ -12,7 +12,8 @@ class SagaService
 {
     public function __construct(
         protected UniverseRuntimeService $runtime,
-        protected \App\Services\Simulation\OriginSeeder $originSeeder
+        protected \App\Services\Simulation\OriginSeeder $originSeeder,
+        protected \App\Services\Simulation\KernelMutationService $mutationService
     ) {}
 
     /**
@@ -40,7 +41,14 @@ class SagaService
                 $latest = $parent->snapshots()->orderByDesc('tick')->first();
                 $initialState = $latest?->state_vector ?? $parent->state_vector;
                 $startTick = $latest?->tick ?? $parent->current_tick;
+                
+                // Inherit and Mutate Genome
+                $parentGenome = $parent->kernel_genome ?? [];
+                $childGenome = $this->mutationService->mutate($parentGenome);
             }
+        } else {
+            // Genesis: start with default genome
+            $childGenome = null; // Will be set by create below if default needed, or explicitly here
         }
 
         // Apply mutation from branchPayload if any (e.g. reduce entropy, boost innovation)
@@ -92,7 +100,11 @@ class SagaService
             'current_tick' => $startTick,
             'status' => 'active',
             'state_vector' => $initialState,
+            'kernel_genome' => $childGenome ?? null,
         ]);
+        
+        // Ensure genome is set (default if null)
+        $this->mutationService->ensureGenome($universe);
 
         // Phase 21: Inject External Shock if it's a fork
         if ($parentUniverseId && $branchPayload) {

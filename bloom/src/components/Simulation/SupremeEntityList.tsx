@@ -76,7 +76,7 @@ export function SupremeEntityList({ universeId }: { universeId: number }) {
                                 </div>
 
                                 <p className="text-[10px] text-slate-400 leading-relaxed mb-3 line-clamp-2 italic">
-                                    "{entity.description}"
+                                    &quot;{entity.description}&quot;
                                 </p>
 
                                 {/* Alignment Visualization */}

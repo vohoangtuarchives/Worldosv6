@@ -13,6 +13,7 @@ import {
   type Edge,
   type NodeProps,
   Panel,
+  Position,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
@@ -59,8 +60,8 @@ function getLayouted(nodes: MaterialDagNode[], edges: MaterialDagEdge[], directi
       type: "materialNode",
       position: { x: pos.x - NODE_WIDTH / 2, y: pos.y - NODE_HEIGHT / 2 },
       data: n.data,
-      sourcePosition: "bottom" as const,
-      targetPosition: "top" as const,
+      sourcePosition: Position.Bottom,
+      targetPosition: Position.Top,
     };
   });
 
@@ -75,7 +76,8 @@ function getLayouted(nodes: MaterialDagNode[], edges: MaterialDagEdge[], directi
 }
 
 function MaterialNode({ data, selected }: NodeProps) {
-  const isActive = data.lifecycle === "active";
+  const d = data as MaterialDagNode["data"];
+  const isActive = d.lifecycle === "active";
   return (
     <div
       className={`
@@ -84,11 +86,11 @@ function MaterialNode({ data, selected }: NodeProps) {
         ${selected ? "ring-2 ring-amber-400" : ""}
       `}
     >
-      <div className="font-semibold text-sm text-slate-100 truncate" title={data.label}>
-        {data.label ?? "Material"}
+      <div className="font-semibold text-sm text-slate-100 truncate" title={d.label}>
+        {d.label ?? "Material"}
       </div>
       <div className="text-[10px] text-slate-400 mt-0.5 flex items-center justify-between">
-        <span>{data.ontology ?? "—"}</span>
+        <span>{d.ontology ?? "—"}</span>
         {isActive && (
           <span className="text-emerald-400 font-medium uppercase tracking-wider">Active</span>
         )}

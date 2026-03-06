@@ -42,6 +42,7 @@ class AnomalyGeneratorService
                 // Add a permanent scar of unprecedented intensity
                 $scars = $vec['scars'] ?? [];
                 $scars[] = [
+                    'type' => 'spatial_fracture',
                     'tick' => $universe->current_tick,
                     'description' => "Vết nứt không gian - Thời gian đóng băng.",
                     'intensity' => 0.99

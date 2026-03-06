@@ -157,5 +157,49 @@ export const api = {
   async socialContracts(id: number) {
     return apiFetch(`/worldos/universes/${id}/social-contracts`);
   },
-};
 
+  // -----------------------------------------------------------------------
+  // IP Factory Pipeline
+  // -----------------------------------------------------------------------
+  ipFactory: {
+    async series() {
+      return apiFetch("/worldos/ip-factory/series");
+    },
+    async getSeries(id: number) {
+      return apiFetch(`/worldos/ip-factory/series/${id}`);
+    },
+    async createSeries(payload: {
+      universe_id: number;
+      title: string;
+      genre_key?: string;
+      saga_id?: number;
+      config?: Record<string, unknown>;
+    }) {
+      return apiFetch("/worldos/ip-factory/series", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+    },
+    async chapters(seriesId: number) {
+      return apiFetch(`/worldos/ip-factory/series/${seriesId}/chapters`);
+    },
+    async generateChapter(seriesId: number, sync = false) {
+      return apiFetch(
+        `/worldos/ip-factory/series/${seriesId}/generate-chapter${sync ? "?sync=true" : ""}`,
+        { method: "POST" }
+      );
+    },
+    async canonize(seriesId: number, chapterId: number) {
+      return apiFetch(
+        `/worldos/ip-factory/series/${seriesId}/chapters/${chapterId}/canonize`,
+        { method: "POST" }
+      );
+    },
+    async bible(seriesId: number) {
+      return apiFetch(`/worldos/ip-factory/series/${seriesId}/bible`);
+    },
+    async loomStatus() {
+      return apiFetch("/worldos/ip-factory/loom-status");
+    },
+  },
+};

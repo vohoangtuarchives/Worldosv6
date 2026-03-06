@@ -1,22 +1,12 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import { api } from "@/lib/api";
 import { Users, Shield, Zap, Star, Eye, ChevronDown, ChevronUp } from "lucide-react";
 import {
     Radar, RadarChart, PolarGrid, PolarAngleAxis,
     PolarRadiusAxis, ResponsiveContainer
 } from 'recharts';
-
-interface Actor {
-    id: number;
-    name: string;
-    archetype: string;
-    traits: number[];
-    biography: string;
-    is_alive: boolean;
-    metrics: { influence?: number };
-}
+import type { Actor } from "@/types/simulation";
 
 const TRAIT_DIMENSIONS = [
     "Dom", "Amb", "Coe", // Quyền lực
@@ -103,7 +93,7 @@ function ActorCard({ actor }: { actor: Actor }) {
             {expanded && (
                 <div className="mt-1 space-y-3 pt-2 border-t border-slate-800/50">
                     <div className="text-[10px] font-mono text-slate-500 mb-1 uppercase tracking-tighter">Trait Signature (17D)</div>
-                    <ActorRadar traits={actor.traits} />
+                    <ActorRadar traits={Array.isArray(actor.traits) ? actor.traits : Object.values(actor.traits ?? {})} />
 
                     {actor.biography && (
                         <div className="mt-3 pt-2 border-t border-slate-800/50">

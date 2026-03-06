@@ -42,17 +42,17 @@ const ConvergenceMonitor: React.FC<ConvergenceMonitorProps> = ({ universeId, cur
                     </div>
                 ) : (
                     trajectories.map((traj) => {
-                        const remainingTicks = traj.target_tick - currentTick;
-                        const probabilityPercent = Math.round(traj.probability * 100);
+                        const remainingTicks = (traj.target_tick ?? currentTick) - currentTick;
+                        const probabilityPercent = Math.round((traj.probability ?? 0) * 100);
 
                         return (
                             <div key={traj.id} className="space-y-2 border-l-2 border-cyan-800 pl-3 py-1">
                                 <div className="flex justify-between items-start gap-2">
                                     <span className="text-[11px] font-semibold text-cyan-100 leading-tight">
-                                        {traj.phenomenon_description}
+                                        {traj.phenomenon_description ?? '—'}
                                     </span>
                                     <span className="text-[8px] px-1.5 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800 uppercase font-bold">
-                                        {traj.convergence_type.replace('_', ' ')}
+                                        {(traj.convergence_type ?? '').replace('_', ' ')}
                                     </span>
                                 </div>
 
@@ -67,7 +67,7 @@ const ConvergenceMonitor: React.FC<ConvergenceMonitorProps> = ({ universeId, cur
                                 <div className="flex items-center justify-between text-[9px]">
                                     <div className="flex items-center gap-1 text-slate-500 font-bold">
                                         <Zap className="w-3 h-3 text-amber-500" />
-                                        <span>Giao điểm: Tick {traj.target_tick}</span>
+                                        <span>Giao điểm: Tick {traj.target_tick ?? '?'}</span>
                                     </div>
                                     <span className={`font-mono font-bold ${remainingTicks < 20 ? 'text-rose-400 animate-pulse' : 'text-slate-400'}`}>
                                         Δt: {remainingTicks > 0 ? `-${remainingTicks}` : 'Hội tụ'}

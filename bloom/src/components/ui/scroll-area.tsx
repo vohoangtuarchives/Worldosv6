@@ -1,6 +1,8 @@
 import React from "react";
 
-interface ScrollAreaProps extends React.HTMLAttributes<HTMLDivElement> { }
+interface ScrollAreaProps extends React.HTMLAttributes<HTMLDivElement> {
+    children?: React.ReactNode;
+}
 
 export function ScrollArea({ className = "", children, ...props }: ScrollAreaProps) {
     return (

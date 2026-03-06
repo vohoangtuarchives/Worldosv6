@@ -5,25 +5,13 @@ import { useSimulation } from '@/context/SimulationContext';
 
 export default function GreatFilterAlert({ universeId: _unusedId }: { universeId: number | null }) {
     const { latestSnapshot } = useSimulation();
-    const [activeCrisis, setActiveCrisis] = useState<string | null>(null);
+    const stateVec = latestSnapshot?.state_vector
+        ? (typeof latestSnapshot.state_vector === 'string' ? JSON.parse(latestSnapshot.state_vector) : latestSnapshot.state_vector)
+        : null;
 
-    useEffect(() => {
-        if (!latestSnapshot?.state_vector) return;
-
-        const stateVec = typeof latestSnapshot.state_vector === 'string'
-            ? JSON.parse(latestSnapshot.state_vector)
-            : latestSnapshot.state_vector;
-
-        const crises = stateVec.active_crises || {};
-        const activeKeys = Object.keys(crises);
-
-        if (activeKeys.length > 0) {
-            // Pick one to display, e.g., the most recent or critical
-            setActiveCrisis(activeKeys[activeKeys.length - 1]);
-        } else {
-            setActiveCrisis(null);
-        }
-    }, [latestSnapshot]);
+    const crises = stateVec?.active_crises || {};
+    const activeKeys = Object.keys(crises);
+    const activeCrisis = activeKeys.length > 0 ? activeKeys[activeKeys.length - 1] : null;
 
     if (!activeCrisis) return null;
 
@@ -48,13 +36,13 @@ export default function GreatFilterAlert({ universeId: _unusedId }: { universeId
                             System Critical: Great Filter Detected
                         </h2>
                         <div className="text-[10px] font-mono text-white/50 uppercase tracking-[0.2em] mt-1">
-                            {activeCrisis.replace(/_/g, ' ')} // Entropy: {((latestSnapshot?.entropy ?? 0) * 100).toFixed(2)}%
+                            {activeCrisis.replace(/_/g, ' ')} {'//'} Entropy: {((latestSnapshot?.entropy ?? 0) * 100).toFixed(2)}%
                         </div>
                     </div>
                 </div>
 
                 <p className="text-white/80 font-serif italic text-lg leading-relaxed mb-6 border-l-2 border-red-500/30 pl-4">
-                    "{crisisMeta.description}"
+                    {`"${crisisMeta.description}"`}
                 </p>
 
                 <div className="flex flex-col gap-2">

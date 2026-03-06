@@ -1,32 +1,29 @@
-from typing import Annotated, TypedDict, List
-from pydantic import BaseModel, Field
-import operator
+from typing import TypedDict, List, Dict, Any
 
 class NarrativeState(TypedDict):
-    """
-    Trạng thái của đồ thị LangGraph được truyền qua lại giữa các Agent.
-    """
     world_id: int
     tick_start: int | None
     tick_end: int | None
     
-    # Dữ liệu từ WorldOS
     raw_chronicles: List[dict]
+    normalized_events: List[dict]
+    filtered_events: List[dict]
+    event_scores: Dict[str, float]
+    attractor_clusters: Dict[str, List[dict]]
+    attractor_strength: Dict[str, float]
+    dramatic_arc: Dict[str, Any]
+    narrative_phase: str
+    phase_score: float
+    singularity: Dict[str, Any] | None
     
-    # Sản phẩm của Historian
     historical_outline: str
     
-    # Sản phẩm của Psychologist (nếu có context về Character)
     psychological_profiles: dict
     
-    # Sản phẩm của Director
     storyboard: str
     
-    # Sản phẩm cuối cùng của Wordsmith
     final_prose: str
     
-    # Các phản hồi/đánh giá kịch bản
     feedback: str
     
-    # Biến điều khiển luồng
     current_agent: str

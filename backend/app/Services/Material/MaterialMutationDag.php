@@ -57,4 +57,32 @@ class MaterialMutationDag
         }
         return true;
     }
+
+    /**
+     * Inject a new materialized synthesized by AI into the database.
+     * @param array $aiData Data from MaterialSynthesisService.
+     * @param Material|null $parent Parent material if any to link to.
+     * @return Material The new material created.
+     */
+    public function injectSynthesizedMaterial(array $aiData, ?Material $parent = null): Material
+    {
+        $material = Material::create([
+            'name' => $aiData['name'],
+            'slug' => \Illuminate\Support\Str::slug($aiData['name']),
+            'description' => $aiData['description'] ?? '',
+            'ontology' => strtolower($aiData['ontology'] ?? Material::ONTOLOGY_PHYSICAL),
+            'lifecycle' => Material::LIFECYCLE_DORMANT,
+            'pressure_coefficients' => $aiData['pressure_coefficients'] ?? [],
+        ]);
+
+        if ($parent) {
+            MaterialMutation::create([
+                'parent_material_id' => $parent->id,
+                'child_material_id' => $material->id,
+                'trigger_condition' => 'innovation > 0.5', // Default condition for AI injected materials
+            ]);
+        }
+
+        return $material;
+    }
 }

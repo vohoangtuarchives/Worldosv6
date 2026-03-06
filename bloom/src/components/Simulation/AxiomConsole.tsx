@@ -3,8 +3,8 @@
 import React, { useState, useEffect } from "react";
 
 interface AxiomConsoleProps {
-    initialAxioms: Record<string, any>;
-    onUpdate: (axioms: Record<string, any>) => Promise<void>;
+    initialAxioms: Record<string, unknown>;
+    onUpdate: (axioms: Record<string, unknown>) => Promise<void>;
     busy?: boolean;
 }
 

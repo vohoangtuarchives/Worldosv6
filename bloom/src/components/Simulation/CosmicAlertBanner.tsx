@@ -1,7 +1,7 @@
 import { AlertCircle, ShieldAlert, Cpu, Trash2 } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 
-interface Crisis {
+export interface Crisis {
     type: string;
     started_at: number;
     intensity: number;

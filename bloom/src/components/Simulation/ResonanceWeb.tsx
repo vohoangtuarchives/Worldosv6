@@ -45,8 +45,8 @@ export function ResonanceWeb({ universeId }: { universeId: number }) {
             </CardHeader>
             <CardContent className="p-3 space-y-3">
                 {interactions.map((interaction) => {
-                    const level = Math.round(interaction.resonance_level * 100);
-                    const isHigh = interaction.resonance_level > 0.8;
+                    const level = Math.round((interaction.resonance_level ?? 0) * 100);
+                    const isHigh = (interaction.resonance_level ?? 0) > 0.8;
 
                     return (
                         <div key={interaction.id} className="relative group">
@@ -54,7 +54,7 @@ export function ResonanceWeb({ universeId }: { universeId: number }) {
                                 <div className="flex items-center gap-2">
                                     <div className={`w-1.5 h-1.5 rounded-full ${isHigh ? 'bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.5)]' : 'bg-slate-600'}`} />
                                     <span className="text-[9px] font-bold text-slate-300 uppercase tracking-tighter">
-                                        Uni_{interaction.universe_a_id} ↔ Uni_{interaction.universe_b_id}
+                                        Uni_{interaction.universe_a_id ?? '?'} ↔ Uni_{interaction.universe_b_id ?? '?'}
                                     </span>
                                 </div>
                                 <Badge variant="outline" className={`text-[8px] font-mono ${isHigh ? 'text-blue-400 border-blue-400/30' : 'text-slate-500 border-white/5'}`}>

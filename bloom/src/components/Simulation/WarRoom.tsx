@@ -15,16 +15,26 @@ interface DiplomaticRelation {
 }
 
 import { useSimulation } from '@/context/SimulationContext';
+import { Institution } from '@/types/simulation';
+
+interface RelationsMap {
+    [key: string]: {
+        status: string;
+        friction: number;
+        participants: [number, number];
+        updated_at_tick: number;
+    };
+}
 
 export function WarRoom({ universeId }: { universeId: number }) {
     const { universe, institutions } = useSimulation();
 
     // Derive relations from universe state_vector
-    const relations = universe?.state_vector?.diplomacy || {};
+    const relations = (universe?.state_vector?.diplomacy || {}) as RelationsMap;
 
     // Derive civMap from institutions
     const civs: Record<number, string> = {};
-    (institutions || []).forEach((e: any) => {
+    (institutions || []).forEach((e: Institution) => {
         if (e.entity_type === 'CIVILIZATION') {
             civs[e.id] = e.name;
         }
@@ -71,7 +81,7 @@ export function WarRoom({ universeId }: { universeId: number }) {
                         </div>
                     ) : (
                         <div className="space-y-3">
-                            {Object.entries(relations).map(([key, rel]: [string, any]) => (
+                            {Object.entries(relations).map(([key, rel]) => (
                                 <div
                                     key={key}
                                     className={`p-4 rounded-xl border transition-all hover:scale-[1.02] ${getStatusColor(rel.status)}`}

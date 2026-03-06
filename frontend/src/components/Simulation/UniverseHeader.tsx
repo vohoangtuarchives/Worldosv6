@@ -25,29 +25,50 @@ export function UniverseHeader({
     const [pulseTicks, setPulseTicks] = React.useState(5);
 
     return (
-        <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0 p-6 rounded-xl border border-border bg-card/30 backdrop-blur-sm">
+        <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0 w-full">
             <div className="space-y-1">
-                <h2 className="text-2xl font-bold tracking-tight text-gradient-cosmos">
-                    {universe?.name || universe?.world?.name || "Initializing..."}
-                </h2>
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground font-mono">
-                    <span>ID: {universe?.id || "--"}</span>
-                    <span className="text-blue-400">Genre: {universe?.world?.current_genre}</span>
-                    <span className="text-purple-400">Origin: {universe?.world?.origin}</span>
+                <div className="flex items-center gap-3">
+                    <h2 className="text-2xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-amber-400 animate-in fade-in slide-in-from-left-2">
+                        {universe?.name || universe?.world?.name || "Initializing System..."}
+                    </h2>
+                    {universe?.world?.is_autonomic && (
+                        <span className="relative flex h-2 w-2">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                        </span>
+                    )}
+                </div>
+                <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-xs text-slate-400 font-mono">
+                    <span className="flex items-center gap-1">
+                        <span className="text-slate-600">ID:</span> 
+                        <span className="text-slate-300">#{universe?.id || "--"}</span>
+                    </span>
+                    <span className="flex items-center gap-1">
+                        <span className="text-slate-600">Genre:</span> 
+                        <span className="text-blue-400">{universe?.world?.current_genre}</span>
+                    </span>
+                    <span className="flex items-center gap-1">
+                        <span className="text-slate-600">Origin:</span> 
+                        <span className="text-purple-400">{universe?.world?.origin}</span>
+                    </span>
                     <button
                         onClick={onToggleAutonomic}
-                        className={`px-2 py-0.5 rounded border ${universe?.world?.is_autonomic ? 'border-green-500/50 text-green-400 bg-green-500/10' : 'border-red-500/50 text-red-400 bg-red-500/10'}`}
+                        className={`px-2 py-0.5 rounded text-[10px] uppercase tracking-wider border transition-all duration-300 ${
+                            universe?.world?.is_autonomic 
+                            ? 'border-green-500/30 text-green-400 bg-green-500/10 hover:bg-green-500/20 shadow-[0_0_10px_rgba(34,197,94,0.2)]' 
+                            : 'border-slate-700 text-slate-500 bg-slate-800/50 hover:text-slate-300 hover:border-slate-500'
+                        }`}
                     >
-                        Autonomic: {universe?.world?.is_autonomic ? "ON" : "OFF"}
+                        {universe?.world?.is_autonomic ? "Autonomic Active" : "Manual Mode"}
                     </button>
                 </div>
             </div>
 
-            <div className="flex items-center space-x-3">
-                <div className="flex items-center gap-1">
+            <div className="flex items-center gap-3">
+                <div className="flex items-center gap-0 rounded-md border border-slate-700/50 bg-slate-900/50 p-0.5">
                     <input
                         type="number"
-                        className="h-9 w-16 rounded-md border border-input bg-background/50 px-2 text-sm text-center"
+                        className="h-8 w-12 bg-transparent px-2 text-sm text-center text-slate-300 focus:outline-none font-mono"
                         value={pulseTicks}
                         onChange={(e) => setPulseTicks(Number(e.target.value))}
                         min={1}
@@ -55,34 +76,28 @@ export function UniverseHeader({
                     <button
                         onClick={() => onPulse(pulseTicks)}
                         disabled={busy || !universe}
-                        className="h-9 rounded-md bg-primary text-primary-foreground px-4 text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+                        className="h-8 rounded-sm bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 px-3 text-xs font-medium transition-all disabled:opacity-50 uppercase tracking-wide border-l border-slate-700/50"
                     >
                         Pulse
                     </button>
                 </div>
 
+                <div className="h-6 w-px bg-slate-800 mx-1" />
+
                 <button
                     onClick={onAdvance}
                     disabled={busy || !universe}
-                    className="h-9 rounded-md border border-input bg-background px-4 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors disabled:opacity-50"
+                    className="h-9 px-4 rounded-md border border-slate-700 bg-slate-800/50 text-slate-300 text-sm font-medium hover:bg-slate-700 hover:text-white hover:border-slate-500 transition-all shadow-sm disabled:opacity-50"
                 >
-                    Tick
+                    Tick +1
                 </button>
 
                 <button
                     onClick={onFork}
                     disabled={busy || !universe}
-                    className="h-9 rounded-md border border-input bg-background px-4 text-sm font-medium hover:bg-accent hover:text-accent-foreground transition-colors disabled:opacity-50"
+                    className="h-9 px-4 rounded-md border border-purple-500/30 bg-purple-500/10 text-purple-300 text-sm font-medium hover:bg-purple-500/20 hover:border-purple-500/50 transition-all shadow-[0_0_10px_rgba(168,85,247,0.1)] disabled:opacity-50"
                 >
-                    Fork
-                </button>
-
-                <button
-                    onClick={onExport}
-                    disabled={busy || !universe}
-                    className="h-9 rounded-md border border-blue-500/50 bg-blue-500/10 text-blue-400 px-4 text-sm font-medium hover:bg-blue-500/20 transition-colors disabled:opacity-50"
-                >
-                    Export
+                    Fork Universe
                 </button>
             </div>
         </div>

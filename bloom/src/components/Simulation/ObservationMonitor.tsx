@@ -87,7 +87,7 @@ const ObservationMonitor: React.FC<ObservationMonitorProps> = ({ observationLoad
                 </div>
 
                 <p className="text-[10px] text-slate-500 italic leading-relaxed text-center px-2">
-                    "Điểm nhìn không chỉ quan sát, nó định hình ranh giới của cái khả hữu."
+                    {'"Điểm nhìn không chỉ quan sát, nó định hình ranh giới của cái khả hữu."'}
                 </p>
             </CardContent>
         </Card>

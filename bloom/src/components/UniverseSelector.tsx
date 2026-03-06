@@ -21,28 +21,34 @@ export default function UniverseSelector() {
         setUniverseId(Number(savedUniverse));
         // We need to fetch the universe details to get its world_id
         api.universe(Number(savedUniverse)).then((u: Universe) => {
-            if(u && u.world_id) {
-                setWorldId(u.world_id);
-            }
+          if (u && u.world_id) {
+            setWorldId(u.world_id);
+          }
         });
       }
     });
   }, []);
 
+  const handleWorldChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value ? Number(e.target.value) : "";
+    setWorldId(val);
+    if (!val) setUniverses([]);
+  };
+
   useEffect(() => {
+    let active = true;
     if (worldId) {
       api.universes({ world_id: worldId }).then((u: Universe[]) => {
-          setUniverses(u || []);
-          // If a universe is already selected, check if it belongs to this world
-          if (universeId) {
-             const belongs = u?.find(item => item.id === universeId);
-             if (!belongs) setUniverseId("");
-          }
+        if (!active) return;
+        setUniverses(u || []);
+        if (universeId) {
+          const belongs = u?.find(item => item.id === universeId);
+          if (!belongs) setUniverseId("");
+        }
       });
-    } else {
-        setUniverses([]);
     }
-  }, [worldId]);
+    return () => { active = false; };
+  }, [worldId, universeId]);
 
   useEffect(() => {
     if (universeId && typeof window !== "undefined") {
@@ -70,7 +76,7 @@ export default function UniverseSelector() {
       <select
         className="h-9 rounded-md border border-input bg-background px-2 text-sm"
         value={worldId}
-        onChange={(e) => setWorldId(e.target.value ? Number(e.target.value) : "")}
+        onChange={handleWorldChange}
       >
         <option value="">Chọn World</option>
         {worlds.map((w) => (

@@ -1,44 +1,43 @@
-"use client";
-
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { api } from '@/lib/api';
+import { Universe, World, Snapshot, Anomaly, Institution, Actor, Chronicle, SupremeEntity, Interaction, Trajectory } from '@/types/simulation';
 
 interface SimulationContextType {
     universeId: number | null;
-    universe: any | null;
-    latestSnapshot: any | null;
-    anomalies: any[];
-    institutions: any[];
-    actors: any[];
-    chronicles: any[];
-    supremeEntities: any[];
-    interactions: any[];
-    trajectories: any[];
-    universes: any[];
+    universe: Universe | null;
+    latestSnapshot: Snapshot | null;
+    anomalies: Anomaly[];
+    institutions: Institution[];
+    actors: Actor[];
+    chronicles: Chronicle[];
+    supremeEntities: SupremeEntity[];
+    interactions: Interaction[];
+    trajectories: Trajectory[];
+    universes: Universe[];
     loading: boolean;
     error: string | null;
     isPaused: boolean;
     setIsPaused: (paused: boolean) => void;
     refresh: () => Promise<void>;
     setUniverseId: (id: number | null) => void;
-    setUniverse: React.Dispatch<React.SetStateAction<any | null>>;
-    setLatestSnapshot: React.Dispatch<React.SetStateAction<any | null>>;
+    setUniverse: React.Dispatch<React.SetStateAction<Universe | null>>;
+    setLatestSnapshot: React.Dispatch<React.SetStateAction<Snapshot | null>>;
 }
 
 const SimulationContext = createContext<SimulationContextType | undefined>(undefined);
 
 export function SimulationProvider({ children }: { children: React.ReactNode }) {
     const [universeId, setUniverseId] = useState<number | null>(null);
-    const [universe, setUniverse] = useState<any | null>(null);
-    const [latestSnapshot, setLatestSnapshot] = useState<any | null>(null);
-    const [anomalies, setAnomalies] = useState<any[]>([]);
-    const [institutions, setInstitutions] = useState<any[]>([]);
-    const [actors, setActors] = useState<any[]>([]);
-    const [chronicles, setChronicles] = useState<any[]>([]);
-    const [supremeEntities, setSupremeEntities] = useState<any[]>([]);
-    const [interactions, setInteractions] = useState<any[]>([]);
-    const [trajectories, setTrajectories] = useState<any[]>([]);
-    const [universes, setUniverses] = useState<any[]>([]);
+    const [universe, setUniverse] = useState<Universe | null>(null);
+    const [latestSnapshot, setLatestSnapshot] = useState<Snapshot | null>(null);
+    const [anomalies, setAnomalies] = useState<Anomaly[]>([]);
+    const [institutions, setInstitutions] = useState<Institution[]>([]);
+    const [actors, setActors] = useState<Actor[]>([]);
+    const [chronicles, setChronicles] = useState<Chronicle[]>([]);
+    const [supremeEntities, setSupremeEntities] = useState<SupremeEntity[]>([]);
+    const [interactions, setInteractions] = useState<Interaction[]>([]);
+    const [trajectories, setTrajectories] = useState<Trajectory[]>([]);
+    const [universes, setUniverses] = useState<Universe[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [isPaused, setIsPaused] = useState(false);
@@ -108,16 +107,17 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
                 await fetchAuxiliaryData(universeId);
             }
             setError(null);
-        } catch (e: any) {
+        } catch (e: unknown) {
             console.error("Simulation refresh failed", e);
-            if (e.message?.includes("404") || e.status === 404) {
+            const err = e as { message?: string; status?: number };
+            if (err.message?.includes("404") || err.status === 404) {
                 setError(`Vũ trụ #${universeId} không tồn tại hoặc đã bị xóa.`);
                 setUniverseId(null);
                 if (typeof window !== "undefined") {
                     window.localStorage.removeItem("universe_id");
                 }
             } else {
-                setError(`Lỗi đồng bộ: ${e.message || "Không xác định"}`);
+                setError(`Lỗi đồng bộ: ${err.message || "Không xác định"}`);
             }
         } finally {
             setLoading(false);

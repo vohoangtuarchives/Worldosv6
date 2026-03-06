@@ -13,14 +13,14 @@ import MaterialSystemView from "@/components/Simulation/MaterialSystemView";
 import GreatFilterAlert from "@/components/Simulation/GreatFilterAlert";
 import { SupremeEntityList } from "@/components/Simulation/SupremeEntityList";
 import { ConvergenceView } from "@/components/Simulation/ConvergenceView";
-import { ArchitectThrone } from "@/components/Simulation/ArchitectThrone";
+import { ArchitectThrone, type ActiveEdict } from "@/components/Simulation/ArchitectThrone";
 import { ScenarioSelector } from "@/components/Simulation/ScenarioSelector";
 import { AutonomicStatus } from "@/components/Simulation/AutonomicStatus";
 import { OmegaVortex } from "@/components/Simulation/OmegaVortex";
 import { GraphView } from "@/components/Simulation/GraphView";
 import { ActorList } from "@/components/Simulation/ActorList";
 import { CivilizationList } from "@/components/Simulation/CivilizationList";
-import { CosmicAlertBanner } from "@/components/Simulation/CosmicAlertBanner";
+import { CosmicAlertBanner, type Crisis } from "@/components/Simulation/CosmicAlertBanner";
 import { AutonomicControl } from "@/components/Simulation/AutonomicControl";
 import { OriginDiagnostic } from "@/components/Simulation/OriginDiagnostic";
 import { ResonanceMonitor } from "@/components/Simulation/ResonanceMonitor";
@@ -33,6 +33,7 @@ import IntegrityMonitor from '@/components/Simulation/IntegrityMonitor';
 import { UniversalLaw } from "@/components/Simulation/UniversalLaw";
 import { VoidArchive } from "@/components/Simulation/VoidArchive";
 import { EpochNavigator } from "@/components/Simulation/EpochNavigator";
+import { PhaseSpaceChart } from "@/components/Simulation/PhaseSpaceChart";
 import { SimulationProvider, useSimulation } from "@/context/SimulationContext";
 
 export default function CosmologicPage() {
@@ -160,7 +161,7 @@ function CosmologicContent() {
     );
   }
 
-  const activeCrises = universe?.state_vector?.active_crises || {};
+  const activeCrises = (universe?.state_vector?.active_crises ?? {}) as Record<string, Crisis>;
 
   return (
     <div className="flex-1 space-y-6 p-8 pt-6 animate-in fade-in duration-500 relative">
@@ -207,6 +208,7 @@ function CosmologicContent() {
           <ResonanceWeb universeId={universeId} />
           <ConvergenceMonitor universeId={universeId} currentTick={latestSnapshot?.tick || 0} />
           <EpochNavigator universeId={universeId} />
+          <PhaseSpaceChart fields={(latestSnapshot?.state_vector?.fields ?? null) as { survival?: number; power?: number; wealth?: number; knowledge?: number; meaning?: number; } | null} />
           <MetricGrid snapshot={latestSnapshot} />
 
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
@@ -245,7 +247,7 @@ function CosmologicContent() {
           <ArchitectThrone
             universeId={universeId}
             currentTick={latestSnapshot?.tick || 0}
-            activeEdicts={latestSnapshot?.metrics?.active_edicts || {}}
+            activeEdicts={(latestSnapshot?.metrics?.active_edicts ?? {}) as Record<string, ActiveEdict>}
           />
           <ScenarioSelector universeId={universeId} />
           <ActorList universeId={universeId} />

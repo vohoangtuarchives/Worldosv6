@@ -23,6 +23,17 @@ Route::post('/register', [AuthController::class, 'register']);
 // Phase 124: Bloom UI DAG Data (Public Endpoint)
 Route::get('/bloom/multiverse', [MultiverseMapController::class, 'bloom'])->name('worldos.bloom.multiverse.public');
 
+/*
+|--------------------------------------------------------------------------
+| SCRIPTORIUM BRIDGE API (V24) - Public/Internal Access
+|--------------------------------------------------------------------------
+*/
+Route::prefix('loom/v1/narrative')->group(function () {
+    Route::get('chronicles', [\App\Http\Controllers\Api\Loom\LoomChronicleController::class, 'index']);
+    Route::get('characters/{character_id}', [\App\Http\Controllers\Api\Loom\LoomCharacterController::class, 'show']);
+    Route::get('state-snapshot/{world_id}', [\App\Http\Controllers\Api\Loom\LoomWorldStateController::class, 'show']);
+});
+
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'me']);
@@ -142,20 +153,6 @@ Route::middleware('auth:sanctum')->prefix('worldos')->group(function () {
             ->get();
         return response()->json($contracts);
     })->name('worldos.universes.social-contracts');
-
-    /*
-    |--------------------------------------------------------------------------
-    | SCRIPTORIUM BRIDGE API (V24)
-    |--------------------------------------------------------------------------
-    | Endpoints for the external NarrativeLoom (LangGraph) architecture.
-    | Provides raw, semantic-rich data for AI narrative generation.
-    |--------------------------------------------------------------------------
-    */
-    Route::prefix('loom/v1/narrative')->group(function () {
-        Route::get('chronicles', [\App\Http\Controllers\Api\Loom\LoomChronicleController::class, 'index']);
-        Route::get('characters/{character_id}', [\App\Http\Controllers\Api\Loom\LoomCharacterController::class, 'show']);
-        Route::get('state-snapshot/{world_id}', [\App\Http\Controllers\Api\Loom\LoomWorldStateController::class, 'show']);
-    });
 
     Route::get('universes/{id}/supreme-entities', function (string $id) {
         $entities = \App\Models\SupremeEntity::where('universe_id', (int) $id)
@@ -484,4 +481,18 @@ Route::middleware('auth:sanctum')->prefix('worldos')->group(function () {
         $entries = $observer->readStream($multiverseId, $lastId, $count);
         return response()->json(['entries' => $entries]);
     })->name('worldos.observer.stream');
+
+    // =========================================================================
+    // IP Factory Pipeline
+    // =========================================================================
+    Route::prefix('ip-factory')->group(function () {
+        Route::get('series', [\App\Http\Controllers\Api\IpFactoryController::class, 'index'])->name('ip-factory.series.index');
+        Route::post('series', [\App\Http\Controllers\Api\IpFactoryController::class, 'store'])->name('ip-factory.series.store');
+        Route::get('series/{series}', [\App\Http\Controllers\Api\IpFactoryController::class, 'show'])->name('ip-factory.series.show');
+        Route::get('series/{series}/chapters', [\App\Http\Controllers\Api\IpFactoryController::class, 'chapters'])->name('ip-factory.series.chapters');
+        Route::post('series/{series}/generate-chapter', [\App\Http\Controllers\Api\IpFactoryController::class, 'generateChapter'])->name('ip-factory.series.generate-chapter');
+        Route::post('series/{series}/chapters/{chapter}/canonize', [\App\Http\Controllers\Api\IpFactoryController::class, 'canonize'])->name('ip-factory.series.chapters.canonize');
+        Route::get('series/{series}/bible', [\App\Http\Controllers\Api\IpFactoryController::class, 'bible'])->name('ip-factory.series.bible');
+        Route::get('loom-status', [\App\Http\Controllers\Api\Loom\LoomStatusController::class, 'index'])->name('ip-factory.loom-status');
+    });
 });

@@ -58,7 +58,11 @@ class AdvanceSimulationAction
         protected ChaosEngine $chaosEngine,
         protected TransmigrationEngine $transmigrationEngine,
         protected SimulationKernel $simulationKernel,
-        protected SnapshotLoader $snapshotLoader
+        protected SnapshotLoader $snapshotLoader,
+        protected \App\Services\Simulation\CivilizationFieldEngine $fieldEngine,
+        protected \App\Services\Simulation\FieldDiffusionEngine $diffusionEngine,
+        protected \App\Services\Simulation\ActorCognitiveService $cognitiveService,
+        protected \App\Services\Simulation\CivilizationCollapseEngine $collapseEngine
     ) {}
 
     public function execute(int $universeId, int $ticks): array
@@ -128,6 +132,12 @@ class AdvanceSimulationAction
 
             // Apply observer bonus to stability
             $universe->structural_coherence = min(1.0, $universe->structural_coherence + $universe->observer_bonus);
+            
+            // Phase 130: Darwinian Fitness Evaluation (§V35)
+            if ($snapshotData['tick'] % 10 === 0) {
+                $universe->fitness_score = app(\App\Services\Simulation\KernelMutationService::class)->calculateFitness($universe);
+            }
+            
             $universe->save();
 
             // Phase 67: Agent Evolution (§V11)
@@ -161,10 +171,44 @@ class AdvanceSimulationAction
             // Roll the dice for a reality-breaking anomaly in chaotic worlds
             $this->chaosEngine->destabilize($universe);
 
-            // Phase 111-113: Transmigration / Isekai Triggers (§V26)
-            // Tiny chance to trigger an Isekai event
             if (rand(0, 1000) < 5) { // 0.5% chance per tick per universe
                 $this->transmigrationEngine->triggerIsekai($universe);
+            }
+
+            // ==========================================
+            // LEVEL 7: CIVILIZATION ATTRACTOR FIELD ENGINE
+            // ==========================================
+            
+            if ($savedSnapshot) {
+                // Phase 120: Field Genesis (§V30)
+                // Calculate 5 core fields (Survival, Power, Wealth, Knowledge, Meaning)
+                $fields = $this->fieldEngine->computeAndStore($universe, $savedSnapshot);
+
+                // Phase 121: Field Diffusion (§V31)
+                // Propagate fields between zones (if zones exist in state_vector)
+                $uvec = (array) $universe->state_vector;
+                if (!empty($uvec['zone_fields'])) {
+                    $activeInstitutions = \App\Models\InstitutionalEntity::where('universe_id', $universe->id)
+                        ->whereNull('collapsed_at_tick')
+                        ->get(['zone_id', 'entity_type'])
+                        ->toArray();
+                    
+                    $updatedZones = $this->diffusionEngine->diffuse($uvec['zone_fields'], $activeInstitutions);
+                    $uvec['zone_fields'] = $updatedZones;
+                    
+                    // Update global fields from diffused averages
+                    $uvec['fields'] = $this->diffusionEngine->aggregateGlobalFields($updatedZones);
+                    $universe->state_vector = $uvec;
+                    $universe->save();
+                }
+
+                // Phase 123: Actor Cognitive Bifurcation (§V32)
+                // Update cognitive variables (Destiny, Curiosity, Anomaly)
+                $this->cognitiveService->computeAndStore($universe, $savedSnapshot);
+
+                // Phase 125: Civilization Collapse (§V33)
+                // Check if internal stress (entropy) causes a fragmentation event
+                $this->collapseEngine->evaluate($universe, $savedSnapshot);
             }
         }
 
@@ -284,6 +328,7 @@ class AdvanceSimulationAction
             'origin' => (string) $world->current_origin ?? 'generic',
             'axiom' => $world->evolution_genome ?? [],
             'world_seed' => $world->world_seed ?? [],
+            'genome' => $universe->kernel_genome ?? [],
         ];
     }
 }

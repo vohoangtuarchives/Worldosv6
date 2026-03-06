@@ -129,19 +129,6 @@ services:
     networks:
       - internal
 
-  bloom:
-    build:
-      context: ../bloom
-      dockerfile: ../deployment/bloom.prod.Dockerfile
-      provenance: false
-    restart: always
-    environment:
-      PORT: 3001
-    depends_on:
-      - backend
-    networks:
-      - internal
-
   # Engine (Rust)
   engine:
     build: 
@@ -167,7 +154,7 @@ services:
       provenance: false
     restart: always
     environment:
-      WORLDOS_API_URL: http://backend:9000/api
+      WORLDOS_API_URL: http://nginx/api
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}

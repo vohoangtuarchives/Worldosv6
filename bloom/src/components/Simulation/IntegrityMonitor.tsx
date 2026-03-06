@@ -4,13 +4,7 @@ import React from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { ShieldCheck, AlertCircle, TrendingDown } from 'lucide-react';
-
-interface SupremeEntity {
-    id: number;
-    name: string;
-    power_level: number;
-    karma: number; // Nợ nhân quả
-}
+import type { SupremeEntity } from '@/types/simulation';
 
 interface IntegrityMonitorProps {
     entities: SupremeEntity[];
@@ -32,7 +26,7 @@ const IntegrityMonitor: React.FC<IntegrityMonitorProps> = ({ entities }) => {
                     </div>
                 ) : (
                     entities.map((entity) => {
-                        const debt = Math.abs(entity.karma);
+                        const debt = Math.abs(entity.karma ?? 0);
                         const debtLevel = Math.min(100, (debt / 100) * 100);
                         const isCritical = debt > 80;
 
@@ -75,7 +69,7 @@ const IntegrityMonitor: React.FC<IntegrityMonitorProps> = ({ entities }) => {
                     })
                 )}
                 <p className="text-[9px] text-slate-600 text-center italic pt-2 border-t border-slate-900">
-                    "Mọi sai lệch đều tìm về sự cân bằng của Đạo."
+                    {'"Mọi sai lệch đều tìm về sự cân bằng của Đạo."'}
                 </p>
             </CardContent>
         </Card>

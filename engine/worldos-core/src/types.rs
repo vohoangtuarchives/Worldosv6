@@ -10,6 +10,29 @@ pub struct WorldConfig {
     #[serde(default)]
     pub world_seed: Option<serde_json::Value>,
     pub origin: String,
+    #[serde(default)]
+    pub genome: Option<KernelGenome>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct KernelGenome {
+    pub diffusion_rate: f64,
+    pub entropy_coefficient: f64,
+    pub mutation_rate: f64,
+    pub attractor_gravity: f64,
+    pub complexity_bonus: f64,
+}
+
+impl Default for KernelGenome {
+    fn default() -> Self {
+        Self {
+            diffusion_rate: 0.05,
+            entropy_coefficient: 1.0,
+            mutation_rate: 0.05,
+            attractor_gravity: 1.0,
+            complexity_bonus: 1.0,
+        }
+    }
 }
 
 /// Cultural vector C_z: ~5–8 dimensions in [0,1].
@@ -27,6 +50,21 @@ pub struct CulturalVector {
     pub institutional_respect: f64,
     #[serde(default)]
     pub myth_belief: f64,
+}
+
+/// Level 7 Attractor Fields: Survival, Power, Wealth, Knowledge, Meaning.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct CivilizationFields {
+    #[serde(default)]
+    pub survival: f64,
+    #[serde(default)]
+    pub power: f64,
+    #[serde(default)]
+    pub wealth: f64,
+    #[serde(default)]
+    pub knowledge: f64,
+    #[serde(default)]
+    pub meaning: f64,
 }
 
 /// Cascade phase per zone: pressure above threshold advances Normal → Famine → Riots → Collapse.
@@ -49,6 +87,17 @@ impl CulturalVector {
         clamp(&mut self.violence_tolerance);
         clamp(&mut self.institutional_respect);
         clamp(&mut self.myth_belief);
+    }
+}
+
+impl CivilizationFields {
+    pub fn clamp_mut(&mut self) {
+        let clamp = |v: &mut f64| *v = v.clamp(0.0, 1.0);
+        clamp(&mut self.survival);
+        clamp(&mut self.power);
+        clamp(&mut self.wealth);
+        clamp(&mut self.knowledge);
+        clamp(&mut self.meaning);
     }
 }
 
@@ -85,6 +134,8 @@ pub struct ZoneState {
     pub quantum_overlay: Option<QuantumOverlay>,
     #[serde(default)]
     pub cascade_phase: CascadePhase,
+    #[serde(default)]
+    pub civ_fields: CivilizationFields,
 }
 
 /// Quantum Overlay: Controls probabilistic state and observer effect (§57).
@@ -144,6 +195,7 @@ impl ZoneState {
             regional_scars: 0.0,
             quantum_overlay: None,
             cascade_phase: CascadePhase::Normal,
+            civ_fields: CivilizationFields::default(),
         }
     }
 
@@ -202,6 +254,7 @@ pub struct SimulationMetrics {
     pub knowledge_frontier_avg: f64,
     pub instability_gradient: f64,
     pub zone_count: u32,
+    pub civ_fields: CivilizationFields,
     pub scars: Vec<serde_json::Value>,
 }
 

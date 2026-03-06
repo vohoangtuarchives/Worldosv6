@@ -13,7 +13,7 @@ interface Relic {
     rarity: string;
     description: string;
     power_vector: Record<string, number>;
-    metadata: any;
+    metadata: Record<string, unknown>;
     origin_universe?: {
         name: string;
     };
@@ -79,7 +79,7 @@ export function VoidArchive({ universeId }: { universeId: number }) {
                         <div className="text-center">
                             <p className="text-[10px] uppercase tracking-[0.3em] font-bold text-slate-600">Những trang giấy trắng</p>
                             <p className="text-[8px] text-slate-700 mt-2 max-w-[180px] leading-relaxed italic">
-                                "Lịch sử của Hư Không chưa được viết lời nào. Hãy để thực tại rạn nứt để tìm thấy dư âm."
+                                &quot;Lịch sử của Hư Không chưa được viết lời nào. Hãy để thực tại rạn nứt để tìm thấy dư âm.&quot;
                             </p>
                         </div>
                     </div>
@@ -97,7 +97,7 @@ export function VoidArchive({ universeId }: { universeId: number }) {
                                         </Badge>
                                         <div className="flex items-center gap-1 text-[8px] text-amber-900/50 uppercase font-mono">
                                             <History className="w-2 h-2" />
-                                            TICK {relic.metadata?.manifested_at_tick || '??'}
+                                            TICK {(relic.metadata?.manifested_at_tick as number) || '??'}
                                         </div>
                                     </div>
 
@@ -107,7 +107,7 @@ export function VoidArchive({ universeId }: { universeId: number }) {
 
                                     <div className="bg-amber-500/5 rounded-lg p-3 mb-3 border border-amber-500/10 italic">
                                         <p className="text-[10px] text-amber-200/60 leading-relaxed font-serif">
-                                            "{relic.description}"
+                                            &quot;{relic.description}&quot;
                                         </p>
                                     </div>
 

@@ -50,6 +50,15 @@ message WorldConfig {
   string origin = 2;
   string axiom_json = 3;
   string world_seed_json = 4;
+  KernelGenome genome = 5;
+}
+
+message KernelGenome {
+  double diffusion_rate = 1;
+  double entropy_coefficient = 2;
+  double mutation_rate = 3;
+  double attractor_gravity = 4;
+  double complexity_bonus = 5;
 }
 
 message AdvanceResponse {

@@ -23,7 +23,7 @@ export function UniversalLaw({ universeId }: { universeId: number }) {
     // Derive laws from the shared snapshot metrics
     const metrics = latestSnapshot?.metrics || {};
     const activeEdicts = metrics.active_edicts || {};
-    const metaLaws = Object.values(activeEdicts).filter((e: any) => e.is_meta === true) as MetaEdict[];
+    const metaLaws = Object.values(activeEdicts).filter((e: unknown) => (e as any).is_meta === true) as MetaEdict[];
 
     const loading = contextLoading && !latestSnapshot;
 

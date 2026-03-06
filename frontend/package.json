@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@xyflow/react": "^12.3.6",
+    "centrifuge": "^5.2.2",
     "dagre": "^0.8.5",
     "framer-motion": "^12.34.4",
     "next": "16.1.6",

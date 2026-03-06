@@ -45,8 +45,8 @@ async def psychologist_agent(state: NarrativeState, config: Dict[str, Any] = Non
     fetched_profiles = {"mocked": "Character data will be injected here using API"}
     
     # 2. Xử lý thông qua LLM
-    provider = "anthropic" # Default The Psychologist uses Anthropic for better analytical reasoning
-    model_name = "claude-3-opus-20240229"
+    provider = "local" # Default The Psychologist uses Anthropic for better analytical reasoning
+    model_name = os.getenv("LOCAL_MODEL_NAME", "MythoMax-L2-13B")
     
     if config and config.get("configurable"):
         provider = config["configurable"].get("psychologist_provider", provider)
@@ -55,7 +55,7 @@ async def psychologist_agent(state: NarrativeState, config: Dict[str, Any] = Non
     llm = get_llm(provider=provider, model_name=model_name)
     chain = psychologist_prompt | llm | StrOutputParser()
     
-    result = chain.invoke({
+    result = await chain.ainvoke({
         "outline": outline,
         "profiles": str(fetched_profiles)
     })

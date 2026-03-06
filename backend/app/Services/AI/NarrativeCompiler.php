@@ -2,17 +2,84 @@
 
 namespace App\Services\AI;
 
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+
 /**
  * Narrative Compiler: Translates distorted data vectors into mythic text.
  * Represents the "Blind Historian" role.
+ * Uses LLM first; falls back to template-based generation.
  */
 class NarrativeCompiler
 {
     /**
-     * Compile a narrative based on distorted snapshot data and noise level.
+     * Compile a narrative. Tries LLM first; falls back to template.
      */
     public function compile(array $distortedData, float $noise): string
     {
+        // Try LLM-powered narrative first
+        $llmResult = $this->compileLlm($distortedData, $noise);
+        if ($llmResult !== null) {
+            return $llmResult;
+        }
+
+        // Fallback to template-based
+        return $this->compileTemplate($distortedData, $noise);
+    }
+
+    /**
+     * LLM-powered narrative generation.
+     */
+    protected function compileLlm(array $distortedData, float $noise): ?string
+    {
+        $entropy    = $distortedData['entropy']          ?? 0.5;
+        $stability  = $distortedData['stability_index'] ?? 0.5;
+        $clarityTag = match (true) {
+            $noise < 0.2 => 'Chân Thực',
+            $noise < 0.5 => 'Mơ Hồ',
+            $noise < 0.8 => 'Huyền Sử',
+            default      => 'Hư Vô',
+        };
+
+        $prompt = "Bạn là Nhà sử gia Mù quảng - The Blind Historian - của WorldOS.\n"
+            . "Biết: Entropy={$entropy}, Độ ổn định={$stability}, Độ rõ nét={$clarityTag}.\n"
+            . "Hãy viết một đoạn biên niên sử chi tiết, giàu hình ảnh và mang tính sử thi phù hợp với mức \'$clarityTag\'.\n"
+            . "Tập trung vào sự biến đổi của thế giới và cảm xúc của vạn vật. Ngôn ngữ: Tiếng Việt. Không giải thích thêm.";
+
+        $apiKey   = env('NARRATIVE_LLM_KEY');
+        $endpoint = env('NARRATIVE_LLM_URL', 'http://host.docker.internal:11434/v1/chat/completions');
+        $model    = env('NARRATIVE_LLM_MODEL', 'mistral');
+
+        try {
+            $request = Http::timeout(30);
+            if ($apiKey && !str_contains($endpoint, 'host.docker.internal') && !str_contains($endpoint, 'localhost')) {
+                $request = $request->withToken($apiKey);
+            }
+            $response = $request->post($endpoint, [
+                'model'       => $model,
+                'messages'    => [
+                    ['role' => 'system', 'content' => 'You are the Blind Historian of WorldOS.'],
+                    ['role' => 'user',   'content' => $prompt],
+                ],
+                'temperature' => min(0.9, $noise + 0.3), // More chaos = more creative
+            ]);
+
+            if ($response->successful()) {
+                return trim($response->json('choices.0.message.content') ?? '');
+            }
+        } catch (\Throwable $e) {
+            Log::debug('NarrativeCompiler LLM fallback: ' . $e->getMessage());
+        }
+
+        return null;
+    }
+
+    /**
+     * Template-based fallback narrative generation.
+     */
+    protected function compileTemplate(array $distortedData, float $noise): string
+    {
+
         $entropy = $distortedData['entropy'] ?? 0.5;
         $stability = $distortedData['stability_index'] ?? 0.5;
         $metaphysics = $distortedData['metrics']['ethos'] ?? [];

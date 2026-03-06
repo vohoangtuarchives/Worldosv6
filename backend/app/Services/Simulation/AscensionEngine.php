@@ -9,6 +9,11 @@ use Illuminate\Support\Facades\Log;
 
 class AscensionEngine
 {
+    public function __construct(
+        protected WorldTemplateManager $worldTemplateManager,
+        protected \App\Services\Narrative\NarrativeAiService $aiService
+    ) {}
+
     /**
      * Tiến hóa các thực thể định chế thành Supreme Entities (§50.2).
      */
@@ -39,6 +44,18 @@ class AscensionEngine
         ]);
 
         Log::info("ASCENSION: Entity [{$entity->name}] in Universe [{$universe->id}] has become a SUPREME ENTITY.");
+
+        // AI generate Axiom Shift for the Universe
+        $prompt = "Một thực thể vĩ đại mang tên '{$entity->name}' vừa vượt qua quy luật bình thường trong mô phỏng WorldOS. Hãy đưa ra 1 mô tả ngắn gọn về MỘT QUY LUẬT VẬT LÝ hay CƠ CHẾ mà thực thể này vừa thay đổi vĩnh viễn (Axiom Shift). Format: 'Axiom Shift: [Nội dung quy luật đổi]'.";
+        $axiomDescription = $this->aiService->generateSnippet($prompt);
+
+        if ($axiomDescription) {
+            $this->worldTemplateManager->applyLocalAxiomShift($universe, [
+                'entity_id' => $entity->id,
+                'entity_name' => $entity->name,
+                'description' => $axiomDescription
+            ]);
+        }
 
         Chronicle::create([
             'universe_id' => $universe->id,

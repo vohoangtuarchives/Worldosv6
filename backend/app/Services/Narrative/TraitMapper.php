@@ -31,7 +31,9 @@ class TraitMapper
         if ($traits[11] > 0.7) $desc[] = "đang bị nỗi sợ bủa vây";
         if ($traits[12] > 0.8) $desc[] = "nuôi dưỡng lòng hận thù";
         if ($traits[13] > 0.7) $desc[] = "tràn đầy hy vọng";
+        if ($traits[14] > 0.8) $desc[] = "mang nặng nỗi đau thương";
         if ($traits[15] > 0.8) $desc[] = "đầy kiêu hãnh";
+        if ($traits[16] > 0.8) $desc[] = "luôn cảm thấy hổ thẹn";
 
         if (empty($desc)) return "một tâm hồn mờ nhạt";
 
@@ -57,14 +59,17 @@ class TraitMapper
         $strongestIndex = key($traits);
         
         return match($strongestIndex) {
-            0, 1, 2 => "Quyền lực là con đường duy nhất để ta tồn tại.",
-            3, 4, 5 => "Cộng đồng là tất cả, ta không thể tách rời.",
-            8 => "Thế giới này còn quá nhiều bí ẩn cần được khai phá.",
-            9 => "Những luật lệ này là bất biến, ai làm trái sẽ phải trả giá.",
-            11 => "Bóng tối đang nuốt chửng mọi thứ, ta phải trốn chạy.",
-            12 => "Máu phải trả bằng máu, ta sẽ không quên.",
-            13 => "Ngày mai sẽ khác, ta tin vào ánh sáng.",
-            default => "Ta cảm nhận được nhịp đập của simulacrum này."
+            0, 1, 2 => "Quyền lực là con đường duy nhất để ta tồn tại. Mọi thứ khác chỉ là phù du.",
+            3, 4, 5 => "Cộng đồng là tất cả, ta không thể tách rời. Hơi ấm của đám đông là nguồn sống.",
+            7 => "Mọi thứ đều có cái giá của nó. Ta thấy những con số nhảy múa trong hư không.",
+            8 => "Thế giới này còn quá nhiều bí ẩn. Phía sau bức màn kia là gì?",
+            9 => "Những luật lệ này là bất biến, ai làm trái sẽ phải trả giá trước Thiên Đạo.",
+            11 => "Bóng tối đang nuốt chửng mọi thứ, ta cảm nhận được sự sụp đổ đang đến gần.",
+            12 => "Máu phải trả bằng máu, ta sẽ không quên nỗi nhục này.",
+            13 => "Ngày mai sẽ khác, ta tin vào ánh sáng khởi nguyên.",
+            14 => "Nỗi đau này là minh chứng duy nhất cho sự tồn tại của ta.",
+            15 => "Ta là trung tâm của thực tại này, mọi thứ phải xoay quanh ta.",
+            default => "Ta cảm nhận được nhịp đập của bản thể này trong dòng chảy dữ liệu."
         };
     }
 
@@ -104,6 +109,9 @@ class TraitMapper
         }
 
         if ($currentArchetype === 'Opportunist' && $coercion > 0.8) return 'Warlord';
+        if ($currentArchetype === 'Sage' && $dogmatism > 0.8) return 'High_Priest';
+        if ($currentArchetype === 'Sage' && $traits[8] > 0.9) return 'Scholar';
+        if ($currentArchetype === 'Opportunist' && $traits[7] > 0.9) return 'Merchant_Lord';
         if ($dogmatism > 0.9) return 'Zealot';
 
         return null;

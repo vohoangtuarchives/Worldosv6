@@ -1,21 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { api } from '@/lib/api';
 import { Loader2, Scroll, Search, History } from 'lucide-react';
-
-interface Chronicle {
-    id: number;
-    content: string;
-    from_tick: number;
-    to_tick: number;
-    type: string;
-    created_at: string;
-    perceived_archive_snapshot?: {
-        noise_level: number;
-        clarity: string;
-        perceived_state: any;
-    };
-}
-
+import type { Chronicle } from '@/types/simulation';
 import { useSimulation } from '@/context/SimulationContext';
 
 export const ChronicleView: React.FC<{ universeId: number }> = ({ universeId }) => {
@@ -67,13 +52,13 @@ export const ChronicleView: React.FC<{ universeId: number }> = ({ universeId }) 
                             <div className="text-[10px] text-amber-500/70 mb-1 font-mono flex items-center justify-between group-hover:text-amber-400 transition-colors">
                                 <div className="flex items-center gap-2">
                                     <History className="w-3 h-3" />
-                                    <span>KỶ NGUYÊN {c.from_tick} - {c.to_tick}</span>
+                                    <span>KỶ NGUYÊN {c.from_tick ?? '?'} - {c.to_tick ?? '?'}</span>
                                     <span className="text-slate-600">|</span>
-                                    <span className="text-slate-500">{new Date(c.created_at).toLocaleTimeString()}</span>
+                                    <span className="text-slate-500">{c.created_at ? new Date(c.created_at).toLocaleTimeString() : '—'}</span>
                                 </div>
                                 {c.perceived_archive_snapshot && (
-                                    <span className={`text-[9px] px-1.5 rounded-sm border ${getClarityStyle(c.perceived_archive_snapshot.noise_level)}`}>
-                                        {c.perceived_archive_snapshot.clarity}
+                                    <span className={`text-[9px] px-1.5 rounded-sm border ${getClarityStyle(c.perceived_archive_snapshot.noise_level ?? 0)}`}>
+                                        {c.perceived_archive_snapshot.clarity ?? '—'}
                                     </span>
                                 )}
                             </div>

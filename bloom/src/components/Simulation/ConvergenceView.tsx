@@ -10,7 +10,7 @@ interface Interaction {
     universe_a_id: number;
     universe_b_id: number;
     interaction_type: string;
-    payload: any;
+    payload: Record<string, unknown>;
     created_at: string;
     universe_a?: { name: string };
     universe_b?: { name: string };
@@ -47,16 +47,16 @@ export const ConvergenceView: React.FC<{ universeId: number }> = ({ universeId }
                                     <div className="flex justify-between items-start mb-2">
                                         <div className="flex items-center gap-2">
                                             <Badge variant="outline" className="border-cyan-500 text-cyan-400 font-mono">
-                                                {ix.interaction_type.toUpperCase()}
+                                                {(ix.interaction_type ?? '').toUpperCase()}
                                             </Badge>
                                             <span className="text-xs text-slate-500 font-mono">
-                                                {new Date(ix.created_at).toLocaleTimeString()}
+                                                {ix.created_at ? new Date(ix.created_at).toLocaleTimeString() : '—'}
                                             </span>
                                         </div>
                                     </div>
 
                                     <div className="text-sm font-mono text-slate-300">
-                                        {ix.interaction_type === 'convergence_initiated' ? (
+                                        {(ix.interaction_type ?? '') === 'convergence_initiated' ? (
                                             <div className="flex flex-col gap-1">
                                                 <div className="flex items-center gap-2 text-amber-400">
                                                     <AlertTriangle className="w-4 h-4" />

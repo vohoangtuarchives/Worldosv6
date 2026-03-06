@@ -26,6 +26,15 @@ class TheorySynthesisService
         $latest = $universe->snapshots()->orderByDesc('tick')->first();
         if (!$latest) return null;
 
+        // Rate limit guard: tránh spam Axiom, chỉ sinh mới khi ít nhất 50 ticks trôi qua
+        $lastAxiom = DiscoveredAxiom::where('universe_id', $universe->id)
+            ->orderByDesc('tick_discovered')
+            ->first();
+        if ($lastAxiom && ($latest->tick - $lastAxiom->tick_discovered) < 50) {
+            Log::debug("TheorySynthesisService: Rate limited for Universe {$universe->id}.");
+            return null;
+        }
+
         // Build a highly "Obscure" context to force AI intuition
         $context = $this->archiveBuilder->build(
             $universe->id, 

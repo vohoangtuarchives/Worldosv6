@@ -15,7 +15,7 @@ interface Edict {
     flavor: string;
 }
 
-interface ActiveEdict {
+export interface ActiveEdict {
     id: string;
     name: string;
     decreed_by: string;

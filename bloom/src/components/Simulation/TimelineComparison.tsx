@@ -19,6 +19,7 @@ interface TimelineDiff {
 }
 
 import { useSimulation } from '@/context/SimulationContext';
+import { Universe } from '@/types/simulation';
 
 export function TimelineComparison({ universeId }: { universeId: number }) {
     const { universe, universes } = useSimulation();
@@ -26,16 +27,16 @@ export function TimelineComparison({ universeId }: { universeId: number }) {
 
     // Derived timelines from the shared universes list
     const timelines: TimelineDiff[] = (universes || [])
-        .filter((u: any) => u.world_id === worldId)
-        .map((u: any) => ({
+        .filter((u: Universe) => u.world_id === worldId)
+        .map((u: Universe) => ({
             id: u.id,
             name: u.name || `Universe #${u.id}`,
-            divergence: u.state_vector?.divergence || Math.random() * 0.2, // Use real or fallback
+            divergence: (u.state_vector?.divergence as number) || ((u.id % 20) / 100),
             status: u.status,
             last_tick: u.current_tick,
             metrics: {
-                entropy: u.state_vector?.entropy || 0.5,
-                innovation: u.state_vector?.innovation || 0.1
+                entropy: (u.state_vector?.entropy as number) || 0.5,
+                innovation: (u.state_vector?.innovation as number) || 0.1
             }
         }));
 

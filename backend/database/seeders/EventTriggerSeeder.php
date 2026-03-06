@@ -14,9 +14,12 @@ class EventTriggerSeeder extends Seeder
                 'event_type' => 'unrest',
                 'name_template' => 'Làn sóng Bất ổn: {material}',
                 'prompt_fragment' => 'Sự khan hiếm {material} đã đẩy quần chúng vào cơn phẫn nộ.',
-                'threshold_rules' => null,
+                'threshold_rules' => [
+                    ['key' => 'entropy', 'op' => '>=', 'value' => 0.7],
+                    ['key' => 'stability_index', 'op' => '<=', 'value' => 0.4],
+                ],
                 'scope' => 'universe',
-                'probability' => 0.2,
+                'probability' => 0.3,
                 'cooldown_ticks' => 10,
             ],
             [
@@ -39,12 +42,25 @@ class EventTriggerSeeder extends Seeder
             ],
             [
                 'event_type' => 'collapse',
-                'name_template' => 'Sụp đổ: {institution}',
-                'prompt_fragment' => 'Định chế {institution} đã tan rã, để lại một khoảng trống quyền lực lớn.',
-                'threshold_rules' => null,
+                'name_template' => 'Đại Sụp Đổ: {institution}',
+                'prompt_fragment' => 'Sự suy kiệt của ổn định thực tại khiến {institution} tan rã, kéo theo một thời kỳ hỗn mang.',
+                'threshold_rules' => [
+                    ['key' => 'stability_index', 'op' => '<=', 'value' => 0.25],
+                ],
                 'scope' => 'universe',
-                'probability' => 0.2,
+                'probability' => 0.4,
                 'cooldown_ticks' => 10,
+            ],
+            [
+                'event_type' => 'stability_decay',
+                'name_template' => 'Sự Suy Tàn của Trật Tự',
+                'prompt_fragment' => 'Tính liên kết của lốt thực tại này đang mỏng dần. Mọi định chế đều cảm thấy sự lung lay.',
+                'threshold_rules' => [
+                    ['key' => 'sci', 'op' => '<=', 'value' => 0.35],
+                ],
+                'scope' => 'universe',
+                'probability' => 0.5,
+                'cooldown_ticks' => 15,
             ],
             [
                 'event_type' => 'myth_scar',
@@ -69,15 +85,37 @@ class EventTriggerSeeder extends Seeder
             ],
             [
                 'event_type' => 'golden_age',
-                'name_template' => 'Thời kỳ hoàng kim',
-                'prompt_fragment' => 'Trật tự và ổn định tạo nên một thời đại hưng thịnh.',
+                'name_template' => 'Kỷ Nguyên Hoàng Kim',
+                'prompt_fragment' => 'Khi các trường hấp dấn đạt độ cân bằng tuyệt mỹ, một thời đại hưng thịnh chưa từng có bắt đầu.',
                 'threshold_rules' => [
-                    ['key' => 'entropy', 'op' => '<=', 'value' => 0.4],
-                    ['key' => 'stability_index', 'op' => '>=', 'value' => 0.6],
+                    ['key' => 'entropy', 'op' => '<=', 'value' => 0.3],
+                    ['key' => 'stability_index', 'op' => '>=', 'value' => 0.7],
                 ],
                 'scope' => 'universe',
                 'probability' => 0.18,
                 'cooldown_ticks' => 25,
+            ],
+            [
+                'event_type' => 'power_dominance',
+                'name_template' => 'Áp Chế Quyền Lực',
+                'prompt_fragment' => 'Trường Quyền Lực đã nuốt chửng mọi khát vọng khác. Một trật tự sắt đá đang hình thành.',
+                'threshold_rules' => [
+                    ['key' => 'power', 'op' => '>=', 'value' => 0.8],
+                ],
+                'scope' => 'universe',
+                'probability' => 0.3,
+                'cooldown_ticks' => 20,
+            ],
+            [
+                'event_type' => 'knowledge_explosion',
+                'name_template' => 'Bùng Nổ Tri Thức',
+                'prompt_fragment' => 'Những bức màn của sự thiếu hiểu biết bị xé toạc. Văn minh bước vào một kỷ nguyên khai sáng chói lòa.',
+                'threshold_rules' => [
+                    ['key' => 'knowledge', 'op' => '>=', 'value' => 0.8],
+                ],
+                'scope' => 'universe',
+                'probability' => 0.25,
+                'cooldown_ticks' => 20,
             ],
             [
                 'event_type' => 'fork',

@@ -119,14 +119,16 @@ class PerceivedArchiveBuilder
         foreach ($zones as $z) {
             $agents = $z['state']['agents'] ?? [];
             foreach ($agents as $agent) {
-                // Focus on high-ambition or high-risk agents for narrative drama
+                // Focus on high-ambition, high-empathy, or specialized archetypes for narrative drama
                 $traits = $agent['trait_vector'] ?? array_fill(0, 17, 0);
-                if ($traits[1] > 0.8 || $traits[10] > 0.8 || $traits[13] > 0.8) {
+                $isNotable = ($traits[1] > 0.8 || $traits[4] > 0.8 || $traits[8] > 0.8 || $traits[13] > 0.8);
+                if ($isNotable) {
                     $agentReflections[] = [
                         'name' => $agent['name'] ?? 'Ẩn danh',
                         'archetype' => $agent['archetype'] ?? 'Commoner',
                         'description' => $this->traitMapper->mapToDescription($traits),
-                        'thinking' => $this->traitMapper->generateMonologueSeed($traits, $agent['archetype'] ?? 'Commoner')
+                        'thinking' => $this->traitMapper->generateMonologueSeed($traits, $agent['archetype'] ?? 'Commoner'),
+                        'fate_tags' => $this->traitMapper->getFateTags($traits)
                     ];
                 }
             }
@@ -170,6 +172,13 @@ class PerceivedArchiveBuilder
                 'instability' => round($instability, 3),
                 'sci' => round($vector['sci'] ?? 1.0, 3),
                 'reality_stability' => round($this->epistemic->calculateStability($this->getUniverseModel($universeId)), 3),
+                'civ_fields' => [
+                    'survival'  => round(($vector['civ_fields']['survival'] ?? $vector['survival'] ?? $vector['global_fields']['survival'] ?? 0.0), 3),
+                    'power'     => round(($vector['civ_fields']['power'] ?? $vector['power'] ?? $vector['global_fields']['power'] ?? 0.0), 3),
+                    'wealth'    => round(($vector['civ_fields']['wealth'] ?? $vector['wealth'] ?? $vector['global_fields']['wealth'] ?? 0.0), 3),
+                    'knowledge' => round(($vector['civ_fields']['knowledge'] ?? $vector['knowledge'] ?? $vector['global_fields']['knowledge'] ?? 0.0), 3),
+                    'meaning'   => round(($vector['civ_fields']['meaning'] ?? $vector['meaning'] ?? $vector['global_fields']['meaning'] ?? 0.0), 3),
+                ],
             ]
         ];
     }
@@ -214,23 +223,29 @@ class PerceivedArchiveBuilder
     }
 
     /**
-     * Build prompt fragments for Crisis, GoldenAge, Fork for use in narrative generation.
+     * Build prompt fragments for all triggering events for use in narrative generation.
      */
     protected function buildEventTemplates(array $eventTypes, array $vector): array
     {
-        $templates = [
-            'crisis' => 'Thế giới đang trong khủng hoảng: áp lực tích tụ, định chế rạn nứt. Hãy phản ánh sự bất ổn và khả năng sụp đổ.',
-            'golden_age' => 'Thời kỳ hoàng kim: trật tự và năng lượng đạt đỉnh, văn minh thịnh vượng. Hãy phản ánh sự hưng thịnh và hy vọng.',
-            'fork' => 'Khoảnh khắc phân nhánh: vũ trụ đứng trước ngã ba, một quyết định có thể tách thành nhiều thực tại.',
-        ];
-        foreach (['crisis', 'golden_age', 'fork'] as $key) {
-            if (in_array($key, $eventTypes)) {
-                $fragment = $this->events->getPromptFragment($key, $vector);
-                if ($fragment !== '') {
-                    $templates[$key] = $fragment;
-                }
+        $templates = [];
+        foreach ($eventTypes as $key) {
+            $fragment = $this->events->getPromptFragment($key, $vector);
+            if ($fragment !== '') {
+                $templates[$key] = $fragment;
             }
         }
+        
+        // Add defaults if missing critical ones but they are in eventTypes
+        if (empty($templates['crisis']) && in_array('crisis', $eventTypes)) {
+            $templates['crisis'] = 'Thế giới đang trong khủng hoảng: áp lực tích tụ, định chế rạn nứt. Hãy phản ánh sự bất ổn và khả năng sụp đổ.';
+        }
+        if (empty($templates['golden_age']) && in_array('golden_age', $eventTypes)) {
+            $templates['golden_age'] = 'Thời kỳ hoàng kim: trật tự và năng lượng đạt đỉnh, văn minh thịnh vượng. Hãy phản ánh sự hưng thịnh và hy vọng.';
+        }
+        if (empty($templates['fork']) && in_array('fork', $eventTypes)) {
+            $templates['fork'] = 'Khoảnh khắc phân nhánh: vũ trụ đứng trước ngã ba, một quyết định có thể tách thành nhiều thực tại.';
+        }
+
         return $templates;
     }
 

@@ -40,4 +40,8 @@ return [
         'model' => env('OPENAI_MODEL', 'gpt-4o'),
     ],
 
+    'loom' => [
+        'url' => env('NARRATIVE_LOOM_URL', 'http://narrative_loom:8001'),
+    ],
+
 ];

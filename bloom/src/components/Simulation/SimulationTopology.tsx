@@ -23,7 +23,16 @@ export function SimulationTopology({ universeId }: { universeId: number | null }
     const [nodes, setNodes] = useState<Node[]>([]);
     const [edges, setEdges] = useState<Edge[]>([]);
     const [loading, setLoading] = useState(false);
+    const [selectedField, setSelectedField] = useState<string | null>(null);
     const containerRef = useRef<SVGSVGElement>(null);
+
+    const FIELDS = [
+        { id: 'survival', label: 'Survival', color: '#10b981' },
+        { id: 'power', label: 'Power', color: '#f59e0b' },
+        { id: 'wealth', label: 'Wealth', color: '#fbbf24' },
+        { id: 'knowledge', label: 'Knowledge', color: '#3b82f6' },
+        { id: 'meaning', label: 'Meaning', color: '#ec4899' },
+    ];
 
     useEffect(() => {
         if (!universeId) return;
@@ -61,6 +70,25 @@ export function SimulationTopology({ universeId }: { universeId: number | null }
             <div className="absolute top-4 left-4 z-10">
                 <h3 className="text-sm font-semibold text-blue-400">Topology Visualization</h3>
                 <p className="text-xs text-muted-foreground">Mapping causal chains and mythic scars</p>
+
+                <div className="mt-3 flex flex-wrap gap-2">
+                    <button
+                        onClick={() => setSelectedField(null)}
+                        className={`text-[9px] px-2 py-0.5 rounded border transition-colors ${!selectedField ? 'bg-blue-500/20 border-blue-500 text-blue-400' : 'bg-slate-900 border-slate-700 text-slate-500 hover:border-slate-500'}`}
+                    >
+                        DEFAULT
+                    </button>
+                    {FIELDS.map(f => (
+                        <button
+                            key={f.id}
+                            onClick={() => setSelectedField(f.id)}
+                            className={`text-[9px] px-2 py-0.5 rounded border transition-colors ${selectedField === f.id ? 'border-none text-white' : 'bg-slate-900 border-slate-700 text-slate-500 hover:border-slate-500'}`}
+                            style={selectedField === f.id ? { backgroundColor: f.color } : {}}
+                        >
+                            {f.label.toUpperCase()}
+                        </button>
+                    ))}
+                </div>
             </div>
 
             {loading && (
@@ -115,27 +143,57 @@ export function SimulationTopology({ universeId }: { universeId: number | null }
                 })}
 
                 {/* Nodes */}
-                {nodes.map((node) => (
-                    <g key={node.id} transform={`translate(${node.x},${node.y})`}>
-                        <circle
-                            r={node.type === 'Universe' ? 12 : 6}
-                            fill={
-                                node.type === 'Snapshot'
-                                    ? (node.data?.material_stress > 0.7 ? '#f87171' : '#3b82f6')
-                                    : node.type === 'MythScar' ? '#ef4444' : '#8b5cf6'
-                            }
-                            filter={node.data?.material_stress > 0.8 ? "url(#high-stress-glow)" : "url(#glow)"}
-                            className="cursor-pointer transition-all hover:r-8"
-                        />
-                        <text
-                            y={20}
-                            textAnchor="middle"
-                            className="text-[10px] fill-slate-400 font-mono"
-                        >
-                            {node.label}
-                        </text>
-                    </g>
-                ))}
+                {nodes.map((node) => {
+                    const isSnapshot = node.type === 'Snapshot';
+                    const fieldValue = selectedField ? (node.data?.fields?.[selectedField] ?? 0.1) : 0;
+                    const fieldColor = selectedField ? FIELDS.find(f => f.id === selectedField)?.color : '#3b82f6';
+                    const isCollapsed = node.data?.collapse_at_tick != null;
+
+                    return (
+                        <g key={node.id} transform={`translate(${node.x},${node.y})`}>
+                            {/* Collapse Ring */}
+                            {isCollapsed && (
+                                <circle
+                                    r={12}
+                                    fill="none"
+                                    stroke="#ef4444"
+                                    strokeWidth="1"
+                                    strokeDasharray="2 2"
+                                    className="animate-spin-slow"
+                                />
+                            )}
+
+                            <circle
+                                r={node.type === 'Universe' ? 12 : isSnapshot ? (6 + fieldValue * 6) : 6}
+                                fill={
+                                    isSnapshot
+                                        ? (selectedField ? fieldColor : (node.data?.material_stress > 0.7 ? '#f87171' : '#3b82f6'))
+                                        : node.type === 'MythScar' ? '#ef4444' : '#8b5cf6'
+                                }
+                                fillOpacity={isSnapshot && selectedField ? 0.3 + fieldValue * 0.7 : 1}
+                                filter={node.data?.material_stress > 0.8 || (selectedField && fieldValue > 0.7) ? "url(#high-stress-glow)" : "url(#glow)"}
+                                className="cursor-pointer transition-all duration-500 hover:r-10"
+                            />
+                            <text
+                                y={20}
+                                textAnchor="middle"
+                                className="text-[10px] fill-slate-400 font-mono pointer-events-none"
+                            >
+                                {node.label}
+                            </text>
+
+                            {isCollapsed && (
+                                <text
+                                    y={-15}
+                                    textAnchor="middle"
+                                    className="text-[8px] fill-red-500 font-bold uppercase pointer-events-none"
+                                >
+                                    COLLAPSED
+                                </text>
+                            )}
+                        </g>
+                    );
+                })}
             </svg>
         </div>
     );

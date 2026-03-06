@@ -2,7 +2,7 @@
 
 use std::net::SocketAddr;
 use tonic::{Request, Response, Status};
-use worldos_core::{tick_with_cascade, UniverseState, WorldConfig};
+use worldos_core::{tick_with_cascade, KernelGenome, UniverseState, WorldConfig};
 use worldos_grpc::{
     simulation_engine_server::SimulationEngine, simulation_engine_server::SimulationEngineServer, 
     AdvanceRequest, AdvanceResponse, MergeRequest, MergeResponse, 
@@ -27,6 +27,13 @@ fn run_advance(universe_id: u64, ticks: u64, state_input: &[u8], world_meta: Opt
             origin: meta.origin,
             axiom: serde_json::from_str(&meta.axiom_json).ok(),
             world_seed: serde_json::from_str(&meta.world_seed_json).ok(),
+            genome: meta.genome.map(|g| KernelGenome {
+                diffusion_rate: g.diffusion_rate,
+                entropy_coefficient: g.entropy_coefficient,
+                mutation_rate: g.mutation_rate,
+                attractor_gravity: g.attractor_gravity,
+                complexity_bonus: g.complexity_bonus,
+            }),
         }
     } else {
         WorldConfig {
@@ -34,6 +41,7 @@ fn run_advance(universe_id: u64, ticks: u64, state_input: &[u8], world_meta: Opt
             axiom: None,
             world_seed: None,
             origin: "generic".to_string(),
+            genome: None,
         }
     };
 
@@ -89,6 +97,7 @@ fn run_observe(universe_id: u64, zone_index: u32, intensity: f64, state_input: &
         origin: "observed".to_string(),
         axiom: None,
         world_seed: None,
+        genome: None,
     };
 
     let _events = tick_with_cascade(&mut state, &world, 4);
@@ -202,11 +211,34 @@ struct AdvanceHttpRequest {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+struct AdvanceHttpKernelGenome {
+    diffusion_rate: f64,
+    entropy_coefficient: f64,
+    mutation_rate: f64,
+    attractor_gravity: f64,
+    complexity_bonus: f64,
+}
+
+impl Default for AdvanceHttpKernelGenome {
+    fn default() -> Self {
+        Self {
+            diffusion_rate: 0.05,
+            entropy_coefficient: 1.0,
+            mutation_rate: 0.05,
+            attractor_gravity: 1.0,
+            complexity_bonus: 1.0,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 struct AdvanceHttpWorldConfig {
     world_id: u64,
     origin: String,
     axiom: Option<serde_json::Value>,
     world_seed: Option<serde_json::Value>,
+    #[serde(default)]
+    genome: Option<AdvanceHttpKernelGenome>,
 }
 
 #[derive(Debug, Serialize)]
@@ -235,11 +267,19 @@ async fn advance_http(Json(body): Json<AdvanceHttpRequest>) -> Json<AdvanceHttpR
         .unwrap_or_default();
 
     let world_meta = body.world_config.map(|wc| {
+        let g = wc.genome.unwrap_or_default();
         worldos_grpc::WorldConfig {
             world_id: wc.world_id,
             origin: wc.origin,
             axiom_json: wc.axiom.map(|v| v.to_string()).unwrap_or_else(|| "{}".to_string()),
             world_seed_json: wc.world_seed.map(|v| v.to_string()).unwrap_or_else(|| "{}".to_string()),
+            genome: Some(worldos_grpc::KernelGenome {
+                diffusion_rate: g.diffusion_rate,
+                entropy_coefficient: g.entropy_coefficient,
+                mutation_rate: g.mutation_rate,
+                attractor_gravity: g.attractor_gravity,
+                complexity_bonus: g.complexity_bonus,
+            }),
         }
     });
 

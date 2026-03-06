@@ -19,19 +19,35 @@ class WorldWillEngine
     public function calculateAlignment(Universe $universe): array
     {
         // 1. Accumulate Actor traits (17D)
-        $actorStats = \DB::table('actors')
+        $driver = \DB::getDriverName();
+        $query = \DB::table('actors')
             ->where('universe_id', $universe->id)
-            ->where('is_alive', true)
-            ->selectRaw('
-                AVG(JSON_EXTRACT(traits, "$[4]")) as empathy,
-                AVG(JSON_EXTRACT(traits, "$[5]")) as solidarity,
-                AVG(JSON_EXTRACT(traits, "$[9]")) as dogmatism,
-                AVG(JSON_EXTRACT(traits, "$[7]")) as pragmatism,
-                AVG(JSON_EXTRACT(traits, "$[1]")) as ambition,
-                AVG(JSON_EXTRACT(traits, "$[8]")) as curiosity,
+            ->where('is_alive', true);
+        if ($driver === 'pgsql') {
+            // Postgres JSONB array indexing and numeric casting
+            $actorStats = $query->selectRaw('
+                AVG((traits->>4)::float)  as empathy,
+                AVG((traits->>5)::float)  as solidarity,
+                AVG((traits->>9)::float)  as dogmatism,
+                AVG((traits->>7)::float)  as pragmatism,
+                AVG((traits->>1)::float)  as ambition,
+                AVG((traits->>8)::float)  as curiosity,
+                AVG((traits->>11)::float) as fear,
+                AVG((traits->>12)::float) as vengeance
+            ')->first();
+        } else {
+            // MySQL/MariaDB
+            $actorStats = $query->selectRaw('
+                AVG(JSON_EXTRACT(traits, "$[4]"))  as empathy,
+                AVG(JSON_EXTRACT(traits, "$[5]"))  as solidarity,
+                AVG(JSON_EXTRACT(traits, "$[9]"))  as dogmatism,
+                AVG(JSON_EXTRACT(traits, "$[7]"))  as pragmatism,
+                AVG(JSON_EXTRACT(traits, "$[1]"))  as ambition,
+                AVG(JSON_EXTRACT(traits, "$[8]"))  as curiosity,
                 AVG(JSON_EXTRACT(traits, "$[11]")) as fear,
                 AVG(JSON_EXTRACT(traits, "$[12]")) as vengeance
             ')->first();
+        }
 
         // Fallback for empty actors
         if (!$actorStats || $actorStats->empathy === null) {
@@ -84,5 +100,21 @@ class WorldWillEngine
     {
         $max = max($alignment);
         return array_search($max, $alignment);
+    }
+
+    /**
+     * Map alignment vector to 5 CivilizationField hints.
+     * Used by CivilizationFieldEngine as supplementary input.
+     *
+     * @return array{spirituality_hint: float, hardtech_hint: float, chaos_hint: float}
+     */
+    public function toFieldVector(Universe $universe): array
+    {
+        $alignment = $this->calculateAlignment($universe);
+        return [
+            'spirituality_hint' => $alignment['spirituality'],
+            'hardtech_hint'     => $alignment['hardtech'],
+            'chaos_hint'        => $alignment['entropy'],
+        ];
     }
 }

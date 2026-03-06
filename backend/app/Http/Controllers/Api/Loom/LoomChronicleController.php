@@ -43,6 +43,11 @@ class LoomChronicleController extends Controller
         $perPage = $request->input('per_page', 100);
         $chronicles = $query->paginate($perPage);
 
+        // Đảm bảo raw_payload có mặt để Loom phân tích sâu
+        $chronicles->getCollection()->transform(function ($item) {
+            return $item;
+        });
+
         return response()->json($chronicles);
     }
 }

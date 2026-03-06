@@ -164,7 +164,7 @@ mod tests {
     use crate::universe::UniverseState;
 
     fn world_config() -> WorldConfig {
-        WorldConfig { world_id: 1, axiom: None, world_seed: None, origin: String::new() }
+        WorldConfig { world_id: 1, axiom: None, world_seed: None, origin: String::new(), genome: None }
     }
 
     fn set_high_pressure(state: &mut UniverseState, zone_idx: usize) {

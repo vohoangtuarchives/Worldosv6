@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Crimson_Pro, JetBrains_Mono, Space_Grotesk } from "next/font/google";
 import "./globals.css";
+import "@xyflow/react/dist/style.css";
 
 const display = Space_Grotesk({
   variable: "--font-display",

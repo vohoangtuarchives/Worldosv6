@@ -12,7 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('universes', function (Blueprint $table) {
-            $table->unsignedBigInteger('seed')->default(0)->comment('Universe Seed for Deterministic Simulation');
+            if (!Schema::hasColumn('universes', 'seed')) {
+                $table->unsignedBigInteger('seed')->default(0)->comment('Universe Seed for Deterministic Simulation');
+            }
         });
     }
 
@@ -22,7 +24,9 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('universes', function (Blueprint $table) {
-            $table->dropColumn('seed');
+            if (Schema::hasColumn('universes', 'seed')) {
+                $table->dropColumn('seed');
+            }
         });
     }
 };

@@ -26,6 +26,9 @@ return [
             'base_physical_cap' => 5,
             'naming_style' => 'asian_classic',
             'archetypes' => ['Mưu Sĩ', 'Quản Gia', 'Thư Sinh', 'Lệnh Tôn'],
+            'voice_prompt' => 'Viết như một sử quan triều đình ghi chép sự kiện: ngôn ngữ trang trọng, khách quan, dùng nhiều điển tích lịch sử. Tránh ngôn ngữ hiện đại. Mỗi sự kiện đều có nguyên nhân chính trị hoặc nhân quả xã hội.',
+            'llm_temperature' => 0.45,
+            'forbidden_elements' => ['phép thuật', 'tu tiên', 'linh khí', 'hệ thống', 'cấp độ'],
             'attractors' => [
                 'spirituality' => 0.2,
                 'hardtech' => 0.1,
@@ -52,6 +55,9 @@ return [
             'base_physical_cap' => 15,
             'naming_style' => 'asian_classic',
             'archetypes' => ['Võ Sư', 'Kiếm Khách', 'Tà Tu', 'Bang Chủ', 'Hiệp Khách'],
+            'voice_prompt' => 'Viết theo phong cách Kim Dung và Cổ Long: hành động dứt khoát, tình tiết bất ngờ, triết lý về võ đạo và nghĩa khí. Nhân vật hành động vì danh dự, tình cảm và lý tưởng giang hồ. Ngôn ngữ nửa cổ điển, giàu hình ảnh chiến đấu.',
+            'llm_temperature' => 0.75,
+            'forbidden_elements' => ['tu tiên', 'linh căn', 'thiên đạo', 'cấp độ tu vi'],
             'attractors' => [
                 'spirituality' => 0.6,
                 'hardtech' => 0.1,
@@ -78,6 +84,9 @@ return [
             'base_physical_cap' => 1000,
             'naming_style' => 'asian_mythic',
             'archetypes' => ['Luyện Khí Sĩ', 'Tán Tiên', 'Thiên Ma', 'Yêu Vương', 'Thánh Nữ'],
+            'voice_prompt' => 'Viết theo phong cách tiên hiệp huyền huyễn: khung cảnh hùng tráng thần tiên, thuật ngữ tu tiên (linh khí, đan luyện, thiên kiếp, đột phá cảnh giới). Nhân vật đặt thiên đạo lên trên hết. Ngôn ngữ trang nghiêm, đôi khi thơ mộng như thần thoại.',
+            'llm_temperature' => 0.9,
+            'forbidden_elements' => ['khoa học hiện đại', 'công nghệ', 'Internet', 'điện thoại'],
             'attractors' => [
                 'spirituality' => 0.95,
                 'hardtech' => 0.05,
@@ -121,6 +130,9 @@ return [
             'base_physical_cap' => 5,
             'naming_style' => 'modern',
             'archetypes' => ['Thương Nhân', 'Tài Phiệt', 'Học Bá', 'Lưu Manh'],
+            'voice_prompt' => 'Viết như phóng sự xã hội đương đại: sắc nét, thực tế, phản ánh mâu thuẫn giai cấp và áp lực đô thị. Ngôn ngữ đời thường pha lẫn thuật ngữ kinh tế, xã hội. Tập trung vào động cơ lợi ích và quan hệ quyền lực.',
+            'llm_temperature' => 0.6,
+            'forbidden_elements' => ['võ công', 'tu tiên', 'phép thuật', 'linh khí'],
             'attractors' => [
                 'spirituality' => 0.1,
                 'hardtech' => 0.6,
@@ -177,6 +189,9 @@ return [
             'base_physical_cap' => 15,
             'naming_style' => 'modern',
             'archetypes' => ['Kẻ Sống Sót', 'Lãnh Chúa Khu Ổ Chuột', 'Tiến Sĩ Điên', 'Đột Biến Thể'],
+            'voice_prompt' => 'Viết với giọng điệu tối tăm và tuyệt vọng: văn xuôi gấp gáp, đoạn ngắn, cảm giác nguy hiểm trực tiếp. Thế giới tàn khốc — tài nguyên khan hiếm, đạo đức co rút về bản năng sống còn. Không có anh hùng rõ ràng, chỉ có kẻ sống sót.',
+            'llm_temperature' => 0.8,
+            'forbidden_elements' => ['phép thuật thần tiên', 'linh khí', 'tu tiên', 'thiên đạo'],
             'attractors' => [
                 'spirituality' => 0.1,
                 'hardtech' => 0.3,
@@ -190,6 +205,9 @@ return [
             'base_physical_cap' => 20,
             'naming_style' => 'numerical',
             'archetypes' => ['Hacker', 'Cyber-Psycho', 'Mercenary', 'Corp Executive'],
+            'voice_prompt' => 'Viết theo giọng noir đô thị tương lai: lạnh lùng, kỹ thuật số, đầy ẩn dụ về công nghệ và tha hóa con người. Thuật ngữ tech-slang (jack in, flatline, ICE, chrome). Nhân vật là cỗ máy kiếm tiền hoặc kẻ nổi loạn chống corp. Ngắn gọn, sắc sảo, không lãng mạn.',
+            'llm_temperature' => 0.7,
+            'forbidden_elements' => ['võ công', 'tu tiên', 'linh khí', 'thần tiên', 'phong kiến'],
             'attractors' => [
                 'spirituality' => 0.05,
                 'hardtech' => 0.85,
@@ -203,6 +221,9 @@ return [
             'base_physical_cap' => 500,
             'naming_style' => 'numerical',
             'archetypes' => ['Hạm Trưởng', 'Nhà Khoa Học', 'AI Tối Cao', 'Thợ Săn Tiền Thưởng'],
+            'voice_prompt' => 'Viết như nhật ký phi hành đoàn liên hành tinh: ngôn ngữ kỹ thuật chính xác, khoảng cách và quy mô vũ trụ tạo cảm giác vĩ đại và cô đơn. Đặt câu hỏi triết học về AI, ý thức và tiến hóa. Ngữ điệu lạnh, logic, đôi khi giả định đạo cụ khoa học.',
+            'llm_temperature' => 0.65,
+            'forbidden_elements' => ['thần tiên', 'tu tiên', 'linh khí', 'phong kiến võ hiệp'],
             'attractors' => [
                 'spirituality' => 0.1,
                 'hardtech' => 0.95,
