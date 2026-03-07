@@ -36,14 +36,18 @@ async def historian_agent(state: NarrativeState, config: Dict[str, Any] = None) 
     tick_end = state.get("tick_end", "N/A")
     
     # Lược bỏ bớt thông tin dư thừa của mảng JSON để nhét vừa Context Window
+    max_events = 100
+    if len(chronicles) > max_events:
+        chronicles_to_process = chronicles[:20] + chronicles[-(max_events-20):]
+    else:
+        chronicles_to_process = chronicles
+        
     optimized_payload = []
-    for c in chronicles:
-        # Giả định c có cấu trúc trả về từ WorldOS
+    for c in chronicles_to_process:
         optimized_payload.append({
             "tick": c.get("from_tick"),
-            "event_type": c.get("type"),
-            "content": c.get("content", "N/A"),
-            "payload": c.get("raw_payload", "N/A")
+            "type": c.get("type"),
+            "content": c.get("content", "N/A")
         })
         
     payload_str = json.dumps(optimized_payload, ensure_ascii=False, indent=2)

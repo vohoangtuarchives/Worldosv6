@@ -214,6 +214,29 @@ export const api = {
       body: JSON.stringify(payload),
     });
   },
+  labDashboard: {
+    async state() {
+      return apiFetch("/worldos/lab/dashboard/state");
+    },
+    async attractors() {
+      return apiFetch("/worldos/lab/dashboard/attractors");
+    },
+    async evolution() {
+      return apiFetch("/worldos/lab/dashboard/evolution");
+    },
+    async risks() {
+      return apiFetch("/worldos/lab/dashboard/risks");
+    },
+    async intelligence() {
+      return apiFetch("/worldos/lab/dashboard/intelligence");
+    },
+    async intervene(statePayload: any = {}) {
+      return apiFetch("/worldos/lab/dashboard/intervene", {
+        method: "POST",
+        body: JSON.stringify({ state: statePayload }),
+      });
+    }
+  },
   /** Redis Streams: read observer events (last_id, multiverse_id?, count?) */
   async observerStream(params: { lastId?: string; multiverseId?: number | null; count?: number } = {}) {
     const q = new URLSearchParams();

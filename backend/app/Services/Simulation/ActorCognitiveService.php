@@ -197,11 +197,11 @@ class ActorCognitiveService
         $result = \DB::table('actors')
             ->where('universe_id', $universeId)
             ->where('is_alive', true)
-            ->selectRaw('
-                AVG(JSON_EXTRACT(traits, "$[8]"))  as curiosity,
-                AVG(JSON_EXTRACT(traits, "$[9]"))  as dogmatism,
-                AVG(JSON_EXTRACT(traits, "$[11]")) as fear
-            ')
+            ->selectRaw("
+                AVG(CAST(traits->>8 AS NUMERIC))  as curiosity,
+                AVG(CAST(traits->>9 AS NUMERIC))  as dogmatism,
+                AVG(CAST(traits->>11 AS NUMERIC)) as fear
+            ")
             ->first();
 
         return [

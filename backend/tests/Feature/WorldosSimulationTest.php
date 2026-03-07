@@ -23,6 +23,7 @@ class WorldosSimulationTest extends TestCase
             User::factory()->create(),
             ['*']
         );
+        \Illuminate\Support\Facades\Event::fake([\App\Events\Simulation\UniverseSimulationPulsed::class]);
         $this->seedCosmology();
     }
 
@@ -39,12 +40,21 @@ class WorldosSimulationTest extends TestCase
             'global_tick' => 0,
         ]);
         $saga = Saga::create(['world_id' => $world->id, 'name' => 'Test Saga', 'status' => 'active']);
-        Universe::create([
+        $universe = Universe::create([
             'world_id' => $world->id,
             'saga_id' => $saga->id,
             'multiverse_id' => $mv->id,
             'current_tick' => 0,
             'status' => 'active',
+            'state_vector' => [
+                'zones' => [
+                    [
+                        'id' => 0,
+                        'state' => ['base_mass' => 100],
+                        'neighbors' => [],
+                    ]
+                ]
+            ]
         ]);
     }
 

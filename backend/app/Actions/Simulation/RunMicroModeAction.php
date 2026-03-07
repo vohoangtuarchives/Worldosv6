@@ -7,7 +7,8 @@ use App\Models\Universe;
 use App\Models\UniverseSnapshot;
 use Illuminate\Support\Str;
 
-use App\Domain\Simulation\Actors\ActorRegistry;
+use App\Modules\Intelligence\Services\ActorRegistry;
+use App\Modules\Intelligence\Services\CivilizationAttractorEngine;
 
 class RunMicroModeAction
 {
@@ -15,7 +16,8 @@ class RunMicroModeAction
 
     public function __construct(
         protected ApplyMythScarAction $applyMythScarAction,
-        protected ActorRegistry $actorRegistry
+        protected ActorRegistry $actorRegistry,
+        protected CivilizationAttractorEngine $attractorEngine
     ) {}
 
     /**
@@ -26,7 +28,6 @@ class RunMicroModeAction
     public function execute(Universe $universe, UniverseSnapshot $snapshot, array $decisionData = []): ?array
     {
         // 1. Kiểm tra điều kiện (Nếu Stability quá thấp, vào ngưỡng Micro Mode)
-        // Ví dụ: Ngưỡng 0.3
         $stability = $snapshot->stability_index ?? 1.0;
         if ($stability > 0.3) {
             return null; // Quá ổn định, không có Micro Crisis
@@ -38,6 +39,9 @@ class RunMicroModeAction
             return null;
         }
 
+        // 3. Trích xuất civilization state vector từ snapshot
+        $civilizationState = $this->attractorEngine->extractCivilizationState($snapshot);
+
         $numAgents = rand(3, 5);
         $agents = [];
         
@@ -45,25 +49,27 @@ class RunMicroModeAction
             $agents[] = $this->generateAgent($eligibleArchetypes);
         }
 
-        // 3. Tính toán Agent chiến thắng dựa vào ActionUtility
-        // ActionUtility = BaseScore + T17 * ContextWeight + Noise
-        
+        // 4. Tính toán Agent chiến thắng
+        // Kết hợp: Attractor score (civilization resonance) + T17 Trait context + Noise
         $contextWeight = $this->generateContextWeight($snapshot);
         $winner = null;
         $maxUtility = -999.0;
 
         foreach ($agents as &$agent) {
             $archetypeObj = $agent['archetype_object'];
-            $baseScore = $archetypeObj->getBaseUtility($stability);
-            $t17Score = 0;
             
+            // Attractor-based scoring: dot product civilization state × attractor vector
+            $attractorScore = $archetypeObj->getBaseUtility($civilizationState);
+            
+            // T17 trait context weighting
+            $t17Score = 0;
             for ($d = 0; $d < 17; $d++) {
                 $t17Score += $agent['traits'][$d] * $contextWeight[$d];
             }
             
             $noise = (rand(-100, 100) / 100.0) * 0.2; // +/- 0.2
             
-            $utility = $baseScore + $t17Score + $noise;
+            $utility = $attractorScore + $t17Score + $noise;
             $agent['utility'] = $utility;
 
             if ($utility > $maxUtility) {
@@ -76,14 +82,20 @@ class RunMicroModeAction
             return null;
         }
 
-        // 4. Áp dụng hậu quả vào Macro State dựa trên Hệ phái (Archetype) của kẻ thắng
-        $outcome = $winner['archetype_object']->applyImpact($universe, $snapshot, $winner);
+        // 5. Áp dụng hậu quả — applyImpact trả về ArchetypeImpactEvent[]
+        $events = $winner['archetype_object']->applyImpact($universe, $snapshot, $winner);
+        
+        // Dispatch domain events
+        foreach ($events as $event) {
+            event($event);
+        }
 
-        // 5. Ghi nhận sự kiện vào BranchEvent
+        // 6. Ghi nhận sự kiện vào BranchEvent
         $payload = [
             'winner' => $winner,
             'participants' => array_map(fn($a) => ['name' => $a['name'], 'archetype' => $a['archetype']], $agents),
-            'outcome' => $outcome,
+            'civilization_state' => $civilizationState,
+            'events_count' => count($events),
             'stability_at_time' => $stability
         ];
 
@@ -112,7 +124,6 @@ class RunMicroModeAction
             'archetype' => $archetype->getName(),
             'archetype_object' => $archetype,
             'traits' => $traits,
-            // (Dominance, Ambition, Coercion, Loyalty, Empathy, Solidarity, Conformity, Pragmatism, Curiosity, Dogmatism, RiskTolerance, Fear, Vengeance, Hope, Grief, Pride, Shame)
         ];
     }
 
@@ -124,27 +135,24 @@ class RunMicroModeAction
         $w = array_fill(0, 17, 0.0);
 
         // 0-2: Quyền lực (Dominance, Ambition, Coercion)
-        // Có lợi thế khi ổn định thấp hoặc entropy cao
         for($i=0; $i<=2; $i++) $w[$i] = (1.0 - $stability) * 1.2 + ($entropy * 0.5);
 
         // 3-6: Xã hội (Loyalty, Empathy, Solidarity, Conformity)
-        // Có lợi thế khi ổn định cao và entropy thấp
         for($i=3; $i<=6; $i++) $w[$i] = $stability * 1.5 - ($entropy * 0.3);
 
         // 7-10: Nhận thức (Pragmatism, Curiosity, Dogmatism, RiskTolerance)
-        // Pragmatism/Curiosity cần ổn định vừa phải, RiskTolerance cần entropy cao
-        $w[7] = 0.5 + (1.0 - $entropy) * 0.5; // Pragmatism
-        $w[8] = 0.4 + (1.0 - $entropy) * 0.6; // Curiosity
-        $w[9] = $stability * 1.2;            // Dogmatism
-        $w[10] = $entropy * 1.8;             // RiskTolerance
+        $w[7] = 0.5 + (1.0 - $entropy) * 0.5;
+        $w[8] = 0.4 + (1.0 - $entropy) * 0.6;
+        $w[9] = $stability * 1.2;
+        $w[10] = $entropy * 1.8;
 
         // 11-16: Cảm xúc (Fear, Vengeance, Hope, Grief, Pride, Shame)
-        $w[11] = $entropy * 2.0;             // Fear bùng nổ khi hỗn loạn
-        $w[12] = (1.0 - $stability) * 1.5;   // Vengeance khi bất ổn
-        $w[13] = $stability * 1.0;            // Hope
-        $w[14] = $entropy * 0.5;             // Grief
-        $w[15] = $stability * 0.8;           // Pride
-        $w[16] = (1.0 - $stability) * 0.6;   // Shame
+        $w[11] = $entropy * 2.0;
+        $w[12] = (1.0 - $stability) * 1.5;
+        $w[13] = $stability * 1.0;
+        $w[14] = $entropy * 0.5;
+        $w[15] = $stability * 0.8;
+        $w[16] = (1.0 - $stability) * 0.6;
 
         return $w;
     }

@@ -104,10 +104,14 @@ impl CivilizationFields {
 /// Zone state: material + knowledge + cultural (per WORLDOS_V6 §4).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ZoneState {
+    #[serde(default)]
     pub base_mass: f64,
+    #[serde(default)]
     pub structured_mass: f64,
+    #[serde(default)]
     pub free_energy: f64,
     /// Normalized [0,1]: higher = more disorder/fragility.
+    #[serde(default)]
     pub entropy: f64,
     #[serde(default)]
     pub cultural: CulturalVector,

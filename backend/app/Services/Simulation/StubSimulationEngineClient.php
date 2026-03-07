@@ -48,4 +48,27 @@ class StubSimulationEngineClient implements SimulationEngineClientInterface
             'error_message' => '',
         ];
     }
+
+    public function batchAdvance(array $requests): array
+    {
+        $responses = [];
+        foreach ($requests as $req) {
+            $responses[] = $this->advance($req['universe_id'], $req['ticks'], $req['state_input'] ?? [], $req['world_config'] ?? null);
+        }
+        return ['responses' => $responses];
+    }
+
+    public function analyzeTrajectory(array $points, float $threshold = 0.1): array
+    {
+        return [
+            'is_strange_attractor' => false,
+            'is_bounded' => true,
+            'recurrence_rate' => 0.05,
+            'max_lyapunov_estimate' => -0.1,
+            'trajectory_variance' => 0.1,
+            'basin_center' => [],
+            'basin_radius' => 0.0,
+            'regime_transitions' => [],
+        ];
+    }
 }

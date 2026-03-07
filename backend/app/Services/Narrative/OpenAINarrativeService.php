@@ -22,7 +22,7 @@ class OpenAINarrativeService implements LlmNarrativeClientInterface
         $this->apiKey = (string) (config('worldos.narrative.openai_api_key') ?? config('services.openai.key') ?? '');
         $this->model = (string) (config('worldos.narrative.model') ?? config('services.openai.model') ?? 'gpt-4o');
         $this->baseUrl = rtrim((string) (config('worldos.narrative.base_url') ?? 'https://api.openai.com'), '/');
-        $this->timeout = (int) (config('worldos.narrative.timeout') ?? 30);
+        $this->timeout = (int) (config('worldos.narrative.timeout') ?? 120);
     }
 
     public function isAvailable(): bool

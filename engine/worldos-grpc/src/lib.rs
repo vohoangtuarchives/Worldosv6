@@ -8,4 +8,6 @@ pub use worldos::simulation::simulation_engine_server;
 pub use worldos::simulation::{
     AdvanceRequest, AdvanceResponse, UniverseSnapshot, WorldConfig, KernelGenome,
     MergeRequest, MergeResponse, ObserveRequest, ObserveResponse,
+    BatchAdvanceRequest, BatchAdvanceResponse,
+    TrajectoryAnalysisRequest, TrajectoryAnalysisResponse, TrajectoryPoint, RegimeTransition,
 };

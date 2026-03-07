@@ -173,6 +173,7 @@ mod tests {
         z.trauma = 0.95;
         z.material_stress = 0.95;
         z.inequality = 0.95;
+        z.regional_scars = 1.0;
     }
 
     #[test]

@@ -37,8 +37,9 @@ class SagaServiceTest extends TestCase
         $runtime = Mockery::mock(UniverseRuntimeService::class);
         $originSeeder = Mockery::mock(OriginSeeder::class);
         $originSeeder->shouldReceive('seed')->byDefault();
+        $mutationService = Mockery::mock(\App\Services\Simulation\KernelMutationService::class);
 
-        $service = new SagaService($runtime, $originSeeder);
+        $service = new SagaService($runtime, $originSeeder, $mutationService);
 
         $universe = $service->spawnUniverse($world);
 

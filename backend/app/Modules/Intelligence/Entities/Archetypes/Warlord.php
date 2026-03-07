@@ -14,14 +14,19 @@ class Warlord extends BaseArchetype
         return 'Warlord';
     }
 
+    public function getAttractorVector(): array
+    {
+        return [
+            'militarism'  =>  0.9,
+            'chaos'       =>  0.7,
+            'stability'   => -0.5,
+            'trauma'      =>  0.4,
+        ];
+    }
+
     public function isEligible(World $world): bool
     {
         return ($world->axiom['entropy_rate'] ?? 1.0) > 0.6;
-    }
-
-    public function getBaseUtility(float $stability): float
-    {
-        return 0.7 * (1 - $stability);
     }
 
     public function applyImpact(Universe $universe, UniverseSnapshot $snapshot, array $winnerAgent): array

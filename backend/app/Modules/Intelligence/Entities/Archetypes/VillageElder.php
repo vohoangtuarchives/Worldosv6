@@ -14,14 +14,19 @@ class VillageElder extends BaseArchetype
         return 'VillageElder';
     }
 
+    public function getAttractorVector(): array
+    {
+        return [
+            'tradition' =>  0.9,
+            'stability' =>  0.5,
+            'chaos'     => -0.4,
+            'culture'   =>  0.6,
+        ];
+    }
+
     public function isEligible(World $world): bool
     {
         return true;
-    }
-
-    public function getBaseUtility(float $stability): float
-    {
-        return 0.4 * $stability;
     }
 
     public function applyImpact(Universe $universe, UniverseSnapshot $snapshot, array $winnerAgent): array

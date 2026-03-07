@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useState, useMemo, useEffect } from "react";
-import { 
-    Users, Shield, Zap, Star, Eye, ChevronRight, User, 
-    Search, Filter, Skull, HeartPulse, BrainCircuit, Sparkles 
+import {
+    Users, Shield, Zap, Star, Eye, ChevronRight, User,
+    Search, Filter, Skull, HeartPulse, BrainCircuit, Sparkles
 } from "lucide-react";
 import {
     Radar, RadarChart, PolarGrid, PolarAngleAxis,
@@ -38,21 +38,21 @@ function ActorRadarChart({ traits }: { traits: number[] }) {
     }, [traits]);
 
     return (
-        <div className="h-[220px] w-full mt-4 bg-slate-950/50 rounded-xl p-2 border border-slate-800/50 relative overflow-hidden">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-amber-500/5 to-transparent pointer-events-none" />
+        <div className="h-[220px] w-full mt-4 bg-slate-900/40 rounded-xl p-2 border border-slate-800 relative overflow-hidden">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-cyan-500/5 to-transparent pointer-events-none" />
             <ResponsiveContainer width="100%" height="100%">
                 <RadarChart cx="50%" cy="50%" outerRadius="70%" data={data}>
-                    <PolarGrid stroke="#334155" strokeOpacity={0.4} />
+                    <PolarGrid stroke="#1e293b" strokeOpacity={0.8} />
                     <PolarAngleAxis
                         dataKey="subject"
-                        tick={{ fill: '#64748b', fontSize: 9, fontFamily: 'monospace' }}
+                        tick={{ fill: '#475569', fontSize: 9, fontFamily: 'monospace' }}
                     />
                     <Radar
                         name="Traits"
                         dataKey="A"
-                        stroke="#f59e0b"
+                        stroke="#06b6d4"
                         strokeWidth={2}
-                        fill="#f59e0b"
+                        fill="#06b6d4"
                         fillOpacity={0.2}
                     />
                 </RadarChart>
@@ -63,24 +63,24 @@ function ActorRadarChart({ traits }: { traits: number[] }) {
 
 function ActorBiography({ text }: { text: string }) {
     if (!text) return (
-        <div className="text-slate-500 italic">No records found in the archives...</div>
+        <div className="text-slate-500 italic text-sm">No records found in the archives...</div>
     );
 
     // Regex to capture pattern: " - T<digits>: " or "- T<digits>: "
     // This splits the string but keeps the delimiter parts (T<digits>) in the array
     const parts = text.split(/[-–]\s*T(\d+):/g);
-    
+
     // If no match found (length 1), it's just a normal paragraph
     if (parts.length === 1) {
         return (
-            <div className="text-base text-slate-300 leading-relaxed font-serif whitespace-pre-line">
+            <div className="text-sm text-slate-300 leading-relaxed whitespace-pre-line">
                 {text}
             </div>
         );
     }
 
     const timeline: { tick: string, content: string }[] = [];
-    
+
     // parts[0] is the preamble (text before the first Txx)
     if (parts[0].trim()) {
         timeline.push({ tick: "ORIGIN", content: parts[0].trim() });
@@ -89,11 +89,11 @@ function ActorBiography({ text }: { text: string }) {
     // The split with capturing group (d+) results in: [preamble, tick1, content1, tick2, content2...]
     for (let i = 1; i < parts.length; i += 2) {
         const tickVal = parts[i];       // e.g. "77"
-        const contentVal = parts[i+1];  // e.g. "Rời bỏ chốn cũ..."
-        
+        const contentVal = parts[i + 1];  // e.g. "Rời bỏ chốn cũ..."
+
         if (tickVal && contentVal) {
-            timeline.push({ 
-                tick: `T${tickVal}`, 
+            timeline.push({
+                tick: `T${tickVal}`,
                 content: contentVal.trim().replace(/^[-–]/, '').trim() // Clean up any leading dash residue
             });
         }
@@ -102,13 +102,13 @@ function ActorBiography({ text }: { text: string }) {
     return (
         <div className="space-y-6">
             {timeline.map((entry, idx) => (
-                <div key={idx} className="relative pl-6 border-l-2 border-slate-700/50 hover:border-amber-500 transition-colors group">
-                    <div className="absolute -left-[5px] top-0 w-2.5 h-2.5 rounded-full bg-slate-900 border-2 border-slate-600 group-hover:border-amber-500 group-hover:bg-amber-500/20 transition-all shadow-sm" />
+                <div key={idx} className="relative pl-6 border-l-2 border-slate-700/50 hover:border-cyan-500/50 transition-colors group">
+                    <div className="absolute -left-[5px] top-0 w-2.5 h-2.5 rounded-full bg-slate-900 border-2 border-slate-600 group-hover:border-cyan-400 group-hover:bg-cyan-500/20 transition-all shadow-sm group-hover:shadow-[0_0_8px_rgba(6,182,212,0.6)]" />
                     <div className="flex flex-col gap-1.5">
-                        <span className="text-xs font-mono font-bold text-amber-500/90 uppercase tracking-wider bg-amber-500/5 px-2 py-0.5 rounded w-fit border border-amber-500/10">
+                        <span className="text-[10px] font-mono font-bold text-cyan-400 uppercase tracking-wider bg-cyan-950/30 px-2 py-0.5 rounded w-fit border border-cyan-500/20 shadow-sm">
                             {entry.tick}
                         </span>
-                        <p className="text-lg text-slate-200 leading-relaxed font-serif">
+                        <p className="text-sm text-slate-300 leading-relaxed">
                             {entry.content}
                         </p>
                     </div>
@@ -129,10 +129,10 @@ export function ActorList({ universeId: _unused }: { universeId?: number | null 
     // Filter actors
     const filteredActors = useMemo(() => {
         return actors.filter(actor => {
-            const matchesSearch = actor.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                                  actor.archetype.toLowerCase().includes(searchQuery.toLowerCase());
-            const matchesStatus = filterStatus === "all" 
-                ? true 
+            const matchesSearch = actor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                actor.archetype.toLowerCase().includes(searchQuery.toLowerCase());
+            const matchesStatus = filterStatus === "all"
+                ? true
                 : filterStatus === "alive" ? actor.is_alive : !actor.is_alive;
             return matchesSearch && matchesStatus;
         });
@@ -177,7 +177,7 @@ export function ActorList({ universeId: _unused }: { universeId?: number | null 
                 {/* Search & Filter Header */}
                 <div className="p-4 border-b border-slate-800/50 space-y-3 bg-slate-900/60 backdrop-blur-sm sticky top-0 z-10">
                     <div className="flex items-center gap-2 mb-1">
-                        <Users className="w-4 h-4 text-amber-400" />
+                        <Users className="w-4 h-4 text-cyan-400" />
                         <h3 className="text-sm font-bold text-slate-200 uppercase tracking-wider">
                             Dramatis Personae
                         </h3>
@@ -185,13 +185,13 @@ export function ActorList({ universeId: _unused }: { universeId?: number | null 
                             {filteredActors.length} / {actors.length}
                         </span>
                     </div>
-                    
+
                     <div className="relative">
                         <Search className="absolute left-2.5 top-2.5 w-3.5 h-3.5 text-slate-500" />
-                        <input 
-                            type="text" 
-                            placeholder="Search entities..." 
-                            className="w-full h-9 pl-8 pr-3 bg-slate-950/50 border border-slate-800 rounded-md text-xs text-slate-200 focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/20 transition-all placeholder:text-slate-600"
+                        <input
+                            type="text"
+                            placeholder="Search entities..."
+                            className="w-full h-9 pl-8 pr-3 bg-slate-950/50 border border-slate-800 rounded-md text-xs text-slate-200 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 transition-all placeholder:text-slate-600"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
@@ -202,11 +202,10 @@ export function ActorList({ universeId: _unused }: { universeId?: number | null 
                             <button
                                 key={status}
                                 onClick={() => setFilterStatus(status)}
-                                className={`flex-1 py-1 text-[10px] uppercase font-medium rounded transition-all ${
-                                    filterStatus === status 
-                                    ? "bg-slate-800 text-slate-200 shadow-sm" 
+                                className={`flex-1 py-1 text-[10px] uppercase font-medium rounded transition-all ${filterStatus === status
+                                    ? "bg-slate-800 text-slate-200 shadow-sm"
                                     : "text-slate-500 hover:text-slate-300 hover:bg-slate-800/50"
-                                }`}
+                                    }`}
                             >
                                 {status}
                             </button>
@@ -217,23 +216,23 @@ export function ActorList({ universeId: _unused }: { universeId?: number | null 
                 {/* Scrollable List */}
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-1">
                     {filteredActors.map(actor => (
-                        <div 
+                        <div
                             key={actor.id}
                             onClick={() => setSelectedActorId(actor.id)}
                             className={`
                                 group flex items-center gap-3 p-3 rounded-lg cursor-pointer border transition-all duration-200
-                                ${selectedActorId === actor.id 
-                                    ? "bg-amber-500/10 border-amber-500/30 shadow-[inset_0_0_10px_rgba(245,158,11,0.1)]" 
+                                ${selectedActorId === actor.id
+                                    ? "bg-cyan-500/10 border-cyan-500/30 shadow-[inset_0_0_10px_rgba(6,182,212,0.1)]"
                                     : "bg-transparent border-transparent hover:bg-slate-800/40 hover:border-slate-800"
                                 }
                             `}
                         >
                             <div className={`
                                 w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 relative overflow-hidden border
-                                ${actor.is_alive 
-                                    ? "bg-slate-800 border-slate-700 text-slate-300 group-hover:border-slate-500" 
+                                ${actor.is_alive
+                                    ? "bg-slate-800 border-slate-700 text-slate-300 group-hover:border-slate-500"
                                     : "bg-slate-900 border-slate-800 text-slate-600 grayscale"}
-                                ${selectedActorId === actor.id && actor.is_alive ? "border-amber-500/50 text-amber-400" : ""}
+                                ${selectedActorId === actor.id && actor.is_alive ? "border-cyan-500/50 text-cyan-400" : ""}
                             `}>
                                 <User className="w-5 h-5" />
                                 {!actor.is_alive && (
@@ -242,10 +241,10 @@ export function ActorList({ universeId: _unused }: { universeId?: number | null 
                                     </div>
                                 )}
                             </div>
-                            
+
                             <div className="flex-1 min-w-0">
                                 <div className="flex justify-between items-baseline">
-                                    <div className={`text-sm font-medium truncate ${selectedActorId === actor.id ? "text-amber-100" : "text-slate-300 group-hover:text-slate-200"}`}>
+                                    <div className={`text-sm font-medium truncate ${selectedActorId === actor.id ? "text-cyan-100" : "text-slate-300 group-hover:text-slate-200"}`}>
                                         {actor.name}
                                     </div>
                                     {!actor.is_alive && <span className="text-[9px] text-red-500/60 font-mono ml-2">†</span>}
@@ -255,18 +254,18 @@ export function ActorList({ universeId: _unused }: { universeId?: number | null 
                                         {actor.archetype}
                                     </div>
                                     <div className="flex items-center gap-1 text-[10px] font-mono text-slate-600">
-                                        <Star className="w-2.5 h-2.5 text-amber-500/40" />
+                                        <Star className="w-2.5 h-2.5 text-cyan-500/40" />
                                         <span>{(actor.metrics?.influence ?? 0).toFixed(1)}</span>
                                     </div>
                                 </div>
                             </div>
-                            
+
                             {selectedActorId === actor.id && (
-                                <ChevronRight className="w-4 h-4 text-amber-500/50 animate-pulse" />
+                                <ChevronRight className="w-4 h-4 text-cyan-500/50 animate-pulse" />
                             )}
                         </div>
                     ))}
-                    
+
                     {filteredActors.length === 0 && (
                         <div className="text-center py-8 text-xs text-slate-600 italic">
                             No entities found matching criteria.
@@ -281,32 +280,31 @@ export function ActorList({ universeId: _unused }: { universeId?: number | null 
                     <>
                         {/* Profile Header */}
                         <div className="relative h-48 bg-slate-900 overflow-hidden shrink-0">
-                            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-amber-900/20 via-slate-900 to-slate-950" />
-                            <div className="absolute inset-0 opacity-30" 
-                                 style={{ backgroundImage: 'url("/patterns/grid.svg")', backgroundSize: '30px 30px' }} 
+                            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-cyan-900/20 via-slate-900 to-slate-950" />
+                            <div className="absolute inset-0 opacity-30"
+                                style={{ backgroundImage: 'url("/patterns/grid.svg")', backgroundSize: '30px 30px' }}
                             />
-                            
+
                             <div className="absolute bottom-0 left-0 w-full p-6 bg-gradient-to-t from-slate-950 via-slate-950/80 to-transparent flex items-end gap-6">
                                 <div className={`
                                     w-24 h-24 rounded-2xl border-2 shadow-2xl flex items-center justify-center relative bg-slate-900
-                                    ${selectedActor.is_alive ? "border-amber-500/30 shadow-amber-900/20" : "border-slate-800 grayscale opacity-80"}
+                                    ${selectedActor.is_alive ? "border-cyan-500/30 shadow-cyan-900/20" : "border-slate-800 grayscale opacity-80"}
                                 `}>
-                                    <User className={`w-12 h-12 ${selectedActor.is_alive ? "text-amber-400" : "text-slate-600"}`} />
-                                    <div className={`absolute -bottom-3 px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-widest border shadow-lg ${
-                                        selectedActor.is_alive 
-                                        ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30" 
+                                    <User className={`w-12 h-12 ${selectedActor.is_alive ? "text-cyan-400" : "text-slate-600"}`} />
+                                    <div className={`absolute -bottom-3 px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-widest border shadow-lg ${selectedActor.is_alive
+                                        ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
                                         : "bg-red-500/10 text-red-400 border-red-500/30"
-                                    }`}>
+                                        }`}>
                                         {selectedActor.is_alive ? "Alive" : "Deceased"}
                                     </div>
                                 </div>
-                                
+
                                 <div className="mb-1 flex-1">
                                     <h1 className="text-3xl font-bold text-white tracking-tight drop-shadow-md">
                                         {selectedActor.name}
                                     </h1>
                                     <div className="flex items-center gap-3 mt-2">
-                                        <span className="px-2 py-0.5 bg-amber-500/10 text-amber-300 text-xs font-medium uppercase tracking-wider rounded border border-amber-500/20">
+                                        <span className="px-2 py-0.5 bg-cyan-500/10 text-cyan-300 text-xs font-medium uppercase tracking-wider rounded border border-cyan-500/20">
                                             {selectedActor.archetype}
                                         </span>
                                         <div className="flex items-center gap-1.5 text-slate-400 text-xs font-mono">
@@ -326,11 +324,11 @@ export function ActorList({ universeId: _unused }: { universeId?: number | null 
                                 <div className="space-y-8">
                                     <div className="space-y-3">
                                         <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-300 uppercase tracking-widest">
-                                            <Sparkles className="w-4 h-4 text-purple-400" /> 
-                                            Biography
+                                            <Sparkles className="w-4 h-4 text-cyan-400" />
+                                            Biên Niên Sử (Chronicle)
                                         </h3>
                                         <div className="p-6 rounded-xl bg-slate-900/40 border border-slate-800/50 shadow-inner relative overflow-hidden">
-                                            <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-amber-500/50 to-transparent" />
+                                            <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-cyan-500/50 to-transparent" />
                                             <ActorBiography text={selectedActor.biography} />
                                         </div>
                                     </div>
@@ -355,20 +353,20 @@ export function ActorList({ universeId: _unused }: { universeId?: number | null 
                                 <div className="space-y-3">
                                     <div className="flex items-center justify-between">
                                         <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-300 uppercase tracking-widest">
-                                            <Zap className="w-4 h-4 text-amber-400" /> 
+                                            <Zap className="w-4 h-4 text-cyan-400" />
                                             Psychometric Profile
                                         </h3>
                                         <span className="text-[10px] text-slate-500 font-mono border border-slate-800 rounded px-1.5">17-DIMENSION SCAN</span>
                                     </div>
                                     <ActorRadarChart traits={selectedActor.traits} />
-                                    
+
                                     <div className="grid grid-cols-2 gap-2 mt-4">
                                         {TRAIT_DIMENSIONS.slice(0, 6).map((trait, i) => (
                                             <div key={trait} className="flex justify-between items-center px-3 py-1.5 rounded bg-slate-900/30 border border-slate-800/30">
                                                 <span className="text-[10px] text-slate-500 uppercase font-mono">{trait}</span>
                                                 <div className="w-16 h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                                                    <div 
-                                                        className="h-full bg-amber-500/50" 
+                                                    <div
+                                                        className="h-full bg-cyan-500/50"
                                                         style={{ width: `${(selectedActor.traits[i] ?? 0) * 100}%` }}
                                                     />
                                                 </div>

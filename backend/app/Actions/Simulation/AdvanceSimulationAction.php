@@ -69,8 +69,8 @@ class AdvanceSimulationAction
     {
         $universe = $this->universeRepository->find($universeId);
 
-        if (!$universe || $universe->status === 'halted') {
-            return ['ok' => false, 'error_message' => 'Universe not found or is halted'];
+        if (!$universe || $universe->status === 'halted' || $universe->status === 'restarting') {
+            return ['ok' => false, 'error_message' => 'Universe not found, is halted, or is restarting'];
         }
         if (!$universe->world) {
             return ['ok' => false, 'error_message' => 'Universe has no world'];
@@ -78,7 +78,10 @@ class AdvanceSimulationAction
 
         $stateInput = $this->prepareEngineStateInput($universe);
         $worldConfig = $this->prepareWorldConfig($universe);
+        file_put_contents('/tmp/state_input.json', json_encode($stateInput));
+        dump('Calling Rust Engine...');
         $response = $this->engine->advance($universeId, $ticks, $stateInput, $worldConfig);
+        dump('Engine Returned!');
 
         if (! ($response['ok'] ?? false)) {
             return $response;
@@ -202,7 +205,7 @@ class AdvanceSimulationAction
                 if (!empty($uvec['zone_fields'])) {
                     $activeInstitutions = \App\Models\InstitutionalEntity::where('universe_id', $universe->id)
                         ->whereNull('collapsed_at_tick')
-                        ->get(['zone_id', 'entity_type'])
+                        ->get(['id', 'entity_type'])
                         ->toArray();
                     
                     $updatedZones = $this->diffusionEngine->diffuse($uvec['zone_fields'], $activeInstitutions);
@@ -332,9 +335,28 @@ class AdvanceSimulationAction
             ? json_decode($snapshotData['state_vector'], true) ?? []
             : ($snapshotData['state_vector'] ?? []);
 
+        // Rust engine returns `state_vector` simply as the array of zones.
+        // If it looks like a list of zones, wrap it.
+        if (!isset($stateVector['zones']) && isset($stateVector[0]['state'])) {
+            $stateVector = ['zones' => $stateVector];
+        }
+
+        // Restore universe metrics back into state_vector so prepareEngineStateInput finds them on the next tick
+        $stateVector['entropy'] = (float)($snapshotData['entropy'] ?? 0.0);
+        $stateVector['global_entropy'] = (float)($snapshotData['entropy'] ?? 0.0);
+        $stateVector['sci'] = (float)($snapshotData['sci'] ?? 1.0);
+        $stateVector['instability_gradient'] = (float)($snapshotData['instability_gradient'] ?? 0.0);
+        
+        $metrics = is_string($snapshotData['metrics'] ?? null)
+            ? json_decode($snapshotData['metrics'], true) ?? []
+            : ($snapshotData['metrics'] ?? []);
+            
+        $stateVector['scars'] = $metrics['scars'] ?? ($stateVector['scars'] ?? []);
+
         $this->universeRepository->update($universe->id, [
             'current_tick' => $snapshotData['tick'],
             'state_vector' => $stateVector,
+            'entropy' => $stateVector['entropy']
         ]);
         $universe->refresh();
     }
@@ -350,6 +372,13 @@ class AdvanceSimulationAction
         if (isset($vec['zones'])) {
             $zones = $vec['zones'];
             $globalEntropy = $vec['global_entropy'] ?? $globalEntropy;
+
+            // Ensure structured_mass exists for Rust parser
+            foreach ($zones as &$zone) {
+                if (!isset($zone['state']['structured_mass'])) {
+                    $zone['state']['structured_mass'] = 50.0;
+                }
+            }
         }
 
         $institutions = \App\Models\InstitutionalEntity::where('universe_id', $universe->id)
@@ -380,40 +409,52 @@ class AdvanceSimulationAction
     {
         $world = $universe->world;
         return [
-            'world_id' => (int) $world->id,
-            'origin' => (string) ($world->current_origin ?? $world->origin ?? 'generic'),
-            'axiom' => $world->evolution_genome ?? [],
-            'world_seed' => $world->world_seed ?? [],
-            'genome' => $universe->kernel_genome ?? [],
+            'world_id' => $world->id,
+            'origin' => $world->origin ?? 'generic',
+            'axiom' => $world->axiom,
+            'world_seed' => $world->world_seed,
+            'genome' => empty($universe->kernel_genome) ? null : $universe->kernel_genome,
         ];
     }
 
-    /**
-     * Đảm bảo state_vector có ít nhất một zone khi engine không trả về.
-     * Stub và một số engine không tạo zones → topology/civilization map trống sau nhiều tick.
-     */
     private function ensureStateVectorHasZones(array &$snapshotData): void
     {
         $raw = $snapshotData['state_vector'] ?? null;
         $stateVector = is_string($raw) ? (json_decode($raw, true) ?? []) : (is_array($raw) ? $raw : []);
-        $zones = $stateVector['zones'] ?? [];
-        if (is_array($zones) && count($zones) > 0) {
+        
+        // If it's already properly formatted
+        if (isset($stateVector['zones']) && is_array($stateVector['zones']) && count($stateVector['zones']) > 0) {
             return;
         }
+
+        // If Rust returned a flat array of zones (e.g. index 0 has 'state')
+        if (isset($stateVector[0]['state'])) {
+            // Wrap it correctly inside 'zones'
+            $snapshotData['state_vector'] = ['zones' => $stateVector];
+            return;
+        }
+
+        // Otherwise, it is completely empty. We bootstrap a default zone.
         $tick = (int) ($snapshotData['tick'] ?? 0);
         $entropy = (float) ($snapshotData['entropy'] ?? 0.3);
         $order = 1.0 - $entropy * 0.5;
+        
         $stateVector['zones'] = [
             [
                 'id' => 0,
                 'state' => [
-                    'entropy' => $entropy,
+                    'entropy' => $entropy > 0.0 ? $entropy : 0.5,
                     'order' => max(0, min(1, $order)),
-                    'base_mass' => 100,
+                    'base_mass' => 100.0,
+                    'structured_mass' => 50.0,
+                    'active_materials' => [],
+                    'civ_fields' => [],
+                    'cultural' => []
                 ],
                 'neighbors' => [],
             ],
         ];
+        
         $snapshotData['state_vector'] = $stateVector;
     }
 }

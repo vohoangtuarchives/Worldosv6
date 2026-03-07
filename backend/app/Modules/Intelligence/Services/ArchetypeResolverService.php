@@ -17,14 +17,19 @@ class ArchetypeResolverService
 
     /**
      * Resolves an archetype probabilistically from the pool.
-     * Replaces the hardcoded "Ẩn Sĩ" logic.
+     * Accepts an optional deterministic RNG to preserve reproducibility.
      * 
      * @param array $worldAxiom The World rules axiom JSON
      * @param float $worldEntropy The current entropy of the Universe
      * @param float $worldStability The current stability / structure of the Universe
+     * @param \App\Modules\Intelligence\Domain\Rng\SimulationRng|null $rng Deterministic RNG
      */
-    public function resolve(array $worldAxiom, float $worldEntropy = 0.5, float $worldStability = 0.5): string
-    {
+    public function resolve(
+        array $worldAxiom,
+        float $worldEntropy = 0.5,
+        float $worldStability = 0.5,
+        ?\App\Modules\Intelligence\Domain\Rng\SimulationRng $rng = null
+    ): string {
         $pool = self::UNIVERSAL_POOL;
 
         // Conditional additions
@@ -70,21 +75,27 @@ class ArchetypeResolverService
              if (isset($pool['Lãnh Đạo'])) $pool['Lãnh Đạo'] *= 2;
         }
 
-        return $this->selectFromWeightedPool($pool);
+        return $this->selectFromWeightedPool($pool, $rng);
     }
 
     /**
-     * Select a random key from a weighted array
+     * Select a random key from a weighted array.
+     * Uses deterministic SimulationRng when available, falls back to rand().
      */
-    private function selectFromWeightedPool(array $pool): string
-    {
+    private function selectFromWeightedPool(
+        array $pool,
+        ?\App\Modules\Intelligence\Domain\Rng\SimulationRng $rng = null
+    ): string {
         $totalWeight = array_sum($pool);
-        $rand = (rand(0, 10000) / 10000) * $totalWeight; // Note: Use SimulationRng in engine context, ok here for initial spawn.
+
+        $randValue = $rng
+            ? $rng->nextFloat() * $totalWeight
+            : (rand(0, 10000) / 10000) * $totalWeight;
         
         $cumulative = 0;
         foreach ($pool as $archetype => $weight) {
             $cumulative += $weight;
-            if ($rand <= $cumulative) {
+            if ($randValue <= $cumulative) {
                 return $archetype;
             }
         }

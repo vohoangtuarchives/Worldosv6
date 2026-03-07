@@ -14,14 +14,19 @@ class Technocrat extends BaseArchetype
         return 'Technocrat';
     }
 
+    public function getAttractorVector(): array
+    {
+        return [
+            'technology' =>  0.9,
+            'stability'  =>  0.7,
+            'knowledge'  =>  0.5,
+            'tradition'  => -0.2,
+        ];
+    }
+
     public function isEligible(World $world): bool
     {
         return ($world->axiom['material_organization'] ?? false) === true;
-    }
-
-    public function getBaseUtility(float $stability): float
-    {
-        return 0.6 * $stability;
     }
 
     public function applyImpact(Universe $universe, UniverseSnapshot $snapshot, array $winnerAgent): array

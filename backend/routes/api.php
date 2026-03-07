@@ -483,6 +483,18 @@ Route::middleware('auth:sanctum')->prefix('worldos')->group(function () {
     })->name('worldos.observer.stream');
 
     // =========================================================================
+    // Civilization Observatory Dashboard (Phase 7)
+    // =========================================================================
+    Route::prefix('lab/dashboard')->group(function () {
+        Route::get('state', [\App\Modules\Intelligence\Http\Controllers\DashboardController::class, 'state'])->name('worldos.lab.dashboard.state');
+        Route::get('attractors', [\App\Modules\Intelligence\Http\Controllers\DashboardController::class, 'attractors'])->name('worldos.lab.dashboard.attractors');
+        Route::get('evolution', [\App\Modules\Intelligence\Http\Controllers\DashboardController::class, 'evolution'])->name('worldos.lab.dashboard.evolution');
+        Route::get('risks', [\App\Modules\Intelligence\Http\Controllers\DashboardController::class, 'risks'])->name('worldos.lab.dashboard.risks');
+        Route::get('intelligence', [\App\Modules\Intelligence\Http\Controllers\DashboardController::class, 'intelligence'])->name('worldos.lab.dashboard.intelligence');
+        Route::post('intervene', [\App\Modules\Intelligence\Http\Controllers\DashboardController::class, 'intervene'])->name('worldos.lab.dashboard.intervene');
+    });
+
+    // =========================================================================
     // IP Factory Pipeline
     // =========================================================================
     Route::prefix('ip-factory')->group(function () {

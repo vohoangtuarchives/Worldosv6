@@ -506,4 +506,176 @@ mod tests {
         assert!(delta_two > delta_one, "two same-slug materials should produce larger entropy delta (1.5x resonance)");
         assert!(delta_two >= 1.4 * delta_one, "resonance multiplier should be ~1.5x for >=2 same slug");
     }
+
+    #[test]
+    fn test_tick_determinism() {
+        let world = WorldConfig { world_id: 1, axiom: None, world_seed: None, origin: String::new(), genome: None };
+        let mut state_a = UniverseState::with_one_zone(1, 100.0);
+        state_a.zones[0].state.entropy = 0.5;
+        state_a.zones[0].state.knowledge_frontier = 10.0;
+        
+        let mut state_b = state_a.clone();
+        
+        state_a.tick(&world);
+        state_b.tick(&world);
+        
+        // Assert identical outcomes
+        assert_eq!(state_a.global_entropy, state_b.global_entropy, "Tick must be deterministic for entropy");
+        assert_eq!(state_a.sci, state_b.sci, "Tick must be deterministic for SCI");
+        assert_eq!(state_a.zones[0].state.embodied_knowledge, state_b.zones[0].state.embodied_knowledge);
+    }
+
+    #[test]
+    fn test_boundedness_invariants() {
+        let world = WorldConfig { world_id: 1, axiom: None, world_seed: None, origin: String::new(), genome: None };
+        let mut state = UniverseState::with_one_zone(1, 100.0);
+        
+        // Inject extreme out-of-bounds values
+        state.zones[0].state.entropy = 100.0; // very high
+        state.zones[0].state.material_stress = -50.0; // very low
+        state.zones[0].state.knowledge_frontier = 5000.0;
+        state.zones[0].state.tech_ceiling = 10.0; // frontier > ceiling
+        
+        state.tick(&world);
+        
+        let z = &state.zones[0].state;
+        assert!(z.material_stress >= 0.0 && z.material_stress <= 1.0, "Material stress must clamp 0-1");
+        assert!(state.sci >= 0.0 && state.sci <= 1.0, "Global SCI must clamp 0-1");
+        assert!(z.knowledge_frontier <= z.tech_ceiling, "Knowledge frontier cannot exceed tech ceiling");
+        assert!(z.civ_fields.power >= 0.0 && z.civ_fields.power <= 1.0, "Power field must clamp 0-1");
+        assert!(z.civ_fields.survival >= 0.0 && z.civ_fields.survival <= 1.0, "Survival field must clamp 0-1");
+    }
+
+    /// Exhaustive multi-tick boundedness: run 100 ticks with extreme initial conditions
+    /// and verify that ALL state variables remain within valid bounds on every tick.
+    #[test]
+    fn test_exhaustive_multi_tick_boundedness() {
+        let world = WorldConfig { world_id: 1, axiom: None, world_seed: None, origin: String::new(), genome: None };
+        let mut state = UniverseState::with_one_zone(1, 100.0);
+
+        // Start with extreme out-of-bounds values
+        state.zones[0].state.entropy = 999.0;
+        state.zones[0].state.material_stress = -100.0;
+        state.zones[0].state.knowledge_frontier = 50000.0;
+        state.zones[0].state.tech_ceiling = 10.0;
+        state.zones[0].state.trauma = 50.0;
+        state.zones[0].state.inequality = -20.0;
+
+        for tick_num in 0..100 {
+            state.tick(&world);
+            let z = &state.zones[0].state;
+
+            assert!(z.material_stress >= 0.0 && z.material_stress <= 1.0,
+                "Tick {}: material_stress={} out of [0,1]", tick_num, z.material_stress);
+            assert!(z.entropy >= 0.0,
+                "Tick {}: entropy={} must be >= 0", tick_num, z.entropy);
+            assert!(state.sci >= 0.0 && state.sci <= 1.0,
+                "Tick {}: SCI={} out of [0,1]", tick_num, state.sci);
+            assert!(z.knowledge_frontier <= z.tech_ceiling,
+                "Tick {}: frontier={} > ceiling={}", tick_num, z.knowledge_frontier, z.tech_ceiling);
+            assert!(z.civ_fields.power >= 0.0 && z.civ_fields.power <= 1.0,
+                "Tick {}: power={} out of [0,1]", tick_num, z.civ_fields.power);
+            assert!(z.civ_fields.survival >= 0.0 && z.civ_fields.survival <= 1.0,
+                "Tick {}: survival={} out of [0,1]", tick_num, z.civ_fields.survival);
+            assert!(z.civ_fields.knowledge >= 0.0 && z.civ_fields.knowledge <= 1.0,
+                "Tick {}: knowledge={} out of [0,1]", tick_num, z.civ_fields.knowledge);
+            assert!(z.civ_fields.meaning >= 0.0 && z.civ_fields.meaning <= 1.0,
+                "Tick {}: meaning={} out of [0,1]", tick_num, z.civ_fields.meaning);
+        }
+    }
+
+    /// Snapshot reproducibility: two identical states must produce byte-identical snapshots.
+    #[test]
+    fn test_snapshot_reproducibility() {
+        let world = WorldConfig { world_id: 1, axiom: None, world_seed: None, origin: String::new(), genome: None };
+
+        let mut state_a = UniverseState::with_one_zone(1, 100.0);
+        state_a.zones[0].state.entropy = 0.6;
+        state_a.zones[0].state.knowledge_frontier = 5.0;
+        let mut state_b = state_a.clone();
+
+        // Run both for 10 ticks
+        for _ in 0..10 {
+            state_a.tick(&world);
+            state_b.tick(&world);
+        }
+
+        let snap_a = state_a.to_snapshot();
+        let snap_b = state_b.to_snapshot();
+
+        // Serialise and compare byte-for-byte
+        let json_a = serde_json::to_string(&snap_a).unwrap();
+        let json_b = serde_json::to_string(&snap_b).unwrap();
+        assert_eq!(json_a, json_b, "Identical initial states must produce identical snapshots after N ticks");
+
+        // Also verify individual fields
+        assert_eq!(snap_a.tick, snap_b.tick);
+        assert_eq!(snap_a.entropy, snap_b.entropy);
+        assert_eq!(snap_a.stability_index, snap_b.stability_index);
+    }
+
+    /// Multi-zone determinism: a universe with 3 zones must be deterministic.
+    #[test]
+    fn test_multi_zone_determinism() {
+        let world = WorldConfig { world_id: 1, axiom: None, world_seed: None, origin: String::new(), genome: None };
+
+        let build = || {
+            let mut s = UniverseState::new(1);
+            for i in 0..3 {
+                let mut z = ZoneState::new(100.0);
+                z.entropy = 0.3 + i as f64 * 0.1;
+                z.knowledge_frontier = 5.0;
+                z.update_material_stress();
+                s.zones.push(ZoneStateSerial { id: i, state: z, neighbors: vec![] });
+            }
+            // Set neighbors for diffusion
+            s.zones[0].neighbors = vec![1];
+            s.zones[1].neighbors = vec![0, 2];
+            s.zones[2].neighbors = vec![1];
+            s
+        };
+
+        let mut a = build();
+        let mut b = build();
+
+        for _ in 0..20 {
+            a.tick(&world);
+            b.tick(&world);
+        }
+
+        assert_eq!(a.global_entropy, b.global_entropy, "Multi-zone global_entropy must be deterministic");
+        assert_eq!(a.sci, b.sci, "Multi-zone SCI must be deterministic");
+        for i in 0..3 {
+            assert_eq!(a.zones[i].state.entropy, b.zones[i].state.entropy,
+                "Zone {} entropy mismatch", i);
+            assert_eq!(a.zones[i].state.knowledge_frontier, b.zones[i].state.knowledge_frontier,
+                "Zone {} knowledge_frontier mismatch", i);
+        }
+    }
+
+    /// Deity interventions must not break boundedness invariants.
+    #[test]
+    fn test_deity_intervention_boundedness() {
+        let mut state = UniverseState::with_one_zone(1, 100.0);
+
+        // Apply many interventions of different types in succession
+        let trait_indices = [0, 1, 2, 4, 5, 8, 11, 14, 99];
+        for _ in 0..50 {
+            for &ti in &trait_indices {
+                state.perform_deity_intervention(0, ti);
+            }
+        }
+
+        let z = &state.zones[0].state;
+        assert!(z.entropy >= 0.0 && z.entropy <= 1.0,
+            "After 450 deity interventions: entropy={} out of [0,1]", z.entropy);
+        assert!(z.trauma >= 0.0 && z.trauma <= 1.0,
+            "After 450 deity interventions: trauma={} out of [0,1]", z.trauma);
+        assert!(z.embodied_knowledge >= 0.0 && z.embodied_knowledge <= 1.0,
+            "After 450 deity interventions: embodied_knowledge={} out of [0,1]", z.embodied_knowledge);
+        assert!(z.knowledge_frontier <= z.tech_ceiling,
+            "After deity interventions: frontier={} > ceiling={}", z.knowledge_frontier, z.tech_ceiling);
+        assert!(z.material_stress >= 0.0 && z.material_stress <= 1.0,
+            "After deity interventions: material_stress={} out of [0,1]", z.material_stress);
+    }
 }

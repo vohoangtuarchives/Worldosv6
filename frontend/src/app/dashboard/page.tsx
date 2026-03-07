@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useSimulation, SimulationProvider } from "@/context/SimulationContext";
 import { MetricGrid } from "@/components/Simulation/MetricGrid";
 import { UniverseTimelineChart } from "@/components/Simulation/UniverseTimelineChart";
@@ -9,6 +9,12 @@ import { EventTimelineStrip } from "@/components/Simulation/EventTimelineStrip";
 import { CollapseMonitor } from "@/components/Simulation/CollapseMonitor";
 import { AttractorPhaseSpaceMap } from "@/components/Simulation/AttractorPhaseSpaceMap";
 import { AlertTriangle, Loader2 } from "lucide-react";
+
+import MacroStateMonitor from "@/components/dashboard/MacroStateMonitor";
+import AttractorMap from "@/components/dashboard/AttractorMap";
+import RiskAlerts from "@/components/dashboard/RiskAlerts";
+import IntelligenceExplosion from "@/components/dashboard/IntelligenceExplosion";
+import EvolutionTree from "@/components/dashboard/EvolutionTree";
 
 export default function DashboardPage() {
   return (
@@ -29,6 +35,8 @@ function ObservatoryDashboard() {
     error: simError,
   } = useSimulation();
 
+  const [activeTab, setActiveTab] = useState<"micro" | "macro">("micro");
+
   useEffect(() => {
     if (!universeId && universes.length > 0) {
       setUniverseId(universes[0].id);
@@ -46,6 +54,20 @@ function ObservatoryDashboard() {
           <h1 className="text-xl font-bold text-slate-100 tracking-tight">
             Civilization Observatory
           </h1>
+          <div className="flex bg-slate-900/50 p-1 rounded-lg border border-slate-800">
+            <button
+              onClick={() => setActiveTab("micro")}
+              className={`px-4 py-1.5 text-sm rounded-md transition-colors ${activeTab === "micro" ? "bg-slate-700 text-white" : "text-slate-400 hover:text-slate-200"}`}
+            >
+              Micro (Universe)
+            </button>
+            <button
+              onClick={() => setActiveTab("macro")}
+              className={`px-4 py-1.5 text-sm rounded-md transition-colors ${activeTab === "macro" ? "bg-slate-700 text-white" : "text-slate-400 hover:text-slate-200"}`}
+            >
+              Macro (Laboratory)
+            </button>
+          </div>
           <div className="flex items-center gap-2">
             <span className="text-xs text-slate-500 font-mono">
               Universe {universeId ?? "—"}
@@ -55,8 +77,8 @@ function ObservatoryDashboard() {
               disabled={isProcessing}
               className="rounded-md border border-slate-700 bg-slate-800/60 px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-700/60 disabled:opacity-50 flex items-center gap-2"
             >
-              {isProcessing && <Loader2 className="w-4 h-4 animate-spin shrink-0" />}
-              <span>Refresh</span>
+              {isProcessing ? (<Loader2 className="w-4 h-4 animate-spin shrink-0" />) : (<span>Refresh</span>)}
+
             </button>
           </div>
         </header>
@@ -72,7 +94,7 @@ function ObservatoryDashboard() {
           <div className="rounded-lg border border-slate-700 bg-slate-900/50 p-12 text-center text-slate-500">
             Chọn universe từ dropdown trên header để xem observatory.
           </div>
-        ) : (
+        ) : activeTab === "micro" ? (
           <>
             <p className="text-[10px] text-slate-500">
               Cuộn xuống để xem: Phase space, Civilization map, Event timeline, Collapse monitor.
@@ -125,6 +147,24 @@ function ObservatoryDashboard() {
               <CollapseMonitor universeId={universeId} />
             </section>
           </>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="lg:col-span-2 row-span-2 min-h-[400px]">
+              <MacroStateMonitor />
+            </div>
+            <div className="lg:col-span-1 min-h-[350px]">
+              <RiskAlerts />
+            </div>
+            <div className="lg:col-span-1 min-h-[350px]">
+              <AttractorMap />
+            </div>
+            <div className="lg:col-span-1 min-h-[350px]">
+              <EvolutionTree />
+            </div>
+            <div className="lg:col-span-1 min-h-[350px]">
+              <IntelligenceExplosion />
+            </div>
+          </div>
         )}
       </div>
     </div>

@@ -10,6 +10,10 @@ service SimulationEngine {
   rpc Advance(AdvanceRequest) returns (AdvanceResponse);
   rpc Merge(MergeRequest) returns (MergeResponse);
   rpc Observe(ObserveRequest) returns (ObserveResponse);
+  // Batch: run N simulations in a single call (for evolution, meta-learning, escape tests)
+  rpc BatchAdvance(BatchAdvanceRequest) returns (BatchAdvanceResponse);
+  // Analysis: recurrence matrix, Lyapunov estimation, attractor detection
+  rpc AnalyzeTrajectory(TrajectoryAnalysisRequest) returns (TrajectoryAnalysisResponse);
 }
 
 message ObserveRequest {
@@ -77,3 +81,49 @@ message UniverseSnapshot {
   double sci = 7;
   double instability_gradient = 8;
 }
+
+// ═══════════════════════════════════════════════════════
+// BatchAdvance: Run N independent simulations in 1 call
+// Used by: FitnessEvaluator, MetaLearningEngine, DarkAttractorDetector, FutureSimulator
+// ═══════════════════════════════════════════════════════
+
+message BatchAdvanceRequest {
+  repeated AdvanceRequest requests = 1;
+}
+
+message BatchAdvanceResponse {
+  repeated AdvanceResponse responses = 1;
+}
+
+// ═══════════════════════════════════════════════════════
+// TrajectoryAnalysis: Detect strange attractors via recurrence analysis
+// Used by: StrangeAttractorDetector
+// ═══════════════════════════════════════════════════════
+
+message TrajectoryPoint {
+  uint64 tick = 1;
+  repeated double state = 2;  // flattened state vector (selected dimensions)
+}
+
+message TrajectoryAnalysisRequest {
+  repeated TrajectoryPoint points = 1;
+  double recurrence_threshold = 2;  // distance threshold for recurrence (default 0.1)
+}
+
+message TrajectoryAnalysisResponse {
+  bool is_bounded = 1;              // trajectory stays within finite region
+  bool is_recurrent = 2;            // has structured recurrence patterns
+  double recurrence_rate = 3;       // % of R(i,j) pairs below threshold
+  double max_lyapunov_estimate = 4; // positive = chaotic, negative = stable
+  double trajectory_variance = 5;   // overall variance (0 = converged)
+  repeated double basin_center = 6; // mean position in phase space
+  double basin_radius = 7;          // max distance from center
+  repeated RegimeTransition regime_transitions = 8;
+}
+
+message RegimeTransition {
+  uint64 from_tick = 1;
+  uint64 to_tick = 2;
+  double distance = 3;  // how far the jump was
+}
+

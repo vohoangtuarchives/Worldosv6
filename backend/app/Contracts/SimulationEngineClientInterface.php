@@ -23,4 +23,21 @@ interface SimulationEngineClientInterface
      * Merge two universes into one.
      */
     public function merge(string $stateA, string $stateB): array;
+
+    /**
+     * Run N simulations in a single call.
+     *
+     * @param  array  $requests  Array of advance requests.
+     * @return array{responses: array}
+     */
+    public function batchAdvance(array $requests): array;
+
+    /**
+     * Analyze a trajectory (recurrence matrix, Lyapunov, etc.)
+     *
+     * @param  array  $points  Array of {tick, state} points.
+     * @param  float  $threshold  Recurrence threshold (default 0.1).
+     * @return array{is_strange_attractor: bool, is_bounded: bool, recurrence_rate: float, max_lyapunov_estimate: float, trajectory_variance: float, basin_center: array, basin_radius: float, regime_transitions: array}
+     */
+    public function analyzeTrajectory(array $points, float $threshold = 0.1): array;
 }

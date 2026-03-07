@@ -14,14 +14,19 @@ class RogueAI extends BaseArchetype
         return 'RogueAI';
     }
 
-    public function isEligible(World $world): bool
+    public function getAttractorVector(): array
     {
-        return ($world->current_genre === 'cyberpunk' || $world->current_genre === 'urban');
+        return [
+            'technology'    =>  0.8,
+            'chaos'         =>  0.9,
+            'stability'     => -0.7,
+            'ai_dependency' =>  0.6,
+        ];
     }
 
-    public function getBaseUtility(float $stability): float
+    public function isEligible(World $world): bool
     {
-        return 0.8 * (1 - $stability);
+        return ($world->axiom['tech_level'] ?? 1) >= 5;
     }
 
     public function applyImpact(Universe $universe, UniverseSnapshot $snapshot, array $winnerAgent): array

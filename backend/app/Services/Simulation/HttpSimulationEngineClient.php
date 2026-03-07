@@ -111,4 +111,68 @@ class HttpSimulationEngineClient implements SimulationEngineClientInterface
             'error_message' => $data['error_message'] ?? '',
         ];
     }
+
+    public function batchAdvance(array $requests): array
+    {
+        $url = rtrim($this->baseUrl, '/').'/batch-advance';
+        $payload = ['requests' => $requests];
+
+        try {
+            $response = Http::timeout(120)->post($url, $payload);
+        } catch (\Throwable $e) {
+            return ['responses' => [], 'error_message' => $e->getMessage()];
+        }
+
+        if (!$response->successful()) {
+            return ['responses' => [], 'error_message' => $response->body() ?: 'HTTP '.$response->status()];
+        }
+
+        $data = $response->json();
+        $responses = [];
+
+        foreach (($data['responses'] ?? []) as $res) {
+            $snapshotData = $res['snapshot'] ?? null;
+            $snapshot = null;
+            if ($snapshotData && is_array($snapshotData)) {
+                $snapshot = [
+                    'universe_id' => $snapshotData['universe_id'] ?? 0,
+                    'tick' => $snapshotData['tick'] ?? 0,
+                    'state_vector' => $snapshotData['state_vector'] ?? '{}',
+                    'entropy' => $snapshotData['entropy'] ?? null,
+                    'stability_index' => $snapshotData['stability_index'] ?? null,
+                    'metrics' => $snapshotData['metrics'] ?? '{}',
+                    'sci' => $snapshotData['sci'] ?? null,
+                    'instability_gradient' => $snapshotData['instability_gradient'] ?? null,
+                ];
+            }
+            $responses[] = [
+                'ok' => $res['ok'] ?? false,
+                'snapshot' => $snapshot,
+                'error_message' => $res['error_message'] ?? '',
+            ];
+        }
+
+        return ['responses' => $responses];
+    }
+
+    public function analyzeTrajectory(array $points, float $threshold = 0.1): array
+    {
+        $url = rtrim($this->baseUrl, '/').'/analyze-trajectory';
+        $payload = [
+            'points' => $points,
+            'recurrence_threshold' => $threshold,
+        ];
+
+        try {
+            $response = Http::timeout(60)->post($url, $payload);
+        } catch (\Throwable $e) {
+            return ['ok' => false, 'error_message' => $e->getMessage()];
+        }
+
+        if (!$response->successful()) {
+            return ['ok' => false, 'error_message' => $response->body() ?: 'HTTP '.$response->status()];
+        }
+
+        return $response->json();
+    }
 }

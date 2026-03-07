@@ -2,6 +2,7 @@ export type Snapshot = {
     tick: number;
     entropy: number;
     stability_index: number;
+    sci?: number;
     metrics?: Record<string, any>;
     state_vector?: Record<string, any>;
 };

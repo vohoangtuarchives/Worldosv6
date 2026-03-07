@@ -24,22 +24,22 @@ export function MetricGrid({ snapshot, className }: MetricGridProps) {
             color: "text-red-400",
         },
         {
-            label: "Stability Index",
-            value: snapshot?.stability_index != null ? snapshot.stability_index.toFixed(2) : "--",
-            desc: "Relative order",
+            label: "Stability",
+            value: snapshot?.stability_index != null ? `${(snapshot.stability_index * 100).toFixed(1)}%` : "--",
+            desc: "System coherence",
             color: "text-blue-400",
         },
         {
-            label: "Order",
-            value: getMetric("order") !== "--" ? `${(getMetric("order") as number * 100).toFixed(1)}%` : "--",
-            desc: "Universal coherence",
-            color: "text-cyan-400",
+            label: "Complexity (SCI)",
+            value: snapshot?.metrics?.sci != null ? `${(snapshot.metrics.sci * 100).toFixed(1)}%` : (snapshot?.sci != null ? `${(snapshot.sci * 100).toFixed(1)}%` : "--"),
+            desc: "Societal complexity",
+            color: "text-purple-400",
         },
         {
-            label: "Energy Level",
-            value: getMetric("energy_level") !== "--" ? `${(getMetric("energy_level") as number * 100).toFixed(1)}%` : "--",
-            desc: "Ascension progress",
-            color: "text-yellow-400",
+            label: "Knowledge",
+            value: snapshot?.metrics?.knowledge != null ? `${(snapshot.metrics.knowledge * 100).toFixed(1)}%` : (snapshot?.state_vector?.knowledge != null ? `${(snapshot.state_vector.knowledge * 100).toFixed(1)}%` : "--"),
+            desc: "Tech. advancement",
+            color: "text-emerald-400",
         },
     ];
 

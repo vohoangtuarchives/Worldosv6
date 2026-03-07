@@ -277,7 +277,7 @@ EOT;
             try {
                 $model = $this->config->model_name ?? env('NARRATIVE_LLM_MODEL', 'gpt-4o');
 
-                $request = Http::timeout(30);
+                $request = Http::timeout(120);
                 if ($apiKey) {
                     $request = $request->withToken($apiKey);
                 }
@@ -313,7 +313,7 @@ EOT;
         }
 
         try {
-            $response = Http::timeout(30)->post($endpoint, [
+            $response = Http::timeout(120)->post($endpoint, [
                 'model' => $model,
                 'messages' => [
                     ['role' => 'system', 'content' => $persona],

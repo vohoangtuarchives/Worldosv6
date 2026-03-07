@@ -14,14 +14,18 @@ class Archmage extends BaseArchetype
         return 'Archmage';
     }
 
-    public function isEligible(World $world): bool
+    public function getAttractorVector(): array
     {
-        return $world->current_genre === 'wuxia' || $world->current_genre === 'modern_fantasy';
+        return [
+            'spirituality' => 0.9,
+            'knowledge'    => 0.4,
+            'chaos'        => 0.3,
+        ];
     }
 
-    public function getBaseUtility(float $stability): float
+    public function isEligible(World $world): bool
     {
-        return 0.5;
+        return ($world->axiom['has_linh_ki'] ?? false) || ($world->axiom['has_magic'] ?? false);
     }
 
     public function applyImpact(Universe $universe, UniverseSnapshot $snapshot, array $winnerAgent): array

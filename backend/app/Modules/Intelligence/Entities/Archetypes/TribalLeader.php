@@ -14,14 +14,19 @@ class TribalLeader extends BaseArchetype
         return 'TribalLeader';
     }
 
+    public function getAttractorVector(): array
+    {
+        return [
+            'culture'    =>  0.8,
+            'militarism' =>  0.4,
+            'tradition'  =>  0.5,
+            'stability'  => -0.1,
+        ];
+    }
+
     public function isEligible(World $world): bool
     {
         return true;
-    }
-
-    public function getBaseUtility(float $stability): float
-    {
-        return 0.6;
     }
 
     public function applyImpact(Universe $universe, UniverseSnapshot $snapshot, array $winnerAgent): array

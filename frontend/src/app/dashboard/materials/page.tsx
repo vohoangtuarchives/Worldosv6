@@ -62,26 +62,25 @@ export default function MaterialsPage() {
     },
     [materials, filter]
   );
-  
+
   const types = useMemo(() => ["All", ...Array.from(new Set(materials.map((m) => m.type)))], [materials]);
   const cultures = useMemo(() => Array.from(new Set(materials.map((m) => m.culture))).filter(Boolean), [materials]);
 
   return (
     <div className="flex h-[calc(100vh-3.5rem)]">
       {/* Left Sidebar Navigation */}
-      <div className="w-64 border-r border-border bg-card/30 p-4 space-y-6 overflow-y-auto">
+      <div className="w-64 border-r border-slate-800 bg-slate-900/40 p-4 space-y-6 overflow-y-auto">
         <div>
-          <div className="font-semibold text-lg px-2 mb-2">Ontology</div>
+          <div className="font-semibold text-lg text-slate-200 px-2 mb-2">Ontology</div>
           <nav className="space-y-1">
             {types.map((type) => (
               <button
                 key={type}
                 onClick={() => setFilter(type)}
-                className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
-                  filter === type
-                    ? "bg-primary/10 text-primary font-medium"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                }`}
+                className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${filter === type
+                    ? "bg-slate-800 text-cyan-400 font-medium"
+                    : "text-slate-400 hover:bg-slate-800/60 hover:text-slate-200"
+                  }`}
               >
                 {type.charAt(0).toUpperCase() + type.slice(1)}
                 <span className="ml-auto float-right text-xs opacity-50">
@@ -93,17 +92,16 @@ export default function MaterialsPage() {
         </div>
 
         <div>
-          <div className="font-semibold text-lg px-2 mb-2">Culture</div>
+          <div className="font-semibold text-lg text-slate-200 px-2 mb-2">Culture</div>
           <nav className="space-y-1">
             {cultures.map((cult) => (
               <button
                 key={cult}
                 onClick={() => setFilter(cult as string)}
-                className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
-                  filter === cult
-                    ? "bg-primary/10 text-primary font-medium"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                }`}
+                className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${filter === cult
+                    ? "bg-slate-800 text-cyan-400 font-medium"
+                    : "text-slate-400 hover:bg-slate-800/60 hover:text-slate-200"
+                  }`}
               >
                 {cult as string}
                 <span className="ml-auto float-right text-xs opacity-50">
@@ -118,19 +116,19 @@ export default function MaterialsPage() {
       {/* Main Content */}
       <div className="flex-1 overflow-y-auto p-8 pt-6">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-3xl font-bold tracking-tight text-gradient-cosmos">Material Library</h2>
-          <div className="flex rounded-lg border border-border bg-muted/30 p-0.5">
+          <h2 className="text-3xl font-bold tracking-tight text-gradient-cosmos glow-cosmos-text">Material Library</h2>
+          <div className="flex rounded-lg border border-slate-700 bg-slate-900/60 p-0.5">
             <button
               type="button"
               onClick={() => setView("library")}
-              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${view === "library" ? "bg-background text-foreground shadow" : "text-muted-foreground hover:text-foreground"}`}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${view === "library" ? "bg-slate-700 text-slate-100 shadow" : "text-slate-400 hover:text-slate-200"}`}
             >
               Library
             </button>
             <button
               type="button"
               onClick={() => setView("dag")}
-              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${view === "dag" ? "bg-background text-foreground shadow" : "text-muted-foreground hover:text-foreground"}`}
+              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${view === "dag" ? "bg-slate-700 text-slate-100 shadow" : "text-slate-400 hover:text-slate-200"}`}
             >
               Material DAG
             </button>
@@ -139,57 +137,56 @@ export default function MaterialsPage() {
 
         {view === "dag" && (
           <div className="mb-8">
-            <p className="text-sm text-muted-foreground mb-2">Đồ thị tiến hóa vật chất (parent → child). Node viền xanh = đang active trong universe này.</p>
+            <p className="text-sm text-slate-400 mb-4">Đồ thị tiến hóa vật chất (parent → child). Node viền xanh = đang kích hoạt trong vũ trụ này.</p>
             <MaterialDagGraph nodes={dagNodes} edges={dagEdges} className="w-full" />
           </div>
         )}
 
         {view === "library" && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-        {filteredMaterials.map((material) => (
-          <div 
-            key={material.id} 
-            className={`group relative overflow-hidden rounded-xl border bg-card text-card-foreground shadow-sm transition-all hover:shadow-md hover:scale-[1.02] ${!material.discovered ? 'opacity-50 grayscale pointer-events-none' : ''}`}
-          >
-            <div className="aspect-square w-full bg-muted/20 relative">
-               {/* Placeholder for Material Image */}
-               <div className={`absolute inset-0 flex items-center justify-center text-4xl font-bold text-muted-foreground/20 ${!material.discovered ? 'blur-sm' : ''}`}>
-                 {material.name.charAt(0)}
-               </div>
-               
-               {!material.discovered && (
-                   <div className="absolute inset-0 flex items-center justify-center bg-black/40">
-                       <span className="px-3 py-1 bg-black/60 rounded-full text-xs font-mono text-white border border-white/20">UNDISCOVERED</span>
-                   </div>
-               )}
-               
-               <div className="absolute top-2 right-2 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-background/80 backdrop-blur border border-border">
-                   {material.rarity}
-               </div>
-            </div>
-            
-            <div className="p-4 space-y-2">
-              <div className="flex justify-between items-start">
-                  <h3 className="font-semibold leading-none tracking-tight line-clamp-1" title={material.name}>{material.name}</h3>
-                  <span className="text-xs text-muted-foreground font-mono">{material.type}</span>
-              </div>
-              <p className="text-sm text-muted-foreground line-clamp-2 min-h-[2.5rem]">
-                {material.description}
-              </p>
-              
-              <div className="pt-2 flex items-center justify-between border-t border-border/50 mt-2">
-                  <span className="text-xs text-muted-foreground flex items-center gap-1">
-                      <span className={`w-2 h-2 rounded-full ${material.discovered ? 'bg-green-500' : 'bg-gray-500'}`}></span>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {filteredMaterials.map((material) => (
+              <div
+                key={material.id}
+                className={`group relative overflow-hidden rounded-xl border border-slate-800 bg-slate-900/40 text-slate-300 shadow-sm transition-all hover:shadow-cyan-900/20 hover:border-slate-700 hover:scale-[1.02] ${!material.discovered ? 'opacity-50 grayscale pointer-events-none' : ''}`}
+              >
+                <div className="aspect-video w-full bg-slate-950/50 relative border-b border-slate-800">
+                  <div className={`absolute inset-0 flex items-center justify-center text-4xl font-bold text-slate-700 ${!material.discovered ? 'blur-sm' : ''}`}>
+                    {material.name.charAt(0)}
+                  </div>
+
+                  {!material.discovered && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/60">
+                      <span className="px-3 py-1 bg-black/80 rounded-full text-xs font-mono text-slate-400 border border-slate-700">UNDISCOVERED</span>
+                    </div>
+                  )}
+
+                  <div className="absolute top-2 right-2 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-slate-900/80 backdrop-blur border border-slate-700 text-slate-300">
+                    {material.rarity}
+                  </div>
+                </div>
+
+                <div className="p-4 space-y-3">
+                  <div className="flex justify-between items-start">
+                    <h3 className="font-semibold text-slate-200 leading-tight tracking-tight line-clamp-1" title={material.name}>{material.name}</h3>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 font-mono tracking-wider">{material.type}</span>
+                  </div>
+                  <p className="text-sm text-slate-400 line-clamp-2 min-h-[2.5rem]">
+                    {material.description}
+                  </p>
+
+                  <div className="pt-3 flex items-center justify-between border-t border-slate-800 mt-2">
+                    <span className="text-xs text-slate-500 font-mono flex items-center gap-1.5">
+                      <span className={`w-1.5 h-1.5 rounded-full ${material.discovered ? 'bg-cyan-500 shadow-[0_0_8px_rgba(6,182,212,0.6)]' : 'bg-slate-700'}`}></span>
                       {material.universe}
-                  </span>
-                  <button className="text-xs font-medium text-primary hover:text-primary/80 transition-colors">
-                      View Data
-                  </button>
+                    </span>
+                    <button className="text-[10px] font-semibold tracking-widest text-cyan-500/80 hover:text-cyan-400 transition-colors uppercase">
+                      Inspect
+                    </button>
+                  </div>
+                </div>
               </div>
-            </div>
+            ))}
           </div>
-        ))}
-        </div>
         )}
       </div>
     </div>
