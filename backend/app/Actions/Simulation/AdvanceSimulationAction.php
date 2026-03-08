@@ -33,6 +33,7 @@ use App\Services\Simulation\TransmigrationEngine;
 use App\Simulation\SimulationKernel;
 use App\Simulation\Support\SnapshotLoader;
 use App\Simulation\Support\SimulationRandom;
+use Illuminate\Support\Facades\Log;
 
 class AdvanceSimulationAction
 {
@@ -59,29 +60,28 @@ class AdvanceSimulationAction
         protected TransmigrationEngine $transmigrationEngine,
         protected SimulationKernel $simulationKernel,
         protected SnapshotLoader $snapshotLoader,
-        protected \App\Services\Simulation\CivilizationFieldEngine $fieldEngine,
-        protected \App\Services\Simulation\FieldDiffusionEngine $diffusionEngine,
         protected \App\Services\Simulation\ActorCognitiveService $cognitiveService,
         protected \App\Services\Simulation\CivilizationCollapseEngine $collapseEngine
     ) {}
 
     public function execute(int $universeId, int $ticks): array
     {
+        Log::info("Simulation: advance requested", ['universe_id' => $universeId, 'ticks' => $ticks]);
+
         $universe = $this->universeRepository->find($universeId);
 
         if (!$universe || $universe->status === 'halted' || $universe->status === 'restarting') {
+            Log::warning("Simulation: advance rejected (universe not found or halted)", ['universe_id' => $universeId]);
             return ['ok' => false, 'error_message' => 'Universe not found, is halted, or is restarting'];
         }
         if (!$universe->world) {
+            Log::warning("Simulation: advance rejected (universe has no world)", ['universe_id' => $universeId]);
             return ['ok' => false, 'error_message' => 'Universe has no world'];
         }
 
         $stateInput = $this->prepareEngineStateInput($universe);
         $worldConfig = $this->prepareWorldConfig($universe);
-        file_put_contents('/tmp/state_input.json', json_encode($stateInput));
-        dump('Calling Rust Engine...');
         $response = $this->engine->advance($universeId, $ticks, $stateInput, $worldConfig);
-        dump('Engine Returned!');
 
         if (! ($response['ok'] ?? false)) {
             return $response;
@@ -89,6 +89,8 @@ class AdvanceSimulationAction
 
         $snapshotData = $response['snapshot'] ?? [];
         if (! empty($snapshotData)) {
+            // Có drift (tick > 0) thì entropy không thể là 0 — sàn khi engine/stub trả 0
+            $this->ensureEntropyFloor($snapshotData);
             // Bootstrap zones nếu engine không trả về: stub/engine có thể không tạo zones → topology và map trống.
             $this->ensureStateVectorHasZones($snapshotData);
 
@@ -132,6 +134,13 @@ class AdvanceSimulationAction
                 $savedSnapshot,
                 array_merge($response, ['_ticks' => $ticks])
             ));
+
+            Log::info("Simulation: advance completed", [
+                'universe_id' => $universeId,
+                'ticks' => $ticks,
+                'tick' => $snapshotData['tick'],
+                'entropy' => $snapshotData['entropy'] ?? null,
+            ]);
 
             // Update Universe latest tick (state_vector đã được sync trong syncUniverseFromSnapshotData)
             $this->universeRepository->update($universe->id, ['current_tick' => $snapshotData['tick']]);
@@ -195,34 +204,14 @@ class AdvanceSimulationAction
             // ==========================================
 
             if ($shouldSave && $savedSnapshot && $savedSnapshot->exists) {
-                // Phase 120: Field Genesis (§V30)
-                // Calculate 5 core fields (Survival, Power, Wealth, Knowledge, Meaning)
-                $fields = $this->fieldEngine->computeAndStore($universe, $savedSnapshot);
-
-                // Phase 121: Field Diffusion (§V31)
-                // Propagate fields between zones (if zones exist in state_vector)
-                $uvec = (array) $universe->state_vector;
-                if (!empty($uvec['zone_fields'])) {
-                    $activeInstitutions = \App\Models\InstitutionalEntity::where('universe_id', $universe->id)
-                        ->whereNull('collapsed_at_tick')
-                        ->get(['id', 'entity_type'])
-                        ->toArray();
-                    
-                    $updatedZones = $this->diffusionEngine->diffuse($uvec['zone_fields'], $activeInstitutions);
-                    $uvec['zone_fields'] = $updatedZones;
-                    
-                    // Update global fields from diffused averages
-                    $uvec['fields'] = $this->diffusionEngine->aggregateGlobalFields($updatedZones);
-                    $universe->state_vector = $uvec;
-                    $universe->save();
-                }
+                // Phase 1 refactor: field/diffusion computed in Rust; we only persist from snapshot (syncUniverseFromSnapshotData already set state_vector['fields'] and zone_fields).
 
                 // Phase 123: Actor Cognitive Bifurcation (§V32)
                 // Update cognitive variables (Destiny, Curiosity, Anomaly)
                 $this->cognitiveService->computeAndStore($universe, $savedSnapshot);
 
                 // Phase 125: Civilization Collapse (§V33)
-                // Check if internal stress (entropy) causes a fragmentation event
+                // Check if internal stress (entropy) causes a fragmentation event (uses entropy/stability from snapshot)
                 $this->collapseEngine->evaluate($universe, $savedSnapshot);
             }
         }
@@ -335,8 +324,8 @@ class AdvanceSimulationAction
             ? json_decode($snapshotData['state_vector'], true) ?? []
             : ($snapshotData['state_vector'] ?? []);
 
-        // Rust engine returns `state_vector` simply as the array of zones.
-        // If it looks like a list of zones, wrap it.
+        // Rust engine returns full UniverseState as state_vector (zones, tick, global_entropy, …).
+        // Preserve zones (and full structure) so prepareEngineStateInput sends them on the next advance.
         if (!isset($stateVector['zones']) && isset($stateVector[0]['state'])) {
             $stateVector = ['zones' => $stateVector];
         }
@@ -351,7 +340,38 @@ class AdvanceSimulationAction
             ? json_decode($snapshotData['metrics'], true) ?? []
             : ($snapshotData['metrics'] ?? []);
             
+        $stateVector['knowledge_core'] = (float) ($stateVector['knowledge_core'] ?? ($metrics['knowledge_core'] ?? 0.0));
         $stateVector['scars'] = $metrics['scars'] ?? ($stateVector['scars'] ?? []);
+        $stateVector['attractors'] = is_array($stateVector['attractors'] ?? null) ? $stateVector['attractors'] : [];
+        $stateVector['dark_attractors'] = is_array($stateVector['dark_attractors'] ?? null) ? $stateVector['dark_attractors'] : [];
+
+        // Phase 1 refactor: fields come from Rust engine (global_fields or metrics.civ_fields)
+        $fields = null;
+        if (!empty($snapshotData['global_fields'])) {
+            $fields = is_string($snapshotData['global_fields'])
+                ? json_decode($snapshotData['global_fields'], true)
+                : $snapshotData['global_fields'];
+        }
+        if ($fields === null && !empty($metrics['civ_fields'])) {
+            $fields = $metrics['civ_fields'];
+        }
+        if (is_array($fields)) {
+            $stateVector['fields'] = $fields;
+        }
+
+        // Per-zone fields from Rust state (zones[].state.civ_fields) for listeners that expect zone_fields
+        if (!empty($stateVector['zones']) && is_array($stateVector['zones'])) {
+            $zoneFields = [];
+            foreach ($stateVector['zones'] as $idx => $zone) {
+                $cf = $zone['state']['civ_fields'] ?? null;
+                if (is_array($cf)) {
+                    $zoneFields[$idx] = $cf;
+                }
+            }
+            if ($zoneFields !== []) {
+                $stateVector['zone_fields'] = $zoneFields;
+            }
+        }
 
         $this->universeRepository->update($universe->id, [
             'current_tick' => $snapshotData['tick'],
@@ -392,6 +412,8 @@ class AdvanceSimulationAction
             'global_entropy' => (float)$globalEntropy,
             'knowledge_core' => (float)$knowledgeCore,
             'scars' => $scars,
+            'attractors' => is_array($vec['attractors'] ?? null) ? $vec['attractors'] : [],
+            'dark_attractors' => is_array($vec['dark_attractors'] ?? null) ? $vec['dark_attractors'] : [],
             'institutions' => $institutions->map(fn($e) => [
                 'id' => $e->id,
                 'type' => $e->entity_type,
@@ -415,6 +437,19 @@ class AdvanceSimulationAction
             'world_seed' => $world->world_seed,
             'genome' => empty($universe->kernel_genome) ? null : $universe->kernel_genome,
         ];
+    }
+
+    /** Có drift (tick > 0) thì entropy không thể là 0 — sàn tối thiểu khi engine/stub trả 0. */
+    private function ensureEntropyFloor(array &$snapshotData): void
+    {
+        $tick = (int) ($snapshotData['tick'] ?? 0);
+        if ($tick <= 0) {
+            return;
+        }
+        $entropy = $snapshotData['entropy'] ?? 0;
+        if ($entropy === null || $entropy === 0 || (is_float($entropy) && $entropy < 0.003)) {
+            $snapshotData['entropy'] = 0.003;
+        }
     }
 
     private function ensureStateVectorHasZones(array &$snapshotData): void

@@ -98,8 +98,13 @@ class ActorEvolutionService
         return $traits;
     }
 
-    public function ensureMinimumPopulation(Universe $universe, int $min = 5): void
+    public function ensureMinimumPopulation(Universe $universe, ?int $min = null): void
     {
+        $min = $min ?? (int) config('worldos.intelligence.actor_minimum_population', 5);
+        if ($min <= 0) {
+            return;
+        }
+
         $count = $this->actorRepository->getActiveCount($universe->id);
         
         while ($count < $min) {

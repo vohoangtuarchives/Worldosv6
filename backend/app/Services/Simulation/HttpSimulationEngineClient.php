@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Http;
  * HTTP bridge to WorldOS simulation engine (Rust).
  * Engine must expose POST /advance with JSON body and response.
  * Set SIMULATION_ENGINE_GRPC_URL to http://localhost:50052 (or http://host:port).
+ * Serialization: JSON only. Phase 1 (optional binary) deferred.
  */
 class HttpSimulationEngineClient implements SimulationEngineClientInterface
 {
@@ -60,6 +61,7 @@ class HttpSimulationEngineClient implements SimulationEngineClientInterface
                 'metrics' => $snapshotData['metrics'] ?? '{}',
                 'sci' => $snapshotData['sci'] ?? null,
                 'instability_gradient' => $snapshotData['instability_gradient'] ?? null,
+                'global_fields' => $snapshotData['global_fields'] ?? null,
             ];
         }
 
@@ -102,6 +104,7 @@ class HttpSimulationEngineClient implements SimulationEngineClientInterface
                 'metrics' => $snapshotData['metrics'] ?? '{}',
                 'sci' => $snapshotData['sci'] ?? null,
                 'instability_gradient' => $snapshotData['instability_gradient'] ?? null,
+                'global_fields' => $snapshotData['global_fields'] ?? null,
             ];
         }
 
@@ -143,6 +146,7 @@ class HttpSimulationEngineClient implements SimulationEngineClientInterface
                     'metrics' => $snapshotData['metrics'] ?? '{}',
                     'sci' => $snapshotData['sci'] ?? null,
                     'instability_gradient' => $snapshotData['instability_gradient'] ?? null,
+                    'global_fields' => $snapshotData['global_fields'] ?? null,
                 ];
             }
             $responses[] = [

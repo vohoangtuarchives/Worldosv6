@@ -37,8 +37,9 @@ class SpawnFromEventsAction
             }
         }
         
-        // 2. Ensure population minimum (Always 5)
-        while ($this->actorRepository->getActiveCount($universe->id) < 5) {
+        // 2. Ensure population minimum (configurable; 0 = off)
+        $minPop = (int) config('worldos.intelligence.actor_minimum_population', 5);
+        while ($minPop > 0 && $this->actorRepository->getActiveCount($universe->id) < $minPop) {
              $this->spawnSpontaneousActor($universe);
         }
     }

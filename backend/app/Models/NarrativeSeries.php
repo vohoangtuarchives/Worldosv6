@@ -13,10 +13,13 @@ class NarrativeSeries extends Model
         'universe_id',
         'saga_id',
         'title',
+        'slug',
         'genre_key',
         'current_book_index',
         'total_chapters_generated',
         'status',
+        'published_at',
+        'description',
         'config',
     ];
 
@@ -24,7 +27,13 @@ class NarrativeSeries extends Model
         'config' => 'array',
         'current_book_index' => 'integer',
         'total_chapters_generated' => 'integer',
+        'published_at' => 'datetime',
     ];
+
+    public function scopePublished($query)
+    {
+        return $query->whereNotNull('published_at');
+    }
 
     public function universe(): BelongsTo
     {

@@ -22,9 +22,8 @@ export default function FactionList({ universeId }: { universeId: number }) {
             try {
                 setLoading(true);
                 const res = await api.institutions(universeId);
-                if (res.ok) {
-                    setFactions(res.data);
-                }
+                const list = Array.isArray(res) ? res : (res && typeof res === "object" && "data" in res ? (res as { data: Institution[] }).data : []);
+                setFactions(Array.isArray(list) ? list : []);
             } catch (err) {
                 console.error("Failed to fetch factions:", err);
             } finally {
@@ -50,12 +49,12 @@ export default function FactionList({ universeId }: { universeId: number }) {
     return (
         <div className="space-y-4 p-2 max-h-[400px] overflow-y-auto custom-scrollbar">
             <h3 className="text-xs font-bold uppercase tracking-widest text-blue-400 sticky top-0 bg-slate-900/80 backdrop-blur pb-2 z-10 border-b border-blue-500/30">
-                Institutional Field
+                Trường thể chế
             </h3>
 
             {factions.length === 0 && (
                 <div className="text-center py-8 text-white/30 text-xs italic">
-                    No dominant factions detected in this epoch.
+                    Chưa phát hiện phe chủ đạo trong kỷ nguyên này.
                 </div>
             )}
 
@@ -76,15 +75,15 @@ export default function FactionList({ universeId }: { universeId: number }) {
                                 {faction.name}
                             </div>
                             <div className="text-[10px] uppercase tracking-tighter text-white/50">
-                                {faction.type} • Legitimacy: {(faction.legitimacy * 100).toFixed(0)}%
+                                {faction.type} • Hợp thức: {(faction.legitimacy * 100).toFixed(0)}%
                             </div>
                         </div>
                         <div className="text-right">
                             <div className="text-xs font-mono text-blue-400">
-                                Cap: {faction.capacity.toFixed(1)}
+                                Sức chứa: {faction.capacity.toFixed(1)}
                             </div>
                             <div className="text-[10px] text-white/40">
-                                Mem: {faction.memory.toFixed(2)}
+                                Bộ nhớ: {faction.memory.toFixed(2)}
                             </div>
                         </div>
                     </div>

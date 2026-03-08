@@ -46,7 +46,7 @@ export function CivilizationList({ universeId }: { universeId: number }) {
                         Nền văn minh Nổi sinh
                     </CardTitle>
                     <Badge variant="outline" className="text-[10px] border-indigo-500/30 text-indigo-300">
-                        {civs.length} Active
+                        {civs.length} đang hoạt động
                     </Badge>
                 </div>
             </CardHeader>
@@ -82,7 +82,7 @@ export function CivilizationList({ universeId }: { universeId: number }) {
                                                 {(civ.org_capacity * 100).toFixed(1)}%
                                             </div>
                                             <div className="text-[9px] uppercase tracking-tighter text-slate-500">
-                                                Capacity
+                                                Sức chứa
                                             </div>
                                         </div>
                                     </div>

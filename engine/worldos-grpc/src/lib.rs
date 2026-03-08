@@ -4,6 +4,10 @@ pub mod worldos {
     }
 }
 
+pub mod engine;
+pub mod transport_grpc;
+pub mod transport_http;
+
 pub use worldos::simulation::simulation_engine_server;
 pub use worldos::simulation::{
     AdvanceRequest, AdvanceResponse, UniverseSnapshot, WorldConfig, KernelGenome,

@@ -78,6 +78,53 @@ pub enum CascadePhase {
     Collapse,
 }
 
+/// Civilization phase: Tribal → Agrarian → Kingdom → Empire → Industrial → Information (§Level-8).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum CivilizationPhase {
+    #[default]
+    Tribal,
+    Agrarian,
+    Kingdom,
+    Empire,
+    Industrial,
+    Information,
+}
+
+/// Civilization Attractor: zone emits field that pulls neighbor civ_fields (Rome, Athens, Venice...).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CivilizationAttractor {
+    pub id: u64,
+    pub zone_id: u32,
+    pub power: f64,
+    pub wealth: f64,
+    pub knowledge: f64,
+    pub meaning: f64,
+    pub survival: f64,
+    pub radius: f64,
+    pub decay: f64,
+}
+
+/// Dark Attractor: high entropy/trauma/inequality pulls zone toward collapse.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DarkAttractor {
+    pub id: u64,
+    pub entropy_threshold: f64,
+    pub trauma_threshold: f64,
+    pub inequality_threshold: f64,
+    pub pull_strength: f64,
+    pub collapse_probability: f64,
+}
+
+/// Outcome of a simulated future branch (Possibility Space Navigator).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FutureOutcome {
+    pub entropy: f64,
+    pub knowledge: f64,
+    pub sci: f64,
+    pub tick: u64,
+}
+
 impl CulturalVector {
     pub fn clamp_mut(&mut self) {
         let clamp = |v: &mut f64| *v = v.clamp(0.0, 1.0);
@@ -140,6 +187,8 @@ pub struct ZoneState {
     pub cascade_phase: CascadePhase,
     #[serde(default)]
     pub civ_fields: CivilizationFields,
+    #[serde(default)]
+    pub phase: CivilizationPhase,
 }
 
 /// Quantum Overlay: Controls probabilistic state and observer effect (§57).
@@ -200,6 +249,7 @@ impl ZoneState {
             quantum_overlay: None,
             cascade_phase: CascadePhase::Normal,
             civ_fields: CivilizationFields::default(),
+            phase: CivilizationPhase::Tribal,
         }
     }
 

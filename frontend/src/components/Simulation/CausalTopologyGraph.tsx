@@ -122,7 +122,7 @@ export function CausalTopologyGraph({ nodes: initialNodes, edges: initialEdges, 
     <div className="relative w-full h-[600px] bg-slate-900/50 rounded-xl border border-slate-800 p-1">
       <div className="absolute top-4 left-4 flex items-center gap-2 text-slate-400 z-10 pointer-events-none">
         <Share2 className="w-4 h-4" />
-        <span className="text-xs font-mono uppercase tracking-wider">Causal Topology Graph</span>
+        <span className="text-xs font-mono uppercase tracking-wider">Đồ thị topology nhân quả</span>
       </div>
       <ReactFlow nodes={rfNodes} edges={rfEdges} nodeTypes={nodeTypes} fitView className="dark">
         <Background color="#334155" gap={16} />
@@ -131,15 +131,15 @@ export function CausalTopologyGraph({ nodes: initialNodes, edges: initialEdges, 
       <div className="absolute bottom-4 left-4 flex flex-col gap-2 z-10 pointer-events-none">
         <div className="flex items-center gap-2 text-[10px] text-slate-500 font-mono bg-slate-900/80 px-2 py-1 rounded">
           <div className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_5px_rgba(59,130,246,0.8)]" />
-          <span>PRIMARY REALITY</span>
+          <span>Thực tại chính</span>
         </div>
         <div className="flex items-center gap-2 text-[10px] text-slate-500 font-mono bg-slate-900/80 px-2 py-1 rounded">
           <div className="w-2 h-2 rounded-sm bg-slate-600" />
-          <span>STATE SNAPSHOT</span>
+          <span>Snapshot trạng thái</span>
         </div>
         <div className="flex items-center gap-2 text-[10px] text-slate-500 font-mono bg-slate-900/80 px-2 py-1 rounded">
           <div className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_5px_rgba(239,68,68,0.8)]" />
-          <span>MYTHIC SCAR</span>
+          <span>Vết huyền thoại</span>
         </div>
       </div>
     </div>

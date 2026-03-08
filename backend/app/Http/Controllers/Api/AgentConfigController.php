@@ -10,7 +10,7 @@ class AgentConfigController extends Controller
 {
     public function show()
     {
-        return AgentConfig::first() ?? response()->json(['message' => 'No config found'], 404);
+        return AgentConfig::first() ?? response()->json(['message' => 'Không tìm thấy cấu hình'], 404);
     }
 
     public function store(Request $request)

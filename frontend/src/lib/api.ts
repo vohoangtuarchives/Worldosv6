@@ -1,4 +1,27 @@
+import type { NarrativeFact } from "@/types/narrative";
+import type { NarrativePreset } from "@/lib/narrative-studio";
+
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "/api";
+
+async function publicFetch(path: string, init: RequestInit = {}) {
+  const res = await fetch(`${BASE_URL}${path}`, {
+    ...init,
+    headers: { "Content-Type": "application/json", ...(init.headers as Record<string, string> | undefined) },
+  });
+  if (!res.ok) {
+    let errText = "";
+    try {
+      const data = await res.json();
+      errText = data.message || JSON.stringify(data);
+    } catch {
+      errText = await res.text();
+    }
+    throw new Error(errText || `HTTP ${res.status}`);
+  }
+  const ct = res.headers.get("content-type") || "";
+  if (ct.includes("application/json")) return res.json();
+  return res.text();
+}
 
 function getToken(): string | null {
   if (typeof document === "undefined") return null;
@@ -45,6 +68,18 @@ export const api = {
   async worlds() {
     return apiFetch("/worldos/worlds");
   },
+  async worldIp(worldId: number) {
+    return apiFetch(`/worldos/worlds/${worldId}/ip`) as Promise<{
+      world: { id: number; name: string; slug?: string; current_genre?: string; base_genre?: string };
+      universes: Array<{
+        id: number;
+        name: string;
+        series: Array<{ id: number; title: string; slug?: string; chapters?: Array<{ id: number; title: string; chapter_index: number }> }>;
+        chronicles: Array<{ id: number; from_tick: number; to_tick: number; content: string; type?: string }>;
+      }>;
+      aggregated_bibles: { characters: unknown[]; lore: unknown[] };
+    }>;
+  },
   async createWorld(payload: { name: string; description?: string; genre?: string }) {
     return apiFetch("/worldos/worlds", {
       method: "POST",
@@ -66,6 +101,13 @@ export const api = {
   },
   async chronicle(id: number, page = 1, limit = 10) {
     return apiFetch(`/worldos/universes/${id}/chronicles?page=${page}&limit=${limit}`);
+  },
+  async generateEpicChronicle(universeId: number, fromTick: number, toTick: number) {
+    const res = await apiFetch(`/worldos/universes/${universeId}/generate-chronicle`, {
+      method: "POST",
+      body: JSON.stringify({ from_tick: fromTick, to_tick: toTick }),
+    }) as { data: { id: number; content: string; from_tick: number; to_tick: number } };
+    return res.data;
   },
   async materialDag(id: number) {
     return apiFetch(`/worldos/universes/${id}/material-dag`);
@@ -160,6 +202,22 @@ export const api = {
   async socialContracts(id: number) {
     return apiFetch(`/worldos/universes/${id}/social-contracts`);
   },
+
+  narrativeStudio: {
+    async generate(payload: {
+      universe_id: number;
+      preset: NarrativePreset;
+      facts: NarrativeFact[];
+      current_draft?: string;
+      epic_chronicle?: string;
+    }) {
+      return apiFetch("/worldos/narrative-studio/generate", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+    },
+  },
+
   ipFactory: {
     async series() {
       return apiFetch("/worldos/ip-factory/series");
@@ -198,6 +256,22 @@ export const api = {
       return apiFetch(`/worldos/ip-factory/series/${seriesId}/bible`);
     },
   },
+
+  publicSeries: {
+    async show(slug: string) {
+      return publicFetch(`/public/series/${encodeURIComponent(slug)}`);
+    },
+    async chapters(slug: string) {
+      return publicFetch(`/public/series/${encodeURIComponent(slug)}/chapters`);
+    },
+    async chapter(slug: string, chapterId: number) {
+      return publicFetch(`/public/series/${encodeURIComponent(slug)}/chapters/${chapterId}`);
+    },
+    async bible(slug: string) {
+      return publicFetch(`/public/series/${encodeURIComponent(slug)}/bible`);
+    },
+  },
+
   async exportWorld(id: number) {
     const data = await apiFetch(`/worldos/worlds/${id}/export`);
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });

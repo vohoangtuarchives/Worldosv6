@@ -5,6 +5,7 @@ import { type Universe } from "@/types/simulation";
 
 interface UniverseHeaderProps {
     universe: Universe | null;
+    universeId?: number | null;
     onAdvance: () => void;
     onFork: () => void;
     onPulse: (ticks: number) => void;
@@ -15,6 +16,7 @@ interface UniverseHeaderProps {
 
 export function UniverseHeader({
     universe,
+    universeId: universeIdProp,
     onAdvance,
     onFork,
     onPulse,
@@ -23,6 +25,7 @@ export function UniverseHeader({
     busy,
 }: UniverseHeaderProps) {
     const [pulseTicks, setPulseTicks] = React.useState(5);
+    const effectiveUniverseId = universeIdProp ?? universe?.id ?? null;
 
     return (
         <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0 w-full">
@@ -75,8 +78,8 @@ export function UniverseHeader({
                     />
                     <button
                         onClick={() => onPulse(pulseTicks)}
-                        disabled={busy || !universe}
-                        className="h-8 rounded-sm bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 px-3 text-xs font-medium transition-all disabled:opacity-50 uppercase tracking-wide border-l border-slate-700/50"
+                        disabled={busy || !effectiveUniverseId}
+                        className="h-8 rounded-sm bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 px-3 text-xs font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wide border-l border-slate-700/50"
                     >
                         Pulse
                     </button>
@@ -86,16 +89,16 @@ export function UniverseHeader({
 
                 <button
                     onClick={onAdvance}
-                    disabled={busy || !universe}
-                    className="h-9 px-4 rounded-md border border-slate-700 bg-slate-800/50 text-slate-300 text-sm font-medium hover:bg-slate-700 hover:text-white hover:border-slate-500 transition-all shadow-sm disabled:opacity-50"
+                    disabled={busy || !effectiveUniverseId}
+                    className="h-9 px-4 rounded-md border border-slate-700 bg-slate-800/50 text-slate-300 text-sm font-medium hover:bg-slate-700 hover:text-white hover:border-slate-500 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     Tick +1
                 </button>
 
                 <button
                     onClick={onFork}
-                    disabled={busy || !universe}
-                    className="h-9 px-4 rounded-md border border-purple-500/30 bg-purple-500/10 text-purple-300 text-sm font-medium hover:bg-purple-500/20 hover:border-purple-500/50 transition-all shadow-[0_0_10px_rgba(168,85,247,0.1)] disabled:opacity-50"
+                    disabled={busy || !effectiveUniverseId}
+                    className="h-9 px-4 rounded-md border border-purple-500/30 bg-purple-500/10 text-purple-300 text-sm font-medium hover:bg-purple-500/20 hover:border-purple-500/50 transition-all shadow-[0_0_10px_rgba(168,85,247,0.1)] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     Fork Universe
                 </button>

@@ -63,7 +63,7 @@ function ActorRadarChart({ traits }: { traits: number[] }) {
 
 function ActorBiography({ text }: { text: string }) {
     if (!text) return (
-        <div className="text-slate-500 italic text-sm">No records found in the archives...</div>
+        <div className="text-slate-500 italic text-sm">Chưa có bản ghi trong kho lưu trữ.</div>
     );
 
     // Regex to capture pattern: " - T<digits>: " or "- T<digits>: "
@@ -151,7 +151,7 @@ export function ActorList({ universeId: _unused }: { universeId?: number | null 
         return (
             <div className="flex flex-col items-center justify-center h-full gap-4 text-slate-500 animate-pulse">
                 <Users className="w-12 h-12 opacity-50" />
-                <span className="text-sm font-mono tracking-widest uppercase">Scanning Heroic Signatures...</span>
+                <span className="text-sm font-mono tracking-widest uppercase">Đang quét chữ ký anh hùng...</span>
             </div>
         );
     }
@@ -163,8 +163,8 @@ export function ActorList({ universeId: _unused }: { universeId?: number | null 
                     <Eye className="w-10 h-10 opacity-30" />
                 </div>
                 <div className="text-center space-y-2">
-                    <p className="text-lg font-medium text-slate-400">No Actors Manifested</p>
-                    <p className="text-sm opacity-60 max-w-xs mx-auto">The stage is empty. Pulse the world to ignite causality and birth new souls.</p>
+                    <p className="text-lg font-medium text-slate-400">Chưa có Actor hiện hữu</p>
+                    <p className="text-sm opacity-60 max-w-xs mx-auto">Sân khấu trống. Pulse world để kích hoạt nhân quả và sinh linh.</p>
                 </div>
             </div>
         );
@@ -190,7 +190,7 @@ export function ActorList({ universeId: _unused }: { universeId?: number | null 
                         <Search className="absolute left-2.5 top-2.5 w-3.5 h-3.5 text-slate-500" />
                         <input
                             type="text"
-                            placeholder="Search entities..."
+                            placeholder="Tìm thực thể..."
                             className="w-full h-9 pl-8 pr-3 bg-slate-950/50 border border-slate-800 rounded-md text-xs text-slate-200 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 transition-all placeholder:text-slate-600"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
@@ -207,7 +207,7 @@ export function ActorList({ universeId: _unused }: { universeId?: number | null 
                                     : "text-slate-500 hover:text-slate-300 hover:bg-slate-800/50"
                                     }`}
                             >
-                                {status}
+                                {status === "all" ? "Tất cả" : status === "alive" ? "Sống" : "Đã mất"}
                             </button>
                         ))}
                     </div>
@@ -268,7 +268,7 @@ export function ActorList({ universeId: _unused }: { universeId?: number | null 
 
                     {filteredActors.length === 0 && (
                         <div className="text-center py-8 text-xs text-slate-600 italic">
-                            No entities found matching criteria.
+                            Không tìm thấy thực thể phù hợp.
                         </div>
                     )}
                 </div>
@@ -295,7 +295,7 @@ export function ActorList({ universeId: _unused }: { universeId?: number | null 
                                         ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
                                         : "bg-red-500/10 text-red-400 border-red-500/30"
                                         }`}>
-                                        {selectedActor.is_alive ? "Alive" : "Deceased"}
+                                        {selectedActor.is_alive ? "Sống" : "Đã mất"}
                                     </div>
                                 </div>
 
@@ -344,7 +344,7 @@ export function ActorList({ universeId: _unused }: { universeId?: number | null 
                                             <div className="text-xs text-slate-500 uppercase tracking-wider mb-1 flex items-center gap-2">
                                                 <BrainCircuit className="w-3 h-3" /> Cognition
                                             </div>
-                                            <div className="text-2xl font-mono text-slate-200">High</div>
+                                            <div className="text-2xl font-mono text-slate-200">Cao</div>
                                         </div>
                                     </div>
                                 </div>
@@ -352,9 +352,9 @@ export function ActorList({ universeId: _unused }: { universeId?: number | null 
                                 {/* Right Column: Psychometrics */}
                                 <div className="space-y-3">
                                     <div className="flex items-center justify-between">
-                                        <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-300 uppercase tracking-widest">
+                                            <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-300 uppercase tracking-widest">
                                             <Zap className="w-4 h-4 text-cyan-400" />
-                                            Psychometric Profile
+                                            Hồ sơ tâm lý
                                         </h3>
                                         <span className="text-[10px] text-slate-500 font-mono border border-slate-800 rounded px-1.5">17-DIMENSION SCAN</span>
                                     </div>
@@ -381,7 +381,7 @@ export function ActorList({ universeId: _unused }: { universeId?: number | null 
                     <div className="flex-1 flex items-center justify-center text-slate-600 bg-slate-950/50">
                         <div className="text-center">
                             <Users className="w-16 h-16 mx-auto mb-4 opacity-20" />
-                            <p className="text-lg font-medium text-slate-500">Select an entity to view dossier</p>
+                                            Psychometric Profile
                         </div>
                     </div>
                 )}

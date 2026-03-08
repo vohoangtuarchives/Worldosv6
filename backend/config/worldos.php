@@ -72,4 +72,18 @@ return [
         'embedding_version' => env('WORLDOS_MEMORY_EMBEDDING_VERSION', 'v1'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Intelligence: Dramatis Personae (actors)
+    |--------------------------------------------------------------------------
+    | actor_minimum_population: Số actor sống tối thiểu mỗi universe. Mỗi pulse
+    | nếu số alive < số này sẽ spawn thêm cho đủ. Đặt 0 = không tự spawn (không giới hạn).
+    | Gợi ý: 0 (tắt), 3–5 (ít, narrative tập trung), 8–12 (nhiều, xã hội đông).
+    | guaranteed_deaths_per_tick: Mỗi tick chắc chắn có N actor bị đánh dấu chết (deterministic) để kiểm tra survival/save. Đặt 0 = chỉ dùng xác suất RNG.
+    */
+    'intelligence' => [
+        'actor_minimum_population' => (int) env('WORLDOS_ACTOR_MINIMUM_POPULATION', 5),
+        'guaranteed_deaths_per_tick' => (int) env('WORLDOS_GUARANTEED_DEATHS_PER_TICK', 5),
+    ],
+
 ];

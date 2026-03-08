@@ -40,11 +40,11 @@ const MaterialDataNode = ({ data }: MaterialNodeProps) => (
     </div>
     <div className="space-y-1 mt-2 border-t border-slate-700/50 pt-2">
       <div className="flex justify-between text-xs font-mono">
-        <span className="text-slate-500">Tier:</span>
+        <span className="text-slate-500">Tầng:</span>
         <span className="text-slate-300">I{data.tier === 1 ? "" : data.tier === 2 ? "I" : data.tier === 3 ? "II" : "V"}</span>
       </div>
       <div className="flex justify-between text-xs font-mono">
-        <span className="text-slate-500">Energy (kV):</span>
+        <span className="text-slate-500">Năng lượng (kV):</span>
         <span className="text-yellow-400">{(data.energy || 0).toFixed(1)}</span>
       </div>
       <div className="text-[9px] text-slate-500 font-mono mt-1 w-full truncate">{data.signature}</div>
@@ -150,8 +150,8 @@ export const MaterialEvolutionDAG: React.FC<DAGProps> = ({ instances: initialIns
       <div className="absolute top-4 left-4 flex items-center gap-2 text-slate-400 z-10 pointer-events-none bg-slate-900/50 px-3 py-2 rounded-lg backdrop-blur-sm border border-slate-800">
         <Activity className="w-5 h-5 text-green-400" />
         <div className="flex flex-col">
-          <span className="text-sm font-bold text-slate-200">Material Evolution</span>
-          <span className="text-[10px] font-mono uppercase tracking-widest text-slate-500">Directed Acyclic Graph</span>
+          <span className="text-sm font-bold text-slate-200">Tiến hóa Material</span>
+          <span className="text-[10px] font-mono uppercase tracking-widest text-slate-500">Đồ thị có hướng không chu trình</span>
         </div>
       </div>
       <ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes} fitView fitViewOptions={{ padding: 0.2 }} className="dark" minZoom={0.1}>

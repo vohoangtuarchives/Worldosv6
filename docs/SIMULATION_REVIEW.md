@@ -117,6 +117,22 @@ flowchart TB
 
 ---
 
+## 9. Quy luật simulation (rules)
+
+Công thức và hằng số dùng trong engine Rust (`worldos-core`), có thể chỉnh qua `constants.rs` hoặc genome (world_config).
+
+| Khái niệm | Mô tả |
+|-----------|--------|
+| **Entropy** | Trung bình entropy các zone + drift cơ bản mỗi tick (`ENTROPY_DRIFT_PER_TICK`). Có drift nên entropy không thể luôn 0 khi đã chạy tick. |
+| **Stability / order** | Hàm của entropy (và áp lực vật chất); order ≈ 1 − entropy·k (có thể điều chỉnh trong zone state). |
+| **Collapse** | Khi pressure vượt ngưỡng (`COLLAPSE_THRESHOLD`) → trigger cascade/sự kiện. |
+| **Meta-cycle** | Khi SCI dưới ngưỡng (`META_CYCLE_SCI_THRESHOLD`) → chuyển phase meta. |
+| **Diffusion** | Lan truyền entropy/tech/culture giữa zone láng giềng; hệ số `BETA_DIFFUSION`. |
+
+**Bootstrap zone:** Engine không bao giờ chạy tick với `zones.len() == 0`. Nếu state nhận từ PHP có `zones` rỗng (universe mới hoặc state_vector chưa có zones), engine tự bootstrap một zone chuẩn (`UniverseState::with_one_zone`) và giữ `tick` từ input → metrics (entropy, stability) thay đổi ngay từ request đầu tiên; PHP lưu `state_vector` (có zones) từ snapshot để lần advance tiếp theo gửi đủ state.
+
+---
+
 ## 10. Các lỗi đã sửa (rà soát engine/simulation)
 
 | Vấn đề | Cách xử lý |
@@ -151,6 +167,7 @@ flowchart TB
 | SyncToGraph: snapshot ảo có id null | Truyền `snapshot_id => $snapshot->exists ? $snapshot->id : null`; log ghi rõ (virtual) khi không exists. |
 | DiplomaticResonanceEngine: biến $civArray sai tên | Sửa thành $civsArray khi gán $civA, $civB. |
 | **Zones không sinh sau 100 tick** | Bootstrap: `ensureStateVectorHasZones()` trong AdvanceSimulationAction khi engine trả về state_vector không có zones; GetUniverseTopologyAction fallback sang `universe.state_vector['zones']` khi snapshot không có. |
+| **Entropy luôn 0 khi universe mới (zones rỗng)** | Engine Rust: trong `run_advance` và `run_observe`, sau khi có state nếu `state.zones.is_empty()` thì bootstrap `UniverseState::with_one_zone(universe_id, 100.0)` và giữ `state.tick` từ input; PHP: `syncUniverseFromSnapshotData` giữ nguyên `state_vector` từ snapshot (có zones) khi ghi vào universe → lần advance tiếp theo gửi zones đủ. |
 | **Batch 4 – null-safe và type** | |
 | Modules\\ConvergenceEngine (shouldConverge): metrics/alignment null; alignment không phải array | `($snapA->metrics ?? [])['alignment'] ?? null` và kiểm tra `is_array($alignA)` trước khi dùng. |
 | MythicResonanceEngine: state_vector null; decree nhận array thay vì UniverseSnapshot | `($latest->state_vector ?? [])['zones'] ?? []`; gọi `decree($universe, $latest)` thay vì truyền array (type-safe). |

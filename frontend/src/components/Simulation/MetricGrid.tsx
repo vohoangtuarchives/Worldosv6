@@ -26,19 +26,19 @@ export function MetricGrid({ snapshot, className }: MetricGridProps) {
         {
             label: "Stability",
             value: snapshot?.stability_index != null ? `${(snapshot.stability_index * 100).toFixed(1)}%` : "--",
-            desc: "System coherence",
+        desc: "Độ gắn kết hệ thống",
             color: "text-blue-400",
         },
         {
             label: "Complexity (SCI)",
             value: snapshot?.metrics?.sci != null ? `${(snapshot.metrics.sci * 100).toFixed(1)}%` : (snapshot?.sci != null ? `${(snapshot.sci * 100).toFixed(1)}%` : "--"),
-            desc: "Societal complexity",
+            desc: "Độ phức tạp xã hội",
             color: "text-purple-400",
         },
         {
             label: "Knowledge",
             value: snapshot?.metrics?.knowledge != null ? `${(snapshot.metrics.knowledge * 100).toFixed(1)}%` : (snapshot?.state_vector?.knowledge != null ? `${(snapshot.state_vector.knowledge * 100).toFixed(1)}%` : "--"),
-            desc: "Tech. advancement",
+            desc: "Tiến bộ công nghệ",
             color: "text-emerald-400",
         },
     ];

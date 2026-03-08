@@ -18,6 +18,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        // Ensure Monolog handler base classes load before config/logging.php references StreamHandler (fixes "AbstractHandler not found" on seed)
+        class_exists(\Monolog\Handler\AbstractHandler::class, true);
+
         $this->app->bind(SimulationEngineClientInterface::class, function ($app) {
             $url = (string) config('worldos.simulation_engine_grpc_url', '');
             if ($url !== '' && (str_starts_with($url, 'http://') || str_starts_with($url, 'https://'))) {

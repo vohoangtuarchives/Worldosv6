@@ -65,7 +65,7 @@ class AuthController extends Controller
     {
         // Revoke the token that was used to authenticate the current request
         $request->user()->currentAccessToken()->delete();
-        return response()->json(['message' => 'Logged out successfully']);
+        return response()->json(['message' => 'Đã đăng xuất']);
     }
 
     public function me(Request $request)

@@ -53,7 +53,7 @@ export default function LoginPage() {
           <div className="space-y-4 rounded-md shadow-sm">
             <div>
               <label htmlFor="email" className="sr-only">
-                Email address
+                Địa chỉ email
               </label>
               <input
                 id="email"
@@ -62,12 +62,12 @@ export default function LoginPage() {
                 autoComplete="email"
                 required
                 className="relative block w-full rounded-md border-0 bg-muted/50 py-3 text-foreground shadow-sm ring-1 ring-inset ring-border placeholder:text-muted-foreground focus:z-10 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6 px-4"
-                placeholder="Email address"
+                placeholder="Địa chỉ email"
               />
             </div>
             <div>
               <label htmlFor="password" className="sr-only">
-                Password
+                Mật khẩu
               </label>
               <input
                 id="password"
@@ -76,7 +76,7 @@ export default function LoginPage() {
                 autoComplete="current-password"
                 required
                 className="relative block w-full rounded-md border-0 bg-muted/50 py-3 text-foreground shadow-sm ring-1 ring-inset ring-border placeholder:text-muted-foreground focus:z-10 focus:ring-2 focus:ring-inset focus:ring-primary sm:text-sm sm:leading-6 px-4"
-                placeholder="Password"
+                placeholder="Mật khẩu"
               />
             </div>
           </div>
@@ -87,7 +87,7 @@ export default function LoginPage() {
               disabled={loading}
               className="group relative flex w-full justify-center rounded-[var(--radius)] bg-primary px-3 py-3 text-sm font-semibold text-primary-foreground hover:bg-[hsl(var(--left-brain-glow))] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-70 transition-all glow-left-brain"
             >
-              {loading ? "Đang xác thực..." : "Truy cập System"}
+              {loading ? "Đang xác thực..." : "Đăng nhập"}
             </button>
           </div>
         </form>

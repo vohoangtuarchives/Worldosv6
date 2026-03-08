@@ -128,4 +128,29 @@ class IpFactoryController extends Controller
         }
         return response()->json($bible);
     }
+
+    /**
+     * PUT /api/ip-factory/series/{series}/publish
+     * Xuất bản bộ truyện: set slug, description, published_at.
+     */
+    public function publish(Request $request, NarrativeSeries $series): JsonResponse
+    {
+        $validated = $request->validate([
+            'slug' => 'required|string|max:255|unique:narrative_series,slug,' . $series->id,
+            'description' => 'nullable|string|max:5000',
+        ]);
+
+        $slug = \Illuminate\Support\Str::slug($validated['slug']);
+        if ($slug === '') {
+            return response()->json(['error' => 'Slug không hợp lệ.'], 422);
+        }
+
+        $series->update([
+            'slug' => $slug,
+            'description' => $validated['description'] ?? $series->description,
+            'published_at' => now(),
+        ]);
+
+        return response()->json($series->fresh());
+    }
 }

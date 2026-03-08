@@ -92,7 +92,7 @@ function MaterialNode({ data, selected }: NodeProps) {
       <div className={`text-[10px] mt-1 flex items-center justify-between ${isActive ? "text-cyan-400" : "text-slate-500"}`}>
         <span className="font-mono">{d.ontology ?? "—"}</span>
         {isActive && (
-          <span className="font-bold uppercase tracking-widest text-[9px] drop-shadow-[0_0_5px_rgba(6,182,212,0.8)]">Active</span>
+          <span className="font-bold uppercase tracking-widest text-[9px] drop-shadow-[0_0_5px_rgba(6,182,212,0.8)]">Đang hoạt động</span>
         )}
       </div>
     </div>
@@ -159,11 +159,11 @@ export function MaterialDagGraph({ nodes, edges, className = "" }: MaterialDagGr
           <div className="flex items-center gap-3 text-[10px] text-slate-400 font-mono tracking-widest uppercase">
             <span className="flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-full bg-cyan-500 shadow-[0_0_8px_rgba(6,182,212,0.8)]" />
-              Active
+            Đang hoạt động
             </span>
             <span className="flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded border border-slate-700 bg-slate-800" />
-              Inactive
+              Không hoạt động
             </span>
           </div>
           <button
@@ -171,7 +171,7 @@ export function MaterialDagGraph({ nodes, edges, className = "" }: MaterialDagGr
             onClick={onLayout}
             className="px-3 py-1.5 text-[10px] font-bold tracking-widest uppercase rounded border border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
           >
-            Re-layout
+            Sắp xếp lại
           </button>
         </Panel>
       </ReactFlow>

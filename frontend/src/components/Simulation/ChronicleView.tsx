@@ -112,7 +112,7 @@ export const ChronicleView: React.FC<{ universeId: number }> = ({ universeId }) 
             `}</style>
 
             <div className="p-3 bg-slate-800/30 border-t border-slate-700/50 flex justify-between items-center">
-                <span className="text-[10px] text-slate-500 uppercase tracking-widest">Deep Observation Layer</span>
+                <span className="text-[10px] text-slate-500 uppercase tracking-widest">Lớp quan sát sâu</span>
                 <div className="flex gap-2">
                     <div className="w-1.5 h-1.5 rounded-full bg-amber-500/50 animate-pulse" />
                     <div className="w-1.5 h-1.5 rounded-full bg-amber-500/50 animate-pulse [animation-delay:200ms]" />

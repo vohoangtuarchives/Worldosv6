@@ -20,8 +20,47 @@ use App\Models\LegendaryAgent;
 Route::post('/login', [AuthController::class, 'login'])->name('login');
 Route::post('/register', [AuthController::class, 'register']);
 
+// Kiểm tra ghi log: GET /api/log-test (không cần auth). Gọi xong xem storage/logs/laravel.log
+Route::get('/log-test', function () {
+    $path = storage_path('logs/laravel.log');
+    \Illuminate\Support\Facades\Log::channel('single')->info('LOG-TEST: Laravel đã ghi log thành công.');
+    @file_put_contents($path, '[' . date('Y-m-d H:i:s') . '] local.INFO: LOG-TEST: Laravel đã ghi log thành công.' . "\n", FILE_APPEND);
+    return response()->json([
+        'ok' => true,
+        'message' => 'Đã ghi log. Kiểm tra file bên dưới.',
+        'log_path' => $path,
+    ]);
+});
+
+// Xem nội dung log (dòng cuối, để kiểm tra không cần SSH): GET /api/log-view
+Route::get('/log-view', function () {
+    $path = storage_path('logs/laravel.log');
+    $maxLines = (int) request()->input('lines', 100);
+    $maxLines = min(max(1, $maxLines), 500);
+    if (!is_file($path)) {
+        return response()->json(['ok' => false, 'log_path' => $path, 'content' => null, 'message' => 'File log chưa tồn tại.']);
+    }
+    $content = file_get_contents($path);
+    $lines = explode("\n", $content);
+    $last = array_slice($lines, -$maxLines);
+    return response()->json([
+        'ok' => true,
+        'log_path' => $path,
+        'lines' => count($last),
+        'content' => implode("\n", $last),
+    ]);
+});
+
 // Phase 124: Bloom UI DAG Data (Public Endpoint)
 Route::get('/bloom/multiverse', [MultiverseMapController::class, 'bloom'])->name('worldos.bloom.multiverse.public');
+
+// Public reader API (no auth) - One IP / published series
+Route::prefix('public/series')->group(function () {
+    Route::get('{slug}', [\App\Http\Controllers\Api\PublicSeriesController::class, 'show']);
+    Route::get('{slug}/chapters', [\App\Http\Controllers\Api\PublicSeriesController::class, 'chapters']);
+    Route::get('{slug}/chapters/{chapter}', [\App\Http\Controllers\Api\PublicSeriesController::class, 'chapter']);
+    Route::get('{slug}/bible', [\App\Http\Controllers\Api\PublicSeriesController::class, 'bible']);
+});
 
 /*
 |--------------------------------------------------------------------------
@@ -49,6 +88,43 @@ Route::middleware('auth:sanctum')->prefix('worldos')->group(function () {
         $worlds = \App\Models\World::with('multiverse:id,name')->get(['id', 'multiverse_id', 'name', 'slug', 'current_genre', 'base_genre']);
         return response()->json($worlds);
     })->name('worldos.worlds.index');
+
+    Route::get('worlds/{id}/ip', function (string $id) {
+        $world = \App\Models\World::findOrFail((int) $id);
+        $universes = $world->universes()->get(['id', 'name', 'world_id']);
+        $universeIds = $universes->pluck('id')->toArray();
+        $series = \App\Models\NarrativeSeries::with(['chapters' => fn ($q) => $q->orderBy('chapter_index')])
+            ->whereIn('universe_id', $universeIds)
+            ->get();
+        $chronicles = \App\Models\Chronicle::whereIn('universe_id', $universeIds)
+            ->orderByDesc('to_tick')
+            ->limit(100)
+            ->get(['id', 'universe_id', 'from_tick', 'to_tick', 'content', 'type', 'created_at']);
+        $bibles = \App\Models\StoryBible::whereIn('series_id', $series->pluck('id'))->get();
+        $characters = [];
+        $lore = [];
+        foreach ($bibles as $bible) {
+            foreach ($bible->characters ?? [] as $c) {
+                $characters[] = array_merge($c, ['_series_id' => $bible->series_id]);
+            }
+            foreach ($bible->lore ?? [] as $l) {
+                $lore[] = array_merge(is_array($l) ? $l : ['text' => $l], ['_series_id' => $bible->series_id]);
+            }
+        }
+        return response()->json([
+            'world' => $world->only(['id', 'name', 'slug', 'current_genre', 'base_genre']),
+            'universes' => $universes->map(fn ($u) => [
+                'id' => $u->id,
+                'name' => $u->name,
+                'series' => $series->where('universe_id', $u->id)->values()->toArray(),
+                'chronicles' => $chronicles->where('universe_id', $u->id)->values()->toArray(),
+            ])->toArray(),
+            'aggregated_bibles' => [
+                'characters' => $characters,
+                'lore' => $lore,
+            ],
+        ]);
+    })->name('worldos.worlds.ip');
 
     Route::post('worlds', function (SagaService $sagaService) {
         $name = request()->input('name');
@@ -108,7 +184,7 @@ Route::middleware('auth:sanctum')->prefix('worldos')->group(function () {
     Route::get('universes/{id}/snapshot', function (string $id, UniverseSnapshotRepository $repo) {
         $snapshot = $repo->getLatest((int) $id);
         if (! $snapshot) {
-            return response()->json(['message' => 'No snapshot found'], 404);
+            return response()->json(['message' => 'Không tìm thấy snapshot'], 404);
         }
         return response()->json($snapshot);
     })->name('worldos.universes.snapshot');
@@ -131,6 +207,39 @@ Route::middleware('auth:sanctum')->prefix('worldos')->group(function () {
             ->paginate((int)$limit);
         return response()->json($chronicles);
     })->name('worldos.universes.chronicles');
+
+    Route::post('universes/{id}/generate-chronicle', function (string $id, \Illuminate\Http\Request $request, \App\Services\Narrative\NarrativeAiService $narrativeAi) {
+        $universeId = (int) $id;
+        $universe = \App\Models\Universe::findOrFail($universeId);
+        $fromTick = $request->input('from_tick');
+        $toTick = $request->input('to_tick');
+        if ($fromTick === null || $fromTick === '') {
+            $first = $universe->snapshots()->orderBy('tick')->first();
+            $latest = $universe->snapshots()->orderByDesc('tick')->first();
+            $fromTick = $first ? (int) $first->tick : 0;
+            $toTick = $toTick !== null && $toTick !== '' ? (int) $toTick : ($latest ? (int) $latest->tick : $fromTick);
+        } else {
+            $fromTick = (int) $fromTick;
+            if ($toTick !== null && $toTick !== '') {
+                $toTick = (int) $toTick;
+            } else {
+                $latest = $universe->snapshots()->orderByDesc('tick')->first();
+                $toTick = $latest ? (int) $latest->tick : $fromTick;
+            }
+        }
+        $chronicle = $narrativeAi->generateChronicle($universeId, $fromTick, $toTick, 'chronicle');
+        if (!$chronicle) {
+            return response()->json(['message' => 'Không thể sinh sử thi.'], 422);
+        }
+        return response()->json([
+            'data' => [
+                'id' => $chronicle->id,
+                'content' => $chronicle->content,
+                'from_tick' => $chronicle->from_tick,
+                'to_tick' => $chronicle->to_tick,
+            ],
+        ]);
+    })->name('worldos.universes.generate-chronicle');
 
     Route::get('universes/{id}/materials', function (string $id) {
         $materials = \App\Models\MaterialInstance::with('material:id,name,ontology,description')
@@ -180,7 +289,7 @@ Route::middleware('auth:sanctum')->prefix('worldos')->group(function () {
         $result = $action->execute($universe, $edictId);
         
         if ($result['ok']) {
-            return response()->json(['message' => 'Edict decreed successfully']);
+            return response()->json(['message' => 'Đã ban hành sắc lệnh thành công']);
         }
         return response()->json($result, 400);
     })->name('worldos.universes.decree');
@@ -196,7 +305,7 @@ Route::middleware('auth:sanctum')->prefix('worldos')->group(function () {
         return response()->json($interactions);
     })->name('worldos.universes.interactions');
 
-    // --- Causal Trajectory & Event Horizons (Phân tích quỹ đạo nhân quả) ---
+    // --- Causal Trajectory & Event Horizons (Ph?n t?ch qu? d?o nh?n qu?) ---
     Route::get('universes/{id}/causal-trajectories', function (string $id) {
         $trajectories = \App\Models\CausalTrajectory::where('universe_id', (int) $id)
             ->where('is_fulfilled', false)
@@ -224,7 +333,7 @@ Route::middleware('auth:sanctum')->prefix('worldos')->group(function () {
     Route::get('universes/{id}/evaluate', function (string $id, UniverseSnapshotRepository $repo, UniverseEvaluatorInterface $evaluator) {
         $snapshot = $repo->getLatest((int) $id);
         if (! $snapshot) {
-            return response()->json(['message' => 'No snapshot found'], 404);
+            return response()->json(['message' => 'Không tìm thấy snapshot'], 404);
         }
         $result = $evaluator->evaluate($snapshot);
         return response()->json($result);
@@ -262,7 +371,7 @@ Route::middleware('auth:sanctum')->prefix('worldos')->group(function () {
     Route::post('universes/{id}/decide', function (string $id, UniverseSnapshotRepository $repo, DecideUniverseAction $action) {
         $snapshot = $repo->getLatest((int) $id);
         if (! $snapshot) {
-            return response()->json(['message' => 'No snapshot found'], 404);
+            return response()->json(['message' => 'Không tìm thấy snapshot'], 404);
         }
         $result = $action->execute($snapshot);
         return response()->json($result);
@@ -332,6 +441,10 @@ Route::middleware('auth:sanctum')->prefix('worldos')->group(function () {
     })->name('worldos.demo.seed');
 
     Route::post('simulation/advance', function (AdvanceSimulationAction $action) {
+        \Illuminate\Support\Facades\Log::info('Simulation: advance route hit', [
+            'universe_id' => request()->input('universe_id'),
+            'ticks' => request()->input('ticks'),
+        ]);
         $universeId = (int) request()->input('universe_id', 0);
         $ticks = (int) request()->input('ticks', 1);
         if ($universeId < 1 || $ticks < 1) {
@@ -458,18 +571,18 @@ Route::middleware('auth:sanctum')->prefix('worldos')->group(function () {
         return response()->json($action->execute($universe->world_id));
     })->name('worldos.multiverse.tree');
 
-    // Phase 69: Multiverse DAG Map (§V12)
+    // Phase 69: Multiverse DAG Map (?V12)
     Route::get('multiverse/map', [MultiverseMapController::class, 'index'])
         ->name('worldos.multiverse.map');
 
-    // Phase 69: Legendary Archive (§V12)
+    // Phase 69: Legendary Archive (?V12)
     Route::get('legends', function () {
         return response()->json(LegendaryAgent::with('universe:id,name')->orderByDesc('tick_discovered')->get());
     })->name('worldos.legends.index');
 
     // Phase 124 API mapping moved to public space
 
-    // Phase 88: Observer Console (§V18)
+    // Phase 88: Observer Console (?V18)
     Route::get('observer/dashboard', [\App\Http\Controllers\Api\ObserverDashboardController::class, 'getStatus'])
         ->name('worldos.observer.dashboard');
 
@@ -493,6 +606,41 @@ Route::middleware('auth:sanctum')->prefix('worldos')->group(function () {
         Route::get('intelligence', [\App\Modules\Intelligence\Http\Controllers\DashboardController::class, 'intelligence'])->name('worldos.lab.dashboard.intelligence');
         Route::post('intervene', [\App\Modules\Intelligence\Http\Controllers\DashboardController::class, 'intervene'])->name('worldos.lab.dashboard.intervene');
     });
+    Route::post('narrative-studio/generate', function (
+        \Illuminate\Http\Request $request,
+        \App\Services\Narrative\NarrativeStudioService $studio
+    ) {
+        $payload = $request->validate([
+            'universe_id' => ['required', 'integer', 'exists:universes,id'],
+            'preset' => ['required', 'string', 'in:chronicle,story,beats'],
+            'facts' => ['required', 'array', 'min:1'],
+            'facts.*.id' => ['nullable', 'string'],
+            'facts.*.tick' => ['nullable', 'integer'],
+            'facts.*.title' => ['nullable', 'string'],
+            'facts.*.summary' => ['nullable', 'string'],
+            'facts.*.kind' => ['nullable', 'string'],
+            'facts.*.severity' => ['nullable', 'string'],
+            'facts.*.angle' => ['nullable', 'string'],
+            'facts.*.evidence' => ['nullable', 'array'],
+            'facts.*.evidence.*.label' => ['nullable', 'string'],
+            'facts.*.evidence.*.value' => ['nullable', 'string'],
+            'current_draft' => ['nullable', 'string'],
+            'epic_chronicle' => ['nullable', 'string'],
+        ]);
+
+        $universe = \App\Models\Universe::with('world:id,name,current_genre,base_genre')
+            ->findOrFail((int) $payload['universe_id']);
+
+        $result = $studio->generateFromFacts(
+            $universe,
+            $payload['facts'],
+            $payload['preset'],
+            $payload['current_draft'] ?? null,
+            $payload['epic_chronicle'] ?? null
+        );
+
+        return response()->json(['data' => $result]);
+    })->name('worldos.narrative-studio.generate');
 
     // =========================================================================
     // IP Factory Pipeline
@@ -505,6 +653,8 @@ Route::middleware('auth:sanctum')->prefix('worldos')->group(function () {
         Route::post('series/{series}/generate-chapter', [\App\Http\Controllers\Api\IpFactoryController::class, 'generateChapter'])->name('ip-factory.series.generate-chapter');
         Route::post('series/{series}/chapters/{chapter}/canonize', [\App\Http\Controllers\Api\IpFactoryController::class, 'canonize'])->name('ip-factory.series.chapters.canonize');
         Route::get('series/{series}/bible', [\App\Http\Controllers\Api\IpFactoryController::class, 'bible'])->name('ip-factory.series.bible');
+        Route::put('series/{series}/publish', [\App\Http\Controllers\Api\IpFactoryController::class, 'publish'])->name('ip-factory.series.publish');
         Route::get('loom-status', [\App\Http\Controllers\Api\Loom\LoomStatusController::class, 'index'])->name('ip-factory.loom-status');
     });
 });
+

@@ -32,6 +32,8 @@ services:
       - internal
 
   # Backend (PHP-FPM)
+  # Use image's /var/www (code + vendor from build). Only mount storage and bootstrap/cache
+  # so vendor stays from image (no dev deps → no Whoops I/O error on Windows bind mount).
   backend:
     build:
       context: ../backend
@@ -50,7 +52,8 @@ services:
       REDIS_HOST: redis
       SIMULATION_ENGINE_GRPC_URL: http://engine:50052
     volumes:
-      - ../backend:/var/www
+      - backend_storage:/var/www/storage
+      - backend_bootstrap_cache:/var/www/bootstrap/cache
       - backend_public:/var/www/public
     depends_on:
       postgres:
@@ -79,7 +82,8 @@ services:
       REDIS_HOST: redis
     command: php artisan schedule:work
     volumes:
-      - ../backend:/var/www
+      - backend_storage:/var/www/storage
+      - backend_bootstrap_cache:/var/www/bootstrap/cache
     depends_on:
       postgres:
         condition: service_healthy
@@ -107,7 +111,8 @@ services:
       REDIS_HOST: redis
     command: php artisan queue:work
     volumes:
-      - ../backend:/var/www
+      - backend_storage:/var/www/storage
+      - backend_bootstrap_cache:/var/www/bootstrap/cache
     depends_on:
       postgres:
         condition: service_healthy
@@ -199,6 +204,8 @@ volumes:
   worldos_prod_pgdata:
   worldos_prod_redisdata:
   backend_public:
+  backend_storage:
+  backend_bootstrap_cache:
 
 
 networks:

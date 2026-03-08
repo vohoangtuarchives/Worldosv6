@@ -39,6 +39,7 @@ class ActorTransitionSystem
 
     /**
      * Survival check using logistic probability against state and entropy.
+     * Includes a small baseline mortality per tick so that over many ticks some actors eventually perish.
      */
     public function processSurvival(ActorState $state, float $entropy, SimulationRng $rng): ActorState
     {
@@ -46,10 +47,17 @@ class ActorTransitionSystem
             return $state;
         }
 
-        $resilience = $state->traits['resilience'] ?? 0.5; // Example surrogate
-        
-        // Probability of survival formula (Logistic)
-        $prob = 1 / (1 + exp(-($resilience * 0.6 + (1 - $entropy) * 0.4)));
+        // Resilience: support both named key and numeric trait index (ActorEntity default traits use 0..16)
+        $resilience = $state->traits['resilience'] ?? $state->traits[10] ?? 0.5;
+        $resilience = max(0, min(1, (float) $resilience));
+
+        // Probability of survival (logistic): higher resilience + lower entropy => higher survival
+        $logit = $resilience * 0.6 + (1 - $entropy) * 0.4;
+        $prob = 1 / (1 + exp(-$logit));
+
+        // Baseline mortality per tick (~1.5%) để luôn có một phần actor chết theo thời gian
+        $baselineDeathChance = 0.015;
+        $prob = $prob * (1 - $baselineDeathChance);
 
         if ($rng->nextFloat() > $prob) {
             return $state->with(['isAlive' => false]);

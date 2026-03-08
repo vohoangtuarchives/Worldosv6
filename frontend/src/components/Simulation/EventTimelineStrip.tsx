@@ -119,7 +119,7 @@ export function EventTimelineStrip({
         className={`flex items-center justify-center min-h-[260px] text-slate-500 ${className}`}
       >
         <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
-        <span className="ml-2 text-sm">Đang tải event timeline...</span>
+        <span className="ml-2 text-sm">Đang tải timeline sự kiện...</span>
       </div>
     );
   }
@@ -180,7 +180,7 @@ export function EventTimelineStrip({
           <History className="w-3 h-3" /> Chronicle
         </span>
         <span className="flex items-center gap-1">
-          <GitBranch className="w-3 h-3" /> Branch
+          <GitBranch className="w-3 h-3" /> Nhánh
         </span>
       </div>
     </div>

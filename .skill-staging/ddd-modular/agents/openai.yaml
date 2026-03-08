@@ -1,0 +1,4 @@
+interface:
+  display_name: "DDD Modular"
+  short_description: "Design DDD modular monolith boundaries"
+  default_prompt: "Use $ddd-modular to design or review a DDD modular monolith structure."

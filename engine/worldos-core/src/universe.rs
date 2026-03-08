@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 
 use crate::constants;
-use crate::types::{CivilizationFields, CulturalVector, SimulationMetrics, UniverseSnapshot, ZoneState};
+use crate::types::{CivilizationFields, CivilizationPhase, CulturalVector, SimulationMetrics, UniverseSnapshot, ZoneState};
 
 /// Opaque zone key (for future SlotMap use).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -26,6 +26,10 @@ pub struct UniverseState {
     pub global_fields: CivilizationFields,
     #[serde(default)]
     pub scars: Vec<serde_json::Value>,
+    #[serde(default)]
+    pub attractors: Vec<crate::types::CivilizationAttractor>,
+    #[serde(default)]
+    pub dark_attractors: Vec<crate::types::DarkAttractor>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -36,6 +40,55 @@ pub struct ZoneStateSerial {
 }
 
 impl UniverseState {
+    fn refresh_aggregates(&mut self) {
+        let n = self.zones.len() as f64;
+        if n <= 0.0 {
+            return;
+        }
+
+        self.global_entropy = self.zones.iter().map(|z| z.state.entropy).sum::<f64>() / n;
+        self.knowledge_core = self
+            .zones
+            .iter()
+            .map(|z| z.state.embodied_knowledge)
+            .sum::<f64>()
+            / n;
+
+        let avg_stress: f64 = self
+            .zones
+            .iter()
+            .map(|z| z.state.material_stress)
+            .sum::<f64>()
+            / n;
+        self.sci = (1.0 - (avg_stress * 0.4 + self.global_entropy * 0.2)).clamp(0.0, 1.0);
+        self.instability_gradient = (avg_stress - 0.5).max(0.0) * 2.0;
+
+        self.global_fields.survival = self
+            .zones
+            .iter()
+            .map(|z| z.state.civ_fields.survival)
+            .sum::<f64>()
+            / n;
+        self.global_fields.power = self.zones.iter().map(|z| z.state.civ_fields.power).sum::<f64>() / n;
+        self.global_fields.wealth = self
+            .zones
+            .iter()
+            .map(|z| z.state.civ_fields.wealth)
+            .sum::<f64>()
+            / n;
+        self.global_fields.knowledge = self
+            .zones
+            .iter()
+            .map(|z| z.state.civ_fields.knowledge)
+            .sum::<f64>()
+            / n;
+        self.global_fields.meaning = self
+            .zones
+            .iter()
+            .map(|z| z.state.civ_fields.meaning)
+            .sum::<f64>()
+            / n;
+    }
     pub fn new(universe_id: u64) -> Self {
         Self {
             universe_id,
@@ -47,6 +100,8 @@ impl UniverseState {
             sci: 1.0,
             global_fields: CivilizationFields::default(),
             scars: Vec::new(),
+            attractors: Vec::new(),
+            dark_attractors: Vec::new(),
         }
     }
 
@@ -68,6 +123,8 @@ impl UniverseState {
             sci: 1.0,
             global_fields: CivilizationFields::default(),
             scars: Vec::new(),
+            attractors: Vec::new(),
+            dark_attractors: Vec::new(),
         }
     }
 
@@ -90,6 +147,10 @@ impl UniverseState {
             // Decay: structured loses to entropy
             z.state.structured_mass -= entropy * 0.02 * structured;
             z.state.structured_mass = z.state.structured_mass.max(0.0);
+
+            // Drift nhẹ mỗi tick; có drift thì entropy không thể là 0 — sàn bằng đúng lượng drift
+            z.state.entropy = (z.state.entropy + constants::ENTROPY_DRIFT_PER_TICK).min(1.0);
+            z.state.entropy = z.state.entropy.max(constants::ENTROPY_DRIFT_PER_TICK);
 
             // Material Pressure Resolver (WorldOS V6 §8.3)
             // Resonance: >=2 materials same slug -> 1.5x effect; else 1.0
@@ -186,6 +247,17 @@ impl UniverseState {
             self.global_fields.meaning = self.zones.iter().map(|z| z.state.civ_fields.meaning).sum::<f64>() / n;
         }
 
+        // Level-8: Attractor Field Engine — zones pulled by civilization attractors
+        self.apply_attractor_fields();
+        // Level-8: Dark Attractor — high entropy/trauma/inequality pulls toward collapse
+        self.apply_dark_attractors();
+        // Level-8: Intelligence Explosion — knowledge/energy/openness boost
+        self.apply_intelligence_explosion();
+        // Level-8: Phase Transition — Tribal → Agrarian → ... → Information
+        for z in &mut self.zones {
+            Self::check_phase_transition(&mut z.state);
+        }
+
         // Phase 3: Diffusion (Entropy, Tech, Culture) (§3, §4.4)
         let beta = genome.diffusion_rate;
         let mut entropy_deltas = vec![0.0; self.zones.len()];
@@ -272,6 +344,7 @@ impl UniverseState {
             z.state.civ_fields.meaning = (z.state.civ_fields.meaning + civ_field_deltas[i].meaning).clamp(0.0, 1.0);
         }
 
+        self.refresh_aggregates();
         self.tick += 1;
     }
 
@@ -324,14 +397,137 @@ impl UniverseState {
         (z.inequality * 0.2 + z.entropy * 0.3 + z.trauma * 0.2 + z.material_stress * 0.3).clamp(0.0, 1.0)
     }
 
+    /// Level-8: Civilization Attractor Field — attractors pull zone civ_fields by distance decay.
+    pub fn apply_attractor_fields(&mut self) {
+        use crate::types::CivilizationAttractor;
+        for attractor in &self.attractors {
+            for zone in &mut self.zones {
+                let distance = ((zone.id as i64 - attractor.zone_id as i64).abs() as f64) + 1.0;
+                let influence = (attractor.radius / distance).powf(attractor.decay);
+                zone.state.civ_fields.power += attractor.power * influence * 0.02;
+                zone.state.civ_fields.wealth += attractor.wealth * influence * 0.02;
+                zone.state.civ_fields.knowledge += attractor.knowledge * influence * 0.02;
+                zone.state.civ_fields.meaning += attractor.meaning * influence * 0.02;
+                zone.state.civ_fields.survival += attractor.survival * influence * 0.02;
+                zone.state.civ_fields.clamp_mut();
+            }
+        }
+    }
+
+    /// Level-8: Dark Attractor — high entropy/trauma/inequality pulls zone toward collapse.
+    pub fn apply_dark_attractors(&mut self) {
+        use crate::types::DarkAttractor;
+        for attractor in &self.dark_attractors {
+            for z in &mut self.zones {
+                let e_ratio = z.state.entropy / (attractor.entropy_threshold + 1e-6);
+                let t_ratio = z.state.trauma / (attractor.trauma_threshold + 1e-6);
+                let i_ratio = z.state.inequality / (attractor.inequality_threshold + 1e-6);
+                let risk = ((e_ratio + t_ratio + i_ratio) / 3.0).min(2.0);
+                if risk > 1.0 {
+                    let pull = attractor.pull_strength * risk * 0.02;
+                    z.state.entropy = (z.state.entropy + pull * 0.05).min(1.0);
+                    z.state.trauma = (z.state.trauma + pull * 0.03).min(1.0);
+                    z.state.cultural.collective_trust =
+                        (z.state.cultural.collective_trust - pull * 0.04).max(0.0);
+                    z.state.cultural.clamp_mut();
+                }
+                if risk > 1.5 {
+                    z.state.active_materials.clear();
+                    z.state.structured_mass *= 0.95;
+                    z.state.trauma = (z.state.trauma + 0.1).min(1.0);
+                }
+            }
+        }
+    }
+
+    /// Level-8: Intelligence Explosion — high knowledge/energy/openness boosts growth.
+    pub fn apply_intelligence_explosion(&mut self) {
+        for z in &mut self.zones {
+            let score = z.state.knowledge_frontier * 0.4
+                + (z.state.free_energy / (z.state.base_mass + 1e-6)).min(1.0) * 0.3
+                + z.state.cultural.innovation_openness * 0.3
+                - z.state.entropy * 0.3;
+            if score > 0.6 {
+                let boost = score * 0.02;
+                z.state.embodied_knowledge = (z.state.embodied_knowledge + boost).min(1.0);
+                z.state.knowledge_frontier = (z.state.knowledge_frontier + boost).min(z.state.tech_ceiling);
+                z.state.tech_ceiling = (z.state.tech_ceiling + boost * 0.5).min(1.0);
+                z.state.free_energy += boost * z.state.base_mass * 0.1;
+            }
+        }
+    }
+
+    /// Level-8: Phase Transition — advance zone phase when thresholds are met.
+    pub fn check_phase_transition(zone: &mut ZoneState) {
+        use crate::types::CivilizationPhase;
+        match zone.phase {
+            CivilizationPhase::Tribal => {
+                if zone.structured_mass > 50.0 {
+                    zone.phase = CivilizationPhase::Agrarian;
+                }
+            }
+            CivilizationPhase::Agrarian => {
+                if zone.knowledge_frontier > 0.2 {
+                    zone.phase = CivilizationPhase::Kingdom;
+                }
+            }
+            CivilizationPhase::Kingdom => {
+                if zone.embodied_knowledge > 0.4 {
+                    zone.phase = CivilizationPhase::Empire;
+                }
+            }
+            CivilizationPhase::Empire => {
+                let energy_ratio = (zone.free_energy / (zone.base_mass + 1e-6)).min(1.0);
+                if energy_ratio > 0.6 {
+                    zone.phase = CivilizationPhase::Industrial;
+                }
+            }
+            CivilizationPhase::Industrial => {
+                if zone.knowledge_frontier > 0.8 {
+                    zone.phase = CivilizationPhase::Information;
+                }
+            }
+            CivilizationPhase::Information => {}
+        }
+    }
+
+    /// Level-8: Possibility Space Navigator — run horizon ticks on clones, return future outcomes.
+    pub fn explore_futures(
+        &self,
+        world: &crate::types::WorldConfig,
+        horizon: u32,
+        num_branches: usize,
+    ) -> Vec<crate::types::FutureOutcome> {
+        let mut futures = Vec::with_capacity(num_branches);
+        for _ in 0..num_branches {
+            let mut sim = self.clone();
+            for _ in 0..horizon {
+                sim.tick(world);
+            }
+            futures.push(crate::types::FutureOutcome {
+                entropy: sim.global_entropy,
+                knowledge: sim.knowledge_core,
+                sci: sim.sci,
+                tick: sim.tick,
+            });
+        }
+        futures
+    }
+
     pub fn to_snapshot(&self) -> UniverseSnapshot {
-        let state_vector = serde_json::to_value(&self.zones).unwrap_or(serde_json::json!([]));
+        let state_vector = serde_json::to_value(self).unwrap_or(serde_json::json!({}));
         let metrics = self.calculate_metrics();
+        // Có drift (đã chạy ít nhất 1 tick) thì entropy không thể là 0 — sàn khi trả snapshot
+        let entropy_val = if self.tick > 0 {
+            self.global_entropy.max(constants::ENTROPY_DRIFT_PER_TICK)
+        } else {
+            self.global_entropy
+        };
         UniverseSnapshot {
             universe_id: self.universe_id,
             tick: self.tick,
             state_vector,
-            entropy: Some(self.global_entropy),
+            entropy: Some(entropy_val),
             stability_index: Some(metrics.order),
             metrics: Some(serde_json::to_value(&metrics).unwrap_or(serde_json::json!({}))),
         }
@@ -678,4 +874,61 @@ mod tests {
         assert!(z.material_stress >= 0.0 && z.material_stress <= 1.0,
             "After deity interventions: material_stress={} out of [0,1]", z.material_stress);
     }
+
+    /// Level-8: Possibility Space Navigator returns one outcome per branch, with valid metrics.
+    #[test]
+    fn test_explore_futures() {
+        let world = WorldConfig { world_id: 1, axiom: None, world_seed: None, origin: String::new(), genome: None };
+        let state = UniverseState::with_one_zone(1, 100.0);
+        let horizon = 10u32;
+        let num_branches = 5;
+        let futures = state.explore_futures(&world, horizon, num_branches);
+        assert_eq!(futures.len(), num_branches);
+        for (i, f) in futures.iter().enumerate() {
+            assert!(f.entropy >= 0.0 && f.entropy <= 1.0, "branch {} entropy {}", i, f.entropy);
+            assert!(f.knowledge >= 0.0 && f.knowledge <= 1.0, "branch {} knowledge {}", i, f.knowledge);
+            assert!(f.sci >= 0.0 && f.sci <= 1.0, "branch {} sci {}", i, f.sci);
+            assert_eq!(f.tick, state.tick + horizon as u64);
+        }
+    }
+
+    /// Level-8: Attractor, Dark Attractor, Intelligence Explosion, Phase Transition keep invariants.
+    #[test]
+    fn test_level8_engines_boundedness() {
+        use crate::types::{CivilizationAttractor, DarkAttractor, CivilizationPhase};
+        let world = WorldConfig { world_id: 1, axiom: None, world_seed: None, origin: String::new(), genome: None };
+        let mut state = UniverseState::with_one_zone(1, 100.0);
+        state.attractors.push(CivilizationAttractor {
+            id: 1,
+            zone_id: 0,
+            power: 0.5,
+            wealth: 0.3,
+            knowledge: 0.2,
+            meaning: 0.1,
+            survival: 0.4,
+            radius: 10.0,
+            decay: 1.0,
+        });
+        state.dark_attractors.push(DarkAttractor {
+            id: 1,
+            entropy_threshold: 0.5,
+            trauma_threshold: 0.5,
+            inequality_threshold: 0.5,
+            pull_strength: 0.3,
+            collapse_probability: 0.2,
+        });
+        for _ in 0..50 {
+            state.tick(&world);
+        }
+        let z = &state.zones[0].state;
+        assert!(z.civ_fields.power >= 0.0 && z.civ_fields.power <= 1.0);
+        assert!(z.civ_fields.survival >= 0.0 && z.civ_fields.survival <= 1.0);
+        assert!(z.entropy >= 0.0 && z.entropy <= 1.0);
+        assert!(z.trauma >= 0.0 && z.trauma <= 1.0);
+        assert!(z.knowledge_frontier <= z.tech_ceiling);
+        assert!(matches!(z.phase, CivilizationPhase::Tribal | CivilizationPhase::Agrarian | CivilizationPhase::Kingdom | CivilizationPhase::Empire | CivilizationPhase::Industrial | CivilizationPhase::Information));
+    }
 }
+
+
+

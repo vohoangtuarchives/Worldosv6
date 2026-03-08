@@ -96,7 +96,7 @@ export default function UniverseSelector() {
         onClick={seed}
         disabled={busy}
       >
-        {busy ? "Seeding..." : "Seed Demo"}
+        {busy ? "Đang seed..." : "Seed Demo"}
       </button>
     </div>
   );
