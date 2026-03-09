@@ -3,8 +3,12 @@
 namespace App\Simulation\Domain;
 
 /**
- * Immutable read-only view of world state for a simulation tick.
+ * Immutable read-only view of world state for a simulation tick (doc §5).
  * Built from snapshot (and universe). Engines read only; changes go via Effect → EffectResolver.
+ *
+ * state_vector key convention (World State root): planet, civilizations, population,
+ * economy, knowledge, culture, active_attractors, wars. Snapshot JSON may store these
+ * blocks for engines to read via getPlanet(), getCivilizations(), etc.
  */
 final class WorldState
 {
@@ -64,6 +68,62 @@ final class WorldState
     public function getOrder(): float
     {
         return (float) ($this->stateVector['order'] ?? 0);
+    }
+
+    /** World State root (doc §5): planet layer. */
+    public function getPlanet(): array
+    {
+        $v = $this->stateVector['planet'] ?? null;
+        return is_array($v) ? $v : [];
+    }
+
+    /** World State root: civilizations layer. */
+    public function getCivilizations(): array
+    {
+        $v = $this->stateVector['civilizations'] ?? null;
+        return is_array($v) ? $v : [];
+    }
+
+    /** World State root: population layer. */
+    public function getPopulation(): array
+    {
+        $v = $this->stateVector['population'] ?? null;
+        return is_array($v) ? $v : [];
+    }
+
+    /** World State root: economy layer. */
+    public function getEconomy(): array
+    {
+        $v = $this->stateVector['economy'] ?? null;
+        return is_array($v) ? $v : [];
+    }
+
+    /** World State root: knowledge layer. */
+    public function getKnowledge(): array
+    {
+        $v = $this->stateVector['knowledge'] ?? null;
+        return is_array($v) ? $v : [];
+    }
+
+    /** World State root: culture layer. */
+    public function getCulture(): array
+    {
+        $v = $this->stateVector['culture'] ?? null;
+        return is_array($v) ? $v : [];
+    }
+
+    /** World State root: active attractors. */
+    public function getActiveAttractors(): array
+    {
+        $v = $this->stateVector['active_attractors'] ?? null;
+        return is_array($v) ? $v : [];
+    }
+
+    /** World State root: wars / conflicts. */
+    public function getWars(): array
+    {
+        $v = $this->stateVector['wars'] ?? null;
+        return is_array($v) ? $v : [];
     }
 
     /** @return array<string, float> innovation, entropy, order, myth, conflict, ascension, ascension_pressure, collapse_pressure */

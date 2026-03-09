@@ -126,3 +126,16 @@ flowchart TB
 - **worldos.pulse**: run_ideology, run_great_person → EvaluateSimulationResult (gọi Ideology, Great Person mỗi pulse).
 
 CLI: `php artisan worldos:engines {action}`. API: prefix `worldos` (worlds/sagas/universes + timelines, extract-lore, civilization-memory, mythology, ideology, great-person, engines/status). Chi tiết xem [WORLDOS_COMMANDS_AND_API.md](WORLDOS_COMMANDS_AND_API.md).
+
+---
+
+## 5. WorldOS Kernel và Event Bus (refactor theo doc)
+
+- **SimulationKernel**: Chạy **Tick Pipeline** theo `EngineRegistry` (engine sắp xếp theo `priority()`). Mỗi engine gọi `handle(WorldState, TickContext)` → `EngineResult` (events, stateChanges, metrics). Kernel gộp stateChanges thành effects → EffectResolver → WorldState mới; emit events qua **WorldEventBus**.
+- **Engine contract**: `SimulationEngine`: `name()`, `priority()`, `tickRate()`, `handle(WorldState, TickContext): EngineResult`. Engine không sửa state trực tiếp.
+- **WorldEventBus**: `publish(WorldEvent)` → persist vào bảng `world_events`, dispatch Laravel `SimulationEventOccurred`, gọi subscriber theo type. Schema sự kiện: `App\Simulation\Events\WorldEventType`, `App\Simulation\Events\WorldEvent` (doc §16). Interface: `WorldEventBusInterface`; test dùng `NullWorldEventBus`.
+- **Engine emit events (Kernel)**: GeographyEngine (no-op, không emit); PotentialFieldEngine → `zone_pressures_updated`; CosmicPressureEngine → `pressure_update`; StructuralDecayEngine → `structural_decay`; AdaptiveTopologyEngine → `topology_rewired`; LawEvolutionEngine → `world_rules_mutated`; ZoneConflictEngine → `zone_conflict` (mỗi conquest); CulturalDriftEngine → `cultural_drift` (khi có cập nhật culture).
+- **Chế độ tick (Phase 5 Track C)**: `simulation_tick_driver` = `rust_only` (mặc định) hoặc `laravel_kernel`. Khi `rust_only`, Laravel không chạy SimulationKernel; chỉ sync state, fire event, listener. Chi tiết: [16-simulation-kernel-and-potential-field.md](../docs/system/16-simulation-kernel-and-potential-field.md).
+- **Event Bus backend (Phase 5 Track A)**: `worldos.event_bus.driver` = `database` | `redis_stream`. Khi `redis_stream`, event được XADD vào Redis Stream rồi persist + dispatch như database.
+- **Graph sync (Phase 5 Track B)**: Khi `worldos.graph.enabled` = true và `worldos.graph.uri` set, listener `SyncWorldEventToGraph` ghi Event (và INVOLVES Actor) lên Neo4j (doc §15).
+- **Ánh xạ engine – tầng**: Xem [ENGINE_LAYER_MAPPING.md](ENGINE_LAYER_MAPPING.md). Module theo tầng: World, Ecology, Civilization, Knowledge, Culture, Evolution, Simulation.

@@ -11,12 +11,48 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Simulation Tick Driver (Phase 5)
+    |--------------------------------------------------------------------------
+    | laravel_kernel: tick from Rust, then optionally run Laravel SimulationKernel
+    |                 (see simulation_kernel_post_tick) and overwrite snapshot.
+    | rust_only:     tick entirely from Rust; Laravel only syncs state, saves
+    |                 snapshot, fires events, runs listeners (AEE, fork, narrative).
+    */
+    'simulation_tick_driver' => env('WORLDOS_SIMULATION_TICK_DRIVER', 'rust_only'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Simulation Kernel (Laravel-side post-tick)
     |--------------------------------------------------------------------------
-    | When true, after Rust engine saves snapshot, run SimulationKernel and
-    | overwrite snapshot with kernel output (deterministic, effect-based).
+    | When true and simulation_tick_driver is laravel_kernel, after Rust engine
+    | saves snapshot, run SimulationKernel and overwrite snapshot.
     */
     'simulation_kernel_post_tick' => env('SIMULATION_KERNEL_POST_TICK', false),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Event Bus Backend (Phase 5 Track A)
+    |--------------------------------------------------------------------------
+    | database: persist to world_events table, dispatch Laravel event.
+    | redis_stream: XADD to Redis Stream (world_events) then persist + dispatch.
+    */
+    'event_bus' => [
+        'driver' => env('WORLDOS_EVENT_BUS_DRIVER', 'database'),
+        'stream_key' => env('WORLDOS_EVENT_BUS_STREAM_KEY', 'world_events'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | WorldOS Data Graph (Phase 5 Track B, doc §15)
+    |--------------------------------------------------------------------------
+    | When enabled and uri is set, sync WorldEvent to Neo4j (Event node, INVOLVES Actor).
+    */
+    'graph' => [
+        'enabled' => env('WORLDOS_GRAPH_ENABLED', false),
+        'uri' => env('WORLDOS_GRAPH_URI', 'http://localhost:7474'),
+        'username' => env('WORLDOS_GRAPH_USERNAME'),
+        'password' => env('WORLDOS_GRAPH_PASSWORD'),
+    ],
 
     'potential_field_war_threshold' => (float) env('WORLDOS_POTENTIAL_FIELD_WAR_THRESHOLD', 0.85),
 

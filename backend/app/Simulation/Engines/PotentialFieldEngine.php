@@ -3,8 +3,12 @@
 namespace App\Simulation\Engines;
 
 use App\Simulation\Contracts\SimulationEngine;
+use App\Simulation\Domain\EngineResult;
+use App\Simulation\Domain\TickContext;
 use App\Simulation\Domain\WorldState;
 use App\Simulation\Effects\ZoneFieldUpdateEffect;
+use App\Simulation\Events\WorldEvent;
+use App\Simulation\Events\WorldEventType;
 use App\Simulation\Services\TopologyResolver;
 use App\Simulation\Services\ZonePressureCalculator;
 use App\Simulation\Support\SimulationRandom;
@@ -24,12 +28,46 @@ final class PotentialFieldEngine implements SimulationEngine
     ) {
     }
 
+    public function name(): string
+    {
+        return 'potential_field';
+    }
+
+    public function priority(): int
+    {
+        return 1;
+    }
+
     public function tickRate(): int
     {
         return max(1, (int) (config('worldos.time_scale_factors.potential_field') ?? 1));
     }
 
-    public function evaluate(WorldState $state, SimulationRandom $rng): array
+    public function handle(WorldState $state, TickContext $ctx): EngineResult
+    {
+        $rng = new SimulationRandom($ctx->getSeed(), $ctx->getTick(), 0);
+        $effects = $this->evaluate($state, $rng);
+        $events = [];
+        if ($effects !== []) {
+            $zonesCount = count($state->getZones());
+            $events[] = WorldEvent::create(
+                WorldEventType::ZONE_PRESSURES_UPDATED,
+                $ctx->getUniverseId(),
+                $ctx->getTick(),
+                null,
+                [],
+                0.15,
+                [],
+                ['zones_count' => $zonesCount]
+            );
+        }
+        return new EngineResult($events, $effects, []);
+    }
+
+    /**
+     * @return \App\Simulation\Contracts\Effect[]
+     */
+    private function evaluate(WorldState $state, SimulationRandom $rng): array
     {
         $zones = $state->getZones();
         if (empty($zones)) {

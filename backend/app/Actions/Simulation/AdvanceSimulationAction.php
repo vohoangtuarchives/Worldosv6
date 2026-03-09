@@ -32,7 +32,6 @@ use App\Services\Simulation\ChaosEngine;
 use App\Services\Simulation\TransmigrationEngine;
 use App\Simulation\SimulationKernel;
 use App\Simulation\Support\SnapshotLoader;
-use App\Simulation\Support\SimulationRandom;
 use Illuminate\Support\Facades\Log;
 
 class AdvanceSimulationAction
@@ -122,11 +121,17 @@ class AdvanceSimulationAction
             $savedSnapshot = null;
             if ($shouldSave) {
                 $savedSnapshot = $this->saveSnapshot($universe, $snapshotData);
-                // Optional: run Simulation Kernel and overwrite snapshot (deterministic, effect-based)
-                if ($savedSnapshot && config('worldos.simulation_kernel_post_tick')) {
+                // Optional: run Simulation Kernel and overwrite snapshot (only when driver is laravel_kernel)
+                $tickDriver = config('worldos.simulation_tick_driver', 'rust_only');
+                $runKernel = $savedSnapshot && $tickDriver === 'laravel_kernel' && config('worldos.simulation_kernel_post_tick');
+                if ($runKernel) {
                     $state = $this->snapshotLoader->fromSnapshot($universe, $savedSnapshot);
-                    $rng = new SimulationRandom((int) ($universe->seed ?? 0), (int) $savedSnapshot->tick, 0);
-                    $newState = $this->simulationKernel->runTick($state, $rng);
+                    $ctx = new \App\Simulation\Domain\TickContext(
+                        (int) $universe->id,
+                        (int) $savedSnapshot->tick,
+                        (int) ($universe->seed ?? 0)
+                    );
+                    $newState = $this->simulationKernel->runTick($state, $ctx);
                     $savedSnapshot = $this->snapshots->save($universe, [
                         'tick' => $newState->getTick(),
                         'state_vector' => $newState->getStateVector(),

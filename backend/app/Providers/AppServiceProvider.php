@@ -71,5 +71,9 @@ class AppServiceProvider extends ServiceProvider
             \App\Events\Simulation\UniverseSimulationPulsed::class,
             \App\Modules\Institutions\Listeners\ProcessInstitutionalFramework::class
         );
+        \Illuminate\Support\Facades\Event::listen(
+            \App\Events\Simulation\SimulationEventOccurred::class,
+            \App\Listeners\Simulation\SyncWorldEventToGraph::class
+        );
     }
 }

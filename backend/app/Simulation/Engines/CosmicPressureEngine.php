@@ -3,8 +3,12 @@
 namespace App\Simulation\Engines;
 
 use App\Simulation\Contracts\SimulationEngine;
+use App\Simulation\Domain\EngineResult;
+use App\Simulation\Domain\TickContext;
 use App\Simulation\Domain\WorldState;
 use App\Simulation\Effects\PressureUpdateEffect;
+use App\Simulation\Events\WorldEvent;
+use App\Simulation\Events\WorldEventType;
 use App\Simulation\Services\CosmicSignalCollector;
 use App\Simulation\Services\PhasePressureCalculator;
 use App\Simulation\Support\SimulationRandom;
@@ -30,12 +34,45 @@ final class CosmicPressureEngine implements SimulationEngine
     ) {
     }
 
+    public function name(): string
+    {
+        return 'cosmic_pressure';
+    }
+
+    public function priority(): int
+    {
+        return 2;
+    }
+
     public function tickRate(): int
     {
         return max(1, (int) (config('worldos.time_scale_factors.cosmic_pressure') ?? 1));
     }
 
-    public function evaluate(WorldState $state, SimulationRandom $rng): array
+    public function handle(WorldState $state, TickContext $ctx): EngineResult
+    {
+        $rng = new SimulationRandom($ctx->getSeed(), $ctx->getTick(), 0);
+        $effects = $this->evaluate($state, $rng);
+        $events = [];
+        if ($effects !== []) {
+            $events[] = WorldEvent::create(
+                WorldEventType::PRESSURE_UPDATE,
+                $ctx->getUniverseId(),
+                $ctx->getTick(),
+                null,
+                [],
+                0.2,
+                [],
+                ['source' => 'cosmic_pressure']
+            );
+        }
+        return new EngineResult($events, $effects, []);
+    }
+
+    /**
+     * @return \App\Simulation\Contracts\Effect[]
+     */
+    private function evaluate(WorldState $state, SimulationRandom $rng): array
     {
         $pressures = $state->getPressures();
 

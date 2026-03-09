@@ -3,8 +3,12 @@
 namespace App\Simulation\Engines;
 
 use App\Simulation\Contracts\SimulationEngine;
+use App\Simulation\Domain\EngineResult;
+use App\Simulation\Domain\TickContext;
 use App\Simulation\Domain\WorldState;
 use App\Simulation\Effects\ZoneCultureUpdateEffect;
+use App\Simulation\Events\WorldEvent;
+use App\Simulation\Events\WorldEventType;
 use App\Simulation\Services\TopologyResolver;
 use App\Simulation\Support\SimulationRandom;
 
@@ -23,12 +27,46 @@ final class CulturalDriftEngine implements SimulationEngine
     ) {
     }
 
+    public function name(): string
+    {
+        return 'cultural_drift';
+    }
+
+    public function priority(): int
+    {
+        return 9;
+    }
+
     public function tickRate(): int
     {
         return max(1, (int) (config('worldos.time_scale_factors.cultural_drift') ?? 3));
     }
 
-    public function evaluate(WorldState $state, SimulationRandom $rng): array
+    public function handle(WorldState $state, TickContext $ctx): EngineResult
+    {
+        $rng = new SimulationRandom($ctx->getSeed(), $ctx->getTick(), 0);
+        $effects = $this->evaluate($state, $rng);
+        $events = [];
+        if ($effects !== []) {
+            $zonesCount = $state->getZones() ? count($state->getZones()) : 0;
+            $events[] = WorldEvent::create(
+                WorldEventType::CULTURAL_DRIFT,
+                $ctx->getUniverseId(),
+                $ctx->getTick(),
+                null,
+                [],
+                0.2,
+                [],
+                ['zones_updated' => $zonesCount]
+            );
+        }
+        return new EngineResult($events, $effects, []);
+    }
+
+    /**
+     * @return \App\Simulation\Contracts\Effect[]
+     */
+    private function evaluate(WorldState $state, SimulationRandom $rng): array
     {
         $zones = $state->getZones();
         if (empty($zones)) {

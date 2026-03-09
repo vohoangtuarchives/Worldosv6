@@ -41,8 +41,28 @@ class SimulationServiceProvider extends ServiceProvider
             \App\Modules\Simulation\Services\AutonomicEvolutionEngine::class
         );
 
-        // Simulation Kernel (effect-based, deterministic tick) + Event Bus (Tier 3)
+        // Simulation Kernel (effect-based, deterministic tick) + Event Bus (Tier 3, Phase 5 Track A)
         $this->app->singleton(\App\Simulation\SimulationEventBus::class);
+        $this->app->bind(\App\Simulation\Contracts\WorldEventBusBackendInterface::class, function ($app) {
+            $driver = config('worldos.event_bus.driver', 'database');
+            return $driver === 'redis_stream'
+                ? new \App\Simulation\EventBus\RedisStreamWorldEventBusBackend(true, config('worldos.event_bus.stream_key'))
+                : $app->make(\App\Simulation\EventBus\DatabaseWorldEventBusBackend::class);
+        });
+        $this->app->singleton(\App\Simulation\Contracts\WorldEventBusInterface::class, \App\Simulation\WorldEventBus::class);
+        $this->app->singleton(\App\Simulation\WorldEventBus::class);
+        $this->app->bind(\App\Simulation\Contracts\WorldOsGraphServiceInterface::class, function ($app) {
+            $enabled = config('worldos.graph.enabled', false);
+            $uri = config('worldos.graph.uri', '');
+            if (! $enabled || $uri === '') {
+                return $app->make(\App\Simulation\Graph\NullWorldOsGraphService::class);
+            }
+            return new \App\Simulation\Graph\Neo4jWorldOsGraphService(
+                $uri,
+                config('worldos.graph.username'),
+                config('worldos.graph.password')
+            );
+        });
         $this->app->singleton(\App\Simulation\EffectResolver::class);
         $this->app->singleton(\App\Simulation\Support\SnapshotLoader::class);
         $this->app->singleton(\App\Simulation\Services\ZonePressureCalculator::class);
@@ -56,16 +76,24 @@ class SimulationServiceProvider extends ServiceProvider
         $this->app->singleton(\App\Simulation\Engines\LawEvolutionEngine::class);
         $this->app->singleton(\App\Simulation\Engines\CulturalDriftEngine::class);
         $this->app->singleton(\App\Simulation\Engines\AdaptiveTopologyEngine::class);
+        $this->app->singleton(\App\Simulation\EngineRegistry::class, function ($app) {
+            $registry = new \App\Simulation\EngineRegistry();
+            $registry->register($app->make(\App\Modules\World\Services\GeographyEngine::class));
+            $registry->register($app->make(\App\Simulation\Engines\PotentialFieldEngine::class));
+            $registry->register($app->make(\App\Simulation\Engines\CosmicPressureEngine::class));
+            $registry->register($app->make(\App\Simulation\Engines\StructuralDecayEngine::class));
+            $registry->register($app->make(\App\Simulation\Engines\AdaptiveTopologyEngine::class));
+            $registry->register($app->make(\App\Simulation\Engines\LawEvolutionEngine::class));
+            $registry->register($app->make(\App\Simulation\Engines\ZoneConflictEngine::class));
+            $registry->register($app->make(\App\Simulation\Engines\CulturalDriftEngine::class));
+            return $registry;
+        });
         $this->app->singleton(\App\Simulation\SimulationKernel::class, function ($app) {
-            $kernel = new \App\Simulation\SimulationKernel($app->make(\App\Simulation\EffectResolver::class));
-            $kernel->registerEngine($app->make(\App\Simulation\Engines\PotentialFieldEngine::class));
-            $kernel->registerEngine($app->make(\App\Simulation\Engines\ZoneConflictEngine::class));
-            $kernel->registerEngine($app->make(\App\Simulation\Engines\CosmicPressureEngine::class));
-            $kernel->registerEngine($app->make(\App\Simulation\Engines\StructuralDecayEngine::class));
-            $kernel->registerEngine($app->make(\App\Simulation\Engines\CulturalDriftEngine::class));
-            $kernel->registerEngine($app->make(\App\Simulation\Engines\LawEvolutionEngine::class));
-            $kernel->registerEngine($app->make(\App\Simulation\Engines\AdaptiveTopologyEngine::class));
-            return $kernel;
+            return new \App\Simulation\SimulationKernel(
+                $app->make(\App\Simulation\EffectResolver::class),
+                $app->make(\App\Simulation\EngineRegistry::class),
+                $app->make(\App\Simulation\Contracts\WorldEventBusInterface::class)
+            );
         });
     }
 

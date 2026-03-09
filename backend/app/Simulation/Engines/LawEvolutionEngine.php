@@ -3,8 +3,12 @@
 namespace App\Simulation\Engines;
 
 use App\Simulation\Contracts\SimulationEngine;
+use App\Simulation\Domain\EngineResult;
+use App\Simulation\Domain\TickContext;
 use App\Simulation\Domain\WorldState;
 use App\Simulation\Effects\WorldRulesUpdateEffect;
+use App\Simulation\Events\WorldEvent;
+use App\Simulation\Events\WorldEventType;
 use App\Simulation\Support\SimulationRandom;
 
 /**
@@ -18,12 +22,45 @@ final class LawEvolutionEngine implements SimulationEngine
     /** Keys that can be mutated (numeric drift) */
     private const MUTABLE_KEYS = ['entropy_tendency', 'order_tendency', 'innovation_tendency'];
 
+    public function name(): string
+    {
+        return 'law_evolution';
+    }
+
+    public function priority(): int
+    {
+        return 5;
+    }
+
     public function tickRate(): int
     {
         return max(1, (int) (config('worldos.time_scale_factors.law_evolution') ?? 20));
     }
 
-    public function evaluate(WorldState $state, SimulationRandom $rng): array
+    public function handle(WorldState $state, TickContext $ctx): EngineResult
+    {
+        $rng = new SimulationRandom($ctx->getSeed(), $ctx->getTick(), 0);
+        $effects = $this->evaluate($state, $rng);
+        $events = [];
+        if ($effects !== []) {
+            $events[] = WorldEvent::create(
+                WorldEventType::WORLD_RULES_MUTATED,
+                $ctx->getUniverseId(),
+                $ctx->getTick(),
+                null,
+                [],
+                0.25,
+                [],
+                ['trigger' => 'law_evolution']
+            );
+        }
+        return new EngineResult($events, $effects, []);
+    }
+
+    /**
+     * @return \App\Simulation\Contracts\Effect[]
+     */
+    private function evaluate(WorldState $state, SimulationRandom $rng): array
     {
         $vec = $state->getStateVector();
         $rules = $vec['world_rules'] ?? [];

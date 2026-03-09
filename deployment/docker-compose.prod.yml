@@ -31,6 +31,24 @@ services:
     networks:
       - internal
 
+  # Graph DB (Phase 5 Track B — WorldOS Data Graph)
+  neo4j:
+    image: neo4j:5-community
+    restart: always
+    environment:
+      NEO4J_AUTH: ${NEO4J_AUTH:-neo4j/worldos_secret}
+      NEO4J_PLUGINS: '["apoc"]'
+    volumes:
+      - worldos_prod_neo4jdata:/data
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -sf http://localhost:7474 || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - internal
+
   # Backend (PHP-FPM)
   # Use image's /var/www (code + vendor from build). Only mount storage and bootstrap/cache
   # so vendor stays from image (no dev deps → no Whoops I/O error on Windows bind mount).
@@ -51,6 +69,11 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:-secret}
       REDIS_HOST: redis
       SIMULATION_ENGINE_GRPC_URL: http://engine:50052
+      WORLDOS_GRAPH_URI: ${WORLDOS_GRAPH_URI:-http://neo4j:7474}
+      WORLDOS_GRAPH_ENABLED: ${WORLDOS_GRAPH_ENABLED:-false}
+      WORLDOS_GRAPH_USERNAME: ${WORLDOS_GRAPH_USERNAME:-neo4j}
+      WORLDOS_GRAPH_PASSWORD: ${WORLDOS_GRAPH_PASSWORD:-worldos_secret}
+      WORLDOS_EVENT_BUS_DRIVER: ${WORLDOS_EVENT_BUS_DRIVER:-database}
     volumes:
       - backend_storage:/var/www/storage
       - backend_bootstrap_cache:/var/www/bootstrap/cache
@@ -80,6 +103,11 @@ services:
       DB_USERNAME: ${DB_USERNAME:-worldos}
       DB_PASSWORD: ${DB_PASSWORD:-secret}
       REDIS_HOST: redis
+      WORLDOS_GRAPH_URI: ${WORLDOS_GRAPH_URI:-http://neo4j:7474}
+      WORLDOS_GRAPH_ENABLED: ${WORLDOS_GRAPH_ENABLED:-false}
+      WORLDOS_GRAPH_USERNAME: ${WORLDOS_GRAPH_USERNAME:-neo4j}
+      WORLDOS_GRAPH_PASSWORD: ${WORLDOS_GRAPH_PASSWORD:-worldos_secret}
+      WORLDOS_EVENT_BUS_DRIVER: ${WORLDOS_EVENT_BUS_DRIVER:-database}
     command: php artisan schedule:work
     volumes:
       - backend_storage:/var/www/storage
@@ -109,6 +137,11 @@ services:
       DB_USERNAME: ${DB_USERNAME:-worldos}
       DB_PASSWORD: ${DB_PASSWORD:-secret}
       REDIS_HOST: redis
+      WORLDOS_GRAPH_URI: ${WORLDOS_GRAPH_URI:-http://neo4j:7474}
+      WORLDOS_GRAPH_ENABLED: ${WORLDOS_GRAPH_ENABLED:-false}
+      WORLDOS_GRAPH_USERNAME: ${WORLDOS_GRAPH_USERNAME:-neo4j}
+      WORLDOS_GRAPH_PASSWORD: ${WORLDOS_GRAPH_PASSWORD:-worldos_secret}
+      WORLDOS_EVENT_BUS_DRIVER: ${WORLDOS_EVENT_BUS_DRIVER:-database}
     command: php artisan queue:work
     volumes:
       - backend_storage:/var/www/storage
@@ -203,6 +236,7 @@ services:
 volumes:
   worldos_prod_pgdata:
   worldos_prod_redisdata:
+  worldos_prod_neo4jdata:
   backend_public:
   backend_storage:
   backend_bootstrap_cache:

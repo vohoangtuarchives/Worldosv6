@@ -21,6 +21,16 @@ final class ZoneConquestEffect implements Effect
     ) {
     }
 
+    public function getWinnerZoneId(): string
+    {
+        return $this->winnerZoneId;
+    }
+
+    public function getLoserZoneId(): string
+    {
+        return $this->loserZoneId;
+    }
+
     public function apply(WorldStateMutable $state): void
     {
         $zones = $state->getZones();

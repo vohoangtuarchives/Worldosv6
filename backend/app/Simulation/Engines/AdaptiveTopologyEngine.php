@@ -3,8 +3,12 @@
 namespace App\Simulation\Engines;
 
 use App\Simulation\Contracts\SimulationEngine;
+use App\Simulation\Domain\EngineResult;
+use App\Simulation\Domain\TickContext;
 use App\Simulation\Domain\WorldState;
 use App\Simulation\Effects\ZoneNeighborsUpdateEffect;
+use App\Simulation\Events\WorldEvent;
+use App\Simulation\Events\WorldEventType;
 use App\Simulation\Services\TopologyResolver;
 use App\Simulation\Support\SimulationRandom;
 
@@ -21,12 +25,45 @@ final class AdaptiveTopologyEngine implements SimulationEngine
     ) {
     }
 
+    public function name(): string
+    {
+        return 'adaptive_topology';
+    }
+
+    public function priority(): int
+    {
+        return 4;
+    }
+
     public function tickRate(): int
     {
         return max(1, (int) (config('worldos.time_scale_factors.adaptive_topology') ?? 50));
     }
 
-    public function evaluate(WorldState $state, SimulationRandom $rng): array
+    public function handle(WorldState $state, TickContext $ctx): EngineResult
+    {
+        $rng = new SimulationRandom($ctx->getSeed(), $ctx->getTick(), 0);
+        $effects = $this->evaluate($state, $rng);
+        $events = [];
+        if ($effects !== []) {
+            $events[] = WorldEvent::create(
+                WorldEventType::TOPOLOGY_REWIRED,
+                $ctx->getUniverseId(),
+                $ctx->getTick(),
+                null,
+                [],
+                0.2,
+                [],
+                ['source' => 'adaptive_topology']
+            );
+        }
+        return new EngineResult($events, $effects, []);
+    }
+
+    /**
+     * @return \App\Simulation\Contracts\Effect[]
+     */
+    private function evaluate(WorldState $state, SimulationRandom $rng): array
     {
         $zones = $state->getZones();
         if (count($zones) < 2) {

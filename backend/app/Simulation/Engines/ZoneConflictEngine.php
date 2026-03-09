@@ -4,8 +4,12 @@ namespace App\Simulation\Engines;
 
 use App\Models\InstitutionalEntity;
 use App\Simulation\Contracts\SimulationEngine;
+use App\Simulation\Domain\EngineResult;
+use App\Simulation\Domain\TickContext;
 use App\Simulation\Domain\WorldState;
 use App\Simulation\Effects\ZoneConquestEffect;
+use App\Simulation\Events\WorldEvent;
+use App\Simulation\Events\WorldEventType;
 use App\Simulation\Support\SimulationRandom;
 
 /**
@@ -15,12 +19,47 @@ use App\Simulation\Support\SimulationRandom;
  */
 final class ZoneConflictEngine implements SimulationEngine
 {
+    public function name(): string
+    {
+        return 'zone_conflict';
+    }
+
+    public function priority(): int
+    {
+        return 6;
+    }
+
     public function tickRate(): int
     {
         return max(1, (int) (config('worldos.time_scale_factors.zone_conflict') ?? 1));
     }
 
-    public function evaluate(WorldState $state, SimulationRandom $rng): array
+    public function handle(WorldState $state, TickContext $ctx): EngineResult
+    {
+        $rng = new SimulationRandom($ctx->getSeed(), $ctx->getTick(), 0);
+        $effects = $this->evaluate($state, $rng);
+        $events = [];
+        foreach ($effects as $effect) {
+            if ($effect instanceof ZoneConquestEffect) {
+                $events[] = WorldEvent::create(
+                    WorldEventType::ZONE_CONFLICT,
+                    $ctx->getUniverseId(),
+                    $ctx->getTick(),
+                    $effect->getLoserZoneId(),
+                    [$effect->getWinnerZoneId(), $effect->getLoserZoneId()],
+                    0.5,
+                    [],
+                    ['winner' => $effect->getWinnerZoneId(), 'loser' => $effect->getLoserZoneId()]
+                );
+            }
+        }
+        return new EngineResult($events, $effects, []);
+    }
+
+    /**
+     * @return \App\Simulation\Contracts\Effect[]
+     */
+    private function evaluate(WorldState $state, SimulationRandom $rng): array
     {
         $zones = $state->getZones();
         if (count($zones) < 2) {
