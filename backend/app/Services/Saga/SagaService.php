@@ -17,6 +17,26 @@ class SagaService
     ) {}
 
     /**
+     * Ensure universe has a saga; create default saga for world if missing. Returns null if universe has no world.
+     */
+    public function ensureSaga(Universe $universe): ?Saga
+    {
+        if ($universe->saga) {
+            return $universe->saga;
+        }
+        if (!$universe->world) {
+            return null;
+        }
+        $saga = $universe->world->sagas()->firstOrCreate(
+            ['name' => 'Default Saga of ' . $universe->world->name],
+            ['status' => 'active']
+        );
+        $universe->saga_id = $saga->id;
+        $universe->save();
+        return $saga;
+    }
+
+    /**
      * Spawn a new universe for a world (optionally forked from parent).
      */
     public function spawnUniverse(World $world, ?int $parentUniverseId = null, ?int $sagaId = null, ?array $branchPayload = null): Universe
@@ -89,7 +109,11 @@ class SagaService
             $initialState['inherited_meta_edicts'] = array_keys($metaEdicts);
         }
 
-        $name = $world->name . ' - ' . ($parentUniverseId ? 'Branch' : 'Genesis') . ' (' . now()->format('H:i:s') . ')';
+        $branchLabel = $parentUniverseId ? 'Branch' : 'Genesis';
+        if ($parentUniverseId && is_array($branchPayload) && isset($branchPayload['branch_index'])) {
+            $branchLabel .= ' #' . ((int) $branchPayload['branch_index'] + 1);
+        }
+        $name = $world->name . ' - ' . $branchLabel . ' (' . now()->format('H:i:s') . ')';
 
         $universe = Universe::create([
             'name' => $name,

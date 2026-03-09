@@ -350,7 +350,7 @@ export default function NarrativeStudio() {
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_15%_20%,hsl(var(--left-brain)/0.18),transparent_35%),radial-gradient(circle_at_82%_18%,hsl(var(--right-brain)/0.14),transparent_30%),radial-gradient(circle_at_50%_80%,hsl(var(--cosmos)/0.16),transparent_40%)]" />
       <div className="pointer-events-none absolute inset-0 bg-grid-pattern opacity-20" />
 
-      <div className="relative z-10 mx-auto flex min-h-dvh w-full max-w-7xl flex-col px-4 py-6">
+      <div className="relative z-10 mx-auto flex min-h-dvh w-full max-w-9/10 flex-col px-4 py-6">
         <header className="flex flex-col gap-5 rounded-[calc(var(--radius)+10px)] border border-border bg-card/55 p-6 backdrop-blur-xl lg:flex-row lg:items-end lg:justify-between">
           <div className="space-y-4">
             <div className="inline-flex items-center gap-2 rounded-full border border-border bg-background/50 px-3 py-1 text-xs text-muted-foreground">

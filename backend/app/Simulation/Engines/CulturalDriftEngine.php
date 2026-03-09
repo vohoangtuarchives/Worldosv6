@@ -23,6 +23,11 @@ final class CulturalDriftEngine implements SimulationEngine
     ) {
     }
 
+    public function tickRate(): int
+    {
+        return max(1, (int) (config('worldos.time_scale_factors.cultural_drift') ?? 3));
+    }
+
     public function evaluate(WorldState $state, SimulationRandom $rng): array
     {
         $zones = $state->getZones();

@@ -21,6 +21,11 @@ final class AdaptiveTopologyEngine implements SimulationEngine
     ) {
     }
 
+    public function tickRate(): int
+    {
+        return max(1, (int) (config('worldos.time_scale_factors.adaptive_topology') ?? 50));
+    }
+
     public function evaluate(WorldState $state, SimulationRandom $rng): array
     {
         $zones = $state->getZones();

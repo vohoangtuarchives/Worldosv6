@@ -190,6 +190,57 @@ export const api = {
   async actors(id: number) {
     return apiFetch(`/worldos/universes/${id}/actors`);
   },
+  async biologyMetrics(id: number) {
+    return apiFetch(`/worldos/universes/${id}/biology-metrics`) as Promise<{
+      avg_energy: number;
+      median_energy: number;
+      starving_count: number;
+      total_alive: number;
+      species_count: number;
+      species_distribution: Record<string, number>;
+      trait_avg: Record<number, number>;
+      instability_score?: number;
+      ecological_collapse_active?: boolean;
+      ecological_collapse_until_tick?: number | null;
+      ecological_collapse_since_tick?: number | null;
+      ecological_collapse_type?: string | null;
+      current_tick?: number;
+    }>;
+  },
+  async historyTimeline(id: number, limit?: number) {
+    const q = limit != null ? `?limit=${limit}` : "";
+    return apiFetch(`/worldos/universes/${id}/history-timeline${q}`) as Promise<{
+      timeline: { from_tick: number; to_tick: number; type: string; content: string | null; payload: Record<string, unknown> }[];
+      by_type: Record<string, { from_tick: number; to_tick: number; type: string; content: string | null; payload: Record<string, unknown> }[]>;
+    }>;
+  },
+  async societyMetrics(id: number) {
+    return apiFetch(`/worldos/universes/${id}/society-metrics`) as Promise<{
+      current_tick: number;
+      settlements: Record<string, { level: string; governance: string; population: number; resource_surplus: number }>;
+      total_population: number;
+      economy: { total_surplus: number; total_consumption: number; updated_tick: number } | null;
+      politics: { military_power: number; economic_power: number; legitimacy: number; stability: number; updated_tick: number } | null;
+      war: { military_power: number; conflict_pressure: number; updated_tick: number } | null;
+    }>;
+  },
+  async environmentMetrics(id: number) {
+    return apiFetch(`/worldos/universes/${id}/environment-metrics`) as Promise<{
+      current_tick: number;
+      zones: {
+        id: number | string;
+        temperature: number | null;
+        rainfall: number | null;
+        ecosystem_state: string | null;
+        target_ecosystem_state: string | null;
+        transition_progress: number | null;
+        elevation: number | null;
+        terrain_type: string | null;
+        mineral_richness: number | null;
+        ice_coverage: number | null;
+      }[];
+    }>;
+  },
   async topology(id: number) {
     return apiFetch(`/worldos/universes/${id}/topology`);
   },

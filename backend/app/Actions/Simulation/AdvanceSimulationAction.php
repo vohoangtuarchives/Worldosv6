@@ -62,7 +62,19 @@ class AdvanceSimulationAction
         protected SnapshotLoader $snapshotLoader,
         protected \App\Services\Simulation\ActorCognitiveService $cognitiveService,
         protected \App\Services\Simulation\CivilizationCollapseEngine $collapseEngine,
-        protected \App\Modules\Intelligence\Actions\ProcessActorSurvivalAction $processActorSurvival
+        protected \App\Modules\Intelligence\Actions\ProcessActorEnergyAction $processActorEnergy,
+        protected \App\Modules\Intelligence\Actions\ProcessActorSurvivalAction $processActorSurvival,
+        protected \App\Modules\Intelligence\Services\ActorBehaviorEngine $actorBehaviorEngine,
+        protected \App\Modules\Intelligence\Services\CultureEngine $cultureEngine,
+        protected \App\Modules\Intelligence\Services\LanguageEngine $languageEngine,
+        protected \App\Services\Simulation\EcologicalCollapseEngine $ecologicalCollapseEngine,
+        protected \App\Services\Simulation\PlanetaryClimateEngine $planetaryClimateEngine,
+        protected \App\Services\Simulation\EcologicalPhaseTransitionEngine $ecologicalPhaseTransitionEngine,
+        protected \App\Services\Simulation\GeologicalEngine $geologicalEngine,
+        protected \App\Services\Simulation\CivilizationSettlementEngine $civilizationSettlementEngine,
+        protected \App\Services\Simulation\GlobalEconomyEngine $globalEconomyEngine,
+        protected \App\Services\Simulation\PoliticsEngine $politicsEngine,
+        protected \App\Services\Simulation\WarEngine $warEngine
     ) {}
 
     public function execute(int $universeId, int $ticks): array
@@ -137,7 +149,24 @@ class AdvanceSimulationAction
             ));
 
             // Survival chạy ngay trong process advance để chắc chắn có deaths được lưu (không phụ thuộc listener/queue)
+            $this->processActorEnergy->handle($universe, array_merge($response, ['_ticks' => $ticks]));
             $this->processActorSurvival->handle($universe, array_merge($response, ['_ticks' => $ticks]));
+            $universe->refresh();
+            // Culture Engine (Tier 7): meme transmission, drift, culture_group; feeds behavior
+            $this->cultureEngine->evaluate($universe, (int) $snapshotData['tick']);
+            // Behavior & Decision Engine (Tier 6): needs, goal, Utility AI, execution state per actor
+            $this->actorBehaviorEngine->evaluate($universe, (int) $snapshotData['tick']);
+            // Language Engine (Tier 8): vocabulary, intent→encode→decode, communication_memory, language groups
+            $this->languageEngine->evaluate($universe, (int) $snapshotData['tick']);
+            $universe->refresh();
+            // Civilization Engine (Tier 9): settlements, governance
+            $this->civilizationSettlementEngine->evaluate($universe, (int) $snapshotData['tick']);
+            $universe->refresh();
+            // Global Economy (Tier 10), Politics (Tier 11), War (Tier 12)
+            $this->globalEconomyEngine->evaluate($universe, (int) $snapshotData['tick']);
+            $universe->refresh();
+            $this->politicsEngine->evaluate($universe, (int) $snapshotData['tick']);
+            $this->warEngine->evaluate($universe, (int) $snapshotData['tick']);
 
             Log::info("Simulation: advance completed", [
                 'universe_id' => $universeId,
@@ -148,6 +177,14 @@ class AdvanceSimulationAction
 
             // Update Universe latest tick (state_vector đã được sync trong syncUniverseFromSnapshotData)
             $this->universeRepository->update($universe->id, ['current_tick' => $snapshotData['tick']]);
+
+            // Ecological Collapse Engine (Tier 1): evaluate instability, trigger or end collapse
+            $universe->refresh();
+            $this->ecologicalCollapseEngine->evaluate($universe, (int) $snapshotData['tick']);
+            // Planetary Climate (Tier 4): temperature/rainfall per zone, seasonal cycle; feeds Phase Transition
+            $this->planetaryClimateEngine->evaluate($universe, (int) $snapshotData['tick']);
+            $this->ecologicalPhaseTransitionEngine->evaluate($universe, (int) $snapshotData['tick']);
+            $this->geologicalEngine->evaluate($universe, (int) $snapshotData['tick']);
 
             // Phase 93: Internal Resonance (§V20)
             // The simulation now audits itself without Architect intervention

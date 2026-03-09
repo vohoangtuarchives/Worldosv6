@@ -16,6 +16,7 @@ import AttractorMap from "@/components/dashboard/AttractorMap";
 import RiskAlerts from "@/components/dashboard/RiskAlerts";
 import IntelligenceExplosion from "@/components/dashboard/IntelligenceExplosion";
 import EvolutionTree from "@/components/dashboard/EvolutionTree";
+import { CosmologicDashboard } from "@/components/dashboard/CosmologicDashboard";
 
 export default function DashboardPage() {
   return (
@@ -36,7 +37,7 @@ function ObservatoryDashboard() {
     error: simError,
   } = useSimulation();
 
-  const [activeTab, setActiveTab] = useState<"micro" | "macro">("micro");
+  const [activeTab, setActiveTab] = useState<"micro" | "macro" | "cosmologic">("micro");
 
   useEffect(() => {
     if (!universeId && universes.length > 0) {
@@ -69,6 +70,12 @@ function ObservatoryDashboard() {
             >
               Macro (Laboratory)
             </button>
+            <button
+              onClick={() => setActiveTab("cosmologic")}
+              className={`px-4 py-1.5 text-sm rounded-md transition-colors ${activeTab === "cosmologic" ? "bg-slate-700 text-white" : "text-slate-400 hover:text-slate-200"}`}
+            >
+              Cosmologic
+            </button>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-xs text-slate-500 font-mono">
@@ -96,6 +103,8 @@ function ObservatoryDashboard() {
           <div className="rounded-lg border border-slate-700 bg-slate-900/50 p-12 text-center text-slate-500">
             Chọn universe từ dropdown trên header để xem observatory.
           </div>
+        ) : activeTab === "cosmologic" ? (
+          <CosmologicDashboard embedded />
         ) : activeTab === "micro" ? (
           <>
             <p className="text-[10px] text-slate-500">

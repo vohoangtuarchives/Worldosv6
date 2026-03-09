@@ -23,6 +23,11 @@ final class StructuralDecayEngine implements SimulationEngine
     /** Max order reduction per tick when decay runs */
     private const ORDER_DECAY = -0.005;
 
+    public function tickRate(): int
+    {
+        return max(1, (int) (config('worldos.time_scale_factors.structural_decay') ?? 5));
+    }
+
     public function evaluate(WorldState $state, SimulationRandom $rng): array
     {
         $entropy = $state->getEntropy();

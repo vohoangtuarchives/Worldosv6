@@ -10,8 +10,9 @@ use Illuminate\Support\Facades\Log;
 class AutonomicWorkerService
 {
     public function __construct(
-        protected \App\Modules\Simulation\Services\WorldRegulatorEngine $worldAutonomicEngine,
-        protected \App\Services\Simulation\SurvivalPruningService $pruningService
+        protected WorldRegulatorEngine $worldAutonomicEngine,
+        protected \App\Services\Simulation\SurvivalPruningService $pruningService,
+        protected MultiverseSchedulerEngine $scheduler
     ) {}
 
     /**
@@ -38,10 +39,9 @@ class AutonomicWorkerService
                 Log::error("AutonomicWorkerService: WorldAutonomicEngine failed for World {$world->id}: " . $e->getMessage());
             }
 
-            // 2. Find all active universes for this world
-            $activeUniverses = Universe::where('world_id', $world->id)
-                ->where('status', '!=', 'halted')
-                ->get();
+            // 2. Schedule: top-N universes by priority (tick_budget from config; 0 = all)
+            $tickBudget = (int) config('worldos.scheduler.tick_budget', 0);
+            $activeUniverses = $this->scheduler->schedule($world, $tickBudget);
 
             foreach ($activeUniverses as $universe) {
                 // Determine tick speed based on world density/volatility if needed

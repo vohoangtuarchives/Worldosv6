@@ -15,6 +15,11 @@ use App\Simulation\Support\SimulationRandom;
  */
 final class ZoneConflictEngine implements SimulationEngine
 {
+    public function tickRate(): int
+    {
+        return max(1, (int) (config('worldos.time_scale_factors.zone_conflict') ?? 1));
+    }
+
     public function evaluate(WorldState $state, SimulationRandom $rng): array
     {
         $zones = $state->getZones();

@@ -8,6 +8,7 @@ use App\Actions\Simulation\ApplyMythScarAction;
 use App\Actions\Simulation\RunMicroModeAction;
 use App\Actions\Simulation\ForkUniverseAction;
 use App\Repositories\UniverseRepository;
+use App\Services\Saga\SagaService;
 use App\Services\Simulation\AttractorEngine;
 use App\Services\Simulation\DynamicAttractorEngine;
 use App\Services\Simulation\EventTriggerProcessor;
@@ -26,6 +27,7 @@ class EvaluateSimulationResult
         protected ApplyMythScarAction $applyMythScarAction,
         protected RunMicroModeAction $runMicroModeAction,
         protected ForkUniverseAction $forkUniverseAction,
+        protected SagaService $sagaService,
         protected UniverseRepository $universeRepository,
         protected UniverseRepositoryInterface $simulationUniverseRepository,
         protected \App\Modules\Simulation\Services\PressureCalculator $pressureCalculator,
@@ -47,7 +49,9 @@ class EvaluateSimulationResult
         protected \App\Modules\Simulation\Services\WorldRegulatorEngine $worldRegulatorEngine,
         protected AttractorEngine $attractorEngine,
         protected DynamicAttractorEngine $dynamicAttractorEngine,
-        protected EventTriggerProcessor $eventTriggerProcessor
+        protected EventTriggerProcessor $eventTriggerProcessor,
+        protected \App\Modules\Simulation\Services\IdeologyEvolutionEngine $ideologyEvolutionEngine,
+        protected \App\Modules\Simulation\Services\GreatPersonEngine $greatPersonEngine
     ) {}
 
     public function handle(UniverseSimulationPulsed $event): void
@@ -99,10 +103,10 @@ class EvaluateSimulationResult
             $this->causalCorrectionEngine->process($universe, $snapshot);
             $this->resonanceEngine->process($universe, $snapshot);
 
-            // 6. Strategic Actions (Fork/Archive)
+            // 6. Strategic Actions (Fork/Archive/Mutate) — AEE decisions
             if ($action === 'fork') {
                 $this->handleFork($universe, (int)$snapshot->tick, $decisionData);
-            } elseif ($action === 'continue') {
+            } elseif ($action === 'continue' || $action === 'mutate') {
                 $this->applySelectivePressure($universe, $snapshot, $decisionData);
             } elseif ($action === 'archive') {
                 $this->universeRepository->update($universe->id, ['status' => 'archived']);
@@ -123,6 +127,30 @@ class EvaluateSimulationResult
             $this->ascensionEngine->evaluate($universe, $snapshot);
             $this->omegaPointEngine->process($universe, $snapshot);
 
+            // 9b. Ideology Evolution & Great Person (Phase K)
+            if (config('worldos.pulse.run_ideology', true)) {
+                try {
+                    $ideologyResult = $this->ideologyEvolutionEngine->getDominantIdeology($universe);
+                    if (! empty($ideologyResult['previous_dominant'])) {
+                        $this->ideologyEvolutionEngine->recordShiftIfSignificant(
+                            $universe,
+                            (int) $snapshot->tick,
+                            $ideologyResult['dominant'],
+                            $ideologyResult['previous_dominant']
+                        );
+                    }
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning('Pulse: Ideology evolution failed: ' . $e->getMessage());
+                }
+            }
+            if (config('worldos.pulse.run_great_person', true)) {
+                try {
+                    $this->greatPersonEngine->spawnIfEligible($universe, (int) $snapshot->tick);
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning('Pulse: Great Person spawn failed: ' . $e->getMessage());
+                }
+            }
+
         // 10. AI Narrative (Epistemic Instability)
         $this->createNarrativeChronicle($universe, $snapshot);
 
@@ -141,17 +169,18 @@ class EvaluateSimulationResult
 
     protected function handleFork($universe, int $tick, array $decision): void
     {
-        $saga = $universe->saga;
-        if (!$saga) return;
+        $saga = $this->sagaService->ensureSaga($universe);
+        if (!$saga) {
+            return;
+        }
 
-        // Branch Concurrency Limit Logic from AutonomicDecisionEngine
         $activeCount = \App\Models\Universe::where('saga_id', $saga->id)
             ->where('status', 'active')
             ->count();
 
-        $childUniverse = $this->forkUniverseAction->execute($universe, $tick, $decision);
+        $childUniverses = $this->forkUniverseAction->execute($universe, $tick, $decision);
 
-        if ($childUniverse && $activeCount >= 1) { // Default branch limit = 1
+        if ($childUniverses->isNotEmpty() && $activeCount >= 1) {
             $this->universeRepository->update($universe->id, ['status' => 'halted']);
         }
     }

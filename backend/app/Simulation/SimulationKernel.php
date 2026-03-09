@@ -13,7 +13,7 @@ use App\Simulation\Support\SimulationRandom;
  */
 final class SimulationKernel
 {
-    /** @var array{0: SimulationEngine, 1: int}[] */
+    /** @var SimulationEngine[] */
     private array $engines = [];
 
     public function __construct(
@@ -22,18 +22,19 @@ final class SimulationKernel
     }
 
     /**
-     * Register an engine to run every $tickFactor ticks (1 = every tick, 10 = every 10th tick).
+     * Register an engine. Tick rate is read from engine->tickRate() (run when tick % tickRate() === 0).
      */
-    public function registerEngine(SimulationEngine $engine, int $tickFactor = 1): void
+    public function registerEngine(SimulationEngine $engine): void
     {
-        $this->engines[] = [$engine, $tickFactor];
+        $this->engines[] = $engine;
     }
 
     public function runTick(WorldState $state, SimulationRandom $rng): WorldState
     {
         $tick = $state->getTick();
         $allEffects = [];
-        foreach ($this->engines as [$engine, $factor]) {
+        foreach ($this->engines as $engine) {
+            $factor = $engine->tickRate();
             if ($factor < 1 || ($tick % $factor) !== 0) {
                 continue;
             }

@@ -24,6 +24,11 @@ final class PotentialFieldEngine implements SimulationEngine
     ) {
     }
 
+    public function tickRate(): int
+    {
+        return max(1, (int) (config('worldos.time_scale_factors.potential_field') ?? 1));
+    }
+
     public function evaluate(WorldState $state, SimulationRandom $rng): array
     {
         $zones = $state->getZones();

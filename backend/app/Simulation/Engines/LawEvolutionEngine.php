@@ -18,6 +18,11 @@ final class LawEvolutionEngine implements SimulationEngine
     /** Keys that can be mutated (numeric drift) */
     private const MUTABLE_KEYS = ['entropy_tendency', 'order_tendency', 'innovation_tendency'];
 
+    public function tickRate(): int
+    {
+        return max(1, (int) (config('worldos.time_scale_factors.law_evolution') ?? 20));
+    }
+
     public function evaluate(WorldState $state, SimulationRandom $rng): array
     {
         $vec = $state->getStateVector();

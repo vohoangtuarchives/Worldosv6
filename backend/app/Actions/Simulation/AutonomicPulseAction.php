@@ -2,14 +2,14 @@
 
 namespace App\Actions\Simulation;
 
-use App\Models\Universe;
 use Illuminate\Support\Facades\Log;
 
 class AutonomicPulseAction
 {
     public function __construct(
         protected AdvanceSimulationAction $advanceAction,
-        protected \App\Modules\Simulation\Services\WorldRegulatorEngine $worldAutonomicEngine
+        protected \App\Modules\Simulation\Services\WorldRegulatorEngine $worldAutonomicEngine,
+        protected \App\Modules\Simulation\Services\MultiverseSchedulerEngine $scheduler
     ) {}
 
     /**
@@ -24,9 +24,8 @@ class AutonomicPulseAction
             // World-level Autonomic Adjustment (Axiom shifts)
             $this->worldAutonomicEngine->process($world);
 
-            $activeUniverses = Universe::where('world_id', $world->id)
-                ->where('status', 'active')
-                ->get();
+            $tickBudget = (int) config('worldos.scheduler.tick_budget', 0);
+            $activeUniverses = $this->scheduler->schedule($world, $tickBudget);
 
             foreach ($activeUniverses as $universe) {
                 try {

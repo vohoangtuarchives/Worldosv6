@@ -10,7 +10,8 @@ class ProcessActorSurvivalAction
 {
     public function __construct(
         private ActorRepositoryInterface $actorRepository,
-        private \App\Modules\Intelligence\Services\ActorTransitionSystem $transitionSystem
+        private \App\Modules\Intelligence\Services\ActorTransitionSystem $transitionSystem,
+        private \App\Modules\Intelligence\Services\EvolutionPressureService $evolutionPressure
     ) {}
 
     public function handle(Universe $universe, array $simulationResponse): void
@@ -33,8 +34,17 @@ class ProcessActorSurvivalAction
             return;
         }
 
+        $pressure = $this->evolutionPressure->fromUniverse($universe);
         $deathCount = 0;
         $actorIndex = 0;
+
+        $stateVector = is_array($universe->state_vector) ? $universe->state_vector : [];
+        $ecologicalCollapse = $stateVector['ecological_collapse'] ?? null;
+        $collapseActive = is_array($ecologicalCollapse) && !empty($ecologicalCollapse['active'])
+            && $snapshotTick <= (int) ($ecologicalCollapse['until_tick'] ?? PHP_INT_MAX);
+        $collapseDeathProbAdd = $collapseActive
+            ? (float) config('worldos.intelligence.ecological_collapse_death_probability_add', 0.1)
+            : 0.0;
 
         foreach ($actors as $actor) {
             if (!$actor->isAlive) {
@@ -44,23 +54,40 @@ class ProcessActorSurvivalAction
 
             $oldState = $actor->isAlive;
 
-            // Tuổi thọ: so sánh tuổi (năm) với max theo Longevity. Tick = đơn vị thời gian WorldOS (config: ticks_per_year = 1 năm).
+            // ActorBio: life_expectancy from genome (Longevity), ensure in metrics
+            $actor->metrics = \App\Modules\Intelligence\Entities\ActorEntity::ensureLifeExpectancyInMetrics(
+                $actor->metrics ?? [],
+                $actor->traits ?? [],
+                $defaultMaxAgeYears
+            );
+            $lifeExpectancy = (float) ($actor->metrics['life_expectancy'] ?? $defaultMaxAgeYears);
+
+            // Tuổi thọ: so sánh tuổi (năm) với max theo Longevity.
             $spawnedAtTick = isset($actor->metrics['spawned_at_tick']) ? (int) $actor->metrics['spawned_at_tick'] : 0;
             $ageTicks = max(0, $snapshotTick - $spawnedAtTick);
             $ageYears = $ageTicks / $ticksPerYear;
-            $longevity = (float) ($actor->traits[17] ?? $actor->traits['Longevity'] ?? $actor->traits['longevity'] ?? 0.5);
-            $longevity = max(0, min(1, $longevity));
-            $effectiveMaxAgeYears = $defaultMaxAgeYears * (0.5 + 0.5 * $longevity);
-            if ($ageYears >= $effectiveMaxAgeYears) {
+
+            if ($lifeExpectancy <= 0) {
+                $lifeExpectancy = (float) $defaultMaxAgeYears;
+            }
+            if ($ageYears >= $lifeExpectancy) {
                 $actor->fromState($actor->toState()->with(['isAlive' => false]));
                 if ($oldState) {
                     $deathCount++;
-                    Log::info("Intelligence: Actor {$actor->name} ({$actor->id}) perished in Universe {$universe->id} at tick {$snapshotTick} (age {$ageYears} yrs >= max {$effectiveMaxAgeYears}).");
+                    Log::info("Intelligence: Actor {$actor->name} ({$actor->id}) perished in Universe {$universe->id} at tick {$snapshotTick} (age {$ageYears} yrs >= life_expectancy {$lifeExpectancy}).");
                 }
                 $this->actorRepository->save($actor);
                 $actorIndex++;
                 continue;
             }
+
+            $ageRatio = $lifeExpectancy > 0 ? ($ageYears / $lifeExpectancy) : 0.0;
+
+            $fitness = $this->evolutionPressure->fitness(
+                $actor->traits ?? [],
+                $actor->metrics['physic'] ?? null,
+                $pressure
+            );
 
             for ($t = 0; $t < $ticks && $actor->isAlive; $t++) {
                 $tickForRng = $snapshotTick - $ticks + $t;
@@ -71,7 +98,7 @@ class ProcessActorSurvivalAction
                     $rngSalt
                 );
                 $state = $actor->toState();
-                $state = $this->transitionSystem->processSurvival($state, $entropy, $rng);
+                $state = $this->transitionSystem->processSurvival($state, $entropy, $rng, $ageRatio, $fitness, $collapseDeathProbAdd);
                 $actor->fromState($state);
             }
 

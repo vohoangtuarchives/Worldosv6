@@ -14,6 +14,7 @@ use App\Services\AI\SearchAiService;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\AgentConfigController;
 use App\Http\Controllers\Api\MultiverseMapController;
+use App\Http\Controllers\Api\WorldosEnginesController;
 use App\Http\Controllers\Api\CelestialEngineeringController;
 use App\Models\LegendaryAgent;
 
@@ -162,6 +163,17 @@ Route::middleware('auth:sanctum')->prefix('worldos')->group(function () {
             'universe_id' => $universe->id
         ]);
     })->name('worldos.worlds.store');
+
+    // --- WorldOS Engines API (Phase J) ---
+    Route::get('worlds/{id}/timelines', [WorldosEnginesController::class, 'worldTimelines'])->name('worldos.worlds.timelines');
+    Route::post('worlds/{id}/extract-lore', [WorldosEnginesController::class, 'worldExtractLore'])->name('worldos.worlds.extract-lore');
+    Route::get('sagas/{id}/timelines', [WorldosEnginesController::class, 'sagaTimelines'])->name('worldos.sagas.timelines');
+    Route::post('sagas/{id}/extract-lore', [WorldosEnginesController::class, 'sagaExtractLore'])->name('worldos.sagas.extract-lore');
+    Route::get('universes/{id}/civilization-memory', [WorldosEnginesController::class, 'civilizationMemory'])->name('worldos.universes.civilization-memory');
+    Route::post('universes/{id}/mythology', [WorldosEnginesController::class, 'mythology'])->name('worldos.universes.mythology');
+    Route::get('universes/{id}/ideology', [WorldosEnginesController::class, 'ideology'])->name('worldos.universes.ideology');
+    Route::post('universes/{id}/great-person', [WorldosEnginesController::class, 'greatPerson'])->name('worldos.universes.great-person');
+    Route::get('engines/status', [WorldosEnginesController::class, 'status'])->name('worldos.engines.status');
 
     // POST worldos/sagas removed (Implicit Orchestration)
 
@@ -348,6 +360,101 @@ Route::middleware('auth:sanctum')->prefix('worldos')->group(function () {
     Route::get('universes/{id}/actors', function (string $id, \App\Actions\Simulation\GetUniverseActorsAction $action) {
         return response()->json($action->execute((int)$id));
     })->name('worldos.universes.actors');
+
+    Route::get('universes/{id}/biology-metrics', function (
+        string $id,
+        \App\Modules\Intelligence\Services\BiologyMetricsService $service,
+        \App\Modules\Intelligence\Services\EcosystemMetricsService $ecosystemService,
+        \App\Contracts\Repositories\UniverseRepositoryInterface $universeRepo
+    ) {
+        $universeId = (int) $id;
+        $data = $service->forUniverse($universeId);
+        $universe = $universeRepo->find($universeId);
+        if ($universe) {
+            $eco = $ecosystemService->forUniverse($universe);
+            $data['instability_score'] = $eco['instability_score'];
+            $sv = is_string($universe->state_vector) ? json_decode($universe->state_vector, true) : ($universe->state_vector ?? []);
+            $collapse = is_array($sv) ? ($sv['ecological_collapse'] ?? []) : [];
+            $data['ecological_collapse_active'] = !empty($collapse['active']);
+            $data['ecological_collapse_until_tick'] = $collapse['until_tick'] ?? null;
+            $data['ecological_collapse_since_tick'] = $collapse['since_tick'] ?? null;
+            $data['ecological_collapse_type'] = $collapse['type'] ?? null;
+            $data['current_tick'] = $universe->current_tick ?? 0;
+        } else {
+            $data['instability_score'] = 0;
+            $data['ecological_collapse_active'] = false;
+            $data['ecological_collapse_until_tick'] = null;
+            $data['ecological_collapse_since_tick'] = null;
+            $data['ecological_collapse_type'] = null;
+            $data['current_tick'] = 0;
+        }
+        return response()->json($data);
+    })->name('worldos.universes.biology-metrics');
+
+    Route::get('universes/{id}/history-timeline', function (
+        string $id,
+        \App\Contracts\Repositories\UniverseRepositoryInterface $universeRepo,
+        \App\Services\Simulation\HistoryEngine $historyEngine
+    ) {
+        $universe = $universeRepo->find((int) $id);
+        if (!$universe) {
+            return response()->json(['error' => 'Universe not found'], 404);
+        }
+        $limit = (int) request()->query('limit', config('worldos.intelligence.history_timeline_limit', 100));
+        return response()->json([
+            'timeline' => $historyEngine->getTimeline($universe, $limit),
+            'by_type' => $historyEngine->getTimelineByType($universe, $limit),
+        ]);
+    })->name('worldos.universes.history-timeline');
+
+    Route::get('universes/{id}/society-metrics', function (
+        string $id,
+        \App\Contracts\Repositories\UniverseRepositoryInterface $universeRepo
+    ) {
+        $universe = $universeRepo->find((int) $id);
+        if (!$universe) {
+            return response()->json(['error' => 'Universe not found'], 404);
+        }
+        $sv = is_string($universe->state_vector) ? json_decode($universe->state_vector, true) : ($universe->state_vector ?? []);
+        $civ = $sv['civilization'] ?? [];
+        return response()->json([
+            'current_tick' => $universe->current_tick ?? 0,
+            'settlements' => $civ['settlements'] ?? [],
+            'total_population' => $civ['total_population'] ?? 0,
+            'economy' => $civ['economy'] ?? null,
+            'politics' => $civ['politics'] ?? null,
+            'war' => $civ['war'] ?? null,
+        ]);
+    })->name('worldos.universes.society-metrics');
+
+    Route::get('universes/{id}/environment-metrics', function (
+        string $id,
+        \App\Contracts\Repositories\UniverseRepositoryInterface $universeRepo
+    ) {
+        $universe = $universeRepo->find((int) $id);
+        if (!$universe) {
+            return response()->json(['error' => 'Universe not found'], 404);
+        }
+        $sv = is_string($universe->state_vector) ? json_decode($universe->state_vector, true) : ($universe->state_vector ?? []);
+        $zones = $sv['zones'] ?? [];
+        $out = ['current_tick' => $universe->current_tick ?? 0, 'zones' => []];
+        foreach ($zones as $idx => $zone) {
+            $state = $zone['state'] ?? $zone;
+            $out['zones'][] = [
+                'id' => $zone['id'] ?? $idx,
+                'temperature' => isset($state['temperature']) ? round((float) $state['temperature'], 4) : null,
+                'rainfall' => isset($state['rainfall']) ? round((float) $state['rainfall'], 4) : null,
+                'ecosystem_state' => $state['ecosystem_state'] ?? null,
+                'target_ecosystem_state' => $state['target_ecosystem_state'] ?? null,
+                'transition_progress' => isset($state['transition_progress']) ? round((float) $state['transition_progress'], 2) : null,
+                'elevation' => isset($state['elevation']) ? round((float) $state['elevation'], 4) : null,
+                'terrain_type' => $state['terrain_type'] ?? null,
+                'mineral_richness' => isset($state['mineral_richness']) ? round((float) $state['mineral_richness'], 2) : null,
+                'ice_coverage' => isset($state['ice_coverage']) ? round((float) $state['ice_coverage'], 2) : null,
+            ];
+        }
+        return response()->json($out);
+    })->name('worldos.universes.environment-metrics');
 
     Route::get('actors/{id}/decisions', function (string $id) {
         $decisions = \App\Models\AgentDecision::where('actor_id', (int) $id)

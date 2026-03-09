@@ -39,25 +39,50 @@ class ActorTransitionSystem
 
     /**
      * Survival check using logistic probability against state and entropy.
-     * Includes a small baseline mortality per tick so that over many ticks some actors eventually perish.
+     * Uses mortality curve by age_ratio (age / life_expectancy): young = low death prob, old = high.
      */
-    public function processSurvival(ActorState $state, float $entropy, SimulationRng $rng): ActorState
-    {
+    public function processSurvival(
+        ActorState $state,
+        float $entropy,
+        SimulationRng $rng,
+        float $ageRatio = 0.0,
+        float $fitness = 1.0,
+        float $collapseDeathProbAdd = 0.0
+    ): ActorState {
         if (!$state->isAlive) {
             return $state;
         }
 
-        // Resilience (trait 10), Longevity (17). Thể chất: dùng vector huyết mạch metrics['physic'] (aggregate) nếu có.
+        // Resilience (trait 10), Longevity (17). Thể chất: metrics['physic'] (aggregate).
         $resilience = max(0, min(1, (float) ($state->traits['resilience'] ?? $state->traits[10] ?? 0.5)));
         $longevity = max(0, min(1, (float) ($state->traits['longevity'] ?? $state->traits['Longevity'] ?? $state->traits[17] ?? 0.5)));
-        $physicAggregate = $this->aggregatePhysic($state->metrics['physic'] ?? null);
-        // Xác suất sống: resilience + longevity + thể chất (huyết mạch) + (1-entropy)
+        $physicAggregate = $this->aggregatePhysic(
+            $state->metrics['physic'] ?? null,
+            $state->metrics['injury'] ?? null
+        );
         $logit = $resilience * 0.35 + $longevity * 0.15 + $physicAggregate * 0.15 + (1 - $entropy) * 0.35;
         $prob = 1 / (1 + exp(-$logit));
 
-        // Baseline mortality per tick (~1.5%) để luôn có một phần actor chết theo thời gian
+        // Starvation (energy economy): reduce survival when starving
+        $starving = !empty($state->metrics['starving']);
+        if ($starving) {
+            $prob *= 0.7;
+        }
+
         $baselineDeathChance = 0.015;
         $prob = $prob * (1 - $baselineDeathChance);
+
+        // Mortality curve: age_ratio < 0.6 → low, < 1.0 → mid, >= 1.0 → high death prob
+        $deathProbFromAge = $this->mortalityCurveDeathProb($ageRatio);
+        $prob = $prob * (1.0 - $deathProbFromAge);
+
+        // Evolution pressure: fitness from environment (0.2–1.0)
+        $prob = $prob * max(0.2, min(1.0, $fitness));
+
+        // Ecological collapse: extra death probability when collapse is active
+        if ($collapseDeathProbAdd > 0) {
+            $prob = $prob * (1.0 - $collapseDeathProbAdd);
+        }
 
         if ($rng->nextFloat() > $prob) {
             return $state->with(['isAlive' => false]);
@@ -67,24 +92,44 @@ class ActorTransitionSystem
     }
 
     /**
-     * Aggregate physic vector (huyết mạch) to a single scalar for survival.
-     * metrics['physic'] = array of floats [0..1] theo PHYSIC_DIMENSIONS.
+     * Return death probability per tick from mortality curve config (age_ratio = age / life_expectancy).
      */
-    private function aggregatePhysic(?array $physic): float
+    private function mortalityCurveDeathProb(float $ageRatio): float
+    {
+        $curve = config('worldos.intelligence.mortality_curve', [
+            '0.6' => 0.001,
+            '1.0' => 0.01,
+            'old' => 0.2,
+        ]);
+        if ($ageRatio >= 1.0) {
+            return (float) ($curve['old'] ?? 0.2);
+        }
+        if ($ageRatio >= 0.6) {
+            return (float) ($curve['1.0'] ?? 0.01);
+        }
+        return (float) ($curve['0.6'] ?? 0.001);
+    }
+
+    /**
+     * Aggregate physic vector (huyết mạch) to a single scalar for survival.
+     * If metrics['injury'] is set (per-dimension 0–1), effective physic is reduced.
+     */
+    private function aggregatePhysic(?array $physic, ?array $injury = null): float
     {
         if ($physic === null || $physic === []) {
             return 0.5;
         }
         $vals = array_values($physic);
-        $sum = 0.0;
-        $n = 0;
-        foreach ($vals as $v) {
-            if (is_numeric($v)) {
-                $sum += max(0, min(1, (float) $v));
-                $n++;
+        $out = [];
+        foreach ($vals as $i => $v) {
+            $x = is_numeric($v) ? max(0, min(1, (float) $v)) : 0.5;
+            if ($injury !== null && isset($injury[$i]) && is_numeric($injury[$i])) {
+                $x *= 1.0 - max(0, min(1, (float) $injury[$i]));
             }
+            $out[] = $x;
         }
-        return $n > 0 ? $sum / $n : 0.5;
+        $n = count($out);
+        return $n > 0 ? array_sum($out) / $n : 0.5;
     }
 
     /**

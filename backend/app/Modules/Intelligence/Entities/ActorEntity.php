@@ -40,9 +40,53 @@ class ActorEntity
         'Resilience', // 4 — thể chất chống entropy (tách khỏi trait RiskTolerance)
     ];
 
+    /**
+     * Behavior vector: subset of TRAIT_DIMENSIONS indices used as genome behavior component.
+     */
+    public const BEHAVIOR_DIMENSIONS = [
+        'Dominance' => 0,
+        'Ambition' => 1,
+        'Empathy' => 4,
+        'Solidarity' => 5,
+        'Curiosity' => 8,
+        'RiskTolerance' => 10,
+        'Fear' => 11,
+    ];
+
+    /**
+     * Perception vector keys (optional). Stored in metrics['perception'].
+     */
+    public const PERCEPTION_DIMENSIONS = [
+        'vision_range',
+        'memory',
+        'learning_rate',
+    ];
+
     public static function defaultPhysicVector(): array
     {
         return array_fill(0, count(self::PHYSIC_DIMENSIONS), 0.5);
+    }
+
+    /**
+     * Compute life expectancy (years) from longevity trait (0–1) and config.
+     */
+    public static function computeLifeExpectancy(float $longevity, int $defaultMaxAgeYears): float
+    {
+        $longevity = max(0, min(1, $longevity));
+        return (float) ($defaultMaxAgeYears * (0.5 + 0.5 * $longevity));
+    }
+
+    /**
+     * Ensure metrics contain life_expectancy from genome (Longevity trait).
+     */
+    public static function ensureLifeExpectancyInMetrics(array $metrics, array $traits, int $defaultMaxAgeYears): array
+    {
+        if (isset($metrics['life_expectancy']) && $metrics['life_expectancy'] > 0) {
+            return $metrics;
+        }
+        $longevity = (float) ($traits[17] ?? $traits['Longevity'] ?? $traits['longevity'] ?? 0.5);
+        $metrics['life_expectancy'] = self::computeLifeExpectancy($longevity, $defaultMaxAgeYears);
+        return $metrics;
     }
 
     public function __construct(
