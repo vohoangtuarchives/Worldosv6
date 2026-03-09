@@ -29,7 +29,7 @@ final class LawEvolutionEngine implements SimulationEngine
 
     public function priority(): int
     {
-        return 5;
+        return 6;
     }
 
     public function tickRate(): int

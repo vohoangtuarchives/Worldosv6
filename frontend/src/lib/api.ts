@@ -40,10 +40,14 @@ async function apiFetch(path: string, init: RequestInit = {}) {
   if (!res.ok) {
     let errText = "";
     try {
-      const data = await res.json();
-      errText = data.message || JSON.stringify(data);
+      const data = (await res.json()) as Record<string, unknown> & { message?: string; errors?: Record<string, string[]> };
+      errText =
+        (Array.isArray(data.errors?.email) && data.errors.email[0]) ||
+        (data.errors && typeof data.errors === "object" && Object.values(data.errors)[0]?.[0]) ||
+        data.message ||
+        JSON.stringify(data);
     } catch {
-      errText = await res.text();
+      errText = await res.text().catch(() => `HTTP ${res.status}`);
     }
     throw new Error(errText || `HTTP ${res.status}`);
   }
@@ -67,6 +71,25 @@ export const api = {
   },
   async worlds() {
     return apiFetch("/worldos/worlds");
+  },
+  async worldSimulationStatus(worldId: number) {
+    return apiFetch(`/worldos/worlds/${worldId}/simulation-status`) as Promise<
+      import("@/types/simulation").WorldSimulationStatusResponse
+    >;
+  },
+  /** URL for SSE stream (realtime simulation status). Use with EventSource. Token in query for auth (EventSource cannot send headers). */
+  worldSimulationStatusStreamUrl(worldId: number): string {
+    const base = process.env.NEXT_PUBLIC_API_URL || "/api";
+    const url = `${base}/worldos/worlds/${worldId}/simulation-status/stream`;
+    const token = getToken();
+    return token ? `${url}?token=${encodeURIComponent(token)}` : url;
+  },
+  /** URL for SSE stream (realtime snapshot updates per universe). Use with EventSource. Token in query for auth. */
+  universeSnapshotStreamUrl(universeId: number): string {
+    const base = process.env.NEXT_PUBLIC_API_URL || "/api";
+    const url = `${base}/worldos/universes/${universeId}/stream`;
+    const token = getToken();
+    return token ? `${url}?token=${encodeURIComponent(token)}` : url;
   },
   async worldIp(worldId: number) {
     return apiFetch(`/worldos/worlds/${worldId}/ip`) as Promise<{
@@ -95,6 +118,19 @@ export const api = {
   },
   async universe(id: number) {
     return apiFetch(`/worldos/universes/${id}`);
+  },
+  async universeDecisionMetrics(universeId: number) {
+    return apiFetch(`/worldos/universes/${universeId}/decision-metrics`) as Promise<
+      import("@/types/simulation").UniverseDecisionMetrics
+    >;
+  },
+  async universeIdeology(universeId: number) {
+    return apiFetch(`/worldos/universes/${universeId}/ideology`) as Promise<{
+      universe_id: number;
+      dominant: Record<string, number>;
+      institution_count: number;
+      previous_dominant: Record<string, number> | null;
+    }>;
   },
   async snapshots(id: number, limit = 50) {
     return apiFetch(`/worldos/universes/${id}/snapshots?limit=${limit}`);
@@ -340,8 +376,9 @@ export const api = {
     });
   },
   labDashboard: {
-    async state() {
-      return apiFetch("/worldos/lab/dashboard/state");
+    async state(universeId?: number | null) {
+      const q = universeId != null ? `?universe_id=${universeId}` : "";
+      return apiFetch(`/worldos/lab/dashboard/state${q}`);
     },
     async attractors() {
       return apiFetch("/worldos/lab/dashboard/attractors");
@@ -369,6 +406,16 @@ export const api = {
     if (params.multiverseId != null) q.set("multiverse_id", String(params.multiverseId));
     q.set("count", String(params.count ?? 50));
     return apiFetch(`/worldos/observer/stream?${q.toString()}`) as Promise<{ entries: { id: string; data: Record<string, string> }[] }>;
+  },
+  /** URL for SSE stream (realtime observer events). Use with EventSource. Token in query for auth. */
+  observerStreamSseUrl(multiverseId?: number | null): string {
+    const base = process.env.NEXT_PUBLIC_API_URL || "/api";
+    const q = new URLSearchParams();
+    if (multiverseId != null) q.set("multiverse_id", String(multiverseId));
+    const token = getToken();
+    if (token) q.set("token", token);
+    const qs = q.toString();
+    return `${base}/worldos/observer/stream/sse${qs ? `?${qs}` : ""}`;
   },
 };
 

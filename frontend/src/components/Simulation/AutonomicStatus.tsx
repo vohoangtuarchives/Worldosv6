@@ -10,7 +10,7 @@ interface AutonomicStatusProps {
 
 export const AutonomicStatus: React.FC<AutonomicStatusProps> = ({ isAutonomic, axioms }) => {
     return (
-        <Card className="bg-slate-950/60 border-purple-900/30 backdrop-blur-md overflow-hidden relative group">
+        <Card className="bg-card/60 border-purple-900/30 backdrop-blur-md overflow-hidden relative group">
             <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity">
                 <BrainCircuit className="w-16 h-16 text-purple-500" />
             </div>
@@ -24,10 +24,10 @@ export const AutonomicStatus: React.FC<AutonomicStatusProps> = ({ isAutonomic, a
 
             <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
-                    <span className="text-xs text-slate-500 font-mono">Trạng thái Thiên Đạo:</span>
+                    <span className="text-xs text-muted-foreground font-mono">Trạng thái Thiên Đạo:</span>
                     <Badge
                         variant={isAutonomic ? "default" : "secondary"}
-                        className={isAutonomic ? "bg-purple-900/50 text-purple-400 border-purple-500/30" : "bg-slate-900 text-slate-500"}
+                        className={isAutonomic ? "bg-purple-900/50 text-purple-400 border-purple-500/30" : "bg-muted text-muted-foreground"}
                     >
                         {isAutonomic ? "TỰ VẬN" : "TĨNH LẶNG"}
                     </Badge>
@@ -35,8 +35,8 @@ export const AutonomicStatus: React.FC<AutonomicStatusProps> = ({ isAutonomic, a
 
                 <div className="grid grid-cols-2 gap-2">
                     {Object.entries(axioms).map(([key, value]) => (
-                        <div key={key} className="bg-slate-900/50 p-2 rounded border border-slate-800/50">
-                            <div className="text-[9px] text-slate-500 uppercase font-bold truncate">{key.replace('_', ' ')}</div>
+                        <div key={key} className="bg-card/50 p-2 rounded border border-border/50">
+                            <div className="text-[9px] text-muted-foreground uppercase font-bold truncate">{key.replace('_', ' ')}</div>
                             <div className="text-xs font-mono text-purple-300">
                                 {typeof value === 'number' ? value.toFixed(2) : String(value)}
                             </div>

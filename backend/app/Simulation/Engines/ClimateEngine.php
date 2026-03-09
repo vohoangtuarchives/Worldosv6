@@ -20,7 +20,7 @@ final class ClimateEngine implements SimulationEngine
 
     public function priority(): int
     {
-        return 10;
+        return 2;
     }
 
     public function tickRate(): int

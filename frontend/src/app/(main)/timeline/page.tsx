@@ -11,8 +11,10 @@ import {
   Position,
   Handle,
 } from "@xyflow/react";
-import { AlertTriangle, GitBranch, Globe, Layers, Loader2 } from "lucide-react";
+import { AlertTriangle, GitBranch, Globe, Layers } from "lucide-react";
 import { Centrifuge } from "centrifuge";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
+import { ErrorBanner } from "@/components/ui/error-banner";
 
 type UniverseStatus = "active" | "forked" | "merged" | "collapsed";
 
@@ -317,19 +319,23 @@ export default function TimelinePage() {
 
   if (loading) {
     return (
-      <div className="w-screen h-screen bg-[#09090b] flex flex-col items-center justify-center font-mono text-cyan-400">
-        <Loader2 className="w-12 h-12 animate-spin mb-4 text-cyan-500" />
-        <p className="tracking-widest uppercase opacity-80 text-sm">Đang cộng hưởng với WorldOS Core...</p>
+      <div className="w-screen h-screen bg-background flex flex-col items-center justify-center font-mono text-foreground">
+        <LoadingSpinner size="lg" className="mb-4 text-primary" />
+        <p className="tracking-widest uppercase opacity-80 text-sm text-muted-foreground">Đang cộng hưởng với WorldOS Core...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="w-screen h-screen bg-[#09090b] flex flex-col items-center justify-center font-mono text-red-500">
-        <AlertTriangle className="w-12 h-12 mb-4" />
-        <h2 className="text-xl font-bold mb-2 uppercase tracking-wide">Đồng bộ thất bại</h2>
-        <p className="text-sm opacity-80">Không thiết lập được liên kết chiều: {error}</p>
+      <div className="w-screen h-screen bg-background flex flex-col items-center justify-center p-8">
+        <div className="max-w-md w-full space-y-4">
+          <div className="flex flex-col items-center gap-2 text-destructive">
+            <AlertTriangle className="w-12 h-12" />
+            <h2 className="text-xl font-bold uppercase tracking-wide">Đồng bộ thất bại</h2>
+          </div>
+          <ErrorBanner message={`Không thiết lập được liên kết chiều: ${error}`} />
+        </div>
       </div>
     );
   }

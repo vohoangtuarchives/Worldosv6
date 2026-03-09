@@ -70,8 +70,24 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
         setUniverse(u);
 
         const snaps = snapRes.data || snapRes || [];
+        const currentTickFromUniverse = u?.current_tick != null ? Number(u.current_tick) : null;
         if (Array.isArray(snaps) && snaps.length > 0) {
-            setLatestSnapshot(snaps[0]);
+            const snap = snaps[0];
+            const snapTick = snap?.tick != null ? Number(snap.tick) : null;
+            const tickToUse = currentTickFromUniverse != null && (snapTick == null || currentTickFromUniverse > snapTick)
+                ? currentTickFromUniverse
+                : snapTick;
+            setLatestSnapshot({
+                ...snap,
+                tick: tickToUse ?? snap?.tick,
+            });
+        } else if (currentTickFromUniverse != null) {
+            setLatestSnapshot(prev => ({
+                tick: currentTickFromUniverse,
+                entropy: u?.entropy ?? (prev && typeof prev === 'object' ? prev.entropy : undefined),
+                stability_index: prev && typeof prev === 'object' ? prev.stability_index : undefined,
+                metrics: prev && typeof prev === 'object' && prev.metrics ? prev.metrics : {},
+            }));
         }
 
         const anoms = anomRes.data || anomRes || [];
@@ -125,30 +141,64 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
         }
     }, [universeId, fetchVitalData, fetchAuxiliaryData]);
 
-    // Polling Logic
+    // Realtime: SSE snapshot stream for current universe (replaces vital 5s polling)
     useEffect(() => {
-        if (!universeId || isPaused) return;
+        if (!universeId || isPaused || typeof window === "undefined") return;
 
-        // Vital Polling (Inner Pulse) - Every 5s
-        const vitalInterval = setInterval(() => {
-            refresh(false);
-        }, 5000);
+        const url = api.universeSnapshotStreamUrl(universeId);
+        const es = new EventSource(url);
+        let vitalDebounce: ReturnType<typeof setTimeout> | null = null;
 
-        // Auxiliary Polling (Outer Pulse) - Every 20s
-        const auxiliaryInterval = setInterval(() => {
-            refresh(true);
-        }, 20000);
+        es.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                setLatestSnapshot({
+                    tick: data.tick,
+                    entropy: data.entropy,
+                    stability_index: data.stability_index,
+                    metrics: data.metrics ?? {},
+                });
+                if (vitalDebounce) clearTimeout(vitalDebounce);
+                vitalDebounce = setTimeout(() => {
+                    fetchVitalData(universeId);
+                    vitalDebounce = null;
+                }, 1500);
+            } catch (_) {
+                // ignore parse errors
+            }
+        };
 
-        // Immediate first fetch
+        es.onerror = () => {
+            setError("Mất kết nối realtime. Thử Làm mới.");
+            es.close();
+        };
+
+        // Initial fetch (vital + auxiliary)
         refresh(true);
 
         return () => {
-            clearInterval(vitalInterval);
-            clearInterval(auxiliaryInterval);
+            if (vitalDebounce) clearTimeout(vitalDebounce);
+            es.close();
         };
-    }, [universeId, isPaused, refresh]);
+    }, [universeId, isPaused, fetchVitalData, refresh]);
 
-    // Initial fetch of universes list
+    // Auxiliary data: refetch when snapshot tick changes (replaces auxiliary 20s polling)
+    const prevTickRef = useRef<number | null>(null);
+    useEffect(() => {
+        if (!universeId) return;
+        const tick = latestSnapshot?.tick ?? null;
+        if (tick !== null && tick !== prevTickRef.current) {
+            prevTickRef.current = tick;
+            const t = setTimeout(() => {
+                fetchAuxiliaryData(universeId);
+            }, 2000);
+            return () => clearTimeout(t);
+        }
+        if (tick !== null) prevTickRef.current = tick;
+        if (tick === null) prevTickRef.current = null;
+    }, [universeId, latestSnapshot?.tick, fetchAuxiliaryData]);
+
+    // Universes list: fetch on mount and on window focus (no interval)
     useEffect(() => {
         const fetchUniverses = async () => {
             try {
@@ -159,8 +209,9 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
             }
         };
         fetchUniverses();
-        const interval = setInterval(fetchUniverses, 60000); // Very infrequent
-        return () => clearInterval(interval);
+        const onFocus = () => fetchUniverses();
+        window.addEventListener("focus", onFocus);
+        return () => window.removeEventListener("focus", onFocus);
     }, []);
 
     const value = React.useMemo(() => ({

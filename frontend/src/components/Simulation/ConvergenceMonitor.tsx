@@ -28,7 +28,7 @@ const ConvergenceMonitor: React.FC<ConvergenceMonitorProps> = ({ universeId, cur
     if (loading && trajectories.length === 0) return null;
 
     return (
-        <Card className="bg-slate-950/80 border-cyan-900/50 backdrop-blur-md">
+        <Card className="bg-card/80 border-cyan-900/50 backdrop-blur-md">
             <CardHeader className="py-2 px-4 border-b border-cyan-900/30">
                 <CardTitle className="text-xs font-bold flex items-center gap-2 text-cyan-400 uppercase tracking-widest">
                     <Target className="w-4 h-4" />
@@ -37,7 +37,7 @@ const ConvergenceMonitor: React.FC<ConvergenceMonitorProps> = ({ universeId, cur
             </CardHeader>
             <CardContent className="p-4 space-y-4">
                 {trajectories.length === 0 ? (
-                    <div className="text-[10px] text-slate-500 italic text-center py-4">
+                    <div className="text-[10px] text-muted-foreground italic text-center py-4">
                         Chưa phát hiện điểm hội tụ nhân quả đáng kể...
                     </div>
                 ) : (
@@ -57,19 +57,19 @@ const ConvergenceMonitor: React.FC<ConvergenceMonitorProps> = ({ universeId, cur
                                 </div>
 
                                 <div className="space-y-1">
-                                    <div className="flex justify-between text-[9px] text-slate-400 font-bold uppercase">
+                                    <div className="flex justify-between text-[9px] text-muted-foreground font-bold uppercase">
                                         <span>Xác suất hội tụ</span>
                                         <span className="text-cyan-400 font-mono">{probabilityPercent}%</span>
                                     </div>
-                                    <Progress value={probabilityPercent} className="h-1 bg-slate-900" />
+                                    <Progress value={probabilityPercent} className="h-1 bg-muted" />
                                 </div>
 
                                 <div className="flex items-center justify-between text-[9px]">
-                                    <div className="flex items-center gap-1 text-slate-500 font-bold">
+                                    <div className="flex items-center gap-1 text-muted-foreground font-bold">
                                         <Zap className="w-3 h-3 text-amber-500" />
                                         <span>Giao điểm: Tick {traj.target_tick}</span>
                                     </div>
-                                    <span className={`font-mono font-bold ${remainingTicks < 20 ? 'text-rose-400 animate-pulse' : 'text-slate-400'}`}>
+                                    <span className={`font-mono font-bold ${remainingTicks < 20 ? 'text-rose-400 animate-pulse' : 'text-muted-foreground'}`}>
                                         Δt: {remainingTicks > 0 ? `-${remainingTicks}` : 'Hội tụ'}
                                     </span>
                                 </div>

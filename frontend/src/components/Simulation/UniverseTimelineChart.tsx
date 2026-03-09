@@ -75,7 +75,7 @@ export function UniverseTimelineChart({
   if (loading) {
     return (
       <div
-        className={`flex items-center justify-center h-[280px] text-slate-500 ${className}`}
+        className={`flex items-center justify-center h-[280px] text-muted-foreground ${className}`}
       >
         <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
         <span className="ml-2 text-sm">Đang tải timeline...</span>
@@ -96,7 +96,7 @@ export function UniverseTimelineChart({
   if (data.length === 0) {
     return (
       <div
-        className={`flex items-center justify-center h-[280px] text-slate-500 italic text-sm ${className}`}
+        className={`flex items-center justify-center h-[280px] text-muted-foreground italic text-sm ${className}`}
       >
         Chưa có dữ liệu snapshot.
       </div>

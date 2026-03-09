@@ -351,6 +351,32 @@ Route::middleware('auth:sanctum')->prefix('worldos')->group(function () {
         return response()->json($result);
     })->name('worldos.universes.evaluate');
 
+    Route::get('universes/{id}/decision-metrics', function (string $id, UniverseSnapshotRepository $repo, DecideUniverseAction $action) {
+        $universeId = (int) $id;
+        $snapshot = $repo->getLatest($universeId);
+        if (! $snapshot) {
+            return response()->json([
+                'action' => 'observe',
+                'navigator_score' => 0,
+                'novelty' => null,
+                'complexity' => null,
+                'divergence' => null,
+                'nearest_archetype' => null,
+                'is_novel_archetype' => false,
+            ]);
+        }
+        $result = $action->execute($snapshot);
+        return response()->json([
+            'action' => $result['action'],
+            'navigator_score' => $result['navigator_score'],
+            'novelty' => $result['meta']['novelty'] ?? null,
+            'complexity' => $result['meta']['complexity'] ?? null,
+            'divergence' => $result['meta']['divergence'] ?? null,
+            'nearest_archetype' => $result['meta']['detected_archetype'] ?? null,
+            'is_novel_archetype' => $result['meta']['is_novel_archetype'] ?? null,
+        ]);
+    })->name('worldos.universes.decision-metrics');
+
     Route::get('universes/{id}/material-dag', [\App\Http\Controllers\Api\MaterialMutationController::class, 'getDagData'])
         ->name('worldos.universes.material-dag');
 
@@ -575,6 +601,37 @@ Route::middleware('auth:sanctum')->prefix('worldos')->group(function () {
         return response()->json(['ok' => true, 'is_autonomic' => $world->is_autonomic]);
     })->name('worldos.worlds.toggle-autonomic');
 
+    Route::get('worlds/{id}/simulation-status', function (string $id, \App\Modules\Simulation\Services\MultiverseSchedulerEngine $scheduler, \App\Services\Simulation\WorldSimulationStatusService $statusService) {
+        $world = \App\Models\World::findOrFail((int) $id);
+        return response()->json($statusService->getPayload($world, $scheduler));
+    })->name('worldos.worlds.simulation-status');
+
+    Route::get('worlds/{id}/simulation-status/stream', function (string $id, \App\Modules\Simulation\Services\MultiverseSchedulerEngine $scheduler, \App\Services\Simulation\WorldSimulationStatusService $statusService) {
+        $world = \App\Models\World::findOrFail((int) $id);
+        $response = new StreamedResponse(function () use ($world, $scheduler, $statusService) {
+            header('Content-Type: text/event-stream');
+            header('Cache-Control: no-cache');
+            header('Connection: keep-alive');
+            header('Access-Control-Allow-Origin: *');
+            header('X-Accel-Buffering: no');
+            while (!connection_aborted()) {
+                $payload = $statusService->getPayload($world, $scheduler);
+                echo 'data: ' . json_encode($payload) . "\n\n";
+                if (ob_get_level()) {
+                    @ob_flush();
+                }
+                flush();
+                usleep(1500000);
+            }
+        });
+        $response->headers->set('Content-Type', 'text/event-stream');
+        $response->headers->set('Cache-Control', 'no-cache');
+        $response->headers->set('Connection', 'keep-alive');
+        $response->headers->set('Access-Control-Allow-Origin', '*');
+        $response->headers->set('X-Accel-Buffering', 'no');
+        return $response;
+    })->name('worldos.worlds.simulation-status.stream');
+
     Route::post('worlds/{id}/axiom', function (string $id, \Illuminate\Http\Request $request, \App\Actions\Simulation\WorldAxiomAction $action) {
         $world = \App\Models\World::findOrFail((int) $id);
         $axioms = $request->input('axioms', []);
@@ -625,21 +682,30 @@ Route::middleware('auth:sanctum')->prefix('worldos')->group(function () {
         return $response;
     })->name('worldos.sse.universe');
     Route::get('universes/{id}/stream', function (string $id, UniverseSnapshotRepository $repo) {
-        $response = new StreamedResponse(function () use ($id, $repo) {
+        $universeId = (int) $id;
+        $response = new StreamedResponse(function () use ($universeId, $repo) {
             header('Content-Type: text/event-stream');
             header('Cache-Control', 'no-cache');
             header('Connection', 'keep-alive');
             header('Access-Control-Allow-Origin', '*');
             $lastTick = null;
             while (true) {
-                $snapshot = $repo->getLatest((int) $id);
-                if ($snapshot && $snapshot->tick !== $lastTick) {
-                    $lastTick = $snapshot->tick;
+                $universe = \App\Models\Universe::find($universeId);
+                $snapshot = $repo->getLatest($universeId);
+                $currentTick = $universe ? (int) $universe->current_tick : ($snapshot ? $snapshot->tick : 0);
+                if ($snapshot && $snapshot->tick > $currentTick) {
+                    $currentTick = $snapshot->tick;
+                }
+                if ($currentTick !== $lastTick) {
+                    $lastTick = $currentTick;
+                    $entropy = $snapshot?->entropy ?? ($universe && is_array($universe->state_vector) ? (float)($universe->state_vector['entropy'] ?? $universe->entropy) : null);
+                    $stability = $snapshot?->stability_index ?? ($universe && is_array($universe->state_vector) ? ($universe->state_vector['stability_index'] ?? null) : null);
+                    $metrics = $snapshot?->metrics ?? [];
                     $payload = json_encode([
-                        'tick' => $snapshot->tick,
-                        'entropy' => $snapshot->entropy,
-                        'stability_index' => $snapshot->stability_index,
-                        'metrics' => $snapshot->metrics,
+                        'tick' => $currentTick,
+                        'entropy' => $entropy,
+                        'stability_index' => $stability,
+                        'metrics' => $metrics,
                     ]);
                     echo "data: {$payload}\n\n";
                     @ob_flush();
@@ -701,6 +767,47 @@ Route::middleware('auth:sanctum')->prefix('worldos')->group(function () {
         $entries = $observer->readStream($multiverseId, $lastId, $count);
         return response()->json(['entries' => $entries]);
     })->name('worldos.observer.stream');
+
+    // SSE: push observer stream events (blocking Redis XREAD)
+    Route::get('observer/stream/sse', function (\App\Services\Observer\ObserverService $observer) {
+        $multiverseId = request()->query('multiverse_id') ? (int) request()->query('multiverse_id') : null;
+        $lastId = request()->query('last_id', '0');
+        $count = min(100, max(1, (int) request()->query('count', 50)));
+        $blockMs = min(15000, max(1000, (int) request()->query('block_ms', 5000)));
+
+        $response = new StreamedResponse(function () use ($observer, $multiverseId, &$lastId, $count, $blockMs) {
+            header('Content-Type: text/event-stream');
+            header('Cache-Control: no-cache');
+            header('Connection: keep-alive');
+            header('Access-Control-Allow-Origin: *');
+            header('X-Accel-Buffering: no');
+            $lastKeepalive = time();
+            while (!connection_aborted()) {
+                [$entries, $lastId] = $observer->readStreamBlocking($multiverseId, $lastId, $count, $blockMs);
+                if (!empty($entries)) {
+                    echo 'data: ' . json_encode(['entries' => $entries, 'last_id' => $lastId]) . "\n\n";
+                    if (ob_get_level()) {
+                        @ob_flush();
+                    }
+                    flush();
+                }
+                if (time() - $lastKeepalive >= 25) {
+                    $lastKeepalive = time();
+                    echo ": keepalive\n\n";
+                    if (ob_get_level()) {
+                        @ob_flush();
+                    }
+                    flush();
+                }
+            }
+        });
+        $response->headers->set('Content-Type', 'text/event-stream');
+        $response->headers->set('Cache-Control', 'no-cache');
+        $response->headers->set('Connection', 'keep-alive');
+        $response->headers->set('Access-Control-Allow-Origin', '*');
+        $response->headers->set('X-Accel-Buffering', 'no');
+        return $response;
+    })->name('worldos.observer.stream.sse');
 
     // =========================================================================
     // Civilization Observatory Dashboard (Phase 7)

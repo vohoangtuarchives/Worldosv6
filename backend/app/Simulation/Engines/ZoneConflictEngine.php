@@ -26,7 +26,7 @@ final class ZoneConflictEngine implements SimulationEngine
 
     public function priority(): int
     {
-        return 6;
+        return 7;
     }
 
     public function tickRate(): int

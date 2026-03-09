@@ -21,7 +21,7 @@ final class CausalityEngine implements SimulationEngine
 
     public function priority(): int
     {
-        return 100;
+        return 24;
     }
 
     public function tickRate(): int

@@ -139,34 +139,34 @@ export default function NarrativePage() {
       {/* Details Modal */}
       {selectedEvent && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="bg-slate-900 border border-cyan-500/30 rounded-xl max-w-2xl w-full shadow-2xl shadow-cyan-900/40 overflow-hidden animate-in zoom-in-95 duration-300">
-            <div className="p-6 border-b border-white/5 bg-gradient-to-r from-cyan-500/10 to-transparent flex justify-between items-center">
+          <div className="bg-card border border-cyan-500/30 rounded-xl max-w-2xl w-full shadow-2xl shadow-cyan-900/40 overflow-hidden animate-in zoom-in-95 duration-300">
+            <div className="p-6 border-b border-border bg-gradient-to-r from-cyan-500/10 to-transparent flex justify-between items-center">
               <div>
                 <div className="text-[10px] text-cyan-400 font-mono uppercase tracking-widest mb-1">Chronicle Detail #Tick {selectedEvent.tick}</div>
-                <h3 className="text-xl font-bold text-white">{selectedEvent.title}</h3>
+                <h3 className="text-xl font-bold text-foreground">{selectedEvent.title}</h3>
               </div>
               <button
                 onClick={() => setSelectedEvent(null)}
-                className="text-slate-400 hover:text-white transition-colors"
+                className="text-muted-foreground hover:text-foreground transition-colors"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
               </button>
             </div>
             <div className="p-8">
-              <div className="bg-black/40 rounded-lg p-6 border border-white/5 mb-6">
-                <p className="text-slate-200 leading-relaxed font-serif italic text-lg whitespace-pre-wrap">
+              <div className="bg-background/40 rounded-lg p-6 border border-border mb-6">
+                <p className="text-foreground leading-relaxed font-serif italic text-lg whitespace-pre-wrap">
                   "{selectedEvent.description || "Không có dữ liệu chi tiết cho sự kiện này."}"
                 </p>
               </div>
               <div className="flex justify-between items-center">
                 <div className="flex gap-4">
                   <div className="text-center">
-                    <div className="text-[8px] text-slate-500 uppercase">Impact</div>
+                    <div className="text-[8px] text-muted-foreground uppercase">Impact</div>
                     <div className={`text-xs font-bold ${selectedEvent.impact === 'High' ? 'text-red-400' : 'text-cyan-400'}`}>{selectedEvent.impact}</div>
                   </div>
-                  <div className="text-center border-l border-white/10 pl-4">
-                    <div className="text-[8px] text-slate-500 uppercase">Type</div>
-                    <div className="text-xs font-bold text-white uppercase">{selectedEvent.type}</div>
+                  <div className="text-center border-l border-border pl-4">
+                    <div className="text-[8px] text-muted-foreground uppercase">Type</div>
+                    <div className="text-xs font-bold text-foreground uppercase">{selectedEvent.type}</div>
                   </div>
                 </div>
                 <button

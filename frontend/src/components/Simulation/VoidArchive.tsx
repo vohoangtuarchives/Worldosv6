@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Scroll, Sparkles, Ghost, Library, History, Compass } from 'lucide-react';
+import { useSimulation } from '@/context/SimulationContext';
 
 interface Relic {
     id: number;
@@ -22,6 +23,7 @@ interface Relic {
 export function VoidArchive({ universeId }: { universeId: number }) {
     const [relics, setRelics] = useState<Relic[]>([]);
     const [loading, setLoading] = useState(true);
+    const { latestSnapshot } = useSimulation();
 
     useEffect(() => {
         const fetchRelics = async () => {
@@ -39,9 +41,7 @@ export function VoidArchive({ universeId }: { universeId: number }) {
         };
 
         fetchRelics();
-        const interval = setInterval(fetchRelics, 15000);
-        return () => clearInterval(interval);
-    }, [universeId]);
+    }, [universeId, latestSnapshot?.tick]);
 
     const getRarityStyles = (rarity: string) => {
         switch (rarity.toLowerCase()) {
@@ -49,12 +49,12 @@ export function VoidArchive({ universeId }: { universeId: number }) {
             case 'legendary': return 'text-amber-400 border-amber-500/50 bg-amber-500/10 shadow-[0_0_15px_rgba(245,158,11,0.2)]';
             case 'epic': return 'text-blue-400 border-blue-500/50 bg-blue-500/10';
             case 'rare': return 'text-emerald-400 border-emerald-500/50 bg-emerald-500/10';
-            default: return 'text-slate-400 border-slate-500/50 bg-slate-500/10';
+            default: return 'text-muted-foreground border-border bg-muted/50';
         }
     };
 
     return (
-        <Card className="bg-slate-950/95 border-amber-900/40 backdrop-blur-3xl border-r-2 relative overflow-hidden group">
+        <Card className="bg-card/95 border-amber-900/40 backdrop-blur-3xl border-r-2 relative overflow-hidden group">
             {/* Parchment Background Texture Effect */}
             <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/natural-paper.png')] opacity-[0.03] pointer-events-none" />
 
@@ -71,14 +71,14 @@ export function VoidArchive({ universeId }: { universeId: number }) {
             </CardHeader>
             <CardContent className="p-0 relative">
                 {relics.length === 0 ? (
-                    <div className="py-16 flex flex-col items-center justify-center text-slate-800 gap-4">
+                    <div className="py-16 flex flex-col items-center justify-center text-muted-foreground gap-4">
                         <div className="relative">
                             <Compass className="w-12 h-12 opacity-10 animate-[spin_10s_linear_infinite]" />
                             <Ghost className="w-6 h-6 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-20" />
                         </div>
                         <div className="text-center">
-                            <p className="text-[10px] uppercase tracking-[0.3em] font-bold text-slate-600">Những trang giấy trắng</p>
-                            <p className="text-[8px] text-slate-700 mt-2 max-w-[180px] leading-relaxed italic">
+                            <p className="text-[10px] uppercase tracking-[0.3em] font-bold text-muted-foreground">Những trang giấy trắng</p>
+                            <p className="text-[8px] text-muted-foreground/80 mt-2 max-w-[180px] leading-relaxed italic">
                                 "Lịch sử của Hư Không chưa được viết lời nào. Hãy để thực tại rạn nứt để tìm thấy dư âm."
                             </p>
                         </div>
@@ -112,14 +112,14 @@ export function VoidArchive({ universeId }: { universeId: number }) {
                                     </div>
 
                                     <div className="space-y-2">
-                                        <div className="flex items-center gap-2 text-[8px] text-slate-500 uppercase tracking-widest font-bold">
+                                        <div className="flex items-center gap-2 text-[8px] text-muted-foreground uppercase tracking-widest font-bold">
                                             <Sparkles className="w-2 h-2 text-amber-500" />
                                             Dư chấn thực tại
                                         </div>
                                         <div className="flex flex-wrap gap-2">
                                             {Object.entries(relic.power_vector).map(([key, val]) => (
                                                 <div key={key} className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-black/40 border border-white/5">
-                                                    <span className="text-[8px] text-slate-400 font-mono">{key}</span>
+                                                    <span className="text-[8px] text-muted-foreground font-mono">{key}</span>
                                                     <span className="text-[9px] text-amber-500 font-black font-mono">+{val}</span>
                                                 </div>
                                             ))}
@@ -127,7 +127,7 @@ export function VoidArchive({ universeId }: { universeId: number }) {
                                     </div>
 
                                     {relic.origin_universe && (
-                                        <div className="mt-3 pt-2 border-t border-white/5 flex items-center justify-between text-[8px] text-slate-600 italic">
+                                        <div className="mt-3 pt-2 border-t border-border flex items-center justify-between text-[8px] text-muted-foreground italic">
                                             <span>Khởi nguồn từ: {relic.origin_universe.name}</span>
                                             <Scroll className="w-2 h-2 opacity-30" />
                                         </div>

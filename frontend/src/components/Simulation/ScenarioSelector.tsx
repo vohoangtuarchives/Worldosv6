@@ -54,7 +54,7 @@ export const ScenarioSelector: React.FC<{ universeId: number }> = ({ universeId 
     if (loading) return null;
 
     return (
-        <Card className="bg-slate-900/80 border-cyan-900/30">
+        <Card className="bg-card/80 border-cyan-900/30">
             <CardHeader className="pb-2 border-b border-cyan-900/20">
                 <CardTitle className="text-sm font-mono text-cyan-400 flex items-center gap-2">
                     <Play className="w-4 h-4 fill-cyan-500" />
@@ -65,11 +65,11 @@ export const ScenarioSelector: React.FC<{ universeId: number }> = ({ universeId 
                 <ScrollArea className="h-[250px]">
                     <div className="p-4 grid grid-cols-1 gap-3">
                         {Object.entries(scenarios).map(([id, scenario]) => (
-                            <div key={id} className="bg-slate-950/40 border border-cyan-900/10 rounded-lg p-3 hover:bg-slate-950/60 transition-colors group">
+                            <div key={id} className="bg-card/40 border border-cyan-900/10 rounded-lg p-3 hover:bg-card/60 transition-colors group">
                                 <div className="flex justify-between items-start mb-2">
                                     <div className="flex items-center gap-2">
                                         {getScenarioIcon(id)}
-                                        <span className="font-bold text-slate-200 text-sm">{scenario.name}</span>
+                                        <span className="font-bold text-foreground text-sm">{scenario.name}</span>
                                     </div>
                                     <Button
                                         size="sm"
@@ -80,7 +80,7 @@ export const ScenarioSelector: React.FC<{ universeId: number }> = ({ universeId 
                                         KHỞI CHẠY
                                     </Button>
                                 </div>
-                                <p className="text-[11px] text-slate-400 leading-normal mb-2">
+                                <p className="text-[11px] text-muted-foreground leading-normal mb-2">
                                     {scenario.description}
                                 </p>
                                 <div className="flex flex-wrap gap-2 mt-2">

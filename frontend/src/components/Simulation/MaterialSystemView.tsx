@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { api } from '@/lib/api';
+import { useSimulation } from '@/context/SimulationContext';
 
 interface MaterialNode {
     id: string;
@@ -25,6 +26,7 @@ export default function MaterialSystemView({ universeId }: { universeId: number 
     const [dag, setDag] = useState<{ nodes: MaterialNode[], edges: MaterialEdge[] }>({ nodes: [], edges: [] });
     const [loading, setLoading] = useState(true);
     const [selectedId, setSelectedId] = useState<string | null>(null);
+    const { latestSnapshot } = useSimulation();
 
     useEffect(() => {
         const fetchDag = async () => {
@@ -42,9 +44,7 @@ export default function MaterialSystemView({ universeId }: { universeId: number 
         };
 
         fetchDag();
-        const interval = setInterval(fetchDag, 30000);
-        return () => clearInterval(interval);
-    }, [universeId]);
+    }, [universeId, latestSnapshot?.tick]);
 
     const activeMaterials = useMemo(() =>
         dag.nodes.filter(n => n.data.lifecycle === 'active'),
@@ -67,7 +67,7 @@ export default function MaterialSystemView({ universeId }: { universeId: number 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-2 h-full">
             {/* Active Concepts Column */}
             <div className="md:col-span-1 border-r border-white/10 pr-4 space-y-4 overflow-y-auto max-h-[600px] custom-scrollbar">
-                <h3 className="text-xs font-bold uppercase tracking-widest text-emerald-400 sticky top-0 bg-slate-900/80 backdrop-blur pb-2 z-10 border-b border-emerald-500/30">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-emerald-400 sticky top-0 bg-card/80 backdrop-blur pb-2 z-10 border-b border-emerald-500/30">
                     Active Concepts
                 </h3>
 
@@ -173,13 +173,13 @@ export default function MaterialSystemView({ universeId }: { universeId: number 
 
                     {/* Detail Overlay */}
                     {selectedMaterial && (
-                        <div className="absolute bottom-4 right-4 max-w-xs bg-slate-900/90 backdrop-blur-md border border-emerald-500/40 p-3 rounded-lg animate-in fade-in slide-in-from-bottom-2">
+                        <div className="absolute bottom-4 right-4 max-w-xs bg-card/90 backdrop-blur-md border border-emerald-500/40 p-3 rounded-lg animate-in fade-in slide-in-from-bottom-2">
                             <h4 className="text-emerald-400 font-bold text-sm mb-1">{selectedMaterial.data.label}</h4>
                             <div className="flex gap-2 mb-2">
                                 <span className={`text-[8px] px-1 rounded font-bold uppercase ${getOntologyColor(selectedMaterial.data.ontology)}`}>
                                     {selectedMaterial.data.ontology}
                                 </span>
-                                <span className={`text-[8px] px-1 rounded font-bold uppercase bg-slate-800 text-white/50 border border-white/10`}>
+                                <span className={`text-[8px] px-1 rounded font-bold uppercase bg-muted text-foreground/50 border border-border`}>
                                     {selectedMaterial.data.lifecycle}
                                 </span>
                             </div>

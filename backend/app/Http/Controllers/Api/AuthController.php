@@ -42,16 +42,14 @@ class AuthController extends Controller
         ]);
 
         if (!Auth::attempt($request->only('email', 'password'))) {
-            throw ValidationException::withMessages([
-                'email' => ['Invalid credentials provided.'],
-            ]);
+            return response()->json([
+                'message' => 'Email hoặc mật khẩu không đúng.',
+                'errors' => ['email' => ['Email hoặc mật khẩu không đúng.']],
+            ], 401);
         }
 
         $user = User::where('email', $request->email)->firstOrFail();
-        
-        // Revoke all old tokens if needed, or just create new one
-        // $user->tokens()->delete(); 
-        
+
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([

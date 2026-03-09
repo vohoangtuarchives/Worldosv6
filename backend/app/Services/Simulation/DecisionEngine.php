@@ -42,6 +42,9 @@ class DecisionEngine
     /** Threshold below which archiving is recommended */
     const ARCHIVE_THRESHOLD = 0.20;
 
+    /** Minimum ticks before a universe can be archived (avoid archiving in early ticks when complexity is still low). */
+    const MIN_TICKS_BEFORE_ARCHIVE = 30;
+
     /** Known civilization archetype signatures (phase-space reference points) */
     const KNOWN_ARCHETYPES = [
         'agrarian_empire'       => ['survival' => 0.8, 'power' => 0.7, 'wealth' => 0.5, 'knowledge' => 0.3, 'meaning' => 0.7],
@@ -76,13 +79,17 @@ class DecisionEngine
         if ($navScore['total'] >= self::FORK_THRESHOLD && ! in_array($recommendation, ['archive', 'merge', 'promote'], true)) {
             $recommendation = 'fork';
         } elseif ($navScore['total'] <= self::ARCHIVE_THRESHOLD && ! in_array($recommendation, ['fork', 'mutate', 'merge', 'promote'], true)) {
-            $recommendation = 'archive';
+            // Don't archive very early universes: at tick 1 complexity is ~0 so score is artificially low.
+            $tick = (int) ($snapshot->tick ?? 0);
+            if ($tick >= self::MIN_TICKS_BEFORE_ARCHIVE) {
+                $recommendation = 'archive';
+            }
         }
 
         return [
             'action'          => $recommendation,
             'navigator_score' => $navScore['total'],
-            'meta'            => [
+            'meta'            => array_merge($result['meta'] ?? [], [
                 'ip_score'           => $result['ip_score'] ?? 0,
                 'mutation_suggestion' => $result['mutation_suggestion'] ?? null,
                 'reason'             => "Entropy: " . ($snapshot->entropy ?? 'N/A'),
@@ -91,7 +98,7 @@ class DecisionEngine
                 'divergence'         => $navScore['divergence'],
                 'detected_archetype' => $navScore['nearest_archetype'],
                 'is_novel_archetype' => $navScore['is_novel'],
-            ],
+            ]),
         ];
     }
 

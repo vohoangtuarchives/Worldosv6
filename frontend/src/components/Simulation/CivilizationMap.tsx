@@ -66,7 +66,7 @@ export function CivilizationMap({
   if (loading) {
     return (
       <div
-        className={`flex items-center justify-center min-h-[260px] text-slate-500 ${className}`}
+        className={`flex items-center justify-center min-h-[260px] text-muted-foreground ${className}`}
       >
         <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
         <span className="ml-2 text-sm">Đang tải bản đồ...</span>
@@ -87,7 +87,7 @@ export function CivilizationMap({
   if (zones.length === 0) {
     return (
       <div
-        className={`flex items-center justify-center min-h-[260px] text-slate-500 italic text-sm ${className}`}
+        className={`flex items-center justify-center min-h-[260px] text-muted-foreground italic text-sm ${className}`}
       >
         Chưa có zone trong topology.
       </div>
@@ -117,7 +117,7 @@ export function CivilizationMap({
                 fill={fill}
                 stroke="rgba(148,163,184,0.4)"
                 strokeWidth={1}
-                className="cursor-pointer hover:stroke-slate-300"
+                className="cursor-pointer hover:stroke-muted-foreground"
               />
               <text
                 x={cx}
@@ -138,7 +138,7 @@ export function CivilizationMap({
           );
         })}
       </svg>
-      <div className="absolute bottom-0 left-0 flex gap-4 text-[10px] text-slate-500">
+      <div className="absolute bottom-0 left-0 flex gap-4 text-[10px] text-muted-foreground">
         <span className="flex items-center gap-1">
           <span className="w-2 h-2 rounded-full bg-green-500/80" /> Ổn định
         </span>

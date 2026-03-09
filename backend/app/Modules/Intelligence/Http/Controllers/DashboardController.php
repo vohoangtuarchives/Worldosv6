@@ -23,9 +23,11 @@ class DashboardController extends Controller
         private ControlEngine $controlEngine
     ) {}
 
-    public function state(): JsonResponse
+    public function state(Request $request): JsonResponse
     {
-        return response()->json($this->stateService->getMacroState());
+        $universeId = $request->query('universe_id');
+        $id = $universeId !== null && $universeId !== '' ? (int) $universeId : null;
+        return response()->json($this->stateService->getMacroState($id));
     }
 
     public function attractors(): JsonResponse

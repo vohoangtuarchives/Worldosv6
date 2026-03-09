@@ -46,6 +46,39 @@ class MultiverseSchedulerEngine
     }
 
     /**
+     * Return universes with priority and order_index for dashboard/simulation-status API.
+     * Same as schedule() but returns full scored items: [universe, priority, order_index].
+     */
+    public function scheduleWithScores(World $world, ?int $tickBudget = null): Collection
+    {
+        $budget = $tickBudget ?? (int) config('worldos.scheduler.tick_budget', 0);
+
+        $universes = Universe::where('world_id', $world->id)
+            ->whereIn('status', ['active', 'running'])
+            ->get();
+
+        if ($universes->isEmpty()) {
+            return collect();
+        }
+
+        $scored = $universes->map(function (Universe $u) {
+            return [
+                'universe' => $u,
+                'priority' => $this->computePriority($u),
+            ];
+        })->sortByDesc('priority')->values();
+
+        if ($budget > 0) {
+            $scored = $scored->take($budget);
+        }
+
+        return $scored->map(function ($item, $index) {
+            $item['order_index'] = $index + 1;
+            return $item;
+        })->values();
+    }
+
+    /**
      * Priority score from state_vector and universe (novelty proxy, complexity, civilization, entropy).
      */
     protected function computePriority(Universe $universe): float

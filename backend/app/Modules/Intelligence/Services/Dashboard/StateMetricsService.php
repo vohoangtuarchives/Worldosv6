@@ -27,6 +27,7 @@ class StateMetricsService
                 'entropy' => 0.0,
                 'sci' => 0.0,
                 'winner' => 'Unknown',
+                'tick' => 0,
             ];
         }
 

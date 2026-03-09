@@ -55,6 +55,32 @@ class ObserverService
         }
     }
 
+    /**
+     * Blocking read: wait up to $blockMs for new entries. Use for SSE to avoid polling.
+     * Returns [entries, lastId]. lastId is updated to the last entry id for next call.
+     *
+     * @return array{0: array<int, array{id: string, data: array<string, string>}>, 1: string}
+     */
+    public function readStreamBlocking(?int $multiverseId, string &$lastId, int $count = 50, int $blockMs = 5000): array
+    {
+        $key = $this->streamKey($multiverseId);
+        try {
+            $result = Redis::xRead([$key => $lastId], $count, $blockMs);
+            if (!is_array($result) || !isset($result[$key])) {
+                return [[], $lastId];
+            }
+            $entries = [];
+            foreach ($result[$key] as $id => $data) {
+                $entries[] = ['id' => $id, 'data' => $data];
+                $lastId = $id;
+            }
+            return [$entries, $lastId];
+        } catch (\Throwable $e) {
+            report($e);
+            return [[], $lastId];
+        }
+    }
+
     public function streamKey(?int $multiverseId): string
     {
         return $multiverseId !== null

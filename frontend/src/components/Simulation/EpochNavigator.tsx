@@ -14,6 +14,7 @@ import {
     ChevronRight,
     Loader2
 } from 'lucide-react';
+import { useSimulation } from '@/context/SimulationContext';
 
 interface Epoch {
     id: number;
@@ -28,6 +29,7 @@ export function EpochNavigator({ universeId }: { universeId: number }) {
     const [currentEpoch, setCurrentEpoch] = useState<Epoch | null>(null);
     const [tick, setTick] = useState(0);
     const [loading, setLoading] = useState(true);
+    const { latestSnapshot } = useSimulation();
 
     useEffect(() => {
         const fetchData = async () => {
@@ -47,9 +49,7 @@ export function EpochNavigator({ universeId }: { universeId: number }) {
         };
 
         fetchData();
-        const interval = setInterval(fetchData, 10000);
-        return () => clearInterval(interval);
-    }, [universeId]);
+    }, [universeId, latestSnapshot?.tick]);
 
     const getThemeConfig = (theme: string) => {
         switch (theme.toLowerCase()) {

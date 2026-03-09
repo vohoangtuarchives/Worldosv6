@@ -17,10 +17,10 @@ interface CustomNodeProps {
 }
 
 const UniverseNode = ({ data }: CustomNodeProps) => (
-  <div className="bg-slate-900 border-2 border-blue-500 rounded-full w-8 h-8 flex items-center justify-center relative cursor-pointer hover:shadow-[0_0_15px_rgba(59,130,246,0.5)] transition-shadow">
+  <div className="bg-card border-2 border-blue-500 rounded-full w-8 h-8 flex items-center justify-center relative cursor-pointer hover:shadow-[0_0_15px_rgba(59,130,246,0.5)] transition-shadow">
     <Handle type="target" position={Position.Top} className="opacity-0" />
     <GitBranch className="w-4 h-4 text-blue-400" />
-    <div className="absolute top-10 whitespace-nowrap text-[10px] text-slate-300 font-mono">
+    <div className="absolute top-10 whitespace-nowrap text-[10px] text-foreground font-mono">
       <span className="font-bold uppercase block text-blue-400">UNIVERSE</span>
       <span className="opacity-80">{data.label}</span>
     </div>
@@ -29,11 +29,11 @@ const UniverseNode = ({ data }: CustomNodeProps) => (
 );
 
 const SnapshotNode = ({ data }: CustomNodeProps) => (
-  <div className="bg-slate-900 border-2 border-slate-600 rounded-sm w-8 h-8 flex items-center justify-center relative cursor-pointer hover:border-slate-400 transition-colors">
+  <div className="bg-card border-2 border-border rounded-sm w-8 h-8 flex items-center justify-center relative cursor-pointer hover:border-muted-foreground transition-colors">
     <Handle type="target" position={Position.Top} className="opacity-0" />
-    <Box className="w-4 h-4 text-slate-400" />
-    <div className="absolute top-10 whitespace-nowrap text-[10px] text-slate-300 font-mono text-center">
-      <span className="font-bold uppercase block text-slate-400">STATE</span>
+    <Box className="w-4 h-4 text-muted-foreground" />
+    <div className="absolute top-10 whitespace-nowrap text-[10px] text-foreground font-mono text-center">
+      <span className="font-bold uppercase block text-muted-foreground">STATE</span>
       <span className="opacity-80">{data.label}</span>
     </div>
     <Handle type="source" position={Position.Bottom} className="opacity-0" />
@@ -41,10 +41,10 @@ const SnapshotNode = ({ data }: CustomNodeProps) => (
 );
 
 const MythScarNode = ({ data }: CustomNodeProps) => (
-  <div className="bg-slate-900 border-2 border-red-500 rounded-full w-8 h-8 flex items-center justify-center relative cursor-pointer hover:shadow-[0_0_15px_rgba(239,68,68,0.5)] transition-shadow group">
+  <div className="bg-card border-2 border-red-500 rounded-full w-8 h-8 flex items-center justify-center relative cursor-pointer hover:shadow-[0_0_15px_rgba(239,68,68,0.5)] transition-shadow group">
     <Handle type="target" position={Position.Top} className="opacity-0" />
     <Flame className="w-4 h-4 text-red-500 group-hover:scale-110 transition-transform" />
-    <div className="absolute top-10 whitespace-nowrap text-[10px] text-slate-300 font-mono text-center">
+    <div className="absolute top-10 whitespace-nowrap text-[10px] text-foreground font-mono text-center">
       <span className="font-bold uppercase block text-red-500">SCAR</span>
       <span className="opacity-80">{data.label}</span>
     </div>
@@ -119,25 +119,25 @@ export function CausalTopologyGraph({ nodes: initialNodes, edges: initialEdges, 
   );
 
   return (
-    <div className="relative w-full h-[600px] bg-slate-900/50 rounded-xl border border-slate-800 p-1">
-      <div className="absolute top-4 left-4 flex items-center gap-2 text-slate-400 z-10 pointer-events-none">
+    <div className="relative w-full h-[600px] bg-card/50 rounded-xl border border-border p-1">
+      <div className="absolute top-4 left-4 flex items-center gap-2 text-muted-foreground z-10 pointer-events-none">
         <Share2 className="w-4 h-4" />
         <span className="text-xs font-mono uppercase tracking-wider">Đồ thị topology nhân quả</span>
       </div>
       <ReactFlow nodes={rfNodes} edges={rfEdges} nodeTypes={nodeTypes} fitView className="dark">
         <Background color="#334155" gap={16} />
-        <Controls className="!bg-slate-800 !border-slate-700 !fill-slate-300" />
+        <Controls className="!bg-muted !border-border !fill-muted-foreground" />
       </ReactFlow>
       <div className="absolute bottom-4 left-4 flex flex-col gap-2 z-10 pointer-events-none">
-        <div className="flex items-center gap-2 text-[10px] text-slate-500 font-mono bg-slate-900/80 px-2 py-1 rounded">
+        <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-mono bg-card/80 px-2 py-1 rounded">
           <div className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_5px_rgba(59,130,246,0.8)]" />
           <span>Thực tại chính</span>
         </div>
-        <div className="flex items-center gap-2 text-[10px] text-slate-500 font-mono bg-slate-900/80 px-2 py-1 rounded">
-          <div className="w-2 h-2 rounded-sm bg-slate-600" />
+        <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-mono bg-card/80 px-2 py-1 rounded">
+          <div className="w-2 h-2 rounded-sm bg-muted-foreground/50" />
           <span>Snapshot trạng thái</span>
         </div>
-        <div className="flex items-center gap-2 text-[10px] text-slate-500 font-mono bg-slate-900/80 px-2 py-1 rounded">
+        <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-mono bg-card/80 px-2 py-1 rounded">
           <div className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_5px_rgba(239,68,68,0.8)]" />
           <span>Vết huyền thoại</span>
         </div>

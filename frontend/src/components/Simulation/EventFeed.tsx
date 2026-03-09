@@ -19,8 +19,8 @@ export function EventFeed({ universeId: _unusedId }: { universeId: number | null
         <div className="h-full px-4 py-2">
             <div className="space-y-4">
                 {anomalies.map((anomaly) => (
-                    <div key={anomaly.id} className="flex items-start group relative pl-4 border-l border-slate-800 hover:border-slate-600 transition-colors py-1">
-                        <span className={`absolute -left-[3px] top-2 h-1.5 w-1.5 rounded-full ring-2 ring-slate-950 ${
+                    <div key={anomaly.id} className="flex items-start group relative pl-4 border-l border-border hover:border-muted-foreground/50 transition-colors py-1">
+                        <span className={`absolute -left-[3px] top-2 h-1.5 w-1.5 rounded-full ring-2 ring-background ${
                             anomaly.severity === 'CRITICAL' ? 'bg-red-500 animate-pulse' :
                             anomaly.severity === 'WARN' ? 'bg-amber-500' : 'bg-blue-500'
                         }`} />
@@ -33,14 +33,14 @@ export function EventFeed({ universeId: _unusedId }: { universeId: number | null
                                 }`}>
                                     {anomaly.title}
                                 </p>
-                                <span className="text-[9px] text-slate-600 font-mono uppercase tracking-wider">{anomaly.severity}</span>
+                                <span className="text-[9px] text-muted-foreground font-mono uppercase tracking-wider">{anomaly.severity}</span>
                             </div>
-                            <p className="text-[10px] text-slate-500 leading-snug group-hover:text-slate-400 transition-colors">{anomaly.description}</p>
+                            <p className="text-[10px] text-muted-foreground leading-snug group-hover:text-foreground/80 transition-colors">{anomaly.description}</p>
                         </div>
                     </div>
                 ))}
                 {anomalies.length === 0 && (
-                   <div className="text-center py-8 text-xs text-slate-700 italic">
+                   <div className="text-center py-8 text-xs text-muted-foreground italic">
                        No anomalies detected in local spacetime.
                    </div>
                 )}

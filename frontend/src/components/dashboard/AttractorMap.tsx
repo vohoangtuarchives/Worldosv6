@@ -17,16 +17,16 @@ export default function AttractorMap() {
             .catch((err: any) => console.error("Failed to load attractors", err));
     }, []);
 
-    if (!data) return <div className="h-full flex items-center justify-center animate-pulse text-slate-500">Scanning Topologies...</div>;
+    if (!data) return <div className="h-full flex items-center justify-center animate-pulse text-muted-foreground">Scanning Topologies...</div>;
 
     return (
-        <div className="bg-slate-900/40 backdrop-blur-sm border border-slate-800 rounded-lg p-6 h-full flex flex-col">
+        <div className="bg-card/40 backdrop-blur-sm border border-border rounded-lg p-6 h-full flex flex-col">
             <div>
-                <h2 className="text-xl font-bold text-slate-100 tracking-tight flex items-center gap-2">
+                <h2 className="text-xl font-bold text-foreground tracking-tight flex items-center gap-2">
                     <Globe2 className="w-5 h-5 text-blue-400" />
                     Attractor Topology
                 </h2>
-                <p className="text-slate-400 text-sm mt-1">Regime basins and dark traps.</p>
+                <p className="text-muted-foreground text-sm mt-1">Regime basins and dark traps.</p>
             </div>
 
             <div className="flex-grow mt-6 min-h-[220px] relative">
@@ -55,17 +55,17 @@ export default function AttractorMap() {
                     </ResponsiveContainer>
                 ) : (
                     <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="text-slate-500 text-sm">Insufficient Memory Depth</span>
+                        <span className="text-muted-foreground text-sm">Insufficient Memory Depth</span>
                     </div>
                 )}
             </div>
 
-            <div className="mt-4 pt-4 border-t border-slate-800">
-                <h3 className="text-xs text-slate-500 uppercase font-semibold mb-3">Strange & Dark Rules</h3>
+            <div className="mt-4 pt-4 border-t border-border">
+                <h3 className="text-xs text-muted-foreground uppercase font-semibold mb-3">Strange & Dark Rules</h3>
                 <div className="flex flex-col gap-2">
                     {data.active_rules.slice(0, 3).map((rule: any, idx: number) => (
-                        <div key={idx} className="flex justify-between items-center text-sm p-2 rounded-md bg-slate-800/60">
-                            <span className="text-slate-300 truncate max-w-[180px]">{rule.name}</span>
+                        <div key={idx} className="flex justify-between items-center text-sm p-2 rounded-md bg-muted/60">
+                            <span className="text-foreground truncate max-w-[180px]">{rule.name}</span>
                             {rule.is_dark ? (
                                 <span className="flex items-center gap-1 text-red-400 text-xs bg-red-400/10 px-2 py-0.5 rounded">
                                     <AlertTriangle className="w-3 h-3" /> TRAP

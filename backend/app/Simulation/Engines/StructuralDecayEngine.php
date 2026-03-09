@@ -34,7 +34,7 @@ final class StructuralDecayEngine implements SimulationEngine
 
     public function priority(): int
     {
-        return 3;
+        return 4;
     }
 
     public function tickRate(): int

@@ -1,11 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 
 export default function LoginPage() {
-  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -18,17 +16,21 @@ export default function LoginPage() {
     const password = (form.elements.namedItem("password") as HTMLInputElement).value;
     api
       .login(email, password)
-      .then((res: { access_token: string }) => {
-        const token = res.access_token;
-        document.cookie = `auth_token=${encodeURIComponent(token)}; path=/`;
+      .then((res: { access_token?: string }) => {
+        const token = res?.access_token;
+        if (!token) {
+          setError("Phản hồi đăng nhập không có token.");
+          return;
+        }
+        document.cookie = `auth_token=${encodeURIComponent(token)}; path=/; max-age=86400; SameSite=Lax`;
         const params = new URLSearchParams(window.location.search);
         const to = params.get("redirect") || "/dashboard/cosmologic";
-        router.push(to);
+        window.location.href = to;
       })
       .catch((err: unknown) => {
-        const msg = err instanceof Error ? err.message : "Đăng nhập thất bại";
-        setError(msg);
-      })
+    const msg = err instanceof Error ? err.message : "Đăng nhập thất bại";
+    setError(msg);
+  })
       .finally(() => setLoading(false));
   };
 
@@ -49,7 +51,14 @@ export default function LoginPage() {
         </div>
         
         <form className="mt-8 space-y-6" onSubmit={handleLogin}>
-          {error && <div className="text-sm text-destructive">{error}</div>}
+          {error && (
+            <div
+              role="alert"
+              className="rounded-lg border border-red-500/50 bg-red-500/10 px-4 py-3 text-sm text-red-600 dark:text-red-400"
+            >
+              {error}
+            </div>
+          )}
           <div className="space-y-4 rounded-md shadow-sm">
             <div>
               <label htmlFor="email" className="sr-only">

@@ -14,7 +14,7 @@ export default function RiskAlerts() {
             .catch((err: any) => console.error("Failed to load risks", err));
     }, []);
 
-    if (!data) return <div className="h-full flex items-center justify-center animate-pulse text-slate-500">Simulating Futures...</div>;
+    if (!data) return <div className="h-full flex items-center justify-center animate-pulse text-muted-foreground">Simulating Futures...</div>;
 
     const getRiskColor = (val: number) => {
         if (val > 0.7) return "text-red-500";
@@ -35,14 +35,14 @@ export default function RiskAlerts() {
     };
 
     return (
-        <div className="bg-slate-900/40 backdrop-blur-sm border border-slate-800 rounded-lg p-6 h-full flex flex-col">
+        <div className="bg-card/40 backdrop-blur-sm border border-border rounded-lg p-6 h-full flex flex-col">
             <div className="flex items-center justify-between mb-6">
                 <div>
-                    <h2 className="text-xl font-bold text-slate-100 tracking-tight flex items-center gap-2">
+                    <h2 className="text-xl font-bold text-foreground tracking-tight flex items-center gap-2">
                         <AlertOctagon className="w-5 h-5 text-red-500" />
                         Existential Risks
                     </h2>
-                    <p className="text-slate-400 text-sm mt-1">Multi-scenario predictive simulator.</p>
+                    <p className="text-muted-foreground text-sm mt-1">Multi-scenario predictive simulator.</p>
                 </div>
                 {data.active_alerts.length > 0 && (
                     <span className="relative flex h-3 w-3">
@@ -61,7 +61,7 @@ export default function RiskAlerts() {
                             </span>
                             <span className="text-sm font-bold font-mono">{(ind.value * 100).toFixed(1)}%</span>
                         </div>
-                        <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+                        <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
                             <div
                                 className={`h-full rounded-full ${ind.value > 0.7 ? 'bg-red-500' : ind.value > 0.4 ? 'bg-amber-500' : 'bg-emerald-500'} transition-all duration-1000 ease-out`}
                                 style={{ width: `${ind.value * 100}%` }}

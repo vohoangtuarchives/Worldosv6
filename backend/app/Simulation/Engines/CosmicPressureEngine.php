@@ -41,7 +41,7 @@ final class CosmicPressureEngine implements SimulationEngine
 
     public function priority(): int
     {
-        return 2;
+        return 3;
     }
 
     public function tickRate(): int

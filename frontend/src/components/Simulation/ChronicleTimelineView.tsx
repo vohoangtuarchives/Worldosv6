@@ -81,7 +81,7 @@ export function ChronicleTimelineView({
 
   if (loading) {
     return (
-      <div className={`flex flex-col items-center justify-center py-12 text-slate-400 gap-2 ${className}`}>
+      <div className={`flex flex-col items-center justify-center py-12 text-muted-foreground gap-2 ${className}`}>
         <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
         <p className="text-sm italic">Đang tải dòng thời gian...</p>
       </div>
@@ -90,17 +90,17 @@ export function ChronicleTimelineView({
 
   if (items.length === 0) {
     return (
-      <div className={`rounded-lg border border-slate-700 bg-slate-900/50 p-6 text-center text-slate-500 italic ${className}`}>
+      <div className={`rounded-lg border border-border bg-card/50 p-6 text-center text-muted-foreground italic ${className}`}>
         Chưa có biên niên sử hay sự kiện phân nhánh.
       </div>
     );
   }
 
   return (
-    <div className={`rounded-lg border border-slate-700 bg-slate-900/50 overflow-hidden flex flex-col ${className}`}>
-      <div className="p-3 border-b border-slate-700 bg-slate-800/50 flex items-center gap-2">
+    <div className={`rounded-lg border border-border bg-card/50 overflow-hidden flex flex-col ${className}`}>
+      <div className="p-3 border-b border-border bg-muted/50 flex items-center gap-2">
         <History className="w-4 h-4 text-amber-400" />
-        <span className="text-sm font-semibold text-slate-100 uppercase tracking-wider">
+        <span className="text-sm font-semibold text-foreground uppercase tracking-wider">
           Dòng thời gian (Chronicles + Branch)
         </span>
       </div>
@@ -118,14 +118,14 @@ export function ChronicleTimelineView({
                   </span>
                 )}
               </div>
-              <p className="text-sm leading-relaxed text-slate-300 font-serif pl-0">
+              <p className="text-sm leading-relaxed text-foreground font-serif pl-0">
                 {item.data.content}
               </p>
             </div>
           ) : (
             <div key={`branch-${item.data.id}-${idx}`} className="relative pl-8 border-l-2 border-emerald-500/50 border-dashed ml-1">
               <div className="absolute -left-[5px] top-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 flex items-center justify-center">
-                <GitBranch className="w-2 h-2 text-slate-900" />
+                <GitBranch className="w-2 h-2 text-background" />
               </div>
               <div className="text-xs text-emerald-400/90 font-mono flex items-center gap-2">
                 <GitBranch className="w-3 h-3" />

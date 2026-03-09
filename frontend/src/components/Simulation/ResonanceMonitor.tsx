@@ -5,9 +5,11 @@ import { api } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Waves, Zap, Share2 } from 'lucide-react';
+import { useSimulation } from '@/context/SimulationContext';
 
 export function ResonanceMonitor({ universeId }: { universeId: number }) {
     const [resonance, setResonance] = useState<number>(0);
+    const { latestSnapshot } = useSimulation();
 
     useEffect(() => {
         const fetchResonance = async () => {
@@ -21,18 +23,16 @@ export function ResonanceMonitor({ universeId }: { universeId: number }) {
         };
 
         fetchResonance();
-        const interval = setInterval(fetchResonance, 10000);
-        return () => clearInterval(interval);
-    }, [universeId]);
+    }, [universeId, latestSnapshot?.tick]);
 
     const getResonanceColor = (val: number) => {
         if (val > 0.8) return "bg-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.5)]";
         if (val > 0.5) return "bg-blue-400";
-        return "bg-slate-600";
+        return "bg-muted-foreground/50";
     };
 
     return (
-        <Card className="bg-slate-900/40 border-cyan-500/20 backdrop-blur-md overflow-hidden transition-all hover:bg-slate-900/60">
+        <Card className="bg-card/40 border-cyan-500/20 backdrop-blur-md overflow-hidden transition-all hover:bg-card/60">
             <CardHeader className="pb-2">
                 <CardTitle className="text-[10px] font-bold text-cyan-400 uppercase tracking-[0.2em] flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -43,16 +43,16 @@ export function ResonanceMonitor({ universeId }: { universeId: number }) {
                 </CardTitle>
             </CardHeader>
             <CardContent>
-                <Progress value={resonance * 100} className="h-1 bg-slate-800" />
+                <Progress value={resonance * 100} className="h-1 bg-muted" />
                 <div className="flex justify-between items-center mt-3">
                     <div className="flex gap-4">
                         <div className="flex items-center gap-1">
-                            <Zap className={`w-3 h-3 ${resonance > 0.7 ? 'text-amber-400' : 'text-slate-600'}`} />
-                            <span className="text-[9px] text-slate-500 uppercase font-bold">Innovation Boost</span>
+                            <Zap className={`w-3 h-3 ${resonance > 0.7 ? 'text-amber-400' : 'text-muted-foreground'}`} />
+                            <span className="text-[9px] text-muted-foreground uppercase font-bold">Innovation Boost</span>
                         </div>
                         <div className="flex items-center gap-1">
-                            <Share2 className={`w-3 h-3 ${resonance > 0.4 ? 'text-blue-400' : 'text-slate-600'}`} />
-                            <span className="text-[9px] text-slate-500 uppercase font-bold">Timeline Sync</span>
+                            <Share2 className={`w-3 h-3 ${resonance > 0.4 ? 'text-blue-400' : 'text-muted-foreground'}`} />
+                            <span className="text-[9px] text-muted-foreground uppercase font-bold">Timeline Sync</span>
                         </div>
                     </div>
                 </div>

@@ -50,7 +50,7 @@ export function BiologyMetricsPanel({ universeId, refreshTrigger = 0 }: { univer
   }, [universeId, refreshTrigger]);
 
   if (!universeId) return null;
-  if (loading) return <div className="text-xs text-slate-500 p-2">Đang tải chỉ số sinh học…</div>;
+  if (loading) return <div className="text-xs text-muted-foreground p-2">Đang tải chỉ số sinh học…</div>;
   if (error) return <div className="text-xs text-red-400 p-2">Lỗi: {error}</div>;
   if (!data) return null;
 
@@ -82,7 +82,7 @@ export function BiologyMetricsPanel({ universeId, refreshTrigger = 0 }: { univer
               )}
             </div>
             {untilTick > currentTick && (
-              <div className="mt-1.5 h-1.5 rounded-full bg-slate-700 overflow-hidden">
+              <div className="mt-1.5 h-1.5 rounded-full bg-muted overflow-hidden">
                 <div
                   className="h-full bg-amber-500/80 rounded-full transition-all"
                   style={{ width: `${collapseProgressPct}%` }}
@@ -93,50 +93,50 @@ export function BiologyMetricsPanel({ universeId, refreshTrigger = 0 }: { univer
         </div>
       )}
       {(data.instability_score ?? 0) > 0 && (
-        <div className="flex items-center gap-2 p-2 rounded bg-slate-800/50 border border-slate-700/50">
-          <span className="text-slate-400">Độ bất ổn</span>
-          <span className="font-mono text-slate-200">{(data.instability_score ?? 0).toFixed(2)}</span>
+        <div className="flex items-center gap-2 p-2 rounded bg-muted/50 border border-border/50">
+          <span className="text-muted-foreground">Độ bất ổn</span>
+          <span className="font-mono text-foreground">{(data.instability_score ?? 0).toFixed(2)}</span>
         </div>
       )}
       <div className="grid grid-cols-2 gap-2">
-        <div className="flex items-center gap-2 p-2 rounded bg-slate-800/50 border border-slate-700/50">
+        <div className="flex items-center gap-2 p-2 rounded bg-muted/50 border border-border/50">
           <Flame className="w-3.5 h-3.5 text-amber-400" />
           <div>
-            <div className="text-slate-400">Năng lượng TB</div>
-            <div className="font-mono text-slate-200">{data.avg_energy.toFixed(1)}</div>
+            <div className="text-muted-foreground">Năng lượng TB</div>
+            <div className="font-mono text-foreground">{data.avg_energy.toFixed(1)}</div>
           </div>
         </div>
-        <div className="flex items-center gap-2 p-2 rounded bg-slate-800/50 border border-slate-700/50">
+        <div className="flex items-center gap-2 p-2 rounded bg-muted/50 border border-border/50">
           <Activity className="w-3.5 h-3.5 text-rose-400" />
           <div>
-            <div className="text-slate-400">Đói (số / %)</div>
-            <div className="font-mono text-slate-200">
+            <div className="text-muted-foreground">Đói (số / %)</div>
+            <div className="font-mono text-foreground">
               {data.starving_count} / {starvingRate.toFixed(0)}%
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-2 p-2 rounded bg-slate-800/50 border border-slate-700/50">
+        <div className="flex items-center gap-2 p-2 rounded bg-muted/50 border border-border/50">
           <Users className="w-3.5 h-3.5 text-blue-400" />
           <div>
-            <div className="text-slate-400">Sống / Loài</div>
-            <div className="font-mono text-slate-200">
+            <div className="text-muted-foreground">Sống / Loài</div>
+            <div className="font-mono text-foreground">
               {data.total_alive} / {data.species_count}
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-2 p-2 rounded bg-slate-800/50 border border-slate-700/50">
-          <span className="text-slate-400">Median E</span>
-          <span className="font-mono text-slate-200">{data.median_energy.toFixed(1)}</span>
+        <div className="flex items-center gap-2 p-2 rounded bg-muted/50 border border-border/50">
+          <span className="text-muted-foreground">Median E</span>
+          <span className="font-mono text-foreground">{data.median_energy.toFixed(1)}</span>
         </div>
       </div>
       {data.species_count > 0 && Object.keys(data.species_distribution).length <= 8 && (
-        <div className="p-2 rounded bg-slate-800/30 border border-slate-700/50">
-          <div className="text-[10px] text-slate-500 mb-1">Phân bố loài</div>
+        <div className="p-2 rounded bg-muted/30 border border-border/50">
+          <div className="text-[10px] text-muted-foreground mb-1">Phân bố loài</div>
           <div className="flex flex-wrap gap-1">
             {Object.entries(data.species_distribution).map(([sid, count]) => (
               <span
                 key={sid}
-                className="px-1.5 py-0.5 rounded bg-slate-700/50 text-slate-300 font-mono"
+                className="px-1.5 py-0.5 rounded bg-muted text-foreground font-mono"
                 title={`${sid}: ${count}`}
               >
                 {sid}: {count}

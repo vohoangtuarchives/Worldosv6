@@ -40,8 +40,8 @@ export const GraphView: React.FC<GraphViewProps> = ({ nodes, edges }) => {
     }, []);
 
     return (
-        <div className="relative w-full h-[600px] bg-slate-900/50 rounded-xl border border-slate-800 overflow-hidden p-4">
-            <div className="absolute top-4 left-4 flex items-center gap-2 text-slate-400">
+        <div className="relative w-full h-[600px] bg-card/50 rounded-xl border border-border overflow-hidden p-4">
+            <div className="absolute top-4 left-4 flex items-center gap-2 text-muted-foreground">
                 <Share2 className="w-4 h-4" />
                 <span className="text-xs font-mono uppercase tracking-wider">Đồ thị topology nhân quả</span>
             </div>
@@ -85,12 +85,12 @@ export const GraphView: React.FC<GraphViewProps> = ({ nodes, edges }) => {
                             cy={node.y}
                             r={12}
                             className={`${node.type === 'Universe' ? 'fill-blue-500' :
-                                    node.type === 'Snapshot' ? 'fill-slate-600' :
+                                    node.type === 'Snapshot' ? 'fill-muted-foreground' :
                                         'fill-red-500'
                                 } hover:stroke-white stroke-2 transition-all ${quickViewNode?.id === node.id ? 'stroke-amber-400 ring-2 ring-amber-400/50' : ''}`}
                         />
                         <foreignObject x={node.x + 15} y={node.y - 10} width="120" height="40">
-                            <div className="text-[10px] text-slate-300 font-mono leading-tight">
+                            <div className="text-[10px] text-foreground font-mono leading-tight">
                                 <div className="font-bold uppercase">{node.type}</div>
                                 <div className="truncate opacity-60">{node.label}</div>
                             </div>
@@ -107,15 +107,15 @@ export const GraphView: React.FC<GraphViewProps> = ({ nodes, edges }) => {
             </svg>
 
             <div className="absolute bottom-4 right-4 flex flex-col gap-2">
-                <div className="flex items-center gap-2 text-[10px] text-slate-500 font-mono">
+                <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-mono">
                     <div className="w-2 h-2 rounded-full bg-blue-500" />
                     <span>Thực tại chính</span>
                 </div>
-                <div className="flex items-center gap-2 text-[10px] text-slate-500 font-mono">
-                    <div className="w-2 h-2 rounded-full bg-slate-600" />
+                <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-mono">
+                    <div className="w-2 h-2 rounded-full bg-muted-foreground" />
                     <span>Snapshot trạng thái</span>
                 </div>
-                <div className="flex items-center gap-2 text-[10px] text-slate-500 font-mono">
+                <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-mono">
                     <div className="w-2 h-2 rounded-full bg-red-500" />
                     <span>Vết huyền thoại</span>
                 </div>
@@ -128,27 +128,27 @@ export const GraphView: React.FC<GraphViewProps> = ({ nodes, edges }) => {
                         initial={{ opacity: 0, x: 80 }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: 80 }}
-                        className="absolute top-4 right-4 w-64 rounded-lg border border-slate-600 bg-slate-900/95 shadow-xl backdrop-blur p-4 z-10"
+                        className="absolute top-4 right-4 w-64 rounded-lg border border-border bg-card/95 shadow-xl backdrop-blur p-4 z-10"
                     >
                         <div className="flex items-center justify-between mb-2">
-                            <span className="text-xs font-mono uppercase text-slate-400">Xem nhanh</span>
+                            <span className="text-xs font-mono uppercase text-muted-foreground">Xem nhanh</span>
                             <button
                                 type="button"
                                 onClick={() => setQuickViewNode(null)}
-                                className="p-1 rounded hover:bg-slate-700 text-slate-400 hover:text-white"
+                                className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground"
                                 aria-label="Đóng"
                             >
                                 <X className="w-4 h-4" />
                             </button>
                         </div>
                         <div className="space-y-2 text-sm">
-                            <div><span className="text-slate-500 font-mono">Mã</span> <span className="text-slate-200">{quickViewNode.id}</span></div>
-                            <div><span className="text-slate-500 font-mono">Loại</span> <span className="text-slate-200">{quickViewNode.type}</span></div>
-                            <div><span className="text-slate-500 font-mono">Nhãn</span> <span className="text-slate-200 truncate block" title={quickViewNode.label}>{quickViewNode.label}</span></div>
+                            <div><span className="text-muted-foreground font-mono">Mã</span> <span className="text-foreground">{quickViewNode.id}</span></div>
+                            <div><span className="text-muted-foreground font-mono">Loại</span> <span className="text-foreground">{quickViewNode.type}</span></div>
+                            <div><span className="text-muted-foreground font-mono">Nhãn</span> <span className="text-foreground truncate block" title={quickViewNode.label}>{quickViewNode.label}</span></div>
                             {quickViewNode.data && Object.keys(quickViewNode.data).length > 0 && (
-                                <div className="pt-2 border-t border-slate-700">
-                                    <div className="text-slate-500 font-mono text-xs mb-1">Dữ liệu</div>
-                                    <pre className="text-[10px] text-slate-400 overflow-auto max-h-24 font-mono whitespace-pre-wrap break-words">
+                                <div className="pt-2 border-t border-border">
+                                    <div className="text-muted-foreground font-mono text-xs mb-1">Dữ liệu</div>
+                                    <pre className="text-[10px] text-muted-foreground overflow-auto max-h-24 font-mono whitespace-pre-wrap break-words">
                                         {JSON.stringify(quickViewNode.data, null, 2)}
                                     </pre>
                                 </div>

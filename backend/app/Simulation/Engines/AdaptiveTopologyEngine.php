@@ -32,7 +32,7 @@ final class AdaptiveTopologyEngine implements SimulationEngine
 
     public function priority(): int
     {
-        return 4;
+        return 5;
     }
 
     public function tickRate(): int

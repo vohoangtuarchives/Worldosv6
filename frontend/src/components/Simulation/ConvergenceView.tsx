@@ -25,7 +25,7 @@ export const ConvergenceView: React.FC<{ universeId: number }> = ({ universeId }
     if (loading) return <div className="animate-pulse text-cyan-500 font-mono">Đang quét tần số đa vũ trụ...</div>;
 
     return (
-        <Card className="bg-slate-900/80 border-cyan-900/50 backdrop-blur-md">
+        <Card className="bg-card/80 border-cyan-900/50 backdrop-blur-md">
             <CardHeader className="border-b border-cyan-900/30">
                 <CardTitle className="text-cyan-400 font-mono flex items-center gap-2">
                     <Share2 className="w-5 h-5" />
@@ -36,12 +36,12 @@ export const ConvergenceView: React.FC<{ universeId: number }> = ({ universeId }
                 <ScrollArea className="h-[300px]">
                     <div className="p-4 space-y-4">
                         {interactions.length === 0 ? (
-                            <div className="text-slate-500 italic font-mono text-center py-8">
+                            <div className="text-muted-foreground italic font-mono text-center py-8">
                                 Chưa phát hiện sự cộng hưởng đáng kể.
                             </div>
                         ) : (
                             interactions.map((ix) => (
-                                <div key={ix.id} className="border border-cyan-900/20 bg-slate-950/50 p-3 rounded-lg relative overflow-hidden group">
+                                <div key={ix.id} className="border border-cyan-900/20 bg-card/50 p-3 rounded-lg relative overflow-hidden group">
                                     <div className="absolute top-0 left-0 w-1 h-full bg-cyan-500 group-hover:bg-cyan-400 transition-colors" />
 
                                     <div className="flex justify-between items-start mb-2">
@@ -49,13 +49,13 @@ export const ConvergenceView: React.FC<{ universeId: number }> = ({ universeId }
                                             <Badge variant="outline" className="border-cyan-500 text-cyan-400 font-mono">
                                                 {ix.interaction_type.toUpperCase()}
                                             </Badge>
-                                            <span className="text-xs text-slate-500 font-mono">
+                                            <span className="text-xs text-muted-foreground font-mono">
                                                 {new Date(ix.created_at).toLocaleTimeString()}
                                             </span>
                                         </div>
                                     </div>
 
-                                    <div className="text-sm font-mono text-slate-300">
+                                    <div className="text-sm font-mono text-foreground">
                                         {ix.interaction_type === 'convergence_initiated' ? (
                                             <div className="flex flex-col gap-1">
                                                 <div className="flex items-center gap-2 text-amber-400">

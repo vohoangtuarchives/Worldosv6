@@ -35,7 +35,7 @@ export function UniversalLaw({ universeId }: { universeId: number }) {
     };
 
     return (
-        <Card className="bg-slate-950/80 border-amber-500/30 backdrop-blur-2xl border-t-2 relative overflow-hidden group">
+        <Card className="bg-card/80 border-amber-500/30 backdrop-blur-2xl border-t-2 relative overflow-hidden group">
             {/* Ambient Background Glow */}
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-1 bg-amber-500/50 blur-xl opacity-50 group-hover:opacity-100 transition-opacity" />
 
@@ -47,7 +47,7 @@ export function UniversalLaw({ universeId }: { universeId: number }) {
             </CardHeader>
             <CardContent className="p-4">
                 {metaLaws.length === 0 ? (
-                    <div className="py-6 flex flex-col items-center justify-center text-slate-600 gap-2">
+                    <div className="py-6 flex flex-col items-center justify-center text-muted-foreground gap-2">
                         <Infinity className="w-8 h-8 opacity-10" />
                         <p className="text-[9px] uppercase tracking-widest font-bold">Chưa có đạo luật vĩnh cửu</p>
                     </div>
@@ -72,7 +72,7 @@ export function UniversalLaw({ universeId }: { universeId: number }) {
                                     </Badge>
                                 </div>
                                 <div className="mt-2 flex items-center justify-between text-[9px]">
-                                    <span className="text-slate-500 uppercase">Hiệu ứng:</span>
+                                    <span className="text-muted-foreground uppercase">Hiệu ứng:</span>
                                     <span className="text-amber-400/80 font-mono">
                                         {law.target.toUpperCase()} x{law.multiplier}
                                     </span>

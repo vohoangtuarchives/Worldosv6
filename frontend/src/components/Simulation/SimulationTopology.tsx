@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useRef } from "react";
 import { api } from "@/lib/api";
+import { useSimulation } from "@/context/SimulationContext";
 
 interface Node {
     id: string;
@@ -24,6 +25,7 @@ export function SimulationTopology({ universeId }: { universeId: number | null }
     const [edges, setEdges] = useState<Edge[]>([]);
     const [loading, setLoading] = useState(false);
     const containerRef = useRef<SVGSVGElement>(null);
+    const { latestSnapshot } = useSimulation();
 
     useEffect(() => {
         if (!universeId) return;
@@ -52,9 +54,7 @@ export function SimulationTopology({ universeId }: { universeId: number | null }
         };
 
         fetchGraph();
-        const interval = setInterval(fetchGraph, 5000);
-        return () => clearInterval(interval);
-    }, [universeId]);
+    }, [universeId, latestSnapshot?.tick]);
 
     return (
         <div className="relative w-full h-[400px] bg-slate-950/50 rounded-xl border border-border overflow-hidden backdrop-blur-md">

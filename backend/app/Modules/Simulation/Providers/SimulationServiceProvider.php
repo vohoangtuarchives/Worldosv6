@@ -38,7 +38,7 @@ class SimulationServiceProvider extends ServiceProvider
         $this->app->singleton(\App\Modules\Simulation\Services\GreatPersonEngine::class);
         $this->app->bind(
             \App\Contracts\UniverseSimilarityServiceInterface::class,
-            \App\Services\Simulation\NullUniverseSimilarityService::class
+            \App\Services\Simulation\StateVectorUniverseSimilarityService::class
         );
         $this->app->bind(\App\Contracts\CausalityGraphServiceInterface::class, function ($app) {
             return config('worldos.causality.driver', 'null') === 'redis'

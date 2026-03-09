@@ -18,7 +18,7 @@ interface IntegrityMonitorProps {
 
 const IntegrityMonitor: React.FC<IntegrityMonitorProps> = ({ entities }) => {
     return (
-        <Card className="bg-slate-950/80 border-emerald-900/50 backdrop-blur-md">
+        <Card className="bg-card/80 border-emerald-900/50 backdrop-blur-md">
             <CardHeader className="py-2 px-4 border-b border-emerald-900/30">
                 <CardTitle className="text-xs font-bold flex items-center gap-2 text-emerald-400 uppercase tracking-widest">
                     <ShieldCheck className="w-4 h-4" />
@@ -27,7 +27,7 @@ const IntegrityMonitor: React.FC<IntegrityMonitorProps> = ({ entities }) => {
             </CardHeader>
             <CardContent className="p-4 space-y-4">
                 {entities.length === 0 ? (
-                    <div className="text-[10px] text-slate-500 italic text-center py-2">
+                    <div className="text-[10px] text-muted-foreground italic text-center py-2">
                         Hệ thống đang ở trạng thái cân bằng tuyệt đối...
                     </div>
                 ) : (
@@ -39,27 +39,27 @@ const IntegrityMonitor: React.FC<IntegrityMonitorProps> = ({ entities }) => {
                         return (
                             <div key={entity.id} className="space-y-2">
                                 <div className="flex justify-between items-center text-[11px] font-bold">
-                                    <span className="text-slate-200">{entity.name}</span>
+                                    <span className="text-foreground">{entity.name}</span>
                                     <span className={`text-[10px] ${isCritical ? 'text-rose-400 animate-pulse' : 'text-emerald-400'}`}>
                                         {isCritical ? 'DƯ CHẤN CAO' : 'CÂN BẰNG'}
                                     </span>
                                 </div>
 
                                 <div className="space-y-1">
-                                    <div className="flex justify-between text-[9px] text-slate-500 font-bold uppercase">
+                                    <div className="flex justify-between text-[9px] text-muted-foreground font-bold uppercase">
                                         <span>Nợ Nhân Quả (Causal Debt)</span>
-                                        <span className={isCritical ? 'text-rose-400' : 'text-slate-400'}>
+                                        <span className={isCritical ? 'text-rose-400' : 'text-muted-foreground'}>
                                             {debt.toFixed(1)} / 100 [Φ]
                                         </span>
                                     </div>
                                     <Progress
                                         value={debtLevel}
-                                        className={`h-1 bg-slate-900 ${isCritical ? 'bg-rose-900/40' : ''}`}
+                                        className={`h-1 bg-muted ${isCritical ? 'bg-rose-900/40' : ''}`}
                                     />
                                 </div>
 
                                 <div className="flex items-center gap-3 text-[9px]">
-                                    <div className="flex items-center gap-1 text-slate-500 font-bold uppercase">
+                                    <div className="flex items-center gap-1 text-muted-foreground font-bold uppercase">
                                         <TrendingDown className="w-3 h-3" />
                                         <span>Quyền năng: {entity.power_level.toFixed(0)}</span>
                                     </div>
@@ -74,7 +74,7 @@ const IntegrityMonitor: React.FC<IntegrityMonitorProps> = ({ entities }) => {
                         );
                     })
                 )}
-                <p className="text-[9px] text-slate-600 text-center italic pt-2 border-t border-slate-900">
+                <p className="text-[9px] text-muted-foreground text-center italic pt-2 border-t border-border">
                     "Mọi sai lệch đều tìm về sự cân bằng của Đạo."
                 </p>
             </CardContent>

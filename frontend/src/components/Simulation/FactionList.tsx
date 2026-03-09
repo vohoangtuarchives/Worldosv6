@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
+import { useSimulation } from '@/context/SimulationContext';
 
 interface Institution {
     id: number;
@@ -16,6 +17,7 @@ interface Institution {
 export default function FactionList({ universeId }: { universeId: number }) {
     const [factions, setFactions] = useState<Institution[]>([]);
     const [loading, setLoading] = useState(true);
+    const { latestSnapshot } = useSimulation();
 
     useEffect(() => {
         const fetchFactions = async () => {
@@ -32,9 +34,7 @@ export default function FactionList({ universeId }: { universeId: number }) {
         };
 
         fetchFactions();
-        const interval = setInterval(fetchFactions, 10000);
-        return () => clearInterval(interval);
-    }, [universeId]);
+    }, [universeId, latestSnapshot?.tick]);
 
     if (loading && factions.length === 0) {
         return (
@@ -48,7 +48,7 @@ export default function FactionList({ universeId }: { universeId: number }) {
 
     return (
         <div className="space-y-4 p-2 max-h-[400px] overflow-y-auto custom-scrollbar">
-            <h3 className="text-xs font-bold uppercase tracking-widest text-blue-400 sticky top-0 bg-slate-900/80 backdrop-blur pb-2 z-10 border-b border-blue-500/30">
+            <h3 className="text-xs font-bold uppercase tracking-widest text-blue-400 sticky top-0 bg-card/80 backdrop-blur pb-2 z-10 border-b border-blue-500/30">
                 Trường thể chế
             </h3>
 
