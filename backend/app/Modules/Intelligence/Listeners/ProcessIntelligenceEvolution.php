@@ -3,13 +3,11 @@
 namespace App\Modules\Intelligence\Listeners;
 
 use App\Events\Simulation\UniverseSimulationPulsed;
-use App\Modules\Intelligence\Actions\ProcessActorSurvivalAction;
 use App\Modules\Intelligence\Actions\SpawnFromEventsAction;
 
 class ProcessIntelligenceEvolution
 {
     public function __construct(
-        private ProcessActorSurvivalAction $survivalAction,
         private SpawnFromEventsAction $spawnAction,
         private \App\Modules\Intelligence\Services\ActorEvolutionService $evolutionService,
         private \App\Modules\Intelligence\Services\AgentAutonomyService $autonomyService
@@ -28,7 +26,6 @@ class ProcessIntelligenceEvolution
         // 3. Autonomy Decisions
         $this->autonomyService->process($event->universe, $tick);
 
-        // 4. Survival logic
-        $this->survivalAction->handle($event->universe, $event->engineResponse);
+        // 4. Survival: chạy trong AdvanceSimulationAction (cùng process) để đảm bảo lưu DB, không gọi lại ở đây
     }
 }

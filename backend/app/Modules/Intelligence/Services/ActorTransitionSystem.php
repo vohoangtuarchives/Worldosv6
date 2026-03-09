@@ -47,12 +47,12 @@ class ActorTransitionSystem
             return $state;
         }
 
-        // Resilience: support both named key and numeric trait index (ActorEntity default traits use 0..16)
-        $resilience = $state->traits['resilience'] ?? $state->traits[10] ?? 0.5;
-        $resilience = max(0, min(1, (float) $resilience));
-
-        // Probability of survival (logistic): higher resilience + lower entropy => higher survival
-        $logit = $resilience * 0.6 + (1 - $entropy) * 0.4;
+        // Resilience (trait 10), Longevity (17). Thể chất: dùng vector huyết mạch metrics['physic'] (aggregate) nếu có.
+        $resilience = max(0, min(1, (float) ($state->traits['resilience'] ?? $state->traits[10] ?? 0.5)));
+        $longevity = max(0, min(1, (float) ($state->traits['longevity'] ?? $state->traits['Longevity'] ?? $state->traits[17] ?? 0.5)));
+        $physicAggregate = $this->aggregatePhysic($state->metrics['physic'] ?? null);
+        // Xác suất sống: resilience + longevity + thể chất (huyết mạch) + (1-entropy)
+        $logit = $resilience * 0.35 + $longevity * 0.15 + $physicAggregate * 0.15 + (1 - $entropy) * 0.35;
         $prob = 1 / (1 + exp(-$logit));
 
         // Baseline mortality per tick (~1.5%) để luôn có một phần actor chết theo thời gian
@@ -64,6 +64,27 @@ class ActorTransitionSystem
         }
 
         return $state;
+    }
+
+    /**
+     * Aggregate physic vector (huyết mạch) to a single scalar for survival.
+     * metrics['physic'] = array of floats [0..1] theo PHYSIC_DIMENSIONS.
+     */
+    private function aggregatePhysic(?array $physic): float
+    {
+        if ($physic === null || $physic === []) {
+            return 0.5;
+        }
+        $vals = array_values($physic);
+        $sum = 0.0;
+        $n = 0;
+        foreach ($vals as $v) {
+            if (is_numeric($v)) {
+                $sum += max(0, min(1, (float) $v));
+                $n++;
+            }
+        }
+        return $n > 0 ? $sum / $n : 0.5;
     }
 
     /**

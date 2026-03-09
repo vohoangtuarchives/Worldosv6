@@ -24,7 +24,26 @@ class ActorEntity
         'Grief',        // 14
         'Pride',        // 15
         'Shame',        // 16
+        'Longevity',    // 17 — tuổi thọ tương đối (0–1), dùng cho max_age và xác suất sống sót
     ];
+
+    /**
+     * Huyết mạch / Physic vector: nhiều yếu tố thể chất (0–1 mỗi chiều).
+     * Lưu trong metrics['physic'] dạng array index theo thứ tự dưới đây.
+     * Dùng cho survival (aggregate), narrative, có thể drift/evolve riêng.
+     */
+    public const PHYSIC_DIMENSIONS = [
+        'Vitality',   // 0 — sinh lực, khả năng hồi phục
+        'Stamina',    // 1 — sức bền, chịu đựng
+        'Strength',   // 2 — sức mạnh thể chất
+        'Endurance',  // 3 — độ bền trước stress/tổn thương
+        'Resilience', // 4 — thể chất chống entropy (tách khỏi trait RiskTolerance)
+    ];
+
+    public static function defaultPhysicVector(): array
+    {
+        return array_fill(0, count(self::PHYSIC_DIMENSIONS), 0.5);
+    }
 
     public function __construct(
         public readonly ?int $id,

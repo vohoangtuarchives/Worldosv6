@@ -119,7 +119,8 @@ class TransmigrationEngine
             'id' => $legend->original_agent_id,
             'name' => $legend->name,
             'archetype' => $legend->archetype,
-            'traits' => array_fill(0, 17, 0.6), // Give decent base stats upon rebirth
+            'traits' => array_fill(0, 18, 0.6), // 17D + Longevity (index 17)
+            'physic' => \App\Modules\Intelligence\Entities\ActorEntity::defaultPhysicVector(),
             'order' => 1.0,  // Reborn with high order initially
             'entropy' => 0.0,
             'fate_tags' => $legend->fate_tags,

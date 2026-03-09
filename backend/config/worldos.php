@@ -79,11 +79,13 @@ return [
     | actor_minimum_population: Số actor sống tối thiểu mỗi universe. Mỗi pulse
     | nếu số alive < số này sẽ spawn thêm cho đủ. Đặt 0 = không tự spawn (không giới hạn).
     | Gợi ý: 0 (tắt), 3–5 (ít, narrative tập trung), 8–12 (nhiều, xã hội đông).
-    | guaranteed_deaths_per_tick: Mỗi tick chắc chắn có N actor bị đánh dấu chết (deterministic) để kiểm tra survival/save. Đặt 0 = chỉ dùng xác suất RNG.
+    | ticks_per_year: Số tick mô phỏng tương đương 1 năm trong world. VD: 1 = mỗi tick là 1 năm, 12 = mỗi tick ~1 tháng.
+    | default_max_age_years: Tuổi thọ tối đa (năm) mặc định cho actor dạng "human". Actor chết khi age_years >= effective_max (effective_max phụ thuộc trait Longevity).
     */
     'intelligence' => [
         'actor_minimum_population' => (int) env('WORLDOS_ACTOR_MINIMUM_POPULATION', 5),
-        'guaranteed_deaths_per_tick' => (int) env('WORLDOS_GUARANTEED_DEATHS_PER_TICK', 5),
+        'ticks_per_year' => (int) env('WORLDOS_TICKS_PER_YEAR', 1),
+        'default_max_age_years' => (int) env('WORLDOS_DEFAULT_MAX_AGE_YEARS', 150),
     ],
 
 ];

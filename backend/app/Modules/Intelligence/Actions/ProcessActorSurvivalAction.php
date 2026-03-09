@@ -25,6 +25,9 @@ class ProcessActorSurvivalAction
             ? (int) $snapshot['tick']
             : (int) ($universe->current_tick ?? 0);
 
+        $ticksPerYear = max(1, (int) config('worldos.intelligence.ticks_per_year', 1));
+        $defaultMaxAgeYears = max(1, (int) config('worldos.intelligence.default_max_age_years', 150));
+
         if (count($actors) === 0) {
             Log::info("Intelligence: ProcessActorSurvivalAction skipped for Universe {$universe->id} (tick {$snapshotTick}): no actors in universe.");
             return;
@@ -32,21 +35,6 @@ class ProcessActorSurvivalAction
 
         $deathCount = 0;
         $actorIndex = 0;
-        $aliveIds = [];
-        foreach ($actors as $actor) {
-            if ($actor->isAlive) {
-                $aliveIds[] = $actor->id;
-            }
-        }
-        sort($aliveIds);
-        $guaranteedPerTick = min(10, max(0, (int) config('worldos.intelligence.guaranteed_deaths_per_tick', 5)));
-        $idsToKillThisTick = [];
-        if ($guaranteedPerTick > 0 && count($aliveIds) > $guaranteedPerTick) {
-            $offset = ($snapshotTick * $guaranteedPerTick) % count($aliveIds);
-            for ($i = 0; $i < $guaranteedPerTick; $i++) {
-                $idsToKillThisTick[] = $aliveIds[($offset + $i) % count($aliveIds)];
-            }
-        }
 
         foreach ($actors as $actor) {
             if (!$actor->isAlive) {
@@ -55,6 +43,24 @@ class ProcessActorSurvivalAction
             }
 
             $oldState = $actor->isAlive;
+
+            // Tuổi thọ: so sánh tuổi (năm) với max theo Longevity. Tick = đơn vị thời gian WorldOS (config: ticks_per_year = 1 năm).
+            $spawnedAtTick = isset($actor->metrics['spawned_at_tick']) ? (int) $actor->metrics['spawned_at_tick'] : 0;
+            $ageTicks = max(0, $snapshotTick - $spawnedAtTick);
+            $ageYears = $ageTicks / $ticksPerYear;
+            $longevity = (float) ($actor->traits[17] ?? $actor->traits['Longevity'] ?? $actor->traits['longevity'] ?? 0.5);
+            $longevity = max(0, min(1, $longevity));
+            $effectiveMaxAgeYears = $defaultMaxAgeYears * (0.5 + 0.5 * $longevity);
+            if ($ageYears >= $effectiveMaxAgeYears) {
+                $actor->fromState($actor->toState()->with(['isAlive' => false]));
+                if ($oldState) {
+                    $deathCount++;
+                    Log::info("Intelligence: Actor {$actor->name} ({$actor->id}) perished in Universe {$universe->id} at tick {$snapshotTick} (age {$ageYears} yrs >= max {$effectiveMaxAgeYears}).");
+                }
+                $this->actorRepository->save($actor);
+                $actorIndex++;
+                continue;
+            }
 
             for ($t = 0; $t < $ticks && $actor->isAlive; $t++) {
                 $tickForRng = $snapshotTick - $ticks + $t;
@@ -67,10 +73,6 @@ class ProcessActorSurvivalAction
                 $state = $actor->toState();
                 $state = $this->transitionSystem->processSurvival($state, $entropy, $rng);
                 $actor->fromState($state);
-            }
-
-            if ($actor->isAlive && in_array($actor->id, $idsToKillThisTick, true)) {
-                $actor->fromState($actor->toState()->with(['isAlive' => false]));
             }
 
             if ($oldState && !$actor->isAlive) {

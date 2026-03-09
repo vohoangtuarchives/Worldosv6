@@ -61,7 +61,8 @@ class AdvanceSimulationAction
         protected SimulationKernel $simulationKernel,
         protected SnapshotLoader $snapshotLoader,
         protected \App\Services\Simulation\ActorCognitiveService $cognitiveService,
-        protected \App\Services\Simulation\CivilizationCollapseEngine $collapseEngine
+        protected \App\Services\Simulation\CivilizationCollapseEngine $collapseEngine,
+        protected \App\Modules\Intelligence\Actions\ProcessActorSurvivalAction $processActorSurvival
     ) {}
 
     public function execute(int $universeId, int $ticks): array
@@ -134,6 +135,9 @@ class AdvanceSimulationAction
                 $savedSnapshot,
                 array_merge($response, ['_ticks' => $ticks])
             ));
+
+            // Survival chạy ngay trong process advance để chắc chắn có deaths được lưu (không phụ thuộc listener/queue)
+            $this->processActorSurvival->handle($universe, array_merge($response, ['_ticks' => $ticks]));
 
             Log::info("Simulation: advance completed", [
                 'universe_id' => $universeId,

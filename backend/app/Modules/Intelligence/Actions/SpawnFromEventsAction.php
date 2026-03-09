@@ -33,6 +33,7 @@ class SpawnFromEventsAction
                     'traits' => $payload['winner']['traits'] ?? null,
                     'biography' => "Ghi danh bảng vàng sau biến cố: " . ($payload['description'] ?? 'Loạn lạc'),
                     'metrics' => ['influence' => 1.0],
+                    'spawned_at_tick' => $tick,
                 ]);
             }
         }
@@ -40,11 +41,11 @@ class SpawnFromEventsAction
         // 2. Ensure population minimum (configurable; 0 = off)
         $minPop = (int) config('worldos.intelligence.actor_minimum_population', 5);
         while ($minPop > 0 && $this->actorRepository->getActiveCount($universe->id) < $minPop) {
-             $this->spawnSpontaneousActor($universe);
+             $this->spawnSpontaneousActor($universe, $tick);
         }
     }
 
-    private function spawnSpontaneousActor(Universe $universe): void
+    private function spawnSpontaneousActor(Universe $universe, int $tick): void
     {
         $axiom = $universe->world?->axiom ?? [];
         $archetype = $this->archetypeResolver->resolve($axiom, $universe->entropy ?? 0.5, $universe->structural_coherence ?? 0.5);
@@ -55,6 +56,7 @@ class SpawnFromEventsAction
             'archetype' => $archetype,
             'biography' => "Cảm ứng thiên địa, xuất thế giữa lúc năng lượng dao động mạnh.",
             'metrics' => ['influence' => 0.5],
+            'spawned_at_tick' => $tick,
         ]);
     }
 }
