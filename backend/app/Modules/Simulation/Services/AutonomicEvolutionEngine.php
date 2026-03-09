@@ -3,18 +3,20 @@
 namespace App\Modules\Simulation\Services;
 
 use App\Contracts\UniverseEvaluatorInterface;
+use App\Contracts\UniverseSimilarityServiceInterface;
 use App\Models\UniverseSnapshot;
 use App\Services\Simulation\MetricsExtractor;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Autonomic Evolution Engine (AEE): decides universe lifecycle (continue / fork / archive / mutate).
- * Runs after each evaluation tick; uses config thresholds. Mutate is a stub for future injection.
+ * Autonomic Evolution Engine (AEE): decides universe lifecycle (continue / fork / archive / mutate / merge / promote).
+ * doc §13: merge when similarity > 0.92; promote when civilization milestone.
  */
 class AutonomicEvolutionEngine implements UniverseEvaluatorInterface
 {
     public function __construct(
-        protected MetricsExtractor $metrics
+        protected MetricsExtractor $metrics,
+        protected ?UniverseSimilarityServiceInterface $similarityService = null
     ) {}
 
     /**
@@ -34,14 +36,36 @@ class AutonomicEvolutionEngine implements UniverseEvaluatorInterface
         $ip_score = $stability * (1 - $entropy * 0.5);
         $novelty = $this->computeNovelty($snapshot);
 
+        $mergeThreshold = (float) config('worldos.autonomic.merge_similarity_threshold', 0.92);
+        $promoteComplexity = (float) config('worldos.autonomic.promote_milestone_complexity', 0);
+        $promoteCivCount = (int) config('worldos.autonomic.promote_milestone_civ_count', 0);
+
         $recommendation = 'continue';
-        if ($entropy >= $archiveThreshold) {
-            $recommendation = 'archive';
-        } elseif ($entropy >= $forkMin) {
-            $recommendation = 'fork';
-        } elseif ($novelty < $stagnationThreshold) {
-            $recommendation = 'mutate';
-            Log::info("AEE: mutate (stub) suggested for Universe " . ($snapshot->universe_id ?? '?') . " at tick {$snapshot->tick}, novelty={$novelty}");
+        $mergeCandidateUniverseId = null;
+
+        if ($this->similarityService !== null) {
+            $candidate = $this->similarityService->getMergeCandidate($snapshot);
+            if ($candidate !== null && ($candidate['similarity'] ?? 0) >= $mergeThreshold) {
+                $recommendation = 'merge';
+                $mergeCandidateUniverseId = $candidate['universe_id'] ?? null;
+            }
+        }
+
+        if ($recommendation === 'continue') {
+            if ($entropy >= $archiveThreshold) {
+                $recommendation = 'archive';
+            } elseif ($entropy >= $forkMin) {
+                $recommendation = 'fork';
+            } elseif ($promoteComplexity > 0 && $complexity >= $promoteComplexity) {
+                $recommendation = 'promote';
+                Log::info("AEE: promote (complexity milestone) Universe " . ($snapshot->universe_id ?? '?') . " at tick {$snapshot->tick}, complexity={$complexity}");
+            } elseif ($promoteCivCount > 0 && ($m['civilization_count'] ?? 0) >= $promoteCivCount) {
+                $recommendation = 'promote';
+                Log::info("AEE: promote (civ count milestone) Universe " . ($snapshot->universe_id ?? '?') . " at tick {$snapshot->tick}");
+            } elseif ($novelty < $stagnationThreshold) {
+                $recommendation = 'mutate';
+                Log::info("AEE: mutate (stub) suggested for Universe " . ($snapshot->universe_id ?? '?') . " at tick {$snapshot->tick}, novelty={$novelty}");
+            }
         }
 
         $mutation_suggestion = null;
@@ -51,16 +75,21 @@ class AutonomicEvolutionEngine implements UniverseEvaluatorInterface
             $mutation_suggestion = ['add_scar' => 'entropy_crisis_scar'];
         }
 
+        $meta = [
+            'entropy' => $entropy,
+            'stability' => $stability,
+            'novelty' => $novelty,
+            'reason' => "AEE at Tick {$snapshot->tick}: entropy={$entropy}, novelty={$novelty}",
+        ];
+        if ($mergeCandidateUniverseId !== null) {
+            $meta['merge_candidate_universe_id'] = $mergeCandidateUniverseId;
+        }
+
         return [
             'ip_score' => round($ip_score, 4),
             'recommendation' => $recommendation,
             'mutation_suggestion' => $mutation_suggestion,
-            'meta' => [
-                'entropy' => $entropy,
-                'stability' => $stability,
-                'novelty' => $novelty,
-                'reason' => "AEE at Tick {$snapshot->tick}: entropy={$entropy}, novelty={$novelty}",
-            ],
+            'meta' => $meta,
         ];
     }
 

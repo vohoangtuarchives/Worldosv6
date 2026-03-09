@@ -54,6 +54,16 @@ return [
         'password' => env('WORLDOS_GRAPH_PASSWORD'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Causality Graph (doc §4, §12) — event chain update when events are published
+    |--------------------------------------------------------------------------
+    | null: no-op. redis: store cause→effect chain per universe in Redis.
+    */
+    'causality' => [
+        'driver' => env('WORLDOS_CAUSALITY_DRIVER', 'null'),
+    ],
+
     'potential_field_war_threshold' => (float) env('WORLDOS_POTENTIAL_FIELD_WAR_THRESHOLD', 0.85),
 
     /*
@@ -232,6 +242,11 @@ return [
         'archive_entropy_threshold' => (float) env('WORLDOS_ARCHIVE_ENTROPY_THRESHOLD', 0.99),
         'stagnation_threshold' => (float) env('WORLDOS_STAGNATION_THRESHOLD', 0.1),
         'max_fork_branches' => (int) env('WORLDOS_MAX_FORK_BRANCHES', 1),
+        // doc §13: merge when similarity between two universes > threshold
+        'merge_similarity_threshold' => (float) env('WORLDOS_MERGE_SIMILARITY_THRESHOLD', 0.92),
+        // doc §13: promote when civilization reaches milestone (0 = disabled)
+        'promote_milestone_complexity' => (float) env('WORLDOS_PROMOTE_MILESTONE_COMPLEXITY', 0),
+        'promote_milestone_civ_count' => (int) env('WORLDOS_PROMOTE_MILESTONE_CIV_COUNT', 0),
     ],
 
     /*

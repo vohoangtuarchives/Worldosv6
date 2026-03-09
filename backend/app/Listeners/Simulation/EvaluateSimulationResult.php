@@ -7,6 +7,7 @@ use App\Actions\Simulation\DecideUniverseAction;
 use App\Actions\Simulation\ApplyMythScarAction;
 use App\Actions\Simulation\RunMicroModeAction;
 use App\Actions\Simulation\ForkUniverseAction;
+use App\Actions\Simulation\TimelineMergeAction;
 use App\Repositories\UniverseRepository;
 use App\Services\Saga\SagaService;
 use App\Services\Simulation\AttractorEngine;
@@ -51,7 +52,8 @@ class EvaluateSimulationResult
         protected DynamicAttractorEngine $dynamicAttractorEngine,
         protected EventTriggerProcessor $eventTriggerProcessor,
         protected \App\Modules\Simulation\Services\IdeologyEvolutionEngine $ideologyEvolutionEngine,
-        protected \App\Modules\Simulation\Services\GreatPersonEngine $greatPersonEngine
+        protected \App\Modules\Simulation\Services\GreatPersonEngine $greatPersonEngine,
+        protected TimelineMergeAction $timelineMergeAction
     ) {}
 
     public function handle(UniverseSimulationPulsed $event): void
@@ -103,9 +105,13 @@ class EvaluateSimulationResult
             $this->causalCorrectionEngine->process($universe, $snapshot);
             $this->resonanceEngine->process($universe, $snapshot);
 
-            // 6. Strategic Actions (Fork/Archive/Mutate) — AEE decisions
+            // 6. Strategic Actions (Fork/Archive/Mutate/Merge/Promote) — AEE decisions (doc §13)
             if ($action === 'fork') {
                 $this->handleFork($universe, (int)$snapshot->tick, $decisionData);
+            } elseif ($action === 'merge') {
+                $this->handleMerge($universe, $decisionData);
+            } elseif ($action === 'promote') {
+                $this->handlePromote($universe, $decisionData);
             } elseif ($action === 'continue' || $action === 'mutate') {
                 $this->applySelectivePressure($universe, $snapshot, $decisionData);
             } elseif ($action === 'archive') {
@@ -165,6 +171,26 @@ class EvaluateSimulationResult
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error("Simulation evaluation failed in listener: " . $e->getMessage());
         }
+    }
+
+    protected function handleMerge($universe, array $decision): void
+    {
+        $candidateId = $decision['meta']['merge_candidate_universe_id'] ?? null;
+        if ($candidateId === null || (int) $candidateId === (int) $universe->id) {
+            return;
+        }
+        try {
+            $this->timelineMergeAction->execute((int) $universe->id, (int) $candidateId);
+            $this->universeRepository->update($universe->id, ['status' => 'archived']);
+            $this->universeRepository->update((int) $candidateId, ['status' => 'archived']);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning("EvaluateSimulationResult: merge failed: " . $e->getMessage());
+        }
+    }
+
+    protected function handlePromote($universe, array $decision): void
+    {
+        $this->universeRepository->update($universe->id, ['status' => 'promoted']);
     }
 
     protected function handleFork($universe, int $tick, array $decision): void

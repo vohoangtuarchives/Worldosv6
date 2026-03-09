@@ -14,6 +14,8 @@ Tham chiếu: [WorldOS_Architecture.md](WorldOS_Architecture.md) §3, §17. Kern
 | 5        | Politics     | LawEvolutionEngine      | `Simulation/Engines`    |
 | 6        | War          | ZoneConflictEngine      | `Simulation/Engines`    |
 | 9        | Culture      | CulturalDriftEngine     | `Simulation/Engines`    |
+| 10–23    | (doc §6–11)  | Climate, Agriculture, Population, Migration, Disease, CivilizationFormation, CitySimulation, Governance, Trade, KnowledgePropagation, TechEvolution, Religion, ArtCulture, Psychology (stubs) | `Simulation/Engines`    |
+| 100      | Narrative    | CausalityEngine         | `Simulation/Engines`    |
 
 ## Cấu trúc module theo tầng (doc §17)
 

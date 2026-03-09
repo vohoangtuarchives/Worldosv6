@@ -37,6 +37,15 @@ class SimulationServiceProvider extends ServiceProvider
         $this->app->singleton(\App\Modules\Simulation\Services\IdeologyEvolutionEngine::class);
         $this->app->singleton(\App\Modules\Simulation\Services\GreatPersonEngine::class);
         $this->app->bind(
+            \App\Contracts\UniverseSimilarityServiceInterface::class,
+            \App\Services\Simulation\NullUniverseSimilarityService::class
+        );
+        $this->app->bind(\App\Contracts\CausalityGraphServiceInterface::class, function ($app) {
+            return config('worldos.causality.driver', 'null') === 'redis'
+                ? $app->make(\App\Services\Simulation\RedisCausalityGraphService::class)
+                : $app->make(\App\Services\Simulation\NullCausalityGraphService::class);
+        });
+        $this->app->bind(
             \App\Contracts\UniverseEvaluatorInterface::class,
             \App\Modules\Simulation\Services\AutonomicEvolutionEngine::class
         );
@@ -76,6 +85,21 @@ class SimulationServiceProvider extends ServiceProvider
         $this->app->singleton(\App\Simulation\Engines\LawEvolutionEngine::class);
         $this->app->singleton(\App\Simulation\Engines\CulturalDriftEngine::class);
         $this->app->singleton(\App\Simulation\Engines\AdaptiveTopologyEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\CausalityEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\ClimateEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\AgricultureEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\PopulationEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\MigrationEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\DiseaseEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\CivilizationFormationEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\CitySimulationEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\GovernanceEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\TradeEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\KnowledgePropagationEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\TechEvolutionEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\ReligionEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\ArtCultureEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\PsychologyEngine::class);
         $this->app->singleton(\App\Simulation\EngineRegistry::class, function ($app) {
             $registry = new \App\Simulation\EngineRegistry();
             $registry->register($app->make(\App\Modules\World\Services\GeographyEngine::class));
@@ -86,6 +110,21 @@ class SimulationServiceProvider extends ServiceProvider
             $registry->register($app->make(\App\Simulation\Engines\LawEvolutionEngine::class));
             $registry->register($app->make(\App\Simulation\Engines\ZoneConflictEngine::class));
             $registry->register($app->make(\App\Simulation\Engines\CulturalDriftEngine::class));
+            $registry->register($app->make(\App\Simulation\Engines\ClimateEngine::class));
+            $registry->register($app->make(\App\Simulation\Engines\AgricultureEngine::class));
+            $registry->register($app->make(\App\Simulation\Engines\PopulationEngine::class));
+            $registry->register($app->make(\App\Simulation\Engines\MigrationEngine::class));
+            $registry->register($app->make(\App\Simulation\Engines\DiseaseEngine::class));
+            $registry->register($app->make(\App\Simulation\Engines\CivilizationFormationEngine::class));
+            $registry->register($app->make(\App\Simulation\Engines\CitySimulationEngine::class));
+            $registry->register($app->make(\App\Simulation\Engines\GovernanceEngine::class));
+            $registry->register($app->make(\App\Simulation\Engines\TradeEngine::class));
+            $registry->register($app->make(\App\Simulation\Engines\KnowledgePropagationEngine::class));
+            $registry->register($app->make(\App\Simulation\Engines\TechEvolutionEngine::class));
+            $registry->register($app->make(\App\Simulation\Engines\ReligionEngine::class));
+            $registry->register($app->make(\App\Simulation\Engines\ArtCultureEngine::class));
+            $registry->register($app->make(\App\Simulation\Engines\PsychologyEngine::class));
+            $registry->register($app->make(\App\Simulation\Engines\CausalityEngine::class));
             return $registry;
         });
         $this->app->singleton(\App\Simulation\SimulationKernel::class, function ($app) {

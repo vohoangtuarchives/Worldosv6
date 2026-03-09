@@ -72,10 +72,10 @@ class DecisionEngine
         // Compute navigator scores
         $navScore = $this->computeNavigatorScore($snapshot);
 
-        // Override recommendation based on navigator score (do not override fork → archive)
-        if ($navScore['total'] >= self::FORK_THRESHOLD && $recommendation !== 'archive') {
+        // Override recommendation based on navigator score (do not override fork/merge/promote → archive)
+        if ($navScore['total'] >= self::FORK_THRESHOLD && ! in_array($recommendation, ['archive', 'merge', 'promote'], true)) {
             $recommendation = 'fork';
-        } elseif ($navScore['total'] <= self::ARCHIVE_THRESHOLD && $recommendation !== 'fork' && $recommendation !== 'mutate') {
+        } elseif ($navScore['total'] <= self::ARCHIVE_THRESHOLD && ! in_array($recommendation, ['fork', 'mutate', 'merge', 'promote'], true)) {
             $recommendation = 'archive';
         }
 

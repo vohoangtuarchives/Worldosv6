@@ -14,12 +14,16 @@ class MetricsExtractor
         $state = $snapshot->state_vector ?? [];
         $entropy = (float) ($snapshot->entropy ?? 0);
         $stability = (float) ($snapshot->stability_index ?? 0);
-        $zoneCount = is_array($state) ? count($state) : 0;
+        $zones = $state['zones'] ?? [];
+        $zoneCount = is_array($zones) ? count($zones) : 0;
+        $civilizations = $state['civilizations'] ?? [];
+        $civilizationCount = is_array($civilizations) ? count($civilizations) : 0;
 
         return [
             'entropy' => $entropy,
             'stability_index' => $stability,
             'complexity' => $zoneCount,
+            'civilization_count' => $civilizationCount,
             'entropy_trend' => 0, // would need history of snapshots
         ];
     }
