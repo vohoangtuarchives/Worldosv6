@@ -145,8 +145,29 @@ export const api = {
     }) as { data: { id: number; content: string; from_tick: number; to_tick: number } };
     return res.data;
   },
+  /** Narrative v2: AI Historian — generate history_volume | historian_essay | philosophy_treatise from Historical Facts. */
+  async historianGenerate(
+    universeId: number,
+    options?: { output_type?: "history_volume" | "historian_essay" | "philosophy_treatise"; from_tick?: number; to_tick?: number; theme?: string; actor_id?: number }
+  ) {
+    const res = await apiFetch(`/worldos/universes/${universeId}/historian/generate`, {
+      method: "POST",
+      body: JSON.stringify(options ?? {}),
+    }) as { data: { id: number; type: string; content: string; from_tick: number; to_tick: number } };
+    return res.data;
+  },
   async materialDag(id: number) {
     return apiFetch(`/worldos/universes/${id}/material-dag`);
+  },
+  /** List engines with product types and product_to_engines for UI "Engine liên quan". */
+  async worldosEngines(): Promise<{
+    engines: Array<{ name: string; phase: string; priority: number; tick_rate: number; product_types: string[] }>;
+    product_to_engines: Record<string, string[]>;
+  }> {
+    return apiFetch("/worldos/engines") as Promise<{
+      engines: Array<{ name: string; phase: string; priority: number; tick_rate: number; product_types: string[] }>;
+      product_to_engines: Record<string, string[]>;
+    }>;
   },
   async seedDemo() {
     return apiFetch(`/worldos/demo/seed`, { method: "POST" });
@@ -199,6 +220,13 @@ export const api = {
   async supremeEntities(id: number) {
     return apiFetch(`/worldos/universes/${id}/supreme-entities`);
   },
+  /** Great persons only (entity_type like great_person_%) for Heroes page. */
+  async greatPersons(id: number) {
+    return apiFetch(`/worldos/universes/${id}/great-persons`);
+  },
+  async materials(id: number) {
+    return apiFetch(`/worldos/universes/${id}/materials`);
+  },
   async edicts() {
     return apiFetch("/worldos/edicts");
   },
@@ -225,6 +253,10 @@ export const api = {
   },
   async actors(id: number) {
     return apiFetch(`/worldos/universes/${id}/actors`);
+  },
+  /** Life timeline for an actor (actor_events). */
+  async actorEvents(actorId: number) {
+    return apiFetch(`/worldos/actors/${actorId}/events`);
   },
   async biologyMetrics(id: number) {
     return apiFetch(`/worldos/universes/${id}/biology-metrics`) as Promise<{

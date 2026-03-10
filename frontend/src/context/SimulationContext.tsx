@@ -12,6 +12,7 @@ interface SimulationContextType {
     actors: any[];
     chronicles: any[];
     supremeEntities: any[];
+    materials: any[];
     interactions: any[];
     trajectories: any[];
     universes: any[];
@@ -36,6 +37,7 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
     const [actors, setActors] = useState<any[]>([]);
     const [chronicles, setChronicles] = useState<any[]>([]);
     const [supremeEntities, setSupremeEntities] = useState<any[]>([]);
+    const [materials, setMaterials] = useState<any[]>([]);
     const [interactions, setInteractions] = useState<any[]>([]);
     const [trajectories, setTrajectories] = useState<any[]>([]);
     const [universes, setUniverses] = useState<any[]>([]);
@@ -95,11 +97,12 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
     }, []);
 
     const fetchAuxiliaryData = useCallback(async (id: number) => {
-        const [instRes, actorRes, chronRes, supremeRes, interRes, trajRes] = await Promise.all([
+        const [instRes, actorRes, chronRes, supremeRes, matRes, interRes, trajRes] = await Promise.all([
             api.institutions(id),
             api.actors(id),
             api.chronicle(id),
             api.supremeEntities(id),
+            api.materials(id),
             api.interactions(id),
             api.trajectories(id)
         ]);
@@ -108,6 +111,7 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
         setActors(actorRes.data || actorRes || []);
         setChronicles(chronRes.data || chronRes || []);
         setSupremeEntities(supremeRes.data || supremeRes || []);
+        setMaterials(Array.isArray(matRes) ? matRes : (matRes?.data ?? matRes ?? []));
         setInteractions(interRes.data || interRes || []);
         setTrajectories(trajRes.data || trajRes || []);
     }, []);
@@ -223,6 +227,7 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
         actors,
         chronicles,
         supremeEntities,
+        materials,
         interactions,
         trajectories,
         universes,
@@ -236,7 +241,7 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
         setLatestSnapshot
     }), [
         universeId, universe, latestSnapshot, anomalies, institutions,
-        actors, chronicles, supremeEntities, interactions, trajectories,
+        actors, chronicles, supremeEntities, materials, interactions, trajectories,
         universes, loading, error, isPaused, refresh
     ]);
 

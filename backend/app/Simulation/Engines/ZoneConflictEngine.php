@@ -3,6 +3,8 @@
 namespace App\Simulation\Engines;
 
 use App\Models\InstitutionalEntity;
+use App\Simulation\Concerns\DefaultSimulationEnginePhase;
+use App\Simulation\Concerns\HasProductTypes;
 use App\Simulation\Contracts\SimulationEngine;
 use App\Simulation\Domain\EngineResult;
 use App\Simulation\Domain\TickContext;
@@ -19,6 +21,19 @@ use App\Simulation\Support\SimulationRandom;
  */
 final class ZoneConflictEngine implements SimulationEngine
 {
+    use DefaultSimulationEnginePhase;
+    use HasProductTypes;
+
+    public function productTypes(): array
+    {
+        return ['civilizations'];
+    }
+
+    public function phase(): string
+    {
+        return 'conflict';
+    }
+
     public function name(): string
     {
         return 'zone_conflict';

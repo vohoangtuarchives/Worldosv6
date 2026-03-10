@@ -29,6 +29,7 @@ class NarrativeCompiler
 
     /**
      * LLM-powered narrative generation.
+     * When distortedData contains 'historical_block' (Narrative v2), the prompt is fact-first.
      */
     protected function compileLlm(array $distortedData, float $noise): ?string
     {
@@ -41,8 +42,18 @@ class NarrativeCompiler
             default      => 'Hư Vô',
         };
 
+        $factBlock = '';
+        if (! empty($distortedData['historical_block']) && is_array($distortedData['historical_block'])) {
+            $hb = $distortedData['historical_block'];
+            $factBlock = "\nDữ liệu lịch sử (fact, bắt buộc dựa vào): Year " . ($hb['year'] ?? $hb['tick'] ?? '?')
+                . ", Tick " . ($hb['tick'] ?? '?')
+                . ". Metrics: " . json_encode($hb['metrics'] ?? [])
+                . ". Events: " . implode(', ', $hb['events'] ?? [])
+                . ".\n";
+        }
+
         $prompt = "Bạn là Nhà sử gia Mù quảng - The Blind Historian - của WorldOS.\n"
-            . "Biết: Entropy={$entropy}, Độ ổn định={$stability}, Độ rõ nét={$clarityTag}.\n"
+            . ($factBlock ?: "Biết: Entropy={$entropy}, Độ ổn định={$stability}, Độ rõ nét={$clarityTag}.\n")
             . "Hãy viết một đoạn biên niên sử chi tiết, giàu hình ảnh và mang tính sử thi phù hợp với mức \'$clarityTag\'.\n"
             . "Tập trung vào sự biến đổi của thế giới và cảm xúc của vạn vật. Ngôn ngữ: Tiếng Việt. Không giải thích thêm.";
 

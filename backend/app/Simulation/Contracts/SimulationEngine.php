@@ -17,7 +17,12 @@ interface SimulationEngine
     public function priority(): int;
 
     /**
-     * Run this engine every N ticks. 1 = every tick, 10 = every 10th tick.
+     * Phase group for scaling (Doc 21 §6). E.g. PHYSICAL, CLIMATE, ECOLOGY, ECONOMY, SOCIAL, POLITICS, CONFLICT, CULTURE, META. Use 'default' if not using groups.
+     */
+    public function phase(): string;
+
+    /**
+     * Run this engine every N ticks. 1 = every tick, 10 = every 10th tick. Doc 21 §9: same as "interval" (ticks between runs).
      */
     public function tickRate(): int;
 

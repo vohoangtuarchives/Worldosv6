@@ -2,6 +2,7 @@
 
 namespace App\Simulation\Engines;
 
+use App\Simulation\Concerns\DefaultSimulationEnginePhase;
 use App\Simulation\Contracts\SimulationEngine;
 use App\Simulation\Domain\EngineResult;
 use App\Simulation\Domain\TickContext;
@@ -13,6 +14,13 @@ use App\Simulation\Domain\WorldState;
  */
 final class ClimateEngine implements SimulationEngine
 {
+    use DefaultSimulationEnginePhase;
+
+    public function phase(): string
+    {
+        return 'climate';
+    }
+
     public function name(): string
     {
         return 'climate';

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSimulation } from "@/context/SimulationContext";
 import { PageContainer } from "@/components/ui/page-container";
-import { Loader2, LayoutDashboard, FlaskConical, Radio, Globe, BookOpen, Package, Network } from "lucide-react";
+import { Loader2, LayoutDashboard, FlaskConical, Radio, Globe, BookOpen, Package, Network, Sparkles } from "lucide-react";
 import { DashboardErrorBanner } from "./DashboardErrorBanner";
 
 const navItems = [
@@ -15,6 +15,7 @@ const navItems = [
   { href: "/dashboard/cosmologic", label: "Cosmologic", icon: Globe },
   { href: "/dashboard/narrative", label: "Narrative", icon: BookOpen },
   { href: "/dashboard/materials", label: "Materials", icon: Package },
+  { href: "/dashboard/heroes", label: "Vĩ nhân", icon: Sparkles },
   { href: "/dashboard/networks", label: "Networks", icon: Network },
 ];
 

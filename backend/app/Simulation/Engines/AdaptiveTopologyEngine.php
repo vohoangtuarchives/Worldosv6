@@ -2,6 +2,7 @@
 
 namespace App\Simulation\Engines;
 
+use App\Simulation\Concerns\DefaultSimulationEnginePhase;
 use App\Simulation\Contracts\SimulationEngine;
 use App\Simulation\Domain\EngineResult;
 use App\Simulation\Domain\TickContext;
@@ -18,6 +19,13 @@ use App\Simulation\Support\SimulationRandom;
  */
 final class AdaptiveTopologyEngine implements SimulationEngine
 {
+    use DefaultSimulationEnginePhase;
+
+    public function phase(): string
+    {
+        return 'meta';
+    }
+
     private const REWIRE_CHANCE = 0.12;
 
     public function __construct(

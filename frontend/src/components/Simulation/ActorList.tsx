@@ -1,15 +1,18 @@
 "use client";
 
 import React, { useState, useMemo, useEffect } from "react";
+import Link from "next/link";
 import {
     Users, Shield, Zap, Star, Eye, ChevronRight, User,
-    Search, Filter, Skull, HeartPulse, BrainCircuit, Sparkles
+    Search, Filter, Skull, HeartPulse, BrainCircuit, Sparkles, Clock
 } from "lucide-react";
 import {
     Radar, RadarChart, PolarGrid, PolarAngleAxis,
     ResponsiveContainer
 } from 'recharts';
 import { useSimulation } from "@/context/SimulationContext";
+import { api } from "@/lib/api";
+import type { ActorEvent } from "@/types/simulation";
 
 interface Actor {
     id: number;
@@ -18,7 +21,20 @@ interface Actor {
     traits: number[];
     biography: string;
     is_alive: boolean;
-    metrics: { influence?: number };
+    metrics?: { influence?: number; energy?: number; contribution?: number };
+    generation?: number;
+    universe_id?: number;
+    lineage_id?: string | null;
+    parent_actor_id?: number | null;
+    birth_tick?: number | null;
+    death_tick?: number | null;
+    life_stage?: string | null;
+    trait_scan_status?: string | null;
+    vitality?: { health?: number; age?: number; fatigue?: number; morale?: number } | null;
+    created_at?: string;
+    updated_at?: string;
+    /** When set, this actor is a Great Person (vĩ nhân) linked to SupremeEntity. */
+    supreme_entity?: { id: number; name?: string; entity_type?: string; domain?: string } | null;
 }
 
 const TRAIT_DIMENSIONS = [
@@ -26,19 +42,38 @@ const TRAIT_DIMENSIONS = [
     "Loy", "Emp", "Sol", "Con", // Social
     "Pra", "Cur", "Dog", "Rsk", // Cognitive
     "Fer", "Ven", "Hop", "Grf", "Pri", "Shm" // Emotional
-];
+].slice(0, 17);
+
+/** Cognition proxy from cognitive block (Pra, Cur, Dog, Rsk — indices 7–10). */
+function cognitionLabel(traits: number[]): string {
+    if (!traits?.length) return "—";
+    const cognitive = [traits[7], traits[8], traits[9], traits[10]].filter((v) => v != null);
+    if (cognitive.length === 0) return "—";
+    const avg = cognitive.reduce((a, b) => a + b, 0) / cognitive.length;
+    if (avg >= 0.6) return "Cao";
+    if (avg >= 0.3) return "Trung bình";
+    if (avg > 0) return "Thấp";
+    return "—";
+}
 
 function ActorRadarChart({ traits }: { traits: number[] }) {
     const data = useMemo(() => {
-        return TRAIT_DIMENSIONS.map((label, i) => ({
+        const arr = TRAIT_DIMENSIONS.map((label, i) => ({
             subject: label,
-            A: traits[i] ?? 0,
+            A: Math.max(0.02, traits[i] ?? 0),
             fullMark: 1.0,
         }));
+        return arr;
     }, [traits]);
+    const hasData = (traits?.length && traits.some((v) => (v ?? 0) > 0)) ?? false;
 
     return (
         <div className="h-[220px] w-full mt-4 bg-slate-900/40 rounded-xl p-2 border border-slate-800 relative overflow-hidden">
+            {!hasData && (
+                <div className="absolute inset-0 flex items-center justify-center z-10 bg-slate-900/60 rounded-xl">
+                    <span className="text-xs text-slate-500 font-mono">Chưa có dữ liệu scan 17-D</span>
+                </div>
+            )}
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-cyan-500/5 to-transparent pointer-events-none" />
             <ResponsiveContainer width="100%" height="100%">
                 <RadarChart cx="50%" cy="50%" outerRadius="70%" data={data}>
@@ -53,7 +88,7 @@ function ActorRadarChart({ traits }: { traits: number[] }) {
                         stroke="#06b6d4"
                         strokeWidth={2}
                         fill="#06b6d4"
-                        fillOpacity={0.2}
+                        fillOpacity={hasData ? 0.2 : 0.08}
                     />
                 </RadarChart>
             </ResponsiveContainer>
@@ -62,8 +97,11 @@ function ActorRadarChart({ traits }: { traits: number[] }) {
 }
 
 function ActorBiography({ text }: { text: string }) {
-    if (!text) return (
-        <div className="text-slate-500 italic text-sm">Chưa có bản ghi trong kho lưu trữ.</div>
+    if (!text || !text.trim()) return (
+        <div className="space-y-1">
+            <p className="text-slate-500 italic text-sm">Chưa có sự kiện nào được ghi nhận cho nhân vật này.</p>
+            <p className="text-slate-600 text-xs">Biên niên sử sẽ cập nhật khi simulation ghi nhận hành động hoặc sự kiện liên quan.</p>
+        </div>
     );
 
     // Regex to capture pattern: " - T<digits>: " or "- T<digits>: "
@@ -121,6 +159,7 @@ function ActorBiography({ text }: { text: string }) {
 export function ActorList({ universeId: _unused }: { universeId?: number | null }) {
     const { actors, loading: contextLoading } = useSimulation();
     const [selectedActorId, setSelectedActorId] = useState<number | null>(null);
+    const [actorEvents, setActorEvents] = useState<ActorEvent[]>([]);
     const [searchQuery, setSearchQuery] = useState("");
     const [filterStatus, setFilterStatus] = useState<"all" | "alive" | "dead">("all");
 
@@ -144,6 +183,20 @@ export function ActorList({ universeId: _unused }: { universeId?: number | null 
             setSelectedActorId(filteredActors[0].id);
         }
     }, [filteredActors, selectedActorId]);
+
+    // Fetch life timeline (actor_events) when actor selected
+    useEffect(() => {
+        if (!selectedActorId) {
+            setActorEvents([]);
+            return;
+        }
+        api.actorEvents(selectedActorId)
+            .then((res: unknown) => {
+                const list = Array.isArray(res) ? res : (res as { data?: ActorEvent[] })?.data ?? [];
+                setActorEvents(list);
+            })
+            .catch(() => setActorEvents([]));
+    }, [selectedActorId]);
 
     const selectedActor = actors.find(a => a.id === selectedActorId) || filteredActors[0];
 
@@ -243,11 +296,19 @@ export function ActorList({ universeId: _unused }: { universeId?: number | null 
                             </div>
 
                             <div className="flex-1 min-w-0">
-                                <div className="flex justify-between items-baseline">
+                                <div className="flex justify-between items-baseline gap-1">
                                     <div className={`text-sm font-medium truncate ${selectedActorId === actor.id ? "text-cyan-100" : "text-slate-300 group-hover:text-slate-200"}`}>
                                         {actor.name}
                                     </div>
-                                    {!actor.is_alive && <span className="text-[9px] text-red-500/60 font-mono ml-2">†</span>}
+                                    <div className="flex items-center gap-1 shrink-0">
+                                        {actor.supreme_entity && (
+                                            <span className="inline-flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 font-medium uppercase tracking-wider" title="Vĩ nhân">
+                                                <Sparkles className="w-2.5 h-2.5" />
+                                                Vĩ nhân
+                                            </span>
+                                        )}
+                                        {!actor.is_alive && <span className="text-[9px] text-red-500/60 font-mono">†</span>}
+                                    </div>
                                 </div>
                                 <div className="flex justify-between items-center mt-0.5">
                                     <div className="text-[10px] text-slate-500 uppercase tracking-wider truncate max-w-[100px]">
@@ -303,10 +364,19 @@ export function ActorList({ universeId: _unused }: { universeId?: number | null 
                                     <h1 className="text-3xl font-bold text-white tracking-tight drop-shadow-md">
                                         {selectedActor.name}
                                     </h1>
-                                    <div className="flex items-center gap-3 mt-2">
+                                    <div className="flex items-center gap-3 mt-2 flex-wrap">
                                         <span className="px-2 py-0.5 bg-cyan-500/10 text-cyan-300 text-xs font-medium uppercase tracking-wider rounded border border-cyan-500/20">
                                             {selectedActor.archetype}
                                         </span>
+                                        {selectedActor.supreme_entity && (
+                                            <Link
+                                                href="/dashboard/heroes"
+                                                className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-500/20 text-amber-400 text-xs font-medium uppercase tracking-wider rounded border border-amber-500/30 hover:bg-amber-500/30 hover:border-amber-500/50 transition-colors"
+                                            >
+                                                <Sparkles className="w-3 h-3" />
+                                                Vĩ nhân
+                                            </Link>
+                                        )}
                                         <div className="flex items-center gap-1.5 text-slate-400 text-xs font-mono">
                                             <Star className="w-3.5 h-3.5 text-yellow-500" />
                                             <span className="text-yellow-100">{(selectedActor.metrics?.influence ?? 0).toFixed(1)}</span>
@@ -333,18 +403,111 @@ export function ActorList({ universeId: _unused }: { universeId?: number | null 
                                         </div>
                                     </div>
 
+                                    {actorEvents.length > 0 && (
+                                        <div className="space-y-3">
+                                            <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-300 uppercase tracking-widest">
+                                                <Clock className="w-4 h-4 text-cyan-400" />
+                                                Life timeline (events)
+                                            </h3>
+                                            <div className="p-4 rounded-xl bg-slate-900/40 border border-slate-800/50 space-y-3 max-h-48 overflow-y-auto custom-scrollbar">
+                                                {actorEvents.map((ev) => (
+                                                    <div key={ev.id} className="flex gap-2 text-sm">
+                                                        <span className="font-mono text-cyan-400 text-xs shrink-0">T{ev.tick}</span>
+                                                        <div>
+                                                            <span className="text-slate-400 capitalize">{ev.event_type}</span>
+                                                            {ev.context && typeof ev.context === "object" && Object.keys(ev.context).length > 0 && (
+                                                                <span className="text-slate-500 text-xs ml-1">— {JSON.stringify(ev.context)}</span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <div className="space-y-3">
+                                        <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-300 uppercase tracking-widest">
+                                            <User className="w-4 h-4 text-cyan-400" />
+                                            Thông tin cơ bản
+                                        </h3>
+                                        <div className="p-4 rounded-xl bg-slate-900/30 border border-slate-800/50 grid grid-cols-2 gap-3 text-sm">
+                                            <div>
+                                                <span className="text-slate-500 text-xs uppercase">ID</span>
+                                                <div className="font-mono text-slate-200">{selectedActor.id}</div>
+                                            </div>
+                                            <div>
+                                                <span className="text-slate-500 text-xs uppercase">Thế hệ</span>
+                                                <div className="font-mono text-slate-200">{selectedActor.generation ?? "—"}</div>
+                                            </div>
+                                            {selectedActor.universe_id != null && (
+                                                <div>
+                                                    <span className="text-slate-500 text-xs uppercase">Vũ trụ</span>
+                                                    <div className="font-mono text-slate-200">#{selectedActor.universe_id}</div>
+                                                </div>
+                                            )}
+                                            {selectedActor.lineage_id != null && selectedActor.lineage_id !== "" && (
+                                                <div>
+                                                    <span className="text-slate-500 text-xs uppercase">Lineage</span>
+                                                    <div className="font-mono text-slate-200 truncate" title={selectedActor.lineage_id}>{selectedActor.lineage_id}</div>
+                                                </div>
+                                            )}
+                                            {selectedActor.parent_actor_id != null && (
+                                                <div>
+                                                    <span className="text-slate-500 text-xs uppercase">Parent</span>
+                                                    <div className="font-mono text-slate-200">#{selectedActor.parent_actor_id}</div>
+                                                </div>
+                                            )}
+                                            {selectedActor.birth_tick != null && (
+                                                <div>
+                                                    <span className="text-slate-500 text-xs uppercase">Birth tick</span>
+                                                    <div className="font-mono text-slate-200">T{selectedActor.birth_tick}</div>
+                                                </div>
+                                            )}
+                                            {selectedActor.death_tick != null && (
+                                                <div>
+                                                    <span className="text-slate-500 text-xs uppercase">Death tick</span>
+                                                    <div className="font-mono text-slate-200">T{selectedActor.death_tick}</div>
+                                                </div>
+                                            )}
+                                            {selectedActor.life_stage != null && selectedActor.life_stage !== "" && (
+                                                <div>
+                                                    <span className="text-slate-500 text-xs uppercase">Life stage</span>
+                                                    <div className="font-mono text-slate-200 capitalize">{selectedActor.life_stage}</div>
+                                                </div>
+                                            )}
+                                            {selectedActor.trait_scan_status != null && selectedActor.trait_scan_status !== "unknown" && (
+                                                <div>
+                                                    <span className="text-slate-500 text-xs uppercase">Scan</span>
+                                                    <div className="font-mono text-slate-200 capitalize">{selectedActor.trait_scan_status}</div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="p-4 rounded-xl bg-slate-900/30 border border-slate-800/50">
                                             <div className="text-xs text-slate-500 uppercase tracking-wider mb-1 flex items-center gap-2">
                                                 <HeartPulse className="w-3 h-3" /> Vitality
                                             </div>
-                                            <div className="text-2xl font-mono text-slate-200">100%</div>
+                                            <div className="text-2xl font-mono text-slate-200">
+                                                {selectedActor.vitality?.health != null
+                                                    ? `${Math.round((selectedActor.vitality.health ?? 0) * 100)}%`
+                                                    : selectedActor.is_alive ? "100%" : "0%"}
+                                            </div>
+                                            {selectedActor.vitality && (selectedActor.vitality.age != null || selectedActor.vitality.morale != null) && (
+                                                <div className="text-[10px] text-slate-500 mt-1 space-y-0.5">
+                                                    {selectedActor.vitality.age != null && <div>Age: {selectedActor.vitality.age}</div>}
+                                                    {selectedActor.vitality.morale != null && <div>Morale: {(selectedActor.vitality.morale * 100).toFixed(0)}%</div>}
+                                                </div>
+                                            )}
                                         </div>
                                         <div className="p-4 rounded-xl bg-slate-900/30 border border-slate-800/50">
                                             <div className="text-xs text-slate-500 uppercase tracking-wider mb-1 flex items-center gap-2">
                                                 <BrainCircuit className="w-3 h-3" /> Cognition
                                             </div>
-                                            <div className="text-2xl font-mono text-slate-200">Cao</div>
+                                            <div className="text-2xl font-mono text-slate-200">
+                                                {cognitionLabel(selectedActor.traits ?? [])}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -356,23 +519,32 @@ export function ActorList({ universeId: _unused }: { universeId?: number | null 
                                             <Zap className="w-4 h-4 text-cyan-400" />
                                             Hồ sơ tâm lý
                                         </h3>
-                                        <span className="text-[10px] text-slate-500 font-mono border border-slate-800 rounded px-1.5">17-DIMENSION SCAN</span>
+                                        <span className="text-[10px] text-slate-500 font-mono border border-slate-800 rounded px-1.5">
+                                            17-DIMENSION SCAN {selectedActor.trait_scan_status && selectedActor.trait_scan_status !== "unknown" ? ` · ${selectedActor.trait_scan_status}` : ""}
+                                        </span>
                                     </div>
-                                    <ActorRadarChart traits={selectedActor.traits} />
+                                    <ActorRadarChart traits={selectedActor.traits ?? []} />
 
-                                    <div className="grid grid-cols-2 gap-2 mt-4">
-                                        {TRAIT_DIMENSIONS.slice(0, 6).map((trait, i) => (
-                                            <div key={trait} className="flex justify-between items-center px-3 py-1.5 rounded bg-slate-900/30 border border-slate-800/30">
+                                    <div className="text-xs text-slate-500 mt-2 mb-1 uppercase tracking-wider">17 chiều trait</div>
+                                    <div className="grid grid-cols-2 gap-2 mt-1">
+                                        {TRAIT_DIMENSIONS.map((trait, i) => (
+                                            <div key={`${trait}-${i}`} className="flex justify-between items-center px-3 py-1.5 rounded bg-slate-900/30 border border-slate-800/30">
                                                 <span className="text-[10px] text-slate-500 uppercase font-mono">{trait}</span>
-                                                <div className="w-16 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                                                <div className="w-20 h-1.5 bg-slate-800 rounded-full overflow-hidden min-w-0">
                                                     <div
-                                                        className="h-full bg-cyan-500/50"
-                                                        style={{ width: `${(selectedActor.traits[i] ?? 0) * 100}%` }}
+                                                        className="h-full bg-cyan-500/60 transition-all"
+                                                        style={{ width: `${Math.min(100, ((selectedActor.traits?.[i] ?? 0) * 100))}%` }}
                                                     />
                                                 </div>
                                             </div>
                                         ))}
                                     </div>
+                                    {selectedActor.metrics && (selectedActor.metrics.energy != null || selectedActor.metrics.contribution != null) && (
+                                        <div className="mt-4 p-3 rounded-lg bg-slate-900/40 border border-slate-800/50 text-xs text-slate-400 space-y-1">
+                                            {selectedActor.metrics.energy != null && <div>Năng lượng: {Number(selectedActor.metrics.energy).toFixed(1)}</div>}
+                                            {selectedActor.metrics.contribution != null && <div>Đóng góp: {Number(selectedActor.metrics.contribution).toFixed(1)}</div>}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>

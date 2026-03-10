@@ -2,6 +2,7 @@
 
 namespace App\Simulation\Engines;
 
+use App\Simulation\Concerns\DefaultSimulationEnginePhase;
 use App\Simulation\Contracts\SimulationEngine;
 use App\Simulation\Domain\EngineResult;
 use App\Simulation\Domain\TickContext;
@@ -18,6 +19,13 @@ use App\Simulation\Support\SimulationRandom;
  */
 final class CulturalDriftEngine implements SimulationEngine
 {
+    use DefaultSimulationEnginePhase;
+
+    public function phase(): string
+    {
+        return 'culture';
+    }
+
     private const DIMENSIONS = ['tradition', 'innovation', 'trust', 'violence', 'respect', 'myth'];
     private const DRIFT_EPSILON = 0.001;
     private const DIFFUSION_BETA = 0.005;

@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import { useSimulation } from "@/context/SimulationContext";
 import {
   UniverseHeader,
@@ -13,6 +14,8 @@ import {
   ActorList,
   FactionList,
   CivilizationList,
+  SupremeEntityList,
+  IntegrityMonitor,
   VoidArchive,
 } from "@/components/Simulation";
 import {
@@ -27,6 +30,10 @@ import {
   Globe,
   Library,
   BookOpen,
+  Sparkles,
+  ShieldCheck,
+  Package,
+  Orbit,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { BiologyMetricsPanel } from "./BiologyMetricsPanel";
@@ -36,7 +43,24 @@ import { EnvironmentPanel } from "./EnvironmentPanel";
 import { NavigatorPanel } from "./NavigatorPanel";
 import { IdeologyPanel } from "./IdeologyPanel";
 
+const PERSONAE_SUB_KEYS = ["actors", "factions", "civilizations", "supreme", "integrity", "materials", "attractors"] as const;
+type PersonaeSubKey = (typeof PERSONAE_SUB_KEYS)[number];
+
+/** Engine / nguồn liên quan tới từng loại thực thể (theo backend/docs/ENGINE_PRODUCTS.md). */
+const PERSONAE_ENGINE_HINT: Record<PersonaeSubKey, string> = {
+  actors: "Intelligence: GetUniverseActorsAction, ActorBehaviorEngine, ActorEvolutionService",
+  factions: "ReligionEngine, GovernanceEngine, CivilizationFormationEngine, LawEvolutionEngine",
+  civilizations: "CivilizationFormationEngine, ZoneConflictEngine, GreatFilterEngine",
+  supreme: "AscensionEngine, GreatPersonEngine",
+  integrity: "SupremeEntity.karma (cùng nguồn Thực thể Tối cao)",
+  materials: "ScenarioEngine, Material DAG, evolution pipeline",
+  attractors: "DynamicAttractorEngine, CivilizationCollapseEngine, snapshot active_attractors",
+};
+
 export function CosmologicDashboard({ embedded = false }: { embedded?: boolean }) {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const {
     universeId,
     universe,
@@ -47,6 +71,10 @@ export function CosmologicDashboard({ embedded = false }: { embedded?: boolean }
     refresh,
     loading: isProcessing,
     error: simError,
+    actors,
+    institutions,
+    supremeEntities,
+    materials,
   } = useSimulation();
 
   const [activeTab, setActiveTab] = useState<
@@ -54,18 +82,65 @@ export function CosmologicDashboard({ embedded = false }: { embedded?: boolean }
     | "evolution"
     | "chronicles"
     | "actors"
-    | "factions"
-    | "civilizations"
     | "archive"
     | "chronicle-detail"
   >("topology");
+  const [personaeSubTab, setPersonaeSubTabState] = useState<PersonaeSubKey>("actors");
   const [showRightPanel, setShowRightPanel] = useState(true);
+  const [productToEngines, setProductToEngines] = useState<Record<string, string[]> | null>(null);
+
+  const setPersonaeSubTab = useCallback(
+    (key: PersonaeSubKey) => {
+      setPersonaeSubTabState(key);
+      const next = new URLSearchParams(searchParams?.toString() ?? "");
+      next.set("personae", key);
+      router.replace(`${pathname ?? ""}?${next.toString()}`, { scroll: false });
+    },
+    [router, pathname, searchParams]
+  );
+
+  const civsCount = (institutions || []).filter((e: { entity_type?: string }) => e.entity_type === "CIVILIZATION").length;
+  const integrityCount = (supremeEntities || []).filter((e: { karma?: number }) => (e.karma ?? 0) !== 0).length;
+  const materialsCount = (materials ?? []).length;
+  const activeAttractors = (latestSnapshot as { active_attractors?: string[] } | null)?.active_attractors ?? [];
+  const attractorsCount = activeAttractors.length;
 
   useEffect(() => {
     if (!universeId && universes.length > 0) {
       setUniverseId(universes[0].id);
     }
   }, [universeId, universes, setUniverseId]);
+
+  useEffect(() => {
+    const p = searchParams?.get("personae");
+    if (p && PERSONAE_SUB_KEYS.includes(p as PersonaeSubKey)) {
+      setPersonaeSubTabState(p as PersonaeSubKey);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (activeTab === "actors" && pathname) {
+      const next = new URLSearchParams(searchParams?.toString() ?? "");
+      next.set("personae", personaeSubTab);
+      const qs = next.toString();
+      const want = `${pathname}${qs ? `?${qs}` : ""}`;
+      if (typeof window !== "undefined" && window.location.pathname === pathname && `${pathname}${window.location.search}` !== want) {
+        router.replace(want, { scroll: false });
+      }
+    }
+  }, [activeTab, personaeSubTab, pathname, searchParams, router]);
+
+  useEffect(() => {
+    if (activeTab !== "actors") return;
+    api
+      .worldosEngines()
+      .then((res) => setProductToEngines(res.product_to_engines ?? null))
+      .catch(() => setProductToEngines(null));
+  }, [activeTab]);
+
+  const engines = productToEngines?.[personaeSubTab];
+  const engineHintText =
+    engines && engines.length > 0 ? engines.join(", ") : PERSONAE_ENGINE_HINT[personaeSubTab];
 
   const handleAdvance = async () => {
     if (!universeId) return;
@@ -157,9 +232,16 @@ export function CosmologicDashboard({ embedded = false }: { embedded?: boolean }
           </div>
         )}
         {universe?.status === "archived" && (
-          <p className="mt-2 text-[10px] text-muted-foreground">
-            Universe đang <span className="text-amber-400/80">archived</span> — vẫn có thể dùng Advance/Pulse để cập nhật số liệu; Fork tạo nhánh mới từ tick hiện tại.
-          </p>
+          <div className="mt-3 p-3 rounded-lg border border-amber-500/30 bg-amber-950/20 text-sm">
+            <p className="font-medium text-amber-400/90 mb-1.5">Universe đã archived</p>
+            <p className="text-muted-foreground text-xs mb-2">Vũ trụ này không còn được pulse tự động. Bạn có thể:</p>
+            <ul className="text-xs text-muted-foreground space-y-1 list-disc list-inside">
+              <li><strong className="text-purple-400/90">Fork Universe</strong> — Tạo nhánh mới từ tick hiện tại, sau đó dashboard sẽ chuyển sang universe con (active).</li>
+              <li><strong className="text-slate-300">Tick +1</strong> — Advance thủ công nếu muốn cập nhật số liệu (Pulse world không chạy universe archived).</li>
+              <li><strong className="text-slate-300">Chronicles / Dư Âm</strong> — Xem lịch sử và biên niên sử của vũ trụ này.</li>
+              <li>Chọn <strong className="text-slate-300">universe khác</strong> trong cùng world (nếu có) từ danh sách bên trái hoặc màn hình world.</li>
+            </ul>
+          </div>
         )}
       </header>
 
@@ -206,18 +288,6 @@ export function CosmologicDashboard({ embedded = false }: { embedded?: boolean }
               label="Thực thể"
             />
             <TabButton
-              active={activeTab === "factions"}
-              onClick={() => setActiveTab("factions")}
-              icon={<Building2 className="w-4 h-4" />}
-              label="Thể chế"
-            />
-            <TabButton
-              active={activeTab === "civilizations"}
-              onClick={() => setActiveTab("civilizations")}
-              icon={<Globe className="w-4 h-4" />}
-              label="Văn minh"
-            />
-            <TabButton
               active={activeTab === "archive"}
               onClick={() => setActiveTab("archive")}
               icon={<Library className="w-4 h-4" />}
@@ -258,18 +328,95 @@ export function CosmologicDashboard({ embedded = false }: { embedded?: boolean }
               </div>
             )}
             {activeTab === "actors" && universeId && (
-              <div className="absolute inset-0 p-4 animate-in fade-in duration-500">
-                <ActorList universeId={universeId} />
-              </div>
-            )}
-            {activeTab === "factions" && universeId && (
-              <div className="absolute inset-0 p-4 overflow-auto animate-in fade-in duration-500">
-                <FactionList universeId={universeId} />
-              </div>
-            )}
-            {activeTab === "civilizations" && universeId && (
-              <div className="absolute inset-0 p-4 overflow-auto animate-in fade-in duration-500">
-                <CivilizationList universeId={universeId} />
+              <div className="absolute inset-0 flex flex-col animate-in fade-in duration-500">
+                <div className="flex-none flex items-center gap-1 p-2 border-b border-border/50 bg-card/30 flex-wrap">
+                  {(
+                    [
+                      { key: "actors" as const, label: "Nhân vật", icon: Users, count: (actors ?? []).length },
+                      { key: "factions" as const, label: "Thể chế", icon: Building2, count: (institutions ?? []).length },
+                      { key: "civilizations" as const, label: "Văn minh", icon: Globe, count: civsCount },
+                      { key: "supreme" as const, label: "Thực thể Tối cao", icon: Sparkles, count: (supremeEntities ?? []).length },
+                      { key: "integrity" as const, label: "Nợ nhân quả", icon: ShieldCheck, count: integrityCount },
+                      { key: "materials" as const, label: "Vật liệu", icon: Package, count: materialsCount },
+                      { key: "attractors" as const, label: "Attractors", icon: Orbit, count: attractorsCount },
+                    ] as const
+                  ).map(({ key, label, icon: Icon, count }) => (
+                    <button
+                      key={key}
+                      onClick={() => setPersonaeSubTab(key)}
+                      className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                        personaeSubTab === key
+                          ? "bg-blue-500/20 text-blue-300 border border-blue-500/40"
+                          : "text-muted-foreground hover:text-foreground hover:bg-muted/40 border border-transparent"
+                      }`}
+                    >
+                      <Icon className="w-3.5 h-3.5" />
+                      <span>{label}</span>
+                      <span className="text-[10px] font-mono opacity-80">({count})</span>
+                    </button>
+                  ))}
+                </div>
+                <div className="flex-none px-2 pb-2 border-b border-border/30">
+                  <p className="text-[10px] text-muted-foreground font-mono truncate" title={engineHintText}>
+                    Engine liên quan: {engineHintText}
+                  </p>
+                </div>
+                <div className="flex-1 min-h-0 overflow-auto p-4">
+                  {personaeSubTab === "actors" && <ActorList universeId={universeId} />}
+                  {personaeSubTab === "factions" && <FactionList universeId={universeId} />}
+                  {personaeSubTab === "civilizations" && <CivilizationList universeId={universeId} />}
+                  {personaeSubTab === "supreme" && <SupremeEntityList universeId={universeId} />}
+                  {personaeSubTab === "integrity" && (
+                    <IntegrityMonitor
+                      entities={(supremeEntities || []).map((e: { id: number; name: string; power_level?: number; karma?: number }) => ({
+                        id: e.id,
+                        name: e.name,
+                        power_level: e.power_level ?? 0,
+                        karma: e.karma ?? 0,
+                      }))}
+                    />
+                  )}
+                  {personaeSubTab === "materials" && (
+                    <div className="rounded-lg border border-border/50 bg-card/40 p-6 max-w-md">
+                      <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
+                        <Package className="w-4 h-4 text-muted-foreground" />
+                        Vật liệu (Material instances)
+                      </h3>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Số lượng: <span className="font-mono font-medium text-foreground">{materialsCount}</span>
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab("evolution")}
+                        className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md bg-blue-500/20 text-blue-300 border border-blue-500/40 hover:bg-blue-500/30 transition-colors"
+                      >
+                        <Layers className="w-4 h-4" />
+                        Xem DAG
+                      </button>
+                      <p className="text-xs text-muted-foreground mt-2">Mở tab Material Evolution để xem đồ thị vật liệu.</p>
+                    </div>
+                  )}
+                  {personaeSubTab === "attractors" && (
+                    <div className="rounded-lg border border-border/50 bg-card/40 p-6 max-w-md">
+                      <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
+                        <Orbit className="w-4 h-4 text-muted-foreground" />
+                        Attractors (từ snapshot)
+                      </h3>
+                      <p className="text-sm text-muted-foreground mb-3">
+                        Attractor lộ ra từ dữ liệu snapshot hiện tại. Số lượng: <span className="font-mono font-medium text-foreground">{attractorsCount}</span>
+                      </p>
+                      {activeAttractors.length > 0 ? (
+                        <ul className="text-sm space-y-1 list-disc list-inside text-muted-foreground">
+                          {activeAttractors.map((a, i) => (
+                            <li key={i} className="font-mono text-foreground/90">{a}</li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="text-xs text-muted-foreground italic">Chưa có active attractors trong snapshot này.</p>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
             {activeTab === "archive" && universeId && (

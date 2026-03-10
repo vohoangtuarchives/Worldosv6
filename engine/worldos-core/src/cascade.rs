@@ -24,6 +24,10 @@ pub enum SimEvent {
     DeityIntervention,
     WavefunctionCollapse,
     Cosmogenesis, // Phase 61: Spontaneous generation of a child universe (§V9)
+    // Doc 21 §8: Black Swan / Rare Event (deterministic hash(seed, tick))
+    BlackSwanMeteor,
+    BlackSwanPlague,
+    BlackSwanProphet,
 }
 
 /// Process one tick: run 3-phase tick, then check pressure and optionally cascade.
@@ -40,8 +44,24 @@ pub fn tick_with_cascade(
         let p = state.pressure_at_zone(i);
         let phase = state.zones[i].state.cascade_phase;
 
-        if p >= constants::COLLAPSE_THRESHOLD {
-            // Advance cascade: Normal → Famine → Riots → Collapse
+        // Doc 21 §10: Hazard model — P(phase change) = sigmoid(pressure); deterministic RNG(seed, tick, zone_id).
+        let p_transition = 1.0
+            / (1.0
+                + (-constants::HAZARD_SIGMOID_STEEPNESS * (p - constants::COLLAPSE_THRESHOLD)).exp());
+        let seed_u = match &world.world_seed {
+            Some(serde_json::Value::Number(n)) => n.as_u64().unwrap_or(0),
+            _ => world.world_id.wrapping_add(state.universe_id),
+        };
+        let roll = ((seed_u
+            .wrapping_add(state.tick)
+            .wrapping_mul(31)
+            .wrapping_add(i as u64)
+            .wrapping_mul(0x9e3779b97f4a7c15)
+            % 10000) as f64)
+            / 10000.0;
+
+        if p >= constants::COLLAPSE_THRESHOLD && roll < p_transition {
+            // Advance cascade: Normal → Famine → Riots → Collapse (probabilistic)
             let (next_phase, event) = match phase {
                 CascadePhase::Normal => (CascadePhase::Famine, SimEvent::Famine),
                 CascadePhase::Famine => (CascadePhase::Riots, SimEvent::Riots),
@@ -72,8 +92,29 @@ pub fn tick_with_cascade(
             state.scars.push(format!("Tick {}: {} (Zone {})", state.tick, phase_name(next_phase), i).into());
             if next_phase == CascadePhase::Collapse {
                 state.zones[i].state.active_materials.clear();
+                // Doc 21 §4b.II: Reset dynamics — reduce pressure components to avoid runaway collapse.
+                state.zones[i].state.entropy = (state.zones[i].state.entropy - 0.1).max(0.0);
+                state.zones[i].state.trauma = (state.zones[i].state.trauma - 0.05).max(0.0);
+                state.zones[i].state.inequality = (state.zones[i].state.inequality - 0.05).max(0.0);
+                state.zones[i].state.update_material_stress();
             }
-        } else {
+            // Doc 21 §10: Event cascade — inject pressure into neighbors (no phase change; structural cascade still decides phase).
+            let neighbor_ids: Vec<u32> = state.zones[i].neighbors.clone();
+            for neighbor_id in neighbor_ids {
+                for k in 0..state.zones.len() {
+                    if state.zones[k].id == neighbor_id {
+                        state.zones[k].state.entropy =
+                            (state.zones[k].state.entropy + constants::EVENT_CASCADE_ENTROPY_NEIGHBOR).min(1.0);
+                        state.zones[k].state.trauma =
+                            (state.zones[k].state.trauma + constants::EVENT_CASCADE_TRAUMA_NEIGHBOR).min(1.0);
+                        state.zones[k].state.inequality =
+                            (state.zones[k].state.inequality + constants::EVENT_CASCADE_INEQUALITY_NEIGHBOR).min(1.0);
+                        state.zones[k].state.update_material_stress();
+                        break;
+                    }
+                }
+            }
+        } else if p < constants::COLLAPSE_THRESHOLD {
             state.zones[i].state.cascade_phase = CascadePhase::Normal;
             if !state.zones[i].state.agents.is_empty() && p < 0.4 {
                 state.resolve_micro_mode(i);
@@ -150,6 +191,38 @@ pub fn tick_with_cascade(
         events.push(SimEvent::MetaCycle);
     }
 
+    // Doc 21 §8: Black Swan / Rare Event — deterministic hash(seed, tick), low probability shock.
+    let seed_u = match &world.world_seed {
+        Some(serde_json::Value::Number(n)) => n.as_u64().unwrap_or(0),
+        _ => world.world_id.wrapping_add(state.universe_id),
+    };
+    let h = seed_u
+        .wrapping_add(state.tick)
+        .wrapping_mul(31)
+        .wrapping_add(state.universe_id)
+        .wrapping_mul(0x9e3779b97f4a7c15);
+    if h % 10000 == 1 && !state.zones.is_empty() {
+        let zone_idx = ((h / 10000) as usize) % state.zones.len();
+        let shock_type = (h / 10000) % 3;
+        state.zones[zone_idx].state.entropy = (state.zones[zone_idx].state.entropy + 0.2).min(1.0);
+        state.zones[zone_idx].state.trauma = (state.zones[zone_idx].state.trauma + 0.15).min(1.0);
+        state.zones[zone_idx].state.update_material_stress();
+        let event = match shock_type {
+            0 => SimEvent::BlackSwanMeteor,
+            1 => SimEvent::BlackSwanPlague,
+            _ => SimEvent::BlackSwanProphet,
+        };
+        events.push(event);
+        state.scars.push(
+            format!(
+                "Tick {}: Black Swan (Zone {})",
+                state.tick,
+                zone_idx
+            )
+            .into(),
+        );
+    }
+
     // Limit cascade depth
     if events.len() > max_cascade {
         events.truncate(max_cascade);
@@ -183,19 +256,29 @@ mod tests {
         set_high_pressure(&mut state, 0);
         assert!(state.pressure_at_zone(0) >= constants::COLLAPSE_THRESHOLD);
 
-        let ev1 = tick_with_cascade(&mut state, &world, 20);
-        assert_eq!(state.zones[0].state.cascade_phase, CascadePhase::Famine);
-        assert!(ev1.iter().any(|e| matches!(e, SimEvent::Famine)));
-
-        set_high_pressure(&mut state, 0);
-        let ev2 = tick_with_cascade(&mut state, &world, 20);
-        assert_eq!(state.zones[0].state.cascade_phase, CascadePhase::Riots);
-        assert!(ev2.iter().any(|e| matches!(e, SimEvent::Riots)));
-
-        set_high_pressure(&mut state, 0);
-        let ev3 = tick_with_cascade(&mut state, &world, 20);
-        assert_eq!(state.zones[0].state.cascade_phase, CascadePhase::Collapse);
-        assert!(ev3.iter().any(|e| matches!(e, SimEvent::Collapse)));
-        assert!(state.zones[0].state.active_materials.is_empty());
+        // Hazard model: P(phase change) = sigmoid(pressure); may need several ticks to advance.
+        let mut seen_famine = false;
+        let mut seen_riots = false;
+        let mut seen_collapse = false;
+        for _ in 0..20 {
+            set_high_pressure(&mut state, 0);
+            let ev = tick_with_cascade(&mut state, &world, 20);
+            match state.zones[0].state.cascade_phase {
+                CascadePhase::Famine => seen_famine = true,
+                CascadePhase::Riots => seen_riots = true,
+                CascadePhase::Collapse => {
+                    seen_collapse = true;
+                    assert!(state.zones[0].state.active_materials.is_empty());
+                    break;
+                }
+                _ => {}
+            }
+            if seen_collapse {
+                break;
+            }
+        }
+        assert!(seen_famine, "With high pressure, Famine should eventually occur");
+        assert!(seen_riots, "With high pressure, Riots should eventually occur");
+        assert!(seen_collapse, "With high pressure, Collapse should eventually occur");
     }
 }

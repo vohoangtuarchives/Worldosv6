@@ -2,6 +2,7 @@
 
 namespace App\Simulation\Engines;
 
+use App\Simulation\Concerns\DefaultSimulationEnginePhase;
 use App\Simulation\Contracts\SimulationEngine;
 use App\Simulation\Domain\EngineResult;
 use App\Simulation\Domain\TickContext;
@@ -18,6 +19,13 @@ use App\Simulation\Support\SimulationRandom;
  */
 final class StructuralDecayEngine implements SimulationEngine
 {
+    use DefaultSimulationEnginePhase;
+
+    public function phase(): string
+    {
+        return 'ecology';
+    }
+
     /** Order above this with entropy below threshold triggers decay */
     private const ORDER_HIGH_THRESHOLD = 0.75;
     /** Entropy below this with order above threshold triggers decay */

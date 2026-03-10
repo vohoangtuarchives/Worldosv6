@@ -54,3 +54,17 @@ curl -s -X POST -H "Authorization: Bearer TOKEN" -H "Content-Type: application/j
 curl -s -H "Authorization: Bearer TOKEN" "https://your-api/api/worldos/universes/1/ideology"
 curl -s -X POST -H "Authorization: Bearer TOKEN" "https://your-api/api/worldos/universes/1/great-person?tick=100"
 ```
+
+## Universe archived — Bước tiếp theo
+
+Khi một **universe** chuyển sang trạng thái **archived** (entropy quá cao, AEE/ConvergenceEngine quyết định), nó không còn được **pulse** tự động (Pulse World chỉ advance universe `active`). Bạn có thể:
+
+| Hành động | Cách làm |
+|-----------|----------|
+| **Fork** | Trên dashboard: bấm **Fork Universe** — tạo universe con từ tick hiện tại; dashboard sẽ chuyển sang universe con (active). Hoặc API: `POST /api/worldos/universes/{id}/fork` (body: `tick` tùy chọn). |
+| **Advance thủ công** | Bấm **Tick +1** trên header — universe archived vẫn advance được từng tick nếu cần cập nhật số liệu. |
+| **Xem lịch sử** | Tab **Chronicles**, **Biên Niên Sử**, **Dư Âm** — xem timeline và chronicle của vũ trụ này. |
+| **Chọn universe khác** | Từ màn hình world / simulation status chọn universe khác (active) trong cùng world; hoặc dùng universe selector bên trái nếu có. |
+| **Tạo universe mới (không fork)** | API: `POST /api/worldos/worlds/{id}/spawn` (nếu có) hoặc seed/demo — tạo universe mới trong world, không kế thừa từ universe archived. |
+
+**Lưu ý**: Hiện tại không có API "un-archive" (chuyển `archived` → `active`). Nếu cần tiếp tục chơi từ universe đã archived, dùng **Fork** để tạo nhánh mới từ tick hiện tại.

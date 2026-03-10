@@ -22,7 +22,7 @@ class SupremeEntityEloquentRepository implements SupremeEntityRepositoryInterfac
             ->toArray();
     }
 
-    public function save(SupremeEntity $entity): void
+    public function save(SupremeEntity $entity): int
     {
         $data = [
             'universe_id' => $entity->universeId,
@@ -37,13 +37,15 @@ class SupremeEntityEloquentRepository implements SupremeEntityRepositoryInterfac
             'status' => $entity->status,
             'ascended_at_tick' => $entity->ascendedAtTick,
             'fallen_at_tick' => $entity->fallenAtTick,
+            'actor_id' => $entity->actorId,
         ];
 
         if ($entity->id) {
             SupremeEntityModel::where('id', $entity->id)->update($data);
-        } else {
-            SupremeEntityModel::create($data);
+            return $entity->id;
         }
+        $model = SupremeEntityModel::create($data);
+        return $model->id;
     }
 
     private function mapToEntity(SupremeEntityModel $model): SupremeEntity
@@ -61,7 +63,8 @@ class SupremeEntityEloquentRepository implements SupremeEntityRepositoryInterfac
             karmaMetadata: $model->karma_metadata ?? [],
             status: $model->status,
             ascendedAtTick: $model->ascended_at_tick,
-            fallenAtTick: $model->fallen_at_tick
+            fallenAtTick: $model->fallen_at_tick,
+            actorId: $model->actor_id
         );
     }
 }

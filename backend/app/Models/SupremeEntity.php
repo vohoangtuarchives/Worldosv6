@@ -10,6 +10,7 @@ class SupremeEntity extends Model
 {
     protected $fillable = [
         'universe_id',
+        'actor_id',
         'name',
         'entity_type',
         'domain',
@@ -33,5 +34,10 @@ class SupremeEntity extends Model
     public function universe(): BelongsTo
     {
         return $this->belongsTo(Universe::class);
+    }
+
+    public function actor(): BelongsTo
+    {
+        return $this->belongsTo(Actor::class);
     }
 }

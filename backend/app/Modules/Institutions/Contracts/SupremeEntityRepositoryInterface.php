@@ -13,5 +13,8 @@ interface SupremeEntityRepositoryInterface
      */
     public function findByUniverse(int $universeId): array;
     
-    public function save(SupremeEntity $entity): void;
+    /**
+     * Save entity and return its id (created or updated).
+     */
+    public function save(SupremeEntity $entity): int;
 }

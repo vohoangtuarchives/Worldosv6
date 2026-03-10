@@ -15,7 +15,8 @@ class GetUniverseActorsAction
      */
     public function execute(int $universeId): Collection
     {
-        return \App\Models\Actor::where('universe_id', $universeId)
+        return \App\Models\Actor::with('supremeEntity')
+            ->where('universe_id', $universeId)
             ->orderBy('is_alive', 'desc') // Alive first
             ->orderBy('id', 'desc')
             ->get();

@@ -17,7 +17,8 @@ class SupremeEntity
         public array $karmaMetadata = [],
         public string $status = 'ASCENDED',
         public ?int $ascendedAtTick = null,
-        public ?int $fallenAtTick = null
+        public ?int $fallenAtTick = null,
+        public readonly ?int $actorId = null
     ) {}
 
     /**

@@ -13,4 +13,6 @@ export { ChronicleView } from "./ChronicleView";
 export { ActorList } from "./ActorList";
 export { default as FactionList } from "./FactionList";
 export { CivilizationList } from "./CivilizationList";
+export { SupremeEntityList } from "./SupremeEntityList";
+export { default as IntegrityMonitor } from "./IntegrityMonitor";
 export { VoidArchive } from "./VoidArchive";

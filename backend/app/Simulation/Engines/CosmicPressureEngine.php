@@ -2,6 +2,7 @@
 
 namespace App\Simulation\Engines;
 
+use App\Simulation\Concerns\DefaultSimulationEnginePhase;
 use App\Simulation\Contracts\SimulationEngine;
 use App\Simulation\Domain\EngineResult;
 use App\Simulation\Domain\TickContext;
@@ -20,6 +21,13 @@ use App\Simulation\Support\SimulationRandom;
  */
 final class CosmicPressureEngine implements SimulationEngine
 {
+    use DefaultSimulationEnginePhase;
+
+    public function phase(): string
+    {
+        return 'meta';
+    }
+
     private const DECAY = 0.98;
     private const INNOVATION_WEIGHT = 0.01;
     private const ENTROPY_WEIGHT = 0.015;

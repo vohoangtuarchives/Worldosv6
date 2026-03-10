@@ -8,9 +8,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class InstitutionalEntity extends Model
 {
     protected $fillable = [
-        'universe_id', 'name', 'entity_type', 'ideology_vector',
-        'org_capacity', 'institutional_memory', 'legitimacy',
-        'influence_map', 'spawned_at_tick', 'collapsed_at_tick',
+        'universe_id', 'founder_actor_id', 'idea_id', 'name', 'entity_type', 'institution_type',
+        'ideology_vector', 'org_capacity', 'institutional_memory', 'legitimacy',
+        'influence_map', 'status', 'members', 'zone_id', 'spawned_at_tick', 'collapsed_at_tick',
     ];
 
     protected $casts = [
@@ -24,6 +24,21 @@ class InstitutionalEntity extends Model
     public function universe(): BelongsTo
     {
         return $this->belongsTo(Universe::class);
+    }
+
+    public function founder(): BelongsTo
+    {
+        return $this->belongsTo(Actor::class, 'founder_actor_id');
+    }
+
+    public function idea(): BelongsTo
+    {
+        return $this->belongsTo(Idea::class);
+    }
+
+    public function leaders(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(InstitutionLeader::class, 'institution_id');
     }
 
     /**

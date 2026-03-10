@@ -4,6 +4,7 @@ namespace App\Modules\Simulation\Services;
 
 use App\Models\BranchEvent;
 use App\Models\InstitutionalEntity;
+use App\Models\SupremeEntity as SupremeEntityModel;
 use App\Models\Universe;
 use App\Modules\Institutions\Actions\SpawnSupremeEntityAction;
 use App\Modules\Institutions\Entities\SupremeEntity;
@@ -51,12 +52,22 @@ class GreatPersonEngine
         $lastTick = $lastSupreme ? (int) $lastSupreme->from_tick : null;
         $ticksSince = $lastTick === null ? PHP_INT_MAX : $tick - $lastTick;
 
+        $populationProxy = $this->getPopulationProxy($universe);
+        $heroesPerPop = (int) config('worldos.great_person.heroes_per_population', 100000);
+        $effectivePop = $populationProxy * 10_000_000;
+        $maxHeroes = max(1, (int) floor($effectivePop / max(1, $heroesPerPop)));
+        $currentHeroes = SupremeEntityModel::where('universe_id', $universe->id)
+            ->where('entity_type', 'like', 'great_person_%')
+            ->count();
+        $underHeroCap = $currentHeroes < $maxHeroes;
+
         $eligible = $entropy >= $entropyMin && $entropy <= $entropyMax
             && $institutionCount >= $minInstitutions
-            && $ticksSince >= $cooldownTicks;
+            && $ticksSince >= $cooldownTicks
+            && $underHeroCap;
 
         $reason = ! $eligible
-            ? ($entropy < $entropyMin ? 'entropy_low' : ($entropy > $entropyMax ? 'entropy_high' : ($institutionCount < $minInstitutions ? 'few_institutions' : 'cooldown')))
+            ? ($entropy < $entropyMin ? 'entropy_low' : ($entropy > $entropyMax ? 'entropy_high' : ($institutionCount < $minInstitutions ? 'few_institutions' : ($ticksSince < $cooldownTicks ? 'cooldown' : 'hero_cap'))))
             : 'eligible';
 
         return [
@@ -98,5 +109,19 @@ class GreatPersonEngine
             Log::error("GreatPersonEngine: spawn failed: " . $e->getMessage());
             return null;
         }
+    }
+
+    private function getPopulationProxy(Universe $universe): float
+    {
+        $vec = $universe->state_vector;
+        if (! is_array($vec) || empty($vec['zones'])) {
+            return 0.01;
+        }
+        $sum = 0.0;
+        foreach ($vec['zones'] as $zone) {
+            $state = $zone['state'] ?? [];
+            $sum += (float) ($state['population_proxy'] ?? 0);
+        }
+        return $sum > 0 ? $sum : 0.01;
     }
 }

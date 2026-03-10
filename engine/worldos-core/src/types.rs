@@ -78,6 +78,25 @@ pub enum CascadePhase {
     Collapse,
 }
 
+/// Deep Sim Phase 4: Macro agent type (rulers, armies, traders). Few per civ/zone.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum MacroAgentType {
+    Army,
+    Ruler,
+    Trader,
+}
+
+/// Macro agent: zone_id, type, strength. Laravel spawns; Rust applies pressure/effect.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MacroAgent {
+    pub zone_id: u32,
+    #[serde(rename = "type")]
+    pub agent_type: MacroAgentType,
+    #[serde(default)]
+    pub strength: f64,
+}
+
 /// Civilization phase: Tribal → Agrarian → Kingdom → Empire → Industrial → Information (§Level-8).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -189,6 +208,15 @@ pub struct ZoneState {
     pub civ_fields: CivilizationFields,
     #[serde(default)]
     pub phase: CivilizationPhase,
+    /// Population proxy [0,1] for population flow diffusion (Doc 21 §4.1). Pressure = pop / resources proxy.
+    #[serde(default)]
+    pub population_proxy: f64,
+    /// Resource capacity [0,1] from geography/agriculture (Deep Sim Phase 1). When > 0, used for population pressure; else fallback to f(base_mass, material_stress).
+    #[serde(default)]
+    pub resource_capacity: f64,
+    /// Wealth/resource proxy [0,1] for trade flow between zones (Deep Sim Phase C). Flow: k_trade * (wealth_i - wealth_j); when 0, initialized from resource_capacity or (base_mass, material_stress).
+    #[serde(default)]
+    pub wealth_proxy: f64,
 }
 
 /// Quantum Overlay: Controls probabilistic state and observer effect (§57).
@@ -250,6 +278,9 @@ impl ZoneState {
             cascade_phase: CascadePhase::Normal,
             civ_fields: CivilizationFields::default(),
             phase: CivilizationPhase::Tribal,
+            population_proxy: 0.0,
+            resource_capacity: 0.0,
+            wealth_proxy: 0.0,
         }
     }
 

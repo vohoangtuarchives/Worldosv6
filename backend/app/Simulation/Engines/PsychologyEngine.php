@@ -2,6 +2,7 @@
 
 namespace App\Simulation\Engines;
 
+use App\Simulation\Concerns\DefaultSimulationEnginePhase;
 use App\Simulation\Contracts\SimulationEngine;
 use App\Simulation\Domain\EngineResult;
 use App\Simulation\Domain\TickContext;
@@ -12,6 +13,8 @@ use App\Simulation\Domain\WorldState;
  */
 final class PsychologyEngine implements SimulationEngine
 {
+    use DefaultSimulationEnginePhase;
+
     public function name(): string
     {
         return 'psychology';

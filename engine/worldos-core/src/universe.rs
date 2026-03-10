@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 
 use crate::constants;
-use crate::types::{CivilizationFields, CivilizationPhase, CulturalVector, SimulationMetrics, UniverseSnapshot, ZoneState};
+use crate::types::{CascadePhase, CivilizationFields, CulturalVector, MacroAgent, MacroAgentType, SimulationMetrics, UniverseSnapshot, ZoneState};
 
 /// Opaque zone key (for future SlotMap use).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -30,6 +30,9 @@ pub struct UniverseState {
     pub attractors: Vec<crate::types::CivilizationAttractor>,
     #[serde(default)]
     pub dark_attractors: Vec<crate::types::DarkAttractor>,
+    /// Deep Sim Phase 4: macro agents (army, ruler, trader). Laravel spawns; kernel applies pressure.
+    #[serde(default)]
+    pub macro_agents: Vec<MacroAgent>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -37,6 +40,17 @@ pub struct ZoneStateSerial {
     pub id: u32,
     pub state: ZoneState,
     pub neighbors: Vec<u32>,
+}
+
+/// Doc 21 §4: Phase-dependent diffusion multiplier (collapse spreads faster).
+fn phase_diffusion_factor(phase: CascadePhase) -> f64 {
+    use crate::constants;
+    match phase {
+        CascadePhase::Normal => constants::PHASE_DIFFUSION_NORMAL,
+        CascadePhase::Famine => constants::PHASE_DIFFUSION_FAMINE,
+        CascadePhase::Riots => constants::PHASE_DIFFUSION_RIOTS,
+        CascadePhase::Collapse => constants::PHASE_DIFFUSION_COLLAPSE,
+    }
 }
 
 impl UniverseState {
@@ -102,6 +116,7 @@ impl UniverseState {
             scars: Vec::new(),
             attractors: Vec::new(),
             dark_attractors: Vec::new(),
+            macro_agents: Vec::new(),
         }
     }
 
@@ -125,6 +140,7 @@ impl UniverseState {
             scars: Vec::new(),
             attractors: Vec::new(),
             dark_attractors: Vec::new(),
+            macro_agents: Vec::new(),
         }
     }
 
@@ -133,7 +149,7 @@ impl UniverseState {
         let genome = world.genome.clone().unwrap_or_default();
         // Phase 1: local zone update (entropy, organization, decay)
         let k1 = genome.entropy_coefficient * constants::K1_ENTROPY_PER_STRUCTURED;
-        for z in &mut self.zones {
+        for (idx, z) in self.zones.iter_mut().enumerate() {
             let base = z.state.base_mass;
             let structured = z.state.structured_mass;
             let entropy = z.state.entropy;
@@ -209,6 +225,32 @@ impl UniverseState {
             s.civ_fields.wealth = (structured_ratio * 0.8 + s.free_energy / (s.base_mass * 2.0 + 1e-6)).clamp(0.0, 1.0);
             s.civ_fields.knowledge = (s.embodied_knowledge * 0.7 + s.knowledge_frontier * 0.3).clamp(0.0, 1.0);
             s.civ_fields.meaning = (s.cultural.myth_belief * 0.6 + (1.0 - s.material_stress) * 0.2 + s.entropy * 0.2).clamp(0.0, 1.0);
+
+            // Deep Sim Phase 3: Cultural drift (deterministic) — prevents diffusion from making all zones identical.
+            let seed = world.world_id.wrapping_add(self.tick).wrapping_mul(31).wrapping_add(z.id as u64).wrapping_add(idx as u64);
+            let h1 = (seed % 10_000) as f64 / 10_000.0;
+            let h2 = (seed.wrapping_mul(17).wrapping_add(1) % 10_000) as f64 / 10_000.0;
+            let drift1 = (h1 - 0.5) * 2.0 * constants::CULTURAL_DRIFT_MAGNITUDE;
+            let drift2 = (h2 - 0.5) * 2.0 * constants::CULTURAL_DRIFT_MAGNITUDE;
+            z.state.cultural.innovation_openness = (z.state.cultural.innovation_openness + drift1).clamp(0.0, 1.0);
+            z.state.cultural.myth_belief = (z.state.cultural.myth_belief + drift2).clamp(0.0, 1.0);
+
+            // Deep Sim Phase 3: Tech discovery proxy (deterministic, low probability).
+            let discovery_roll = seed.wrapping_mul(13) % constants::TECH_DISCOVERY_MOD;
+            let ok_stress = z.state.material_stress < 0.75;
+            let ok_pop = z.state.population_proxy > 0.1;
+            if discovery_roll == 0 && ok_stress && ok_pop {
+                z.state.knowledge_frontier = (z.state.knowledge_frontier + constants::TECH_DISCOVERY_DELTA).min(z.state.tech_ceiling);
+            }
+        }
+
+        // Deep Sim Phase 4: Ruler agents reduce entropy (order) in their zone.
+        for z in &mut self.zones {
+            for ma in &self.macro_agents {
+                if ma.zone_id == z.id && ma.agent_type == MacroAgentType::Ruler {
+                    z.state.entropy = (z.state.entropy - 0.01 * ma.strength.clamp(0.0, 1.0)).max(0.0);
+                }
+            }
         }
 
         // Phase 2: aggregate global_entropy, knowledge_core, SCI
@@ -258,12 +300,42 @@ impl UniverseState {
             Self::check_phase_transition(&mut z.state);
         }
 
-        // Phase 3: Diffusion (Entropy, Tech, Culture) (§3, §4.4)
+        // Phase 3: Diffusion (Entropy, Tech, Culture, Population) (§3, §4.4). Doc 21: phase-dependent diffusion + population flow.
         let beta = genome.diffusion_rate;
         let mut entropy_deltas = vec![0.0; self.zones.len()];
         let mut tech_deltas = vec![0.0; self.zones.len()];
         let mut culture_deltas = vec![CulturalVector::default(); self.zones.len()];
         let mut civ_field_deltas = vec![CivilizationFields::default(); self.zones.len()];
+        let mut population_deltas = vec![0.0; self.zones.len()];
+        let mut trade_deltas = vec![0.0; self.zones.len()];
+
+        // Effective wealth per zone for trade flow (Deep Sim Phase C): wealth_proxy if set, else from resource_capacity or (base_mass, material_stress).
+        let effective_wealth: Vec<f64> = self.zones.iter()
+            .map(|z| {
+                let base = if z.state.resource_capacity > 1e-9 {
+                    (z.state.resource_capacity * 1.5 + 0.5).min(1.0)
+                } else {
+                    ((z.state.base_mass * 0.01 + 1.0) * (1.0 - z.state.material_stress * 0.5) + z.state.free_energy * 0.001).min(1.0)
+                };
+                if z.state.wealth_proxy > 1e-9 {
+                    z.state.wealth_proxy
+                } else {
+                    base
+                }
+            })
+            .collect();
+
+        // Population pressure per zone: pop / (resources proxy + eps). Doc 21 §4.1. Deep Sim Phase 1: use resource_capacity when set (geography), else fallback.
+        let population_pressures: Vec<f64> = self.zones.iter()
+            .map(|z| {
+                let resources = if z.state.resource_capacity > 1e-9 {
+                    (z.state.resource_capacity * 1.5 + 0.5).max(0.1)
+                } else {
+                    (z.state.base_mass * 0.01 + 1.0) * (1.0 - z.state.material_stress * 0.5) + z.state.free_energy * 0.001
+                };
+                (z.state.population_proxy + 1e-6) / (resources + 1e-6)
+            })
+            .collect();
 
         for i in 0..self.zones.len() {
             let zone = &self.zones[i];
@@ -274,6 +346,7 @@ impl UniverseState {
             
             if neighbors.is_empty() { continue; }
             let n_len = neighbors.len() as f64;
+            let phase_factor = phase_diffusion_factor(zone.state.cascade_phase);
 
             let mut s_diff_sum = 0.0;
             let mut t_diff_sum = 0.0;
@@ -296,15 +369,16 @@ impl UniverseState {
                 c_diff_sum.myth_belief += neighbor.state.cultural.myth_belief - zone.state.cultural.myth_belief;
             }
 
-            entropy_deltas[i] = beta * s_diff_sum / n_len;
-            tech_deltas[i] = beta * 0.5 * t_diff_sum / n_len; // Tech diffuses slower
+            let beta_zone = beta * phase_factor;
+            entropy_deltas[i] = beta_zone * s_diff_sum / n_len;
+            tech_deltas[i] = beta_zone * 0.5 * t_diff_sum / n_len; // Tech diffuses slower
             
-            culture_deltas[i].tradition_rigidity = beta * c_diff_sum.tradition_rigidity / n_len;
-            culture_deltas[i].innovation_openness = beta * c_diff_sum.innovation_openness / n_len;
-            culture_deltas[i].collective_trust = beta * c_diff_sum.collective_trust / n_len;
-            culture_deltas[i].violence_tolerance = beta * c_diff_sum.violence_tolerance / n_len;
-            culture_deltas[i].institutional_respect = beta * c_diff_sum.institutional_respect / n_len;
-            culture_deltas[i].myth_belief = beta * c_diff_sum.myth_belief / n_len;
+            culture_deltas[i].tradition_rigidity = beta_zone * c_diff_sum.tradition_rigidity / n_len;
+            culture_deltas[i].innovation_openness = beta_zone * c_diff_sum.innovation_openness / n_len;
+            culture_deltas[i].collective_trust = beta_zone * c_diff_sum.collective_trust / n_len;
+            culture_deltas[i].violence_tolerance = beta_zone * c_diff_sum.violence_tolerance / n_len;
+            culture_deltas[i].institutional_respect = beta_zone * c_diff_sum.institutional_respect / n_len;
+            culture_deltas[i].myth_belief = beta_zone * c_diff_sum.myth_belief / n_len;
 
             // Civ Field Diffusion (M2 Migration)
             let mut civ_diff_sum = CivilizationFields::default();
@@ -317,11 +391,39 @@ impl UniverseState {
                 civ_diff_sum.meaning += neighbor.state.civ_fields.meaning - zone.state.civ_fields.meaning;
             }
 
-            civ_field_deltas[i].survival = beta * civ_diff_sum.survival / n_len;
-            civ_field_deltas[i].power = beta * civ_diff_sum.power / n_len;
-            civ_field_deltas[i].wealth = beta * civ_diff_sum.wealth / n_len;
-            civ_field_deltas[i].knowledge = beta * civ_diff_sum.knowledge / n_len;
-            civ_field_deltas[i].meaning = beta * civ_diff_sum.meaning / n_len;
+            civ_field_deltas[i].survival = beta_zone * civ_diff_sum.survival / n_len;
+            civ_field_deltas[i].power = beta_zone * civ_diff_sum.power / n_len;
+            civ_field_deltas[i].wealth = beta_zone * civ_diff_sum.wealth / n_len;
+            civ_field_deltas[i].knowledge = beta_zone * civ_diff_sum.knowledge / n_len;
+            civ_field_deltas[i].meaning = beta_zone * civ_diff_sum.meaning / n_len;
+
+            // Population flow (Doc 21 §4.1): flow_ij = k * (pressure_i - pressure_j), only positive flow.
+            let pi = population_pressures[i];
+            for &j in &neighbors {
+                let pj = population_pressures[j];
+                let flow = if pi > pj {
+                    (constants::POPULATION_FLOW_COEFFICIENT * (pi - pj) / n_len)
+                        .min(constants::MAX_POPULATION_FLOW_PER_TICK)
+                } else {
+                    0.0
+                };
+                population_deltas[i] -= flow;
+                population_deltas[j] += flow;
+            }
+
+            // Trade flow (Deep Sim Phase C): flow_ij = k_trade * (wealth_i - wealth_j); apply once per edge (i < j) to avoid double-counting.
+            let wi = effective_wealth[i];
+            for &j in &neighbors {
+                if j <= i {
+                    continue;
+                }
+                let wj = effective_wealth[j];
+                let flow = (constants::TRADE_FLOW_COEFFICIENT * (wi - wj) / n_len)
+                    .max(-constants::MAX_TRADE_FLOW_PER_TICK)
+                    .min(constants::MAX_TRADE_FLOW_PER_TICK);
+                trade_deltas[i] -= flow;
+                trade_deltas[j] += flow;
+            }
         }
 
         // Apply all deltas
@@ -342,6 +444,12 @@ impl UniverseState {
             z.state.civ_fields.wealth = (z.state.civ_fields.wealth + civ_field_deltas[i].wealth).clamp(0.0, 1.0);
             z.state.civ_fields.knowledge = (z.state.civ_fields.knowledge + civ_field_deltas[i].knowledge).clamp(0.0, 1.0);
             z.state.civ_fields.meaning = (z.state.civ_fields.meaning + civ_field_deltas[i].meaning).clamp(0.0, 1.0);
+
+            z.state.population_proxy = (z.state.population_proxy + population_deltas[i]).clamp(0.0, 1.0);
+            if z.state.wealth_proxy < 1e-9 {
+                z.state.wealth_proxy = effective_wealth[i];
+            }
+            z.state.wealth_proxy = (z.state.wealth_proxy + trade_deltas[i]).clamp(0.0, 1.0);
         }
 
         self.refresh_aggregates();
@@ -394,12 +502,17 @@ impl UniverseState {
             return 0.0;
         }
         let z = &self.zones[zone_index].state;
-        (z.inequality * 0.2 + z.entropy * 0.3 + z.trauma * 0.2 + z.material_stress * 0.3).clamp(0.0, 1.0)
+        let base = (z.inequality * 0.2 + z.entropy * 0.3 + z.trauma * 0.2 + z.material_stress * 0.3).clamp(0.0, 1.0);
+        let zone_id = self.zones[zone_index].id;
+        let army_sum: f64 = self.macro_agents.iter()
+            .filter(|a| a.zone_id == zone_id && a.agent_type == MacroAgentType::Army)
+            .map(|a| a.strength)
+            .sum();
+        (base + army_sum * constants::MACRO_ARMY_PRESSURE_COEFF).clamp(0.0, 1.0)
     }
 
     /// Level-8: Civilization Attractor Field — attractors pull zone civ_fields by distance decay.
     pub fn apply_attractor_fields(&mut self) {
-        use crate::types::CivilizationAttractor;
         for attractor in &self.attractors {
             for zone in &mut self.zones {
                 let distance = ((zone.id as i64 - attractor.zone_id as i64).abs() as f64) + 1.0;
@@ -416,7 +529,6 @@ impl UniverseState {
 
     /// Level-8: Dark Attractor — high entropy/trauma/inequality pulls zone toward collapse.
     pub fn apply_dark_attractors(&mut self) {
-        use crate::types::DarkAttractor;
         for attractor in &self.dark_attractors {
             for z in &mut self.zones {
                 let e_ratio = z.state.entropy / (attractor.entropy_threshold + 1e-6);
@@ -927,6 +1039,31 @@ mod tests {
         assert!(z.trauma >= 0.0 && z.trauma <= 1.0);
         assert!(z.knowledge_frontier <= z.tech_ceiling);
         assert!(matches!(z.phase, CivilizationPhase::Tribal | CivilizationPhase::Agrarian | CivilizationPhase::Kingdom | CivilizationPhase::Empire | CivilizationPhase::Industrial | CivilizationPhase::Information));
+    }
+
+    /// Trade flow (Deep Sim Phase C): wealth_proxy flows from higher to lower between neighbors.
+    #[test]
+    fn test_trade_flow_redistributes_wealth() {
+        let world = WorldConfig { world_id: 1, axiom: None, world_seed: None, origin: String::new(), genome: None };
+        let mut state = UniverseState::new(1);
+        let mut z0 = ZoneState::new(100.0);
+        z0.wealth_proxy = 0.8;
+        z0.entropy = 0.3;
+        let mut z1 = ZoneState::new(100.0);
+        z1.wealth_proxy = 0.2;
+        z1.entropy = 0.4;
+        state.zones.push(ZoneStateSerial { id: 0, state: z0, neighbors: vec![1] });
+        state.zones.push(ZoneStateSerial { id: 1, state: z1, neighbors: vec![0] });
+
+        let w0_before = state.zones[0].state.wealth_proxy;
+        let w1_before = state.zones[1].state.wealth_proxy;
+        state.tick(&world);
+        let w0_after = state.zones[0].state.wealth_proxy;
+        let w1_after = state.zones[1].state.wealth_proxy;
+
+        assert!(w0_after < w0_before, "wealth should flow out of richer zone 0");
+        assert!(w1_after > w1_before, "wealth should flow into poorer zone 1");
+        assert!((w0_after + w1_after - (w0_before + w1_before)).abs() < 0.001, "total wealth approximately conserved");
     }
 }
 

@@ -2,6 +2,7 @@
 
 namespace App\Simulation\Engines;
 
+use App\Simulation\Concerns\DefaultSimulationEnginePhase;
 use App\Simulation\Contracts\SimulationEngine;
 use App\Simulation\Domain\EngineResult;
 use App\Simulation\Domain\TickContext;
@@ -19,6 +20,13 @@ use App\Simulation\Support\SimulationRandom;
  */
 final class PotentialFieldEngine implements SimulationEngine
 {
+    use DefaultSimulationEnginePhase;
+
+    public function phase(): string
+    {
+        return 'physical';
+    }
+
     private const DECAY = 0.97;
     private const DIFFUSION_RATE = 0.1;
 

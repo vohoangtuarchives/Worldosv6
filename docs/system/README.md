@@ -15,6 +15,7 @@ Bộ tài liệu này mô tả **WorldOS v3** — kiến trúc simulation-first,
 - [09 Material System](09-material-system.md)
 - [16 Simulation Kernel & Potential Field (V6)](16-simulation-kernel-and-potential-field.md) — Kernel effect-based, Potential Field, Time-Scale, Phase Pressure, topology
 - [20 Rust Engine: Material & Cascade (V6)](20-rust-engine-material-cascade.md) — Resonance theo slug, material_stress, Famine→Riots→Collapse, BETA_DIFFUSION
+- [21 Field-Based Simulation Architecture & Upgrade Path (V6)](21-field-simulation-architecture-and-roadmap.md) — Kiến trúc field-based, ưu điểm, thiếu sót, roadmap nâng cấp, Rust vs Laravel, observability, replay, đánh giá 70–80%
 
 ### 3. Narrative Layer (The Story)
 - [05 Narrative Engine (Resonance)](05-narrative-engine.md)

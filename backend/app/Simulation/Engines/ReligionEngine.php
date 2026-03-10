@@ -2,6 +2,8 @@
 
 namespace App\Simulation\Engines;
 
+use App\Simulation\Concerns\DefaultSimulationEnginePhase;
+use App\Simulation\Concerns\HasProductTypes;
 use App\Simulation\Contracts\SimulationEngine;
 use App\Simulation\Domain\EngineResult;
 use App\Simulation\Domain\TickContext;
@@ -12,6 +14,19 @@ use App\Simulation\Domain\WorldState;
  */
 final class ReligionEngine implements SimulationEngine
 {
+    use DefaultSimulationEnginePhase;
+    use HasProductTypes;
+
+    public function productTypes(): array
+    {
+        return ['factions'];
+    }
+
+    public function phase(): string
+    {
+        return 'culture';
+    }
+
     public function name(): string
     {
         return 'religion';

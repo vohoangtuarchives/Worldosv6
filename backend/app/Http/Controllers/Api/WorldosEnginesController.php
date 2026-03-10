@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Saga;
 use App\Models\Universe;
 use App\Models\World;
+use App\Simulation\EngineProductMapping;
+use App\Simulation\EngineRegistry;
 use App\Modules\Simulation\Services\CivilizationMemoryEngine;
 use App\Modules\Simulation\Services\GreatPersonEngine;
 use App\Modules\Simulation\Services\IdeologyEvolutionEngine;
@@ -181,6 +183,17 @@ class WorldosEnginesController extends Controller
                 'entity_type' => $entity->entityType,
                 'domain' => $entity->domain,
             ] : null,
+        ]);
+    }
+
+    /**
+     * List simulation engines with product types and product → engines map for UI "Engine liên quan".
+     */
+    public function index(EngineRegistry $registry, EngineProductMapping $mapping): JsonResponse
+    {
+        return response()->json([
+            'engines' => $mapping->getEnginesWithProducts($registry),
+            'product_to_engines' => $mapping->getProductToEngines($registry),
         ]);
     }
 

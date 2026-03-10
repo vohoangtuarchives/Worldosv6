@@ -73,7 +73,8 @@ class AdvanceSimulationAction
         protected \App\Services\Simulation\CivilizationSettlementEngine $civilizationSettlementEngine,
         protected \App\Services\Simulation\GlobalEconomyEngine $globalEconomyEngine,
         protected \App\Services\Simulation\PoliticsEngine $politicsEngine,
-        protected \App\Services\Simulation\WarEngine $warEngine
+        protected \App\Services\Simulation\WarEngine $warEngine,
+        protected \App\Services\Simulation\GeographyResourceService $geographyResource
     ) {}
 
     public function execute(int $universeId, int $ticks): array
@@ -391,6 +392,10 @@ class AdvanceSimulationAction
         $stateVector['attractors'] = is_array($stateVector['attractors'] ?? null) ? $stateVector['attractors'] : [];
         $stateVector['dark_attractors'] = is_array($stateVector['dark_attractors'] ?? null) ? $stateVector['dark_attractors'] : [];
 
+        // Deep Sim Phase B: preserve macro_agents from snapshot; if engine did not return them, keep from current universe state.
+        $existingVec = is_array($universe->state_vector) ? $universe->state_vector : [];
+        $stateVector['macro_agents'] = is_array($stateVector['macro_agents'] ?? null) ? $stateVector['macro_agents'] : ($existingVec['macro_agents'] ?? []);
+
         // Phase 1 refactor: fields come from Rust engine (global_fields or metrics.civ_fields)
         $fields = null;
         if (!empty($snapshotData['global_fields'])) {
@@ -439,11 +444,14 @@ class AdvanceSimulationAction
             $zones = $vec['zones'];
             $globalEntropy = $vec['global_entropy'] ?? $globalEntropy;
 
-            // Ensure structured_mass exists for Rust parser
-            foreach ($zones as &$zone) {
+            // Ensure structured_mass exists for Rust parser; Deep Sim Phase A: merge resource_capacity per zone.
+            $resourceCapacityMap = $this->geographyResource->getResourceCapacityForZones($zones, (int) $universe->id);
+            foreach ($zones as $idx => &$zone) {
                 if (!isset($zone['state']['structured_mass'])) {
                     $zone['state']['structured_mass'] = 50.0;
                 }
+                $zoneId = (int) ($zone['id'] ?? $idx);
+                $zone['state']['resource_capacity'] = $resourceCapacityMap[$zoneId] ?? 0.5;
             }
         }
 
@@ -468,6 +476,7 @@ class AdvanceSimulationAction
                 'legitimacy' => $e->legitimacy,
                 'influence' => $e->influence_map,
             ])->toArray(),
+            'macro_agents' => is_array($vec['macro_agents'] ?? null) ? $vec['macro_agents'] : [],
         ];
 
         return $stateObj;
@@ -530,7 +539,9 @@ class AdvanceSimulationAction
                     'structured_mass' => 50.0,
                     'active_materials' => [],
                     'civ_fields' => [],
-                    'cultural' => []
+                    'cultural' => [],
+                    'resource_capacity' => 0.5,
+                    'wealth_proxy' => 0.0,
                 ],
                 'neighbors' => [],
             ],

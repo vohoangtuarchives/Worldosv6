@@ -49,7 +49,7 @@ export function SupremeEntityList({ universeId }: { universeId: number }) {
                 </div>
             </CardHeader>
             <CardContent className="p-0">
-                <ScrollArea className="max-h-[300px]">
+                <ScrollArea>
                     <div className="divide-y divide-amber-500/10">
                         {entities.map(entity => (
                             <div key={entity.id} className="p-4 hover:bg-amber-500/5 transition-all">

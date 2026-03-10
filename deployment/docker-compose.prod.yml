@@ -70,10 +70,10 @@ services:
       REDIS_HOST: redis
       SIMULATION_ENGINE_GRPC_URL: http://engine:50052
       WORLDOS_GRAPH_URI: ${WORLDOS_GRAPH_URI:-http://neo4j:7474}
-      WORLDOS_GRAPH_ENABLED: ${WORLDOS_GRAPH_ENABLED:-false}
+      WORLDOS_GRAPH_ENABLED: ${WORLDOS_GRAPH_ENABLED:-true}
       WORLDOS_GRAPH_USERNAME: ${WORLDOS_GRAPH_USERNAME:-neo4j}
       WORLDOS_GRAPH_PASSWORD: ${WORLDOS_GRAPH_PASSWORD:-worldos_secret}
-      WORLDOS_EVENT_BUS_DRIVER: ${WORLDOS_EVENT_BUS_DRIVER:-database}
+      WORLDOS_EVENT_BUS_DRIVER: ${WORLDOS_EVENT_BUS_DRIVER:-redis_stream}
     volumes:
       - backend_storage:/var/www/storage
       - backend_bootstrap_cache:/var/www/bootstrap/cache

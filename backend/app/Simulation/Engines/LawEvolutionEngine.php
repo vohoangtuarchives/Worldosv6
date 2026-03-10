@@ -2,6 +2,7 @@
 
 namespace App\Simulation\Engines;
 
+use App\Simulation\Concerns\DefaultSimulationEnginePhase;
 use App\Simulation\Contracts\SimulationEngine;
 use App\Simulation\Domain\EngineResult;
 use App\Simulation\Domain\TickContext;
@@ -17,6 +18,13 @@ use App\Simulation\Support\SimulationRandom;
  */
 final class LawEvolutionEngine implements SimulationEngine
 {
+    use DefaultSimulationEnginePhase;
+
+    public function phase(): string
+    {
+        return 'politics';
+    }
+
     private const MUTATION_CHANCE_BASE = 0.02;
     private const NUDGE_MAGNITUDE = 0.03;
     /** Keys that can be mutated (numeric drift) */

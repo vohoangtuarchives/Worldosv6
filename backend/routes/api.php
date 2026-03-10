@@ -173,6 +173,7 @@ Route::middleware('auth:sanctum')->prefix('worldos')->group(function () {
     Route::post('universes/{id}/mythology', [WorldosEnginesController::class, 'mythology'])->name('worldos.universes.mythology');
     Route::get('universes/{id}/ideology', [WorldosEnginesController::class, 'ideology'])->name('worldos.universes.ideology');
     Route::post('universes/{id}/great-person', [WorldosEnginesController::class, 'greatPerson'])->name('worldos.universes.great-person');
+    Route::get('engines', [WorldosEnginesController::class, 'index'])->name('worldos.engines');
     Route::get('engines/status', [WorldosEnginesController::class, 'status'])->name('worldos.engines.status');
 
     // POST worldos/sagas removed (Implicit Orchestration)
@@ -253,6 +254,32 @@ Route::middleware('auth:sanctum')->prefix('worldos')->group(function () {
         ]);
     })->name('worldos.universes.generate-chronicle');
 
+    // Narrative v2: AI Historian — generate history volume / essay from Historical Fact + timeline
+    Route::post('universes/{id}/historian/generate', function (string $id, \Illuminate\Http\Request $request, \App\Services\Narrative\HistorianAgentService $historian) {
+        $universe = \App\Models\Universe::findOrFail((int) $id);
+        $outputType = $request->input('output_type', 'history_volume');
+        $outputType = in_array($outputType, ['history_volume', 'historian_essay', 'philosophy_treatise'], true) ? $outputType : 'history_volume';
+        $criteria = [
+            'from_tick' => $request->has('from_tick') ? (int) $request->input('from_tick') : null,
+            'to_tick' => $request->has('to_tick') ? (int) $request->input('to_tick') : null,
+            'theme' => $request->input('theme', 'general'),
+            'actor_id' => $request->has('actor_id') ? (int) $request->input('actor_id') : null,
+        ];
+        $chronicle = $historian->generateHistory($universe, $outputType, array_filter($criteria, fn ($v) => $v !== null));
+        if (! $chronicle) {
+            return response()->json(['message' => 'Historian generation failed or LLM unavailable.'], 422);
+        }
+        return response()->json([
+            'data' => [
+                'id' => $chronicle->id,
+                'type' => $chronicle->type,
+                'content' => $chronicle->content,
+                'from_tick' => $chronicle->from_tick,
+                'to_tick' => $chronicle->to_tick,
+            ],
+        ]);
+    })->name('worldos.universes.historian.generate');
+
     Route::get('universes/{id}/materials', function (string $id) {
         $materials = \App\Models\MaterialInstance::with('material:id,name,ontology,description')
             ->where('universe_id', (int) $id)
@@ -282,6 +309,15 @@ Route::middleware('auth:sanctum')->prefix('worldos')->group(function () {
             ->get();
         return response()->json($entities);
     })->name('worldos.universes.supreme-entities');
+
+    Route::get('universes/{id}/great-persons', function (string $id) {
+        $entities = \App\Models\SupremeEntity::where('universe_id', (int) $id)
+            ->where('entity_type', 'like', 'great_person_%')
+            ->orderBy('entity_type')
+            ->orderByDesc('power_level')
+            ->get();
+        return response()->json($entities);
+    })->name('worldos.universes.great-persons');
 
     Route::get('universes/{id}/institutional-entities', function (string $id) {
         $entities = \App\Models\InstitutionalEntity::where('universe_id', (int) $id)
@@ -386,6 +422,11 @@ Route::middleware('auth:sanctum')->prefix('worldos')->group(function () {
     Route::get('universes/{id}/actors', function (string $id, \App\Actions\Simulation\GetUniverseActorsAction $action) {
         return response()->json($action->execute((int)$id));
     })->name('worldos.universes.actors');
+
+    Route::get('actors/{actorId}/events', function (string $actorId) {
+        $events = \App\Models\ActorEvent::where('actor_id', (int) $actorId)->orderBy('tick')->get();
+        return response()->json($events);
+    })->name('worldos.actors.events');
 
     Route::get('universes/{id}/biology-metrics', function (
         string $id,

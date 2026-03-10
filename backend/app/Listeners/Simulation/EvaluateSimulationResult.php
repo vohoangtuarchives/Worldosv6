@@ -53,7 +53,18 @@ class EvaluateSimulationResult
         protected EventTriggerProcessor $eventTriggerProcessor,
         protected \App\Modules\Simulation\Services\IdeologyEvolutionEngine $ideologyEvolutionEngine,
         protected \App\Modules\Simulation\Services\GreatPersonEngine $greatPersonEngine,
-        protected TimelineMergeAction $timelineMergeAction
+        protected TimelineMergeAction $timelineMergeAction,
+        protected \App\Services\Simulation\MacroAgentSpawnService $macroAgentSpawnService,
+        protected \App\Services\Simulation\CapabilityEngine $capabilityEngine,
+        protected \App\Services\Simulation\ActorDecisionEngine $actorDecisionEngine,
+        protected \App\Services\Simulation\ArtifactCreationEngine $artifactCreationEngine,
+        protected \App\Services\Simulation\IdeaDiffusionEngine $ideaDiffusionEngine,
+        protected \App\Services\Simulation\InstitutionDecayService $institutionDecayService,
+        protected \App\Modules\Simulation\Services\EventNormalizer $eventNormalizer,
+        protected \App\Services\Narrative\HistoricalFactEngine $historicalFactEngine,
+        protected \App\Simulation\Contracts\WorldEventBusInterface $worldEventBus,
+        protected \App\Services\Narrative\PerspectiveEngine $perspectiveEngine,
+        protected \App\Services\Narrative\NarrativeMemoryGraphService $narrativeMemoryGraph,
     ) {}
 
     public function handle(UniverseSimulationPulsed $event): void
@@ -124,6 +135,50 @@ class EvaluateSimulationResult
 
             // 6. Calculate & Store Pressure Metrics
             $this->storePressureMetrics($universe, $snapshot);
+
+            // 6a. WorldEvent + Historical Fact (Phase 1–2): build event → record fact → publish event.
+            if (config('worldos.narrative_v2.enable_world_event', true)) {
+                try {
+                    $worldEvent = $this->eventNormalizer->buildTickSummaryEvent($universe, $snapshot, $decisionData);
+                    if ($worldEvent !== null) {
+                        $this->historicalFactEngine->record($worldEvent, $snapshot);
+                        $this->worldEventBus->publish($worldEvent);
+                    }
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning('EventNormalizer/HistoricalFact failed: ' . $e->getMessage());
+                }
+            }
+
+            // 6b. Deep Sim Phase B: spawn macro agents (ruler/army) when conditions met; persist to state_vector
+            $universe->refresh();
+            try {
+                $this->macroAgentSpawnService->spawnIfEligible($universe, $snapshot);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('MacroAgentSpawnService spawn failed: ' . $e->getMessage());
+            }
+
+            // 6c. Actor Decision (Phase 2): key actors → capabilities → action_distribution → roll → actor_events
+            if (config('worldos.pulse.run_actor_decision', false)) {
+                try {
+                    $this->runActorDecisionForUniverse($universe, $snapshot, $rng);
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning('Actor decision failed: ' . $e->getMessage());
+                }
+            }
+            if (config('worldos.idea_diffusion.run_on_pulse', false)) {
+                try {
+                    $this->ideaDiffusionEngine->process($universe, (int) $snapshot->tick);
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning('Idea diffusion failed: ' . $e->getMessage());
+                }
+            }
+            if (config('worldos.institution.run_decay_on_pulse', false)) {
+                try {
+                    $this->institutionDecayService->process($universe, (int) $snapshot->tick);
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning('Institution decay failed: ' . $e->getMessage());
+                }
+            }
 
             // 7. Detect & Dispatch Anomalies
             $this->detectAnomalies($universe, $snapshot);
@@ -308,35 +363,131 @@ class EvaluateSimulationResult
 
     protected function createNarrativeChronicle($universe, $snapshot): void
     {
-        $entropy = (float)$snapshot->entropy;
+        $entropy = (float) $snapshot->entropy;
         $noise = $this->epistemicService->calculateNoise($universe, $entropy);
-        
+
+        // Narrative v2: fact-first — use Historical Fact for this tick when available
+        $worldEventId = null;
+        $historicalBlock = null;
+        $fact = null;
+        if (config('worldos.narrative_v2.enable_fact_first_chronicle', true)) {
+            $fact = \App\Models\HistoricalFact::where('universe_id', $universe->id)
+                ->where('tick', $snapshot->tick)
+                ->latest()
+                ->first();
+            if ($fact !== null) {
+                $worldEventId = $fact->world_event_id;
+                $historicalBlock = [
+                    'year' => $fact->year,
+                    'tick' => $fact->tick,
+                    'category' => $fact->category,
+                    'metrics' => $fact->metrics_after ?? [],
+                    'events' => $fact->facts ?? [],
+                ];
+            }
+        }
+
+        $interpretations = [];
+        if (config('worldos.narrative_v2.enable_perspective_layer', true)) {
+            $eventPayload = [
+                'category' => $historicalBlock['category'] ?? 'pressure_update',
+                'metrics' => $historicalBlock['metrics'] ?? $snapshot->metrics ?? [],
+                'events' => $historicalBlock['events'] ?? [],
+                'entropy' => $entropy,
+                'stability_index' => (float) $snapshot->stability_index,
+            ];
+            foreach ($this->perspectiveEngine->interpret($eventPayload, []) as $interp) {
+                $interpretations[] = $interp->toArray();
+            }
+        }
+
         // Distort snapshot data for AI perception
         $canonicalData = [
             'entropy' => $entropy,
-            'stability_index' => (float)$snapshot->stability_index,
-            'metrics' => $snapshot->metrics ?? []
+            'stability_index' => (float) $snapshot->stability_index,
+            'metrics' => $snapshot->metrics ?? [],
         ];
-        
         $perceivedData = $this->epistemicService->distort($canonicalData, $noise);
-        
-        // Compile mythic text
+        if ($historicalBlock !== null) {
+            $perceivedData['historical_block'] = $historicalBlock;
+        }
+
+        // Compile mythic text (compiler uses historical_block in prompt when present)
         $narrative = $this->narrativeCompiler->compile($perceivedData, $noise);
-        
-        \App\Models\Chronicle::create([
+
+        $rawPayload = [
+            'action' => 'legacy_event',
+            'description' => $narrative,
+            'interpretations' => $interpretations,
+        ];
+        if ($historicalBlock !== null) {
+            $rawPayload['historical_block'] = $historicalBlock;
+        }
+
+        $chronicle = \App\Models\Chronicle::create([
             'universe_id' => $universe->id,
+            'world_event_id' => $worldEventId,
             'from_tick' => $snapshot->tick,
             'to_tick' => $snapshot->tick,
             'type' => 'narrative',
-            'raw_payload' => [
-                'action' => 'legacy_event',
-                'description' => $narrative
-            ],
+            'raw_payload' => $rawPayload,
             'perceived_archive_snapshot' => [
                 'noise_level' => $noise,
                 'clarity' => $this->epistemicService->getClarityLabel($noise),
-                'perceived_state' => $perceivedData
-            ]
+                'perceived_state' => $perceivedData,
+            ],
         ]);
+
+        if (config('worldos.narrative_v2.enable_memory_graph', true) && $fact !== null) {
+            try {
+                $this->narrativeMemoryGraph->linkChronicleToFact($chronicle, $fact);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('NarrativeMemoryGraph linkChronicleToFact failed: ' . $e->getMessage());
+            }
+        }
+    }
+
+    /**
+     * Phase 2: Run CapabilityEngine + ActorDecisionEngine for key actors; record action in actor_events.
+     */
+    protected function runActorDecisionForUniverse($universe, $snapshot, \App\Simulation\Support\SimulationRandom $rng): void
+    {
+        $maxActors = (int) config('worldos.actor_decision.max_actors_per_pulse', 50);
+
+        $keyActors = \App\Models\Actor::query()
+            ->where('universe_id', $universe->id)
+            ->where('is_alive', true)
+            ->whereHas('supremeEntity')
+            ->orderByDesc('id')
+            ->limit($maxActors)
+            ->get();
+
+        $tick = (int) $snapshot->tick;
+        $state = (array) ($snapshot->state_vector ?? []);
+        $metrics = (array) ($snapshot->metrics ?? []);
+        $environment = [
+            'entropy' => $snapshot->entropy ?? 0.5,
+            'stability_index' => $snapshot->stability_index ?? 0.5,
+            'war_pressure' => $state['war_pressure'] ?? 0,
+        ];
+
+        foreach ($keyActors as $actor) {
+            $this->capabilityEngine->computeAndStore($actor, $tick);
+            $actor->refresh();
+            $capabilities = $actor->capabilities ?? [];
+            $traits = $actor->traits ?? array_fill(0, 17, 0.5);
+            $birthTick = (int) ($actor->birth_tick ?? $tick);
+            $dist = $this->actorDecisionEngine->getActionDistribution($traits, $capabilities, $environment, $tick, $birthTick);
+            $action = $this->actorDecisionEngine->rollAction($dist, $rng);
+            \App\Models\ActorEvent::create([
+                'actor_id' => $actor->id,
+                'tick' => $tick,
+                'event_type' => $action,
+                'context' => ['distribution' => $dist, 'rolled' => $action],
+            ]);
+            if ($this->actorDecisionEngine->isArtifactEligibleAction($action)) {
+                $this->artifactCreationEngine->tryCreate($actor, $universe, $tick, $action, $rng);
+            }
+        }
     }
 }

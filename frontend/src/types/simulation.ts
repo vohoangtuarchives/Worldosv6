@@ -28,6 +28,31 @@ export type Anomaly = {
     tick: number;
 };
 
+/** Actor life timeline event (actor_events table). */
+export interface ActorEvent {
+    id: number;
+    actor_id: number;
+    tick: number;
+    event_type: string;
+    context?: Record<string, unknown>;
+    created_at?: string;
+    updated_at?: string;
+}
+
+/** Supreme Entity (AscensionEngine); API trả về power_level, karma (nợ nhân quả). */
+export interface SupremeEntity {
+    id: number;
+    name: string;
+    entity_type?: string;
+    domain?: string;
+    description?: string;
+    power_level?: number;
+    alignment?: Record<string, number>;
+    status?: string;
+    ascended_at_tick?: number;
+    karma?: number;
+}
+
 export type Universe = {
     id: number;
     world_id: number;
@@ -35,7 +60,7 @@ export type Universe = {
     current_tick?: number;
     status?: string;
     observation_load?: number;
-    supreme_entities?: any[];
+    supreme_entities?: SupremeEntity[];
     state_vector?: Record<string, any>;
     world?: {
         id: number;

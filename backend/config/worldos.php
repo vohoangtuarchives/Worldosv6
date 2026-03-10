@@ -68,6 +68,28 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Geography / Resource capacity (Deep Sim Phase A)
+    |--------------------------------------------------------------------------
+    | Optional: zone_id => capacity (0.0–1.0). If not set, prepareEngineStateInput
+    | uses deterministic formula: 0.3 + 0.2 * (zone_id % 3), clamped to [0,1].
+    */
+    'geography' => [
+        'resource_capacity' => [], // e.g. [1 => 0.8, 2 => 0.5] to override per zone
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Macro agents (Deep Sim Phase B) — spawn limits and war threshold
+    |--------------------------------------------------------------------------
+    */
+    'macro_agents' => [
+        'max_per_zone' => (int) env('WORLDOS_MACRO_AGENTS_MAX_PER_ZONE', 3),
+        'max_total' => (int) env('WORLDOS_MACRO_AGENTS_MAX_TOTAL', 20),
+        'war_pressure_threshold' => (float) env('WORLDOS_MACRO_AGENTS_WAR_PRESSURE_THRESHOLD', 0.5),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Time-Scale Engine (tick factors) — Simulation Kernel (Tier 3)
     |--------------------------------------------------------------------------
     | Tick rate per kernel engine: engine runs when tick % factor === 0.
@@ -143,6 +165,23 @@ return [
         'model' => env('NARRATIVE_LLM_MODEL', env('OPENAI_MODEL', 'gpt-4o')),
         'base_url' => env('OPENAI_BASE_URL', 'https://api.openai.com'),
         'timeout' => (int) env('NARRATIVE_LLM_TIMEOUT', 30),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Narrative Engine v2 (fact-first, perspective, memory graph, historian)
+    |--------------------------------------------------------------------------
+    | When enabled, pulse records WorldEvent + Historical Fact, then Chronicle
+    | uses fact + perspective; Memory Graph links event→chronicle. Historian
+    | is on-demand only (no auto-run in pulse). All narrative v2 logic except
+    | LLM calls is deterministic.
+    */
+    'narrative_v2' => [
+        'enable_world_event' => (bool) env('WORLDOS_NARRATIVE_V2_WORLD_EVENT', true),
+        'enable_fact_first_chronicle' => (bool) env('WORLDOS_NARRATIVE_V2_FACT_FIRST', true),
+        'enable_perspective_layer' => (bool) env('WORLDOS_NARRATIVE_V2_PERSPECTIVE', true),
+        'enable_memory_graph' => (bool) env('WORLDOS_NARRATIVE_V2_MEMORY_GRAPH', true),
+        'enable_historian_agent' => (bool) env('WORLDOS_NARRATIVE_V2_HISTORIAN_AGENT', true),
     ],
 
     'memory' => [
@@ -340,6 +379,29 @@ return [
         'entropy_max' => (float) env('WORLDOS_GREAT_PERSON_ENTROPY_MAX', 0.75),
         'min_institutions' => (int) env('WORLDOS_GREAT_PERSON_MIN_INSTITUTIONS', 1),
         'cooldown_ticks' => (int) env('WORLDOS_GREAT_PERSON_COOLDOWN_TICKS', 500),
+        'heroes_per_population' => (int) env('WORLDOS_GREAT_PERSON_HEROES_PER_POPULATION', 100000),
+    ],
+    'hero_lifecycle' => [
+        'influence_rising' => (float) env('WORLDOS_HERO_INFLUENCE_RISING', 30),
+        'influence_peak' => (float) env('WORLDOS_HERO_INFLUENCE_PEAK', 70),
+        'myth_ticks_after_death' => (int) env('WORLDOS_HERO_MYTH_TICKS_AFTER_DEATH', 100),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Capability layer (Phase 1) — formulas: trait indices → capability
+    |--------------------------------------------------------------------------
+    | Trait indices: Dom=0, Amb=1, Coe=2, Loy=3, Emp=4, Sol=5, Con=6,
+    | Pra=7, Cur=8, Dog=9, Rsk=10, Fer=11, Ven=12, Hop=13, Grf=14, Pri=15, Shm=16.
+    | Each formula: array of [index => weight]; result clamped 0..1.
+    */
+    'capability' => [
+        'intellect' => [7 => 0.4, 8 => 0.4, 9 => -0.3],  // Pra + Cur - Dog
+        'charisma' => [0 => 0.35, 1 => 0.35, 4 => 0.35], // Dom + Amb + Emp
+        'wealth' => [1 => 0.3, 2 => 0.4, 10 => 0.3],     // Amb + Coe + Rsk
+        'followers' => [4 => 0.3, 5 => 0.35, 6 => 0.35], // Emp + Sol + Con
+        'authority' => [0 => 0.4, 2 => 0.4, 15 => 0.2], // Dom + Coe + Pri
+        'creativity' => [8 => 0.4, 10 => 0.3, 13 => 0.3], // Cur + Rsk + Hop
     ],
 
     /*
@@ -350,5 +412,54 @@ return [
     'pulse' => [
         'run_ideology' => (bool) env('WORLDOS_PULSE_RUN_IDEOLOGY', true),
         'run_great_person' => (bool) env('WORLDOS_PULSE_RUN_GREAT_PERSON', true),
+        'run_actor_decision' => (bool) env('WORLDOS_PULSE_RUN_ACTOR_DECISION', false),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Actor Decision (Phase 2) — action types and max key actors per pulse
+    |--------------------------------------------------------------------------
+    */
+    'actor_decision' => [
+        'action_types' => ['write', 'teach', 'explore', 'war', 'meditate', 'create_religion', 'build', 'govern', 'trade', 'rest'],
+        'max_actors_per_pulse' => (int) env('WORLDOS_ACTOR_DECISION_MAX_ACTORS_PER_PULSE', 50),
+        'influence_threshold' => (float) env('WORLDOS_ACTOR_DECISION_INFLUENCE_THRESHOLD', 0.1),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Artifact creation (Phase 3) — thresholds and action → artifact_type
+    |--------------------------------------------------------------------------
+    */
+    'artifact' => [
+        'creativity_threshold' => (float) env('WORLDOS_ARTIFACT_CREATIVITY_THRESHOLD', 0.4),
+        'cognition_threshold' => (float) env('WORLDOS_ARTIFACT_COGNITION_THRESHOLD', 0.35),
+        'create_probability' => (float) env('WORLDOS_ARTIFACT_CREATE_PROBABILITY', 0.25),
+        'action_to_type' => [
+            'write' => 'book',
+            'create_religion' => 'religion',
+            'build' => 'architecture',
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Idea diffusion (Phase 4) — followers threshold for school, growth
+    |--------------------------------------------------------------------------
+    */
+    'idea_diffusion' => [
+        'followers_threshold_for_school' => (int) env('WORLDOS_IDEA_FOLLOWERS_THRESHOLD', 10),
+        'influence_growth_per_tick' => (float) env('WORLDOS_IDEA_INFLUENCE_GROWTH', 0.01),
+        'run_on_pulse' => (bool) env('WORLDOS_PULSE_RUN_IDEA_DIFFUSION', false),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Institution (Phase 5) — decay and behaviour
+    |--------------------------------------------------------------------------
+    */
+    'institution' => [
+        'decay_rate' => (float) env('WORLDOS_INSTITUTION_DECAY_RATE', 0.005),
+        'run_decay_on_pulse' => (bool) env('WORLDOS_PULSE_RUN_INSTITUTION_DECAY', false),
     ],
 ];

@@ -28,10 +28,64 @@ class HistoryEngine
                 'to_tick' => $c->to_tick,
                 'type' => $c->type,
                 'content' => $c->content,
+                'actor_id' => $c->actor_id,
+                'importance' => $c->importance,
                 'payload' => $c->raw_payload ?? [],
             ];
         }
         return array_reverse($timeline);
+    }
+
+    /**
+     * Phase 6: Top events by importance (narrative gravity).
+     */
+    public function getTopEventsByImportance(Universe $universe, int $limit = 50): array
+    {
+        $chronicles = Chronicle::query()
+            ->where('universe_id', $universe->id)
+            ->whereNotNull('importance')
+            ->orderByDesc('importance')
+            ->limit($limit)
+            ->get();
+
+        $timeline = [];
+        foreach ($chronicles as $c) {
+            $timeline[] = [
+                'from_tick' => $c->from_tick,
+                'to_tick' => $c->to_tick,
+                'type' => $c->type,
+                'content' => $c->content,
+                'actor_id' => $c->actor_id,
+                'importance' => $c->importance,
+                'payload' => $c->raw_payload ?? [],
+            ];
+        }
+        return $timeline;
+    }
+
+    /**
+     * Phase 6: Events for a specific actor.
+     */
+    public function getEventsForActor(int $actorId, int $limit = 100): array
+    {
+        $chronicles = Chronicle::query()
+            ->where('actor_id', $actorId)
+            ->orderByDesc('from_tick')
+            ->limit($limit)
+            ->get();
+
+        $timeline = [];
+        foreach ($chronicles as $c) {
+            $timeline[] = [
+                'from_tick' => $c->from_tick,
+                'to_tick' => $c->to_tick,
+                'type' => $c->type,
+                'content' => $c->content,
+                'importance' => $c->importance,
+                'payload' => $c->raw_payload ?? [],
+            ];
+        }
+        return $timeline;
     }
 
     /**
