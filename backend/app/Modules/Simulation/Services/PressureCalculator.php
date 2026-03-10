@@ -2,8 +2,6 @@
 
 namespace App\Modules\Simulation\Services;
 
-use App\Models\UniverseSnapshot;
-
 class PressureCalculator
 {
     /**
@@ -13,18 +11,23 @@ class PressureCalculator
      */
     public function calculateMaterialStress(array $state): float
     {
-        $entropy = (float) ($state['entropy'] ?? 0);
-        $baseMass = (float) ($state['base_mass'] ?? 1000);
-        $structuredMass = (float) ($state['structured_mass'] ?? 0);
-        
-        // base_mass depletion ratio = (1 - structured_mass / base_mass)
-        $depletionRatio = ($baseMass > 0) ? (1 - ($structuredMass / $baseMass)) : 0;
-        
-        // structured fragility - increased by entropy (spec §4.1)
-        $fragility = $entropy * 1.5;
+        $entropy = max(0.0, (float) ($state['entropy'] ?? 0));
+        $baseMass = max(0.0, (float) ($state['base_mass'] ?? 1000));
+        $structuredMass = max(0.0, (float) ($state['structured_mass'] ?? 0));
 
-        // Normalized result (capped at 1.0)
-        return min(1.0, ($entropy * 0.4) + ($depletionRatio * 0.3) + ($fragility * 0.3));
+        // base_mass depletion ratio = (1 - structured_mass / base_mass)
+        // if base mass is invalid/non-positive, treat as maximal depletion.
+        $depletionRatio = $baseMass > 0
+            ? $this->normalizeRatio(1 - ($structuredMass / $baseMass))
+            : 1.0;
+
+        // structured fragility - increased by entropy (spec §4.1)
+        $fragility = $this->normalizeRatio($entropy * 1.5);
+
+        // Normalized result in [0, 1] to prevent invalid negative stress from malformed state vectors.
+        $stress = ($entropy * 0.4) + ($depletionRatio * 0.3) + ($fragility * 0.3);
+
+        return $this->normalizeRatio($stress);
     }
 
     /**
@@ -39,16 +42,16 @@ class PressureCalculator
         $c = 0.2; // Weight for institutional trust
 
         $cultureDist = $this->calculateCultureDistance(
-            $zoneState['culture'] ?? [], 
+            $zoneState['culture'] ?? [],
             $globalState['culture'] ?? []
         );
-        
+
         $stress = $this->calculateMaterialStress($zoneState);
-        $trust = (float) ($zoneState['institutional_trust'] ?? 0.5);
+        $trust = $this->normalizeRatio((float) ($zoneState['institutional_trust'] ?? 0.5));
 
         $pz = ($a * $cultureDist) + ($b * $stress) - ($c * $trust);
-        
-        return max(0, min(1.0, $pz));
+
+        return $this->normalizeRatio($pz);
     }
 
     /**
@@ -56,18 +59,22 @@ class PressureCalculator
      */
     protected function calculateCultureDistance(array $zCulture, array $gCulture): float
     {
-        if (empty($zCulture) || empty($gCulture)) return 0;
-        
+        if (empty($zCulture) || empty($gCulture)) {
+            return 0.0;
+        }
+
         $sum = 0;
         $count = 0;
         foreach ($zCulture as $key => $val) {
             if (isset($gCulture[$key])) {
-                $sum += abs((float)$val - (float)$gCulture[$key]);
+                $zoneValue = $this->normalizeRatio((float) $val);
+                $globalValue = $this->normalizeRatio((float) $gCulture[$key]);
+                $sum += abs($zoneValue - $globalValue);
                 $count++;
             }
         }
-        
-        return $count > 0 ? ($sum / $count) : 0;
+
+        return $count > 0 ? ($sum / $count) : 0.0;
     }
 
     /**
@@ -78,26 +85,31 @@ class PressureCalculator
     public function calculateCosmicMetrics(array $state): array
     {
         $entropy = (float) ($state['entropy'] ?? 0);
-        $order = max(0, 1 - $entropy);
+        $order = $this->normalizeRatio(1 - $entropy);
 
-        $baseMass = (float) ($state['base_mass'] ?? 1000);
-        $structuredMass = (float) ($state['structured_mass'] ?? 0);
-        $innovation = (float) ($state['innovation'] ?? 0);
+        $baseMass = max(0.0, (float) ($state['base_mass'] ?? 1000));
+        $structuredMass = max(0.0, (float) ($state['structured_mass'] ?? 0));
+        $innovation = $this->normalizeRatio((float) ($state['innovation'] ?? 0));
 
         // Energy Level: derived from structure and innovation
-        $structureRatio = ($baseMass > 0) ? ($structuredMass / $baseMass) : 0;
+        $structureRatio = $baseMass > 0 ? $this->normalizeRatio($structuredMass / $baseMass) : 0.0;
         $energyLevel = ($structureRatio * 0.7) + ($innovation * 0.3);
 
         // Fallback: engine thường không trả structured_mass/innovation → energy_level = 0. Suy từ order + stability để có giá trị hiển thị.
         if ($energyLevel <= 0) {
-            $stability = (float) ($state['stability_index'] ?? 0.5);
+            $stability = $this->normalizeRatio((float) ($state['stability_index'] ?? 0.5));
             $energyLevel = ($order * 0.5) + ($stability * 0.5);
         }
 
         return [
             'order' => $order,
-            'energy_level' => min(1.0, $energyLevel),
-            'entropy' => $entropy
+            'energy_level' => $this->normalizeRatio($energyLevel),
+            'entropy' => $entropy,
         ];
+    }
+
+    protected function normalizeRatio(float $value): float
+    {
+        return max(0.0, min(1.0, $value));
     }
 }
