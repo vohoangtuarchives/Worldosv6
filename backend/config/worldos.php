@@ -235,11 +235,13 @@ return [
     | Autonomic: fork / archive thresholds (self-fork universe)
     |--------------------------------------------------------------------------
     | fork_entropy_min: entropy >= this may trigger fork. archive_entropy_threshold: entropy >= this → archive.
+    | min_ticks_before_archive: AEE/DecisionEngine sẽ không archive trước tick này (tránh archive quá sớm).
     | stagnation_threshold: novelty below this → mutate (stub) in AEE.
     */
     'autonomic' => [
         'fork_entropy_min' => (float) env('WORLDOS_FORK_ENTROPY_MIN', 0.5),
-        'archive_entropy_threshold' => (float) env('WORLDOS_ARCHIVE_ENTROPY_THRESHOLD', 0.99),
+        'archive_entropy_threshold' => (float) env('WORLDOS_ARCHIVE_ENTROPY_THRESHOLD', 0.995),
+        'min_ticks_before_archive' => (int) env('WORLDOS_MIN_TICKS_BEFORE_ARCHIVE', 150),
         'stagnation_threshold' => (float) env('WORLDOS_STAGNATION_THRESHOLD', 0.1),
         'max_fork_branches' => (int) env('WORLDOS_MAX_FORK_BRANCHES', 1),
         // doc §13: merge when similarity between two universes > threshold

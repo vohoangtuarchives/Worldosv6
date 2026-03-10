@@ -26,6 +26,8 @@ class RiskMetricsService
         $stability = $macro['stability'] ?? 0.5;
         $entropy = $macro['entropy'] ?? 0.2;
         $knowledge = $macro['tech'] ?? 0.5;
+        // When knowledge is 0 (no data or early sim), avoid showing 100% stagnation — treat as neutral
+        $knowledgeForStagnation = $knowledge > 0 ? $knowledge : 0.5;
 
         // Dynamic risks based on current state
         if ($stability < 0.3) {
@@ -59,7 +61,7 @@ class RiskMetricsService
             'indicators' => [
                 ['name' => 'Collapse Probability', 'value' => $collapseRisk],
                 ['name' => 'Heat Death Risk', 'value' => $entropyRisk],
-                ['name' => 'Innovation Stagnation', 'value' => max(0, 1.0 - ($knowledge * 2))],
+                ['name' => 'Innovation Stagnation', 'value' => max(0, min(1.0, 1.0 - ($knowledgeForStagnation * 2)))],
             ],
             'active_alerts' => array_unique($activeAlerts),
         ];

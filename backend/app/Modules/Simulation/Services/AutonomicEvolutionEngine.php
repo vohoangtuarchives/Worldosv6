@@ -52,7 +52,9 @@ class AutonomicEvolutionEngine implements UniverseEvaluatorInterface
         }
 
         if ($recommendation === 'continue') {
-            if ($entropy >= $archiveThreshold) {
+            $minTicksBeforeArchive = (int) config('worldos.autonomic.min_ticks_before_archive', 150);
+            $tick = (int) ($snapshot->tick ?? 0);
+            if ($entropy >= $archiveThreshold && $tick >= $minTicksBeforeArchive) {
                 $recommendation = 'archive';
             } elseif ($entropy >= $forkMin) {
                 $recommendation = 'fork';

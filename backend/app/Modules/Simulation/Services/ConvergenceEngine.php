@@ -113,6 +113,11 @@ class ConvergenceEngine
 
     protected function checkOmegaPoint(Universe $universe, int $tick): void
     {
+        $minTicksBeforeArchive = (int) config('worldos.autonomic.min_ticks_before_archive', 150);
+        if ($tick < $minTicksBeforeArchive) {
+            return;
+        }
+
         $vec = $universe->state_vector ?? [];
         $entropy = (float)($vec['entropy'] ?? 0.0);
 

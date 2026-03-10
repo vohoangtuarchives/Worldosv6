@@ -71,13 +71,14 @@ export function CosmologicDashboard({ embedded = false }: { embedded?: boolean }
     if (!universeId) return;
     try {
       const res = await api.advance(universeId, 1) as { ok?: boolean; snapshot?: { tick?: number; entropy?: number; stability_index?: number; metrics?: unknown } };
-      if (res?.ok && res.snapshot?.tick != null) {
-        setLatestSnapshot(prev => ({
-          ...prev,
-          tick: res.snapshot!.tick,
-          entropy: res.snapshot?.entropy ?? prev?.entropy,
-          stability_index: res.snapshot?.stability_index ?? prev?.stability_index,
-          metrics: res.snapshot?.metrics ?? prev?.metrics ?? {},
+      const snap = res?.ok ? res.snapshot : undefined;
+      if (snap && snap.tick != null) {
+        setLatestSnapshot((prev: { tick?: number; entropy?: number; stability_index?: number; metrics?: unknown } | null) => ({
+          ...(prev && typeof prev === "object" ? prev : {}),
+          tick: snap.tick,
+          entropy: snap.entropy ?? (prev && typeof prev === "object" ? prev.entropy : undefined),
+          stability_index: snap.stability_index ?? (prev && typeof prev === "object" ? prev.stability_index : undefined),
+          metrics: snap.metrics ?? (prev && typeof prev === "object" ? prev.metrics : {}) ?? {},
         }));
       }
       await refresh();
@@ -104,13 +105,14 @@ export function CosmologicDashboard({ embedded = false }: { embedded?: boolean }
     if (!universeId) return;
     try {
       const res = await api.advance(universeId, ticks) as { ok?: boolean; snapshot?: { tick?: number; entropy?: number; stability_index?: number; metrics?: unknown } };
-      if (res?.ok && res.snapshot?.tick != null) {
-        setLatestSnapshot(prev => ({
-          ...prev,
-          tick: res.snapshot!.tick,
-          entropy: res.snapshot?.entropy ?? prev?.entropy,
-          stability_index: res.snapshot?.stability_index ?? prev?.stability_index,
-          metrics: res.snapshot?.metrics ?? prev?.metrics ?? {},
+      const snap = res?.ok ? res.snapshot : undefined;
+      if (snap && snap.tick != null) {
+        setLatestSnapshot((prev: { tick?: number; entropy?: number; stability_index?: number; metrics?: unknown } | null) => ({
+          ...(prev && typeof prev === "object" ? prev : {}),
+          tick: snap.tick,
+          entropy: snap.entropy ?? (prev && typeof prev === "object" ? prev.entropy : undefined),
+          stability_index: snap.stability_index ?? (prev && typeof prev === "object" ? prev.stability_index : undefined),
+          metrics: snap.metrics ?? (prev && typeof prev === "object" ? prev.metrics : {}) ?? {},
         }));
       }
       await refresh();

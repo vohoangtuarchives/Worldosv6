@@ -40,10 +40,10 @@ class DecisionEngine
     const FORK_THRESHOLD = 0.65;
 
     /** Threshold below which archiving is recommended */
-    const ARCHIVE_THRESHOLD = 0.20;
+    const ARCHIVE_THRESHOLD = 0.15;
 
     /** Minimum ticks before a universe can be archived (avoid archiving in early ticks when complexity is still low). */
-    const MIN_TICKS_BEFORE_ARCHIVE = 30;
+    const MIN_TICKS_BEFORE_ARCHIVE = 150;
 
     /** Known civilization archetype signatures (phase-space reference points) */
     const KNOWN_ARCHETYPES = [
@@ -81,7 +81,8 @@ class DecisionEngine
         } elseif ($navScore['total'] <= self::ARCHIVE_THRESHOLD && ! in_array($recommendation, ['fork', 'mutate', 'merge', 'promote'], true)) {
             // Don't archive very early universes: at tick 1 complexity is ~0 so score is artificially low.
             $tick = (int) ($snapshot->tick ?? 0);
-            if ($tick >= self::MIN_TICKS_BEFORE_ARCHIVE) {
+            $minTicks = (int) config('worldos.autonomic.min_ticks_before_archive', self::MIN_TICKS_BEFORE_ARCHIVE);
+            if ($tick >= $minTicks) {
                 $recommendation = 'archive';
             }
         }

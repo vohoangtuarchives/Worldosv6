@@ -115,7 +115,11 @@ class EvaluateSimulationResult
             } elseif ($action === 'continue' || $action === 'mutate') {
                 $this->applySelectivePressure($universe, $snapshot, $decisionData);
             } elseif ($action === 'archive') {
-                $this->universeRepository->update($universe->id, ['status' => 'archived']);
+                $tick = (int) ($snapshot->tick ?? 0);
+                $minTicks = (int) config('worldos.autonomic.min_ticks_before_archive', 150);
+                if ($tick >= $minTicks) {
+                    $this->universeRepository->update($universe->id, ['status' => 'archived']);
+                }
             }
 
             // 6. Calculate & Store Pressure Metrics

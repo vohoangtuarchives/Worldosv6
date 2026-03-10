@@ -82,7 +82,7 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
                 tick: tickToUse ?? snap?.tick,
             });
         } else if (currentTickFromUniverse != null) {
-            setLatestSnapshot(prev => ({
+            setLatestSnapshot((prev: { tick?: number; entropy?: number; stability_index?: number; metrics?: unknown } | null) => ({
                 tick: currentTickFromUniverse,
                 entropy: u?.entropy ?? (prev && typeof prev === 'object' ? prev.entropy : undefined),
                 stability_index: prev && typeof prev === 'object' ? prev.stability_index : undefined,
