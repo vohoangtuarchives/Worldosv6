@@ -7,7 +7,9 @@ use App\Contracts\Repositories\UniverseRepositoryInterface;
 use App\Models\Universe;
 use App\Models\UniverseSnapshot;
 use App\Models\InstitutionalEntity;
+use App\Models\Civilization;
 use App\Models\Chronicle;
+use App\Services\Narrative\NarrativeScheduler;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -40,8 +42,13 @@ class CivilizationCollapseEngine
 
     public function __construct(
         protected UniverseRepositoryInterface $universeRepository,
-        protected VaultService $vaultService
-    ) {}
+        protected VaultService $vaultService,
+        protected ?NarrativeScheduler $narrativeScheduler = null
+    ) {
+        if ($this->narrativeScheduler === null && app()->bound(NarrativeScheduler::class)) {
+            $this->narrativeScheduler = app(NarrativeScheduler::class);
+        }
+    }
 
     /**
      * Evaluate collapse threshold and execute if triggered.
@@ -105,6 +112,19 @@ class CivilizationCollapseEngine
         InstitutionalEntity::where('universe_id', $universe->id)
             ->whereNull('collapsed_at_tick')
             ->update(['collapsed_at_tick' => $tick, 'legitimacy' => 0.1]);
+
+        // 3b. Ensure Civilization records and schedule narrative for each collapsed institution
+        if ($this->narrativeScheduler) {
+            InstitutionalEntity::where('universe_id', $universe->id)
+                ->where('collapsed_at_tick', $tick)
+                ->get()
+                ->each(function (InstitutionalEntity $inst) use ($universe, $tick) {
+                    $civ = $this->ensureCivilizationForInstitution($inst, $tick);
+                    if ($civ) {
+                        $this->narrativeScheduler->scheduleCivilization($universe->id, $civ->id);
+                    }
+                });
+        }
 
         // 4. Update fields: post-collapse reset
         $uvec   = (array) ($universe->state_vector ?? []);
@@ -178,5 +198,24 @@ class CivilizationCollapseEngine
         return Chronicle::where('universe_id', $universeId)
             ->where('type', 'civilization_collapse')
             ->count();
+    }
+
+    protected function ensureCivilizationForInstitution(InstitutionalEntity $inst, int $collapseTick): ?Civilization
+    {
+        $civ = $inst->civilization_id ? Civilization::find($inst->civilization_id) : null;
+        if (!$civ) {
+            $civ = Civilization::create([
+                'universe_id' => $inst->universe_id,
+                'name' => $inst->name ?? 'Unknown Civilization',
+                'origin_tick' => (int) ($inst->spawned_at_tick ?? 0),
+                'collapse_tick' => $collapseTick,
+                'capital_zone_id' => $inst->zone_id,
+            ]);
+            $inst->civilization_id = $civ->id;
+            $inst->save();
+        } else {
+            $civ->update(['collapse_tick' => $collapseTick]);
+        }
+        return $civ;
     }
 }

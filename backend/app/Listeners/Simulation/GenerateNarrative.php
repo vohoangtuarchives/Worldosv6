@@ -3,44 +3,49 @@
 namespace App\Listeners\Simulation;
 
 use App\Events\Simulation\UniverseSimulationPulsed;
-use App\Services\Narrative\NarrativeAiService;
+use App\Models\Chronicle;
+use App\Services\Narrative\NarrativeScheduler;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Log;
 
 class GenerateNarrative implements ShouldQueue
 {
     public function __construct(
-        protected NarrativeAiService $narrativeAi
+        protected NarrativeScheduler $narrativeScheduler
     ) {}
 
     public function handle(UniverseSimulationPulsed $event): void
     {
         $universe = $event->universe;
         $snapshot = $event->snapshot;
-        
-        // We need to know previous tick to generate chronicle for the range
-        // Since AdvanceSimulationAction updates current_tick AFTER firing (if we follow order), 
-        // we might need to be careful. In the new world, we fire after engine returns.
-        
-        // For now, let's assume we want to generate chronicle for the ticks just simulated.
-        // The engine response tells us how many ticks were processed if we pass it, 
-        // or we can just use the difference.
-        
-        // Logic: engine processed $ticks. universe->current_tick was X, snapshot->tick is X + $ticks.
-        // In the refactored Action, we'll fire event BEFORE updating universe->current_tick in DB.
-        
-        $fromTick = (int)$universe->current_tick;
-        $toTick = (int)$snapshot->tick;
+
+        $fromTick = (int) $universe->current_tick;
+        $toTick = (int) $snapshot->tick;
         $ticks = (int) ($event->engineResponse['_ticks'] ?? 1);
         if ($fromTick >= $toTick && $ticks > 0) {
             $fromTick = max(0, $toTick - $ticks);
         }
 
-        if ($toTick > $fromTick) {
+        if ($toTick <= $fromTick) {
+            return;
+        }
+
+        $chronicleIds = Chronicle::where('universe_id', $universe->id)
+            ->whereNull('content')
+            ->whereNotNull('raw_payload')
+            ->where(function ($q) use ($fromTick, $toTick) {
+                $q->whereBetween('from_tick', [$fromTick, $toTick])
+                    ->orWhereBetween('to_tick', [$fromTick, $toTick]);
+            })
+            ->limit(100)
+            ->pluck('id')
+            ->all();
+
+        if (!empty($chronicleIds)) {
             try {
-                $this->narrativeAi->generateChronicle($universe->id, $fromTick, $toTick, 'chronicle');
+                $this->narrativeScheduler->scheduleEvent($universe->id, $chronicleIds, 1);
             } catch (\Throwable $e) {
-                Log::error("Narrative generation failed in listener: " . $e->getMessage());
+                Log::error("GenerateNarrative: schedule event failed: " . $e->getMessage());
             }
         }
     }

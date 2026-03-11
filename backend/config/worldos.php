@@ -31,6 +31,33 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Entropy floor (drift sàn tối thiểu)
+    |--------------------------------------------------------------------------
+    | Khi tick > 0, entropy từ engine/stub không được dưới giá trị này (tránh 0 thuần).
+    | Giảm giá trị để entropy có thể gần 0 hơn (vd. 0.001 thay vì 0.003).
+    */
+    'entropy_floor' => (float) env('WORLDOS_ENTROPY_FLOOR', 0.001),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Tick Pipeline (Simulation Runtime Architecture)
+    |--------------------------------------------------------------------------
+    | Stage key => ['interval' => N]. Stage runs when tick % N === 0. Order below = run order.
+    | actor/culture/civilization/ecology/meta: typically 1 (every tick). economy/politics/war: slower.
+    */
+    'tick_pipeline' => [
+        'actor' => ['interval' => (int) env('WORLDOS_TICK_PIPELINE_ACTOR', 1)],
+        'culture' => ['interval' => (int) env('WORLDOS_TICK_PIPELINE_CULTURE', 1)],
+        'civilization' => ['interval' => (int) env('WORLDOS_TICK_PIPELINE_CIVILIZATION', 1)],
+        'economy' => ['interval' => (int) env('WORLDOS_TICK_PIPELINE_ECONOMY', 10)],
+        'politics' => ['interval' => (int) env('WORLDOS_TICK_PIPELINE_POLITICS', 20)],
+        'war' => ['interval' => (int) env('WORLDOS_TICK_PIPELINE_WAR', 50)],
+        'ecology' => ['interval' => (int) env('WORLDOS_TICK_PIPELINE_ECOLOGY', 1)],
+        'meta' => ['interval' => (int) env('WORLDOS_TICK_PIPELINE_META', 1)],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Event Bus Backend (Phase 5 Track A)
     |--------------------------------------------------------------------------
     | database: persist to world_events table, dispatch Laravel event.
@@ -275,12 +302,14 @@ return [
     |--------------------------------------------------------------------------
     | fork_entropy_min: entropy >= this may trigger fork. archive_entropy_threshold: entropy >= this → archive.
     | min_ticks_before_archive: AEE/DecisionEngine sẽ không archive trước tick này (tránh archive quá sớm).
+    | fork_grace_period_ticks: universe con (fork) không bị archive cho đến khi chạy đủ N tick kể từ forked_at_tick.
     | stagnation_threshold: novelty below this → mutate (stub) in AEE.
     */
     'autonomic' => [
         'fork_entropy_min' => (float) env('WORLDOS_FORK_ENTROPY_MIN', 0.5),
         'archive_entropy_threshold' => (float) env('WORLDOS_ARCHIVE_ENTROPY_THRESHOLD', 0.995),
         'min_ticks_before_archive' => (int) env('WORLDOS_MIN_TICKS_BEFORE_ARCHIVE', 150),
+        'fork_grace_period_ticks' => (int) env('WORLDOS_FORK_GRACE_PERIOD_TICKS', 50),
         'stagnation_threshold' => (float) env('WORLDOS_STAGNATION_THRESHOLD', 0.1),
         'max_fork_branches' => (int) env('WORLDOS_MAX_FORK_BRANCHES', 1),
         // doc §13: merge when similarity between two universes > threshold
@@ -461,5 +490,26 @@ return [
     'institution' => [
         'decay_rate' => (float) env('WORLDOS_INSTITUTION_DECAY_RATE', 0.005),
         'run_decay_on_pulse' => (bool) env('WORLDOS_PULSE_RUN_INSTITUTION_DECAY', false),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Narrative 4-tier: Scheduler + engine intervals (event, era, civilization, mythology, religion, prophecy, legend)
+    |--------------------------------------------------------------------------
+    */
+    'narrative' => [
+        'era_interval' => (int) env('WORLDOS_NARRATIVE_ERA_INTERVAL', 200),
+        'civilization_on_collapse' => true,
+        'mythology_on_events' => true,
+        'religion_interval' => (int) env('WORLDOS_NARRATIVE_RELIGION_INTERVAL', 200),
+        'prophecy_interval' => (int) env('WORLDOS_NARRATIVE_PROPHECY_INTERVAL', 500),
+        'legend_interval' => (int) env('WORLDOS_NARRATIVE_LEGEND_INTERVAL', 100),
+        'religion_impact_threshold' => (float) env('WORLDOS_NARRATIVE_RELIGION_IMPACT_THRESHOLD', 0.6),
+        'prophecy_horizon_ticks' => (int) env('WORLDOS_NARRATIVE_PROPHECY_HORIZON_TICKS', 100),
+        'prompt_templates' => [
+            'era' => "Civilizations rising: {civilizations}\nMajor wars: {wars}\nAnomalies: {anomalies}\nClimate events: {climate}\n\nSTRICT FACTS:\n{facts}\n\nWrite a short historical paragraph without contradicting the facts.",
+            'civilization' => "Civilization: {name}. Origin tick: {origin_tick}, Collapse tick: {collapse_tick}.\n\nSTRICT FACTS:\n{facts}\n\nWrite origin_story / golden_age_story / collapse_story without contradicting the facts.",
+            'myth' => "Source events: {events}\n\nSTRICT FACTS:\n{facts}\n\nTurn these into a short myth/legend without contradicting the facts.",
+        ],
     ],
 ];

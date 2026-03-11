@@ -118,6 +118,11 @@ class ConvergenceEngine
             return;
         }
 
+        $forkGracePeriod = (int) config('worldos.autonomic.fork_grace_period_ticks', 50);
+        if ($universe->forked_at_tick !== null && ($tick - (int) $universe->forked_at_tick) < $forkGracePeriod) {
+            return;
+        }
+
         $vec = $universe->state_vector ?? [];
         $entropy = (float)($vec['entropy'] ?? 0.0);
 

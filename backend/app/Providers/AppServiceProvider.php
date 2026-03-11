@@ -36,6 +36,18 @@ class AppServiceProvider extends ServiceProvider
             \App\Services\Graph\RelationalGraphProvider::class
         );
         $this->app->singleton(LlmNarrativeClientInterface::class, OpenAINarrativeService::class);
+
+        // Narrative Engine: Strategy registry + pipeline (Event Aggregator → PromptBuilder → Generator → Writer)
+        $this->app->singleton(\App\Services\Narrative\NarrativeStrategyRegistry::class, function ($app) {
+            $registry = new \App\Services\Narrative\NarrativeStrategyRegistry();
+            $registry->register($app->make(\App\Services\Narrative\Strategies\DeathNarrativeStrategy::class));
+            $registry->register($app->make(\App\Services\Narrative\Strategies\RebirthNarrativeStrategy::class));
+            $registry->register($app->make(\App\Services\Narrative\Strategies\ParadoxNarrativeStrategy::class));
+            $registry->register($app->make(\App\Services\Narrative\Strategies\AnomalyNarrativeStrategy::class));
+            $registry->register($app->make(\App\Services\Narrative\Strategies\LegacyNarrativeStrategy::class));
+            return $registry;
+        });
+        $this->app->singleton(\App\Services\Narrative\NarrativeCache::class);
     }
 
     /**

@@ -53,9 +53,15 @@ class AutonomicEvolutionEngine implements UniverseEvaluatorInterface
 
         if ($recommendation === 'continue') {
             $minTicksBeforeArchive = (int) config('worldos.autonomic.min_ticks_before_archive', 150);
+            $forkGracePeriod = (int) config('worldos.autonomic.fork_grace_period_ticks', 50);
             $tick = (int) ($snapshot->tick ?? 0);
             if ($entropy >= $archiveThreshold && $tick >= $minTicksBeforeArchive) {
-                $recommendation = 'archive';
+                $universe = $snapshot->universe;
+                $inGracePeriod = $universe && $universe->forked_at_tick !== null
+                    && ($tick - (int) $universe->forked_at_tick) < $forkGracePeriod;
+                if (!$inGracePeriod) {
+                    $recommendation = 'archive';
+                }
             } elseif ($entropy >= $forkMin) {
                 $recommendation = 'fork';
             } elseif ($promoteComplexity > 0 && $complexity >= $promoteComplexity) {

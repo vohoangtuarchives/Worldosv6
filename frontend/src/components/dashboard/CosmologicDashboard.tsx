@@ -10,7 +10,6 @@ import {
   CausalTopologyGraph,
   MaterialEvolutionDAG,
   ChronicleTimelineView,
-  ChronicleView,
   ActorList,
   FactionList,
   CivilizationList,
@@ -29,7 +28,6 @@ import {
   Building2,
   Globe,
   Library,
-  BookOpen,
   Sparkles,
   ShieldCheck,
   Package,
@@ -83,7 +81,6 @@ export function CosmologicDashboard({ embedded = false }: { embedded?: boolean }
     | "chronicles"
     | "actors"
     | "archive"
-    | "chronicle-detail"
   >("topology");
   const [personaeSubTab, setPersonaeSubTabState] = useState<PersonaeSubKey>("actors");
   const [showRightPanel, setShowRightPanel] = useState(true);
@@ -238,7 +235,7 @@ export function CosmologicDashboard({ embedded = false }: { embedded?: boolean }
             <ul className="text-xs text-muted-foreground space-y-1 list-disc list-inside">
               <li><strong className="text-purple-400/90">Fork Universe</strong> — Tạo nhánh mới từ tick hiện tại, sau đó dashboard sẽ chuyển sang universe con (active).</li>
               <li><strong className="text-slate-300">Tick +1</strong> — Advance thủ công nếu muốn cập nhật số liệu (Pulse world không chạy universe archived).</li>
-              <li><strong className="text-slate-300">Chronicles / Dư Âm</strong> — Xem lịch sử và biên niên sử của vũ trụ này.</li>
+              <li><strong className="text-slate-300">Biên Niên Sử / Dư Âm</strong> — Xem lịch sử và biên niên sử của vũ trụ này.</li>
               <li>Chọn <strong className="text-slate-300">universe khác</strong> trong cùng world (nếu có) từ danh sách bên trái hoặc màn hình world.</li>
             </ul>
           </div>
@@ -273,12 +270,6 @@ export function CosmologicDashboard({ embedded = false }: { embedded?: boolean }
               active={activeTab === "chronicles"}
               onClick={() => setActiveTab("chronicles")}
               icon={<ScrollText className="w-4 h-4" />}
-              label="Chronicles"
-            />
-            <TabButton
-              active={activeTab === "chronicle-detail"}
-              onClick={() => setActiveTab("chronicle-detail")}
-              icon={<BookOpen className="w-4 h-4" />}
               label="Biên Niên Sử"
             />
             <TabButton
@@ -422,11 +413,6 @@ export function CosmologicDashboard({ embedded = false }: { embedded?: boolean }
             {activeTab === "archive" && universeId && (
               <div className="absolute inset-0 p-4 overflow-auto animate-in fade-in duration-500">
                 <VoidArchive universeId={universeId} />
-              </div>
-            )}
-            {activeTab === "chronicle-detail" && universeId && (
-              <div className="absolute inset-0 overflow-auto animate-in fade-in duration-500 h-full">
-                <ChronicleView universeId={universeId} />
               </div>
             )}
           </div>

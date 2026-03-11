@@ -3,15 +3,26 @@
 namespace App\Services\Simulation;
 
 use App\Models\Chronicle;
+use App\Models\Civilization;
 use App\Models\InstitutionalEntity;
 use App\Models\Universe;
+use App\Services\Narrative\NarrativeScheduler;
 
 /**
  * InstitutionDecayService — Phase 5.
  * Periodically reduce legitimacy/influence; set status declining/collapsed; Chronicle institution_collapse.
+ * On collapse: ensure Civilization record exists, set collapse_tick, schedule civilization narrative job.
  */
 class InstitutionDecayService
 {
+    public function __construct(
+        protected ?NarrativeScheduler $narrativeScheduler = null
+    ) {
+        if ($this->narrativeScheduler === null && app()->bound(NarrativeScheduler::class)) {
+            $this->narrativeScheduler = app(NarrativeScheduler::class);
+        }
+    }
+
     public function process(Universe $universe, int $tick): void
     {
         $config = config('worldos.institution', []);
@@ -44,8 +55,34 @@ class InstitutionDecayService
                             'description' => "Institution collapsed: {$inst->name}.",
                         ],
                     ]);
+                    $civilization = $this->ensureCivilizationForInstitution($inst, $tick);
+                    if ($civilization && $this->narrativeScheduler) {
+                        $this->narrativeScheduler->scheduleCivilization($universe->id, $civilization->id);
+                    }
                 }
                 $inst->save();
             });
+    }
+
+    /**
+     * Get or create a Civilization for this institution; set collapse_tick when collapsing.
+     */
+    protected function ensureCivilizationForInstitution(InstitutionalEntity $inst, int $collapseTick): ?Civilization
+    {
+        $civ = $inst->civilization_id ? Civilization::find($inst->civilization_id) : null;
+        if (!$civ) {
+            $civ = Civilization::create([
+                'universe_id' => $inst->universe_id,
+                'name' => $inst->name ?? 'Unknown Civilization',
+                'origin_tick' => (int) ($inst->spawned_at_tick ?? 0),
+                'collapse_tick' => $collapseTick,
+                'capital_zone_id' => $inst->zone_id,
+            ]);
+            $inst->civilization_id = $civ->id;
+            $inst->save();
+        } else {
+            $civ->update(['collapse_tick' => $collapseTick]);
+        }
+        return $civ;
     }
 }

@@ -121,6 +121,7 @@ class SagaService
             'saga_id' => $sagaId,
             'multiverse_id' => $world->multiverse_id,
             'parent_universe_id' => $parentUniverseId,
+            'forked_at_tick' => $parentUniverseId ? $startTick : null,
             'current_tick' => $startTick,
             'status' => 'active',
             'state_vector' => $initialState,

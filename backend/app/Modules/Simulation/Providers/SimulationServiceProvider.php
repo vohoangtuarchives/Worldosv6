@@ -134,6 +134,30 @@ class SimulationServiceProvider extends ServiceProvider
                 $app->make(\App\Simulation\Contracts\WorldEventBusInterface::class)
             );
         });
+
+        // Simulation Runtime: Tick Scheduler + Pipeline + Orchestrator (refactor from AdvanceSimulationAction)
+        $this->app->singleton(\App\Simulation\Runtime\Contracts\TickSchedulerInterface::class, \App\Simulation\Runtime\TickScheduler::class);
+        $this->app->singleton(\App\Simulation\Runtime\SimulationTickPipeline::class, function ($app) {
+            $scheduler = $app->make(\App\Simulation\Runtime\Contracts\TickSchedulerInterface::class);
+            $stageMap = [
+                'actor' => \App\Simulation\Runtime\Stages\ActorStage::class,
+                'culture' => \App\Simulation\Runtime\Stages\CultureStage::class,
+                'civilization' => \App\Simulation\Runtime\Stages\CivilizationStage::class,
+                'economy' => \App\Simulation\Runtime\Stages\EconomyStage::class,
+                'politics' => \App\Simulation\Runtime\Stages\PoliticsStage::class,
+                'war' => \App\Simulation\Runtime\Stages\WarStage::class,
+                'ecology' => \App\Simulation\Runtime\Stages\EcologyStage::class,
+                'meta' => \App\Simulation\Runtime\Stages\MetaCosmicStage::class,
+            ];
+            $stages = [];
+            foreach ($scheduler->stageOrder() as $key) {
+                if (isset($stageMap[$key])) {
+                    $stages[$key] = $app->make($stageMap[$key]);
+                }
+            }
+            return new \App\Simulation\Runtime\SimulationTickPipeline($scheduler, $stages);
+        });
+        $this->app->singleton(\App\Simulation\Runtime\SimulationTickOrchestrator::class);
     }
 
     public function boot(): void

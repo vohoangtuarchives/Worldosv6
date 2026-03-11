@@ -65,6 +65,10 @@ class EvaluateSimulationResult
         protected \App\Simulation\Contracts\WorldEventBusInterface $worldEventBus,
         protected \App\Services\Narrative\PerspectiveEngine $perspectiveEngine,
         protected \App\Services\Narrative\NarrativeMemoryGraphService $narrativeMemoryGraph,
+        protected \App\Services\Narrative\NarrativeScheduler $narrativeScheduler,
+        protected \App\Services\Narrative\EraDetector $eraDetector,
+        protected \App\Services\Narrative\ReligionSpreadEngine $religionSpreadEngine,
+        protected \App\Services\Narrative\ProphecyFulfillment $prophecyFulfillment,
     ) {}
 
     public function handle(UniverseSimulationPulsed $event): void
@@ -128,7 +132,10 @@ class EvaluateSimulationResult
             } elseif ($action === 'archive') {
                 $tick = (int) ($snapshot->tick ?? 0);
                 $minTicks = (int) config('worldos.autonomic.min_ticks_before_archive', 150);
-                if ($tick >= $minTicks) {
+                $forkGracePeriod = (int) config('worldos.autonomic.fork_grace_period_ticks', 50);
+                $inGracePeriod = $universe->forked_at_tick !== null
+                    && ($tick - (int) $universe->forked_at_tick) < $forkGracePeriod;
+                if ($tick >= $minTicks && !$inGracePeriod) {
                     $this->universeRepository->update($universe->id, ['status' => 'archived']);
                 }
             }
@@ -445,6 +452,85 @@ class EvaluateSimulationResult
                 \Illuminate\Support\Facades\Log::warning('NarrativeMemoryGraph linkChronicleToFact failed: ' . $e->getMessage());
             }
         }
+
+        // Schedule LLM narrative via queue (no sync LLM call)
+        $this->narrativeScheduler->scheduleEventForChronicle($universe->id, $chronicle->id);
+
+        // Narrative 4-tier + Belief loop: interval-based jobs (era, religion spread, prophecy, legend)
+        $this->runNarrativeIntervals($universe, (int) $snapshot->tick);
+    }
+
+    /**
+     * Run narrative interval jobs: era (every era_interval), religion spread, prophecy, legend.
+     */
+    protected function runNarrativeIntervals(\App\Models\Universe $universe, int $tick): void
+    {
+        $eraInterval = (int) config('worldos.narrative.era_interval', 200);
+        $religionInterval = (int) config('worldos.narrative.religion_interval', 200);
+        $prophecyInterval = (int) config('worldos.narrative.prophecy_interval', 500);
+        $legendInterval = (int) config('worldos.narrative.legend_interval', 100);
+
+        if ($tick > 0 && $eraInterval > 0 && $tick % $eraInterval === 0) {
+            try {
+                $startTick = $tick - $eraInterval;
+                $era = $this->eraDetector->detectAndCreate($universe, $startTick, $tick);
+                if ($era !== null) {
+                    $this->narrativeScheduler->scheduleEra($universe->id, $startTick, $tick, $era->id);
+                }
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Narrative interval: Era detect/schedule failed: ' . $e->getMessage());
+            }
+        }
+
+        if ($religionInterval > 0 && $tick % $religionInterval === 0) {
+            try {
+                $this->religionSpreadEngine->runForUniverse($universe, $tick);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Narrative interval: Religion spread failed: ' . $e->getMessage());
+            }
+        }
+
+        if ($prophecyInterval > 0 && $tick % $prophecyInterval === 0) {
+            try {
+                $this->narrativeScheduler->scheduleProphecy($universe->id, $tick);
+                $this->prophecyFulfillment->evaluateForUniverse($universe->id, $tick);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Narrative interval: Prophecy failed: ' . $e->getMessage());
+            }
+        }
+
+        if ($legendInterval > 0 && $tick % $legendInterval === 0) {
+            try {
+                $agent = \App\Models\LegendaryAgent::where('universe_id', $universe->id)->inRandomOrder()->first();
+                if ($agent !== null) {
+                    $this->narrativeScheduler->scheduleLegend($universe->id, null, $agent->id);
+                }
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Narrative interval: Legend failed: ' . $e->getMessage());
+            }
+        }
+    }
+
+    /**
+     * Build belief context for ActorDecisionEngine: religion, prophecy belief, legend level.
+     */
+    protected function getBeliefContextForActor(\App\Models\Actor $actor): array
+    {
+        $hasReligion = $actor->religions()->exists();
+        $hasProphecyBelief = $actor->prophecyBeliefs()->exists();
+        $legendLevel = (int) $actor->legends()->max('legend_level');
+        if ($legendLevel === 0 && $actor->supremeEntity) {
+            $legendaryAgent = \App\Models\LegendaryAgent::where('original_agent_id', $actor->id)->first();
+            if ($legendaryAgent) {
+                $leg = \App\Models\Legend::where('legendary_agent_id', $legendaryAgent->id)->orderByDesc('legend_level')->first();
+                $legendLevel = $leg ? (int) $leg->legend_level : 0;
+            }
+        }
+        return [
+            'has_religion' => $hasReligion,
+            'has_prophecy_belief' => $hasProphecyBelief,
+            'legend_level' => $legendLevel,
+        ];
     }
 
     /**
@@ -477,6 +563,8 @@ class EvaluateSimulationResult
             $capabilities = $actor->capabilities ?? [];
             $traits = $actor->traits ?? array_fill(0, 17, 0.5);
             $birthTick = (int) ($actor->birth_tick ?? $tick);
+            $belief = $this->getBeliefContextForActor($actor);
+            $environment['belief'] = $belief;
             $dist = $this->actorDecisionEngine->getActionDistribution($traits, $capabilities, $environment, $tick, $birthTick);
             $action = $this->actorDecisionEngine->rollAction($dist, $rng);
             \App\Models\ActorEvent::create([

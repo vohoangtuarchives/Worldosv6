@@ -32,6 +32,7 @@ use App\Services\Simulation\ChaosEngine;
 use App\Services\Simulation\TransmigrationEngine;
 use App\Simulation\SimulationKernel;
 use App\Simulation\Support\SnapshotLoader;
+use App\Simulation\Runtime\SimulationTickOrchestrator;
 use Illuminate\Support\Facades\Log;
 
 class AdvanceSimulationAction
@@ -74,7 +75,8 @@ class AdvanceSimulationAction
         protected \App\Services\Simulation\GlobalEconomyEngine $globalEconomyEngine,
         protected \App\Services\Simulation\PoliticsEngine $politicsEngine,
         protected \App\Services\Simulation\WarEngine $warEngine,
-        protected \App\Services\Simulation\GeographyResourceService $geographyResource
+        protected \App\Services\Simulation\GeographyResourceService $geographyResource,
+        protected SimulationTickOrchestrator $tickOrchestrator
     ) {}
 
     public function execute(int $universeId, int $ticks): array
@@ -154,25 +156,13 @@ class AdvanceSimulationAction
                 array_merge($response, ['_ticks' => $ticks])
             ));
 
-            // Survival chạy ngay trong process advance để chắc chắn có deaths được lưu (không phụ thuộc listener/queue)
-            $this->processActorEnergy->handle($universe, array_merge($response, ['_ticks' => $ticks]));
-            $this->processActorSurvival->handle($universe, array_merge($response, ['_ticks' => $ticks]));
-            $universe->refresh();
-            // Culture Engine (Tier 7): meme transmission, drift, culture_group; feeds behavior
-            $this->cultureEngine->evaluate($universe, (int) $snapshotData['tick']);
-            // Behavior & Decision Engine (Tier 6): needs, goal, Utility AI, execution state per actor
-            $this->actorBehaviorEngine->evaluate($universe, (int) $snapshotData['tick']);
-            // Language Engine (Tier 8): vocabulary, intent→encode→decode, communication_memory, language groups
-            $this->languageEngine->evaluate($universe, (int) $snapshotData['tick']);
-            $universe->refresh();
-            // Civilization Engine (Tier 9): settlements, governance
-            $this->civilizationSettlementEngine->evaluate($universe, (int) $snapshotData['tick']);
-            $universe->refresh();
-            // Global Economy (Tier 10), Politics (Tier 11), War (Tier 12)
-            $this->globalEconomyEngine->evaluate($universe, (int) $snapshotData['tick']);
-            $universe->refresh();
-            $this->politicsEngine->evaluate($universe, (int) $snapshotData['tick']);
-            $this->warEngine->evaluate($universe, (int) $snapshotData['tick']);
+            // Simulation Runtime: Tick Pipeline (Actor → Culture → Civilization → Economy → Politics → War → Ecology → Meta)
+            $this->tickOrchestrator->run(
+                $universe,
+                (int) $snapshotData['tick'],
+                $savedSnapshot,
+                array_merge($response, ['_ticks' => $ticks, 'snapshot' => $snapshotData])
+            );
 
             Log::info("Simulation: advance completed", [
                 'universe_id' => $universeId,
@@ -184,120 +174,23 @@ class AdvanceSimulationAction
             // Update Universe latest tick (state_vector đã được sync trong syncUniverseFromSnapshotData)
             $this->universeRepository->update($universe->id, ['current_tick' => $snapshotData['tick']]);
 
-            // Ecological Collapse Engine (Tier 1): evaluate instability, trigger or end collapse
             $universe->refresh();
-            $this->ecologicalCollapseEngine->evaluate($universe, (int) $snapshotData['tick']);
-            // Planetary Climate (Tier 4): temperature/rainfall per zone, seasonal cycle; feeds Phase Transition
-            $this->planetaryClimateEngine->evaluate($universe, (int) $snapshotData['tick']);
-            $this->ecologicalPhaseTransitionEngine->evaluate($universe, (int) $snapshotData['tick']);
-            $this->geologicalEngine->evaluate($universe, (int) $snapshotData['tick']);
-
-            // Phase 93: Internal Resonance (§V20)
-            // The simulation now audits itself without Architect intervention
-            $this->resonanceAuditor->audit($universe);
-            $universe->refresh(); 
-
-            // Phase 63: Total Sovereignty (§V10)
-            $scars = $snapshotData['metrics']['scars'] ?? [];
-            $this->sovereignty->orchestrate($universe, $scars);
-
             // Apply observer bonus to stability
             $universe->structural_coherence = min(1.0, $universe->structural_coherence + $universe->observer_bonus);
-            
             // Phase 130: Darwinian Fitness Evaluation (§V35)
             if ($snapshotData['tick'] % 10 === 0) {
                 $universe->fitness_score = app(\App\Services\Simulation\KernelMutationService::class)->calculateFitness($universe);
             }
-            
             $universe->save();
 
-            // Phase 67: Agent Evolution (§V11)
-            $this->archetypeShift->execute($universe);
-
-            // Phase 81: Divine Alignment (§V16)
-            $this->processAlignments($universe);
-
-            // Phase 76 & 82 & 85: Autonomous Will, Empowerment & Miracles (§V14, §V16, §V17)
-            if ($savedSnapshot && $savedSnapshot->tick % 5 === 0) {
-                $this->empowerDemiurges->execute();
-                $this->demiurgeAction->execute();
-                $this->triggerRandomMiracles($universe);
-            }
-
-            // Phase 86 & 95: Cosmic Balance & Self-Evolving Axioms (§V17, §V20)
-            if ($savedSnapshot && $savedSnapshot->tick % 50 === 0) {
-                $this->heatDeath->monitor();
-                $this->axiomMutation->execute($universe->world);
-            }
-
-            // Phase 101: Agent Sovereignty (§V22)
-            // Allow transcendental agents to alter reality
-            $this->agentSovereignty->execute($universe);
-
-            // Phase 103: The Antibody Engine (§V23)
-            // Purge any agents that have accumulated too much heresy
-            $this->antibodyEngine->execute($universe);
-            
-            // Phase 108: Chaos Matrix (§V25)
-            // Roll the dice for a reality-breaking anomaly in chaotic worlds
-            $this->chaosEngine->destabilize($universe);
-
-            if (rand(0, 1000) < 5) { // 0.5% chance per tick per universe
-                $this->transmigrationEngine->triggerIsekai($universe);
-            }
-
-            // ==========================================
-            // LEVEL 7: CIVILIZATION ATTRACTOR FIELD ENGINE (chỉ khi đã lưu snapshot)
-            // ==========================================
-
+            // LEVEL 7: Post-snapshot only when snapshot was persisted (cognitive + civilization collapse)
             if ($shouldSave && $savedSnapshot && $savedSnapshot->exists) {
-                // Phase 1 refactor: field/diffusion computed in Rust; we only persist from snapshot (syncUniverseFromSnapshotData already set state_vector['fields'] and zone_fields).
-
-                // Phase 123: Actor Cognitive Bifurcation (§V32)
-                // Update cognitive variables (Destiny, Curiosity, Anomaly)
                 $this->cognitiveService->computeAndStore($universe, $savedSnapshot);
-
-                // Phase 125: Civilization Collapse (§V33)
-                // Check if internal stress (entropy) causes a fragmentation event (uses entropy/stability from snapshot)
                 $this->collapseEngine->evaluate($universe, $savedSnapshot);
             }
         }
 
         return $response;
-    }
-
-    protected function processAlignments($universe): void
-    {
-        $legends = \App\Models\LegendaryAgent::where('universe_id', $universe->id)->get();
-        foreach ($legends as $legend) {
-            // Phase 91: Divine Favor Growth (§V19)
-            $favored = is_array($legend->fate_tags) && in_array('divine_favor', $legend->fate_tags);
-            $growthMod = $favored ? 1.5 : 1.0;
-
-            // Simulate trait extraction from state_vector for the agent
-            $traits = [
-                'order' => (rand(0, 100) / 100) * $growthMod, 
-                'entropy' => (rand(0, 100) / 100) * (1.0 / $growthMod)
-            ];
-            $this->faithService->updateAlignment($legend, $traits);
-        }
-    }
-
-    protected function triggerRandomMiracles($universe): void
-    {
-        $rivals = \App\Models\Demiurge::where('is_active', true)->get();
-        // Phase 94: Internal Omens (§V20)
-        $omen = $this->etherOmen->generateInternalOmen($universe);
-        
-        foreach ($rivals as $demiurge) {
-            // Probability of miracle increases with will_power and Omen modifier
-            $chance = ($demiurge->will_power / 2000) + ($omen['sci_impact'] ?? 0); 
-            
-            if (rand(0, 1000) / 1000 < $chance && $chance > 0) {
-                $types = ['absolute_order', 'void_eruption', 'legendary_ascension'];
-                $this->miracleAction->execute($demiurge, $universe, $types[array_rand($types)]);
-            }
-        }
     }
 
     protected function handleConvergence(int $worldId): void
@@ -501,9 +394,10 @@ class AdvanceSimulationAction
         if ($tick <= 0) {
             return;
         }
+        $floor = (float) config('worldos.entropy_floor', 0.001);
         $entropy = $snapshotData['entropy'] ?? 0;
-        if ($entropy === null || $entropy === 0 || (is_float($entropy) && $entropy < 0.003)) {
-            $snapshotData['entropy'] = 0.003;
+        if ($entropy === null || $entropy === 0 || (is_float($entropy) && $entropy < $floor)) {
+            $snapshotData['entropy'] = $floor;
         }
     }
 

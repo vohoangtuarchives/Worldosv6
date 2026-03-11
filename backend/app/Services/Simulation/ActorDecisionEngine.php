@@ -6,8 +6,9 @@ use App\Simulation\Support\SimulationRandom;
 
 /**
  * ActorDecisionEngine — Phase 2.
- * Input: traits, capabilities, environment (entropy, stability, war_pressure), age, culture.
+ * Input: traits, capabilities, environment (entropy, stability, war_pressure, optional belief), age, culture.
  * Output: action_distribution [action_type => probability]. Roll yields one action.
+ * Belief (from narrative loop): has_religion, has_prophecy_belief, legend_level — adjust weights.
  */
 class ActorDecisionEngine
 {
@@ -37,24 +38,48 @@ class ActorDecisionEngine
         $stability = (float) ($environment['stability_index'] ?? 0.5);
         $warPressure = (float) ($environment['war_pressure'] ?? 0);
 
+        // Belief from narrative loop (religion, prophecy, legend)
+        $belief = $environment['belief'] ?? [];
+        $hasReligion = !empty($belief['has_religion']);
+        $hasProphecyBelief = !empty($belief['has_prophecy_belief']);
+        $legendLevel = (int) ($belief['legend_level'] ?? 0);
+
         // write: high curiosity + intellect + creativity
         $scores['write'] += $cur * 0.4 + $intellect * 0.3 + $creativity * 0.4;
         // teach: high empathy + intellect
         $scores['teach'] += $emp * 0.4 + $intellect * 0.4;
-        // explore: high curiosity + risk
+        // explore: high curiosity + risk (reduce if actor believes prophecy — more cautious)
         $scores['explore'] += $cur * 0.4 + $rsk * 0.4;
-        // war: high dominance + war_pressure
+        if ($hasProphecyBelief) {
+            $scores['explore'] -= 0.15;
+        }
+        // war: high dominance + war_pressure; if has religion, slight boost
         $scores['war'] += $dom * 0.3 + $warPressure * 0.5;
-        // meditate: low war_pressure, high pragmatism
+        if ($hasReligion) {
+            $scores['war'] += 0.1;
+        }
+        // meditate: low war_pressure, high pragmatism; boost if has religion
         $scores['meditate'] += (1.0 - $warPressure) * 0.3 + $pra * 0.3;
-        // create_religion: high creativity + low stability (meaning crisis)
+        if ($hasReligion) {
+            $scores['meditate'] += 0.2;
+        }
+        // create_religion: high creativity + low stability; boost if already has religion
         $scores['create_religion'] += $creativity * 0.3 + (1.0 - $stability) * 0.2;
+        if ($hasReligion) {
+            $scores['create_religion'] += 0.25;
+        }
         // build: high pragmatism
         $scores['build'] += $pra * 0.4;
-        // govern: high charisma + authority (from capabilities if present)
+        // govern: high charisma + authority; boost from legend_level (heroes govern)
         $scores['govern'] += $charisma * 0.3 + (float) ($capabilities['authority'] ?? 0.5) * 0.3;
-        // trade: medium risk + stability
+        if ($legendLevel >= 2) {
+            $scores['govern'] += 0.1 * min(3, $legendLevel);
+        }
+        // trade: medium risk + stability; slightly reduce if believes prophecy (defensive)
         $scores['trade'] += $rsk * 0.2 + $stability * 0.2;
+        if ($hasProphecyBelief) {
+            $scores['trade'] -= 0.05;
+        }
         // rest: default sink
         $scores['rest'] += 0.2;
 

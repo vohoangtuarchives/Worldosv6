@@ -14,7 +14,6 @@ class LegendaryAgent extends Model
         'archetype',
         'fate_tags',
         'biography',
-        'biography',
         'image_url',
         'tick_discovered',
         'is_transcendental',

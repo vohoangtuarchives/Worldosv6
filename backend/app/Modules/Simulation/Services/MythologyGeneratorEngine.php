@@ -4,19 +4,45 @@ namespace App\Modules\Simulation\Services;
 
 use App\Models\Chronicle;
 use App\Models\Universe;
+use App\Services\Narrative\MythologyEngine;
 use App\Services\Narrative\NarrativeAiService;
+use App\Services\Narrative\NarrativeScheduler;
 use Illuminate\Support\Facades\Log;
 
 /**
  * Mythology Generator Engine (Phase F): turns timeline/chronicles into mythology-style narrative.
  * Produces Chronicle with type 'myth' for a universe over a tick range.
+ * Can use MythologyEngine (myths table + queue) via generateViaQueue().
  */
 class MythologyGeneratorEngine
 {
     public function __construct(
         protected NarrativeAiService $narrativeAi,
-        protected CivilizationMemoryEngine $civilizationMemory
-    ) {}
+        protected CivilizationMemoryEngine $civilizationMemory,
+        protected ?MythologyEngine $mythologyEngine = null,
+        protected ?NarrativeScheduler $narrativeScheduler = null
+    ) {
+        if ($this->mythologyEngine === null && app()->bound(MythologyEngine::class)) {
+            $this->mythologyEngine = app(MythologyEngine::class);
+        }
+        if ($this->narrativeScheduler === null && app()->bound(NarrativeScheduler::class)) {
+            $this->narrativeScheduler = app(NarrativeScheduler::class);
+        }
+    }
+
+    /**
+     * Schedule mythology narrative via queue (MythologyEngine → myths table). Use for async pipeline.
+     */
+    public function scheduleForRange(Universe $universe, int $fromTick, int $toTick, string $mythType = 'legend'): void
+    {
+        if ($this->narrativeScheduler) {
+            $this->narrativeScheduler->scheduleMythology($universe->id, [
+                'start_tick' => $fromTick,
+                'end_tick' => $toTick,
+                'myth_type' => $mythType,
+            ]);
+        }
+    }
 
     /**
      * Generate a mythology chronicle for the universe over the given tick range.

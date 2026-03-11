@@ -82,7 +82,11 @@ class DecisionEngine
             // Don't archive very early universes: at tick 1 complexity is ~0 so score is artificially low.
             $tick = (int) ($snapshot->tick ?? 0);
             $minTicks = (int) config('worldos.autonomic.min_ticks_before_archive', self::MIN_TICKS_BEFORE_ARCHIVE);
-            if ($tick >= $minTicks) {
+            $forkGracePeriod = (int) config('worldos.autonomic.fork_grace_period_ticks', 50);
+            $universe = $snapshot->universe;
+            $inGracePeriod = $universe && $universe->forked_at_tick !== null
+                && ($tick - (int) $universe->forked_at_tick) < $forkGracePeriod;
+            if ($tick >= $minTicks && !$inGracePeriod) {
                 $recommendation = 'archive';
             }
         }

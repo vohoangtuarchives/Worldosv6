@@ -9,8 +9,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Universe extends Model
 {
     protected $fillable = [
-        'world_id', 'saga_id', 'multiverse_id', 'parent_universe_id', 'seed',
-        'current_tick', 'level', 'epoch', 'status', 'state_vector', 'name',
+        'world_id', 'saga_id', 'multiverse_id', 'parent_universe_id', 'forked_at_tick',
+        'seed', 'current_tick', 'level', 'epoch', 'status', 'state_vector', 'name',
         'observation_load', 'last_observed_at', 'observer_bonus',
         'structural_coherence', 'entropy', 'kernel_genome', 'fitness_score',
     ];
