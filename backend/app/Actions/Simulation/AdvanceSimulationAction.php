@@ -33,7 +33,9 @@ use App\Services\Simulation\TransmigrationEngine;
 use App\Simulation\SimulationKernel;
 use App\Simulation\Support\SnapshotLoader;
 use App\Simulation\Runtime\SimulationTickOrchestrator;
+use App\Simulation\EngineRegistry;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 
 class AdvanceSimulationAction
 {
@@ -62,6 +64,11 @@ class AdvanceSimulationAction
         protected SnapshotLoader $snapshotLoader,
         protected \App\Services\Simulation\ActorCognitiveService $cognitiveService,
         protected \App\Services\Simulation\CivilizationCollapseEngine $collapseEngine,
+        protected \App\Services\Simulation\SocialGraphService $socialGraphService,
+        protected \App\Services\Simulation\DemographicRatesService $demographicRatesService,
+        protected \App\Services\Simulation\KnowledgeGraphService $knowledgeGraphService,
+        protected \App\Services\Simulation\CivilizationDiscoveryService $civilizationDiscoveryService,
+        protected \App\Services\Simulation\SelfImprovingSimulationService $selfImprovingService,
         protected \App\Modules\Intelligence\Actions\ProcessActorEnergyAction $processActorEnergy,
         protected \App\Modules\Intelligence\Actions\ProcessActorSurvivalAction $processActorSurvival,
         protected \App\Modules\Intelligence\Services\ActorBehaviorEngine $actorBehaviorEngine,
@@ -76,10 +83,18 @@ class AdvanceSimulationAction
         protected \App\Services\Simulation\PoliticsEngine $politicsEngine,
         protected \App\Services\Simulation\WarEngine $warEngine,
         protected \App\Services\Simulation\GeographyResourceService $geographyResource,
-        protected SimulationTickOrchestrator $tickOrchestrator
+        protected SimulationTickOrchestrator $tickOrchestrator,
+        protected EngineRegistry $engineRegistry
     ) {}
 
     public function execute(int $universeId, int $ticks): array
+    {
+        return \App\Services\Simulation\SimulationTracer::span('advance_simulation', function () use ($universeId, $ticks) {
+            return $this->doExecute($universeId, $ticks);
+        });
+    }
+
+    protected function doExecute(int $universeId, int $ticks): array
     {
         Log::info("Simulation: advance requested", ['universe_id' => $universeId, 'ticks' => $ticks]);
 
@@ -96,7 +111,11 @@ class AdvanceSimulationAction
 
         $stateInput = $this->prepareEngineStateInput($universe);
         $worldConfig = $this->prepareWorldConfig($universe);
+
+        $tickStart = microtime(true);
         $response = $this->engine->advance($universeId, $ticks, $stateInput, $worldConfig);
+        $tickDurationMs = (microtime(true) - $tickStart) * 1000;
+        $tickDurationMsPerTick = $ticks > 0 ? $tickDurationMs / $ticks : $tickDurationMs;
 
         if (! ($response['ok'] ?? false)) {
             return $response;
@@ -116,6 +135,9 @@ class AdvanceSimulationAction
             $interval = $universe->world->snapshot_interval ?? 1;
             $shouldSave = ($snapshotData['tick'] % $interval === 0) || ($snapshotData['tick'] == 0);
 
+            $engineManifest = $this->engineRegistry->getManifest();
+            $this->universeRepository->update($universe->id, ['engine_manifest' => $engineManifest]);
+
             // Luôn đồng bộ state từ engine về universe mỗi tick, để lần advance tiếp theo
             // gửi state mới (entropy/stability thay đổi). Nếu không sync khi !shouldSave,
             // engine sẽ nhận mãi state cũ → entropy không đổi.
@@ -123,7 +145,7 @@ class AdvanceSimulationAction
 
             $savedSnapshot = null;
             if ($shouldSave) {
-                $savedSnapshot = $this->saveSnapshot($universe, $snapshotData);
+                $savedSnapshot = $this->saveSnapshot($universe, $snapshotData, $tickDurationMsPerTick, $engineManifest);
                 // Optional: run Simulation Kernel and overwrite snapshot (only when driver is laravel_kernel)
                 $tickDriver = config('worldos.simulation_tick_driver', 'rust_only');
                 $runKernel = $savedSnapshot && $tickDriver === 'laravel_kernel' && config('worldos.simulation_kernel_post_tick');
@@ -146,7 +168,7 @@ class AdvanceSimulationAction
             } else {
                 // Snapshot không được lưu (tick % interval !== 0): tạo virtual snapshot từ snapshotData
                 // để listener nhận đúng tick/entropy/stability hiện tại, tránh dùng snapshot cũ từ DB.
-                $savedSnapshot = $this->makeVirtualSnapshot($universe, $snapshotData);
+                $savedSnapshot = $this->makeVirtualSnapshot($universe, $snapshotData, $tickDurationMsPerTick, $engineManifest);
             }
 
             // FIRE EVENT: Luôn dùng snapshot đúng tick (saved hoặc virtual). Truyền thêm _ticks để listener tính fromTick.
@@ -164,11 +186,14 @@ class AdvanceSimulationAction
                 array_merge($response, ['_ticks' => $ticks, 'snapshot' => $snapshotData])
             );
 
+            Cache::put("worldos.tick_duration_ms.{$universeId}", $tickDurationMsPerTick, now()->addHours(1));
+
             Log::info("Simulation: advance completed", [
                 'universe_id' => $universeId,
                 'ticks' => $ticks,
                 'tick' => $snapshotData['tick'],
                 'entropy' => $snapshotData['entropy'] ?? null,
+                'tick_duration_ms' => round($tickDurationMsPerTick, 2),
             ]);
 
             // Update Universe latest tick (state_vector đã được sync trong syncUniverseFromSnapshotData)
@@ -183,10 +208,17 @@ class AdvanceSimulationAction
             }
             $universe->save();
 
-            // LEVEL 7: Post-snapshot only when snapshot was persisted (cognitive + civilization collapse)
+            // LEVEL 7: Post-snapshot only when snapshot was persisted (cognitive + collapse + social graph §22 + demographic §13 + knowledge graph §9 + civilization discovery §36)
             if ($shouldSave && $savedSnapshot && $savedSnapshot->exists) {
                 $this->cognitiveService->computeAndStore($universe, $savedSnapshot);
                 $this->collapseEngine->evaluate($universe, $savedSnapshot);
+                $this->socialGraphService->evaluate($universe, (int) $savedSnapshot->tick);
+                $this->demographicRatesService->evaluate($universe, (int) $savedSnapshot->tick);
+                $this->knowledgeGraphService->evaluate($universe, (int) $savedSnapshot->tick);
+                $this->civilizationDiscoveryService->evaluate($universe, (int) $savedSnapshot->tick, $savedSnapshot);
+                if (config('worldos.self_improving.enabled', false)) {
+                    $this->selfImprovingService->proposeRule('simulation_tick');
+                }
             }
         }
 
@@ -209,7 +241,7 @@ class AdvanceSimulationAction
      * Tạo snapshot ảo (không lưu DB) từ snapshotData khi tick % interval !== 0.
      * Listener nhận đúng tick/entropy/stability hiện tại.
      */
-    private function makeVirtualSnapshot($universe, array $snapshotData): \App\Models\UniverseSnapshot
+    private function makeVirtualSnapshot($universe, array $snapshotData, ?float $tickDurationMs = null, ?array $engineManifest = null): \App\Models\UniverseSnapshot
     {
         $stateVector = is_string($snapshotData['state_vector'] ?? null)
             ? json_decode($snapshotData['state_vector'], true) ?? []
@@ -219,6 +251,18 @@ class AdvanceSimulationAction
             : ($snapshotData['metrics'] ?? []);
         $metrics['sci'] = $snapshotData['sci'] ?? null;
         $metrics['instability_gradient'] = $snapshotData['instability_gradient'] ?? null;
+        if ($tickDurationMs !== null) {
+            $metrics['tick_duration_ms'] = round($tickDurationMs, 2);
+        }
+        if ($engineManifest !== null) {
+            $metrics['engine_manifest'] = $engineManifest;
+        }
+        if (isset($tickDurationMs)) {
+            $metrics['tick_duration_ms'] = round($tickDurationMs, 2);
+        }
+        if (isset($engineManifest) && is_array($engineManifest)) {
+            $metrics['engine_manifest'] = $engineManifest;
+        }
 
         $snap = new \App\Models\UniverseSnapshot([
             'universe_id' => $universe->id,
@@ -232,7 +276,7 @@ class AdvanceSimulationAction
         return $snap;
     }
 
-    private function saveSnapshot($universe, array $snapshot)
+    private function saveSnapshot($universe, array $snapshot, ?float $tickDurationMs = null, ?array $engineManifest = null)
     {
          $stateVector = is_string($snapshot['state_vector'] ?? null)
             ? json_decode($snapshot['state_vector'], true) ?? []
@@ -244,6 +288,12 @@ class AdvanceSimulationAction
 
         $metrics['sci'] = $snapshot['sci'] ?? null;
         $metrics['instability_gradient'] = $snapshot['instability_gradient'] ?? null;
+        if ($tickDurationMs !== null) {
+            $metrics['tick_duration_ms'] = round($tickDurationMs, 2);
+        }
+        if ($engineManifest !== null) {
+            $metrics['engine_manifest'] = $engineManifest;
+        }
 
         return $this->snapshots->save($universe, [
             'tick' => $snapshot['tick'],

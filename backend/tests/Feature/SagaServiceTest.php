@@ -38,6 +38,7 @@ class SagaServiceTest extends TestCase
         $originSeeder = Mockery::mock(OriginSeeder::class);
         $originSeeder->shouldReceive('seed')->byDefault();
         $mutationService = Mockery::mock(\App\Services\Simulation\KernelMutationService::class);
+        $mutationService->shouldReceive('ensureGenome')->once()->with(Mockery::type(Universe::class))->andReturnNull();
 
         $service = new SagaService($runtime, $originSeeder, $mutationService);
 

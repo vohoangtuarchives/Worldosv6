@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Contracts\SimulationEngineClientInterface;
 use App\Models\Universe;
 use App\Repositories\UniverseSnapshotRepository;
+use App\Simulation\EngineRegistry;
 use Illuminate\Console\Command;
 
 /**
@@ -22,7 +23,8 @@ class WorldosReplayCommand extends Command
 
     public function handle(
         SimulationEngineClientInterface $engine,
-        UniverseSnapshotRepository $snapshots
+        UniverseSnapshotRepository $snapshots,
+        EngineRegistry $engineRegistry
     ): int {
         $universeId = (int) $this->argument('universe');
         $fromTick = $this->option('from-tick') !== null ? (int) $this->option('from-tick') : null;
@@ -43,6 +45,12 @@ class WorldosReplayCommand extends Command
         if (! $snapAtN) {
             $this->error("No snapshot at tick {$fromTick} for universe {$universeId}.");
             return 1;
+        }
+
+        $storedManifest = is_array($snapAtN->metrics['engine_manifest'] ?? null) ? $snapAtN->metrics['engine_manifest'] : null;
+        $currentManifest = $engineRegistry->getManifest();
+        if ($storedManifest !== null && $storedManifest !== $currentManifest) {
+            $this->warn('Engine manifest at snapshot differs from current (replay may not be deterministic).');
         }
 
         $ticksToRun = $toTick !== null ? $toTick - $fromTick : 1;

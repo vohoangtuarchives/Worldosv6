@@ -8,21 +8,35 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('prophecies', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('universe_id')->constrained()->cascadeOnDelete();
-            $table->unsignedBigInteger('created_tick');
-            $table->unsignedBigInteger('prediction_tick');
-            $table->text('text');
-            $table->float('confidence')->default(0.5)->unsigned();
-            $table->boolean('fulfilled')->default(false);
-            $table->json('source_snapshot_metrics')->nullable();
-            $table->timestamps();
-        });
+        if (Schema::hasTable('prophecies')) {
+            return;
+        }
+
+        try {
+            Schema::create('prophecies', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('universe_id')->constrained()->cascadeOnDelete();
+                $table->unsignedBigInteger('created_tick');
+                $table->unsignedBigInteger('prediction_tick');
+                $table->text('text');
+                $table->float('confidence')->default(0.5)->unsigned();
+                $table->boolean('fulfilled')->default(false);
+                $table->json('source_snapshot_metrics')->nullable();
+                $table->timestamps();
+            });
+        } catch (\Illuminate\Database\QueryException $e) {
+            $msg = $e->getMessage();
+            if (str_contains($msg, 'already exists') || str_contains($msg, '42P07')) {
+                return;
+            }
+            throw $e;
+        }
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('prophecies');
+        if (Schema::hasTable('prophecies') && Schema::hasColumn('prophecies', 'prediction_tick')) {
+            Schema::dropIfExists('prophecies');
+        }
     }
 };

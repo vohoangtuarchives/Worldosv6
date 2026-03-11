@@ -35,6 +35,9 @@ final class AttractorEngine
         $getValue = fn (string $key) => $this->eventTriggerMapper->getMetricValue($stateVector, $key);
         $active = [];
 
+        $confidenceThreshold = (float) config('worldos.emergence.confidence_threshold', 0.7);
+        $emergenceEvents = [];
+
         foreach ($rows as $row) {
             $rules = $row->activation_rules;
             if (is_string($rules)) {
@@ -50,11 +53,16 @@ final class AttractorEngine
             if (is_string($forceMap)) {
                 $forceMap = json_decode($forceMap, true);
             }
+            $score = 1.0;
             $active[] = [
                 'type' => $row->name,
-                'strength' => 1.0,
+                'strength' => $score,
                 'force_map' => is_array($forceMap) ? $forceMap : [],
+                'confidence' => $score,
             ];
+            if ($score >= $confidenceThreshold) {
+                $emergenceEvents[] = ['pattern' => $row->name, 'confidence' => $score, 'tick' => $snapshot->tick];
+            }
         }
 
         if (!empty($active)) {
@@ -63,9 +71,12 @@ final class AttractorEngine
                 $vec = [];
             }
             $vec['active_attractors'] = $active;
+            if (!empty($emergenceEvents)) {
+                $vec['emergence_events'] = array_slice(array_merge($vec['emergence_events'] ?? [], $emergenceEvents), -50);
+            }
             $this->universeRepository->update($universe->id, ['state_vector' => $vec]);
         }
 
-        return $active;
+        return ['attractors' => $active, 'emergence_events' => $emergenceEvents];
     }
 }

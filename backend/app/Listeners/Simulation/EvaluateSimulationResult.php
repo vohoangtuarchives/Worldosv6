@@ -32,6 +32,7 @@ class EvaluateSimulationResult
         protected UniverseRepository $universeRepository,
         protected UniverseRepositoryInterface $simulationUniverseRepository,
         protected \App\Modules\Simulation\Services\PressureCalculator $pressureCalculator,
+        protected \App\Modules\Simulation\Services\CosmicPhaseDetector $cosmicPhaseDetector,
         protected \App\Modules\Institutions\Services\GreatFilterEngine $greatFilterEngine,
         protected \App\Modules\Institutions\Services\AscensionEngine $ascensionEngine,
         protected \App\Modules\Simulation\Services\ConvergenceEngine $convergenceEngine,
@@ -53,6 +54,7 @@ class EvaluateSimulationResult
         protected EventTriggerProcessor $eventTriggerProcessor,
         protected \App\Modules\Simulation\Services\IdeologyEvolutionEngine $ideologyEvolutionEngine,
         protected \App\Modules\Simulation\Services\GreatPersonEngine $greatPersonEngine,
+        protected \App\Services\Simulation\GreatPersonLegacyService $greatPersonLegacyService,
         protected TimelineMergeAction $timelineMergeAction,
         protected \App\Services\Simulation\MacroAgentSpawnService $macroAgentSpawnService,
         protected \App\Services\Simulation\CapabilityEngine $capabilityEngine,
@@ -69,6 +71,7 @@ class EvaluateSimulationResult
         protected \App\Services\Narrative\EraDetector $eraDetector,
         protected \App\Services\Narrative\ReligionSpreadEngine $religionSpreadEngine,
         protected \App\Services\Narrative\ProphecyFulfillment $prophecyFulfillment,
+        protected \App\Services\Simulation\CosmicEnergyPoolService $cosmicEnergyPoolService,
     ) {}
 
     public function handle(UniverseSimulationPulsed $event): void
@@ -142,6 +145,10 @@ class EvaluateSimulationResult
 
             // 6. Calculate & Store Pressure Metrics
             $this->storePressureMetrics($universe, $snapshot);
+
+            // Power Economy: cosmic energy pool (after metrics final)
+            $this->cosmicEnergyPoolService->processPulse($universe, $snapshot);
+            $universe->refresh();
 
             // 6a. WorldEvent + Historical Fact (Phase 1–2): build event → record fact → publish event.
             if (config('worldos.narrative_v2.enable_world_event', true)) {
@@ -220,6 +227,13 @@ class EvaluateSimulationResult
                     $this->greatPersonEngine->spawnIfEligible($universe, (int) $snapshot->tick);
                 } catch (\Throwable $e) {
                     \Illuminate\Support\Facades\Log::warning('Pulse: Great Person spawn failed: ' . $e->getMessage());
+                }
+            }
+            if (config('worldos.pulse.run_great_person_legacy', true)) {
+                try {
+                    $this->greatPersonLegacyService->writeToStateVector($universe, (int) $snapshot->tick);
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning('Pulse: Great Person legacy aggregate failed: ' . $e->getMessage());
                 }
             }
 
@@ -321,10 +335,22 @@ class EvaluateSimulationResult
         $stress = $this->pressureCalculator->calculateMaterialStress($state);
         $cosmic = $this->pressureCalculator->calculateCosmicMetrics($state);
 
-        $metrics = $snapshot->metrics ?? [];
-        $metrics['material_stress'] = $stress;
-        $metrics['order'] = $cosmic['order'];
-        $metrics['energy_level'] = $cosmic['energy_level'];
+        $calculated_metrics = [
+            'material_stress' => $stress,
+            'order' => $cosmic['order'],
+            'energy_level' => $cosmic['energy_level'],
+        ];
+        // Merge: snapshot->metrics (cosmic impact from SupremeEntity) wins over calculated pressure.
+        $metrics = array_replace_recursive($calculated_metrics, $snapshot->metrics ?? []);
+
+        // Metrics invariant [0,1]: clamp when writing so downstream engines can trust values.
+        $metrics = $this->clampMetricsToUnitInterval($metrics);
+        if (isset($snapshot->entropy)) {
+            $snapshot->entropy = max(0.0, min(1.0, (float) $snapshot->entropy));
+        }
+
+        // Cosmic phase (dominant axis + hysteresis)
+        $metrics['cosmic_phase'] = $this->cosmicPhaseDetector->detect($snapshot, $metrics);
 
         // Snapshot ảo (chưa lưu DB): cập nhật metrics vào bản ghi snapshot mới nhất để dashboard có số liệu gần đúng.
         if (!$snapshot->exists) {
@@ -340,6 +366,27 @@ class EvaluateSimulationResult
 
         $snapshot->metrics = $metrics;
         $snapshot->save();
+    }
+
+    /**
+     * Enforce metrics invariant [0,1] when writing. Clamp known scalar keys and ethos dimensions.
+     */
+    protected function clampMetricsToUnitInterval(array $metrics): array
+    {
+        $scalarKeys = ['material_stress', 'order', 'energy_level'];
+        foreach ($scalarKeys as $key) {
+            if (isset($metrics[$key])) {
+                $metrics[$key] = max(0.0, min(1.0, (float) $metrics[$key]));
+            }
+        }
+        if (isset($metrics['ethos']) && is_array($metrics['ethos'])) {
+            foreach (['spirituality', 'openness', 'rationality', 'hardtech'] as $dim) {
+                if (isset($metrics['ethos'][$dim])) {
+                    $metrics['ethos'][$dim] = max(0.0, min(1.0, (float) $metrics['ethos'][$dim]));
+                }
+            }
+        }
+        return $metrics;
     }
 
     protected function detectAnomalies($universe, $snapshot): void

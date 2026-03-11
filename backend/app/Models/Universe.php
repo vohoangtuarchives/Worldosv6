@@ -10,13 +10,14 @@ class Universe extends Model
 {
     protected $fillable = [
         'world_id', 'saga_id', 'multiverse_id', 'parent_universe_id', 'forked_at_tick',
-        'seed', 'current_tick', 'level', 'epoch', 'status', 'state_vector', 'name',
+        'seed', 'current_tick', 'level', 'epoch', 'status', 'state_vector', 'engine_manifest', 'name',
         'observation_load', 'last_observed_at', 'observer_bonus',
         'structural_coherence', 'entropy', 'kernel_genome', 'fitness_score',
     ];
 
     protected $casts = [
         'state_vector' => 'array',
+        'engine_manifest' => 'array',
         'observation_load' => 'float',
         'last_observed_at' => 'datetime',
         'observer_bonus' => 'float',

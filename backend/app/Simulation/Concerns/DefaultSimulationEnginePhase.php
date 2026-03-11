@@ -7,6 +7,8 @@ namespace App\Simulation\Concerns;
  */
 trait DefaultSimulationEnginePhase
 {
+    use HasEngineVersion;
+
     public function phase(): string
     {
         return 'default';

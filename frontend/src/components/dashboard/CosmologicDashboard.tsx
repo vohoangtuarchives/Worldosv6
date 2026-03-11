@@ -211,7 +211,13 @@ export function CosmologicDashboard({ embedded = false }: { embedded?: boolean }
       </div>
 
       <header className="flex-none p-4 border-b border-border/50 bg-card/30 backdrop-blur-md z-10 relative">
-        <div className="relative z-10">
+        <div className="relative z-10 space-y-4">
+          <div className="flex items-center gap-3">
+            <h3 className="text-[10px] font-semibold text-blue-400 uppercase tracking-widest flex items-center gap-2 shrink-0">
+              <Activity className="w-3 h-3" /> Chỉ số hệ thống
+            </h3>
+            <MetricGrid snapshot={latestSnapshot} variant="horizontal" className="flex-1 min-w-0" />
+          </div>
           <UniverseHeader
             universe={universe}
             universeId={universeId}
@@ -421,16 +427,7 @@ export function CosmologicDashboard({ embedded = false }: { embedded?: boolean }
         {showRightPanel && (
           <aside className="w-80 flex-none border-l border-border/50 bg-card/60 backdrop-blur-xl flex flex-col h-full transition-all duration-300 shadow-[-10px_0_30px_rgba(0,0,0,0.5)] z-20">
             <div className="flex-none p-4 border-b border-border/50">
-              <h3 className="text-sm font-semibold text-blue-400 uppercase tracking-widest mb-4 flex items-center gap-2 text-[10px]">
-                <Activity className="w-3 h-3" /> Chỉ số hệ thống
-              </h3>
-              <div className="space-y-4">
-                <MetricGrid
-                  snapshot={latestSnapshot}
-                  className="grid grid-cols-1 gap-3"
-                />
-              </div>
-              <div className="mt-4 pt-4 border-t border-border/50">
+              <div className="mt-4 pt-4 border-t border-border/50 first:mt-0 first:pt-0 first:border-t-0">
                 <NavigatorPanel universeId={universeId ?? null} refreshTrigger={latestSnapshot?.tick ?? universe?.current_tick ?? 0} />
               </div>
               <div className="mt-4 pt-4 border-t border-border/50">

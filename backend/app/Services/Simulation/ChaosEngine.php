@@ -8,11 +8,40 @@ use App\Models\Chronicle;
 use Illuminate\Support\Facades\Log;
 
 /**
- * ChaosEngine: Unbridled Probability Manager (§V25).
+ * ChaosEngine: Unbridled Probability Manager (§V25) + Stability & Chaos Control (Doc §32).
  * Introduces core logic destabilization for 'chaotic' worlds.
+ * Four mechanisms: dampening, event throttling, biological feedback (external), chaos quarantine.
  */
 class ChaosEngine
 {
+    /** Dampening: multiply raw rate by stability factor (0..1) to reduce volatility. */
+    public function dampen(float $rawRate, float $stabilityFactor): float
+    {
+        $factor = max(0.0, min(1.0, (float) config('worldos.chaos.dampening_stability_factor', 0.6)));
+        return $rawRate * ($stabilityFactor * (1.0 - $factor) + $factor);
+    }
+
+    /** Event throttling: reduce probability when count > threshold (e.g. war_probability *= 0.5). */
+    public function throttleProbability(float $probability, int $eventCount, int $threshold): float
+    {
+        if ($eventCount <= $threshold) {
+            return $probability;
+        }
+        $multiplier = (float) config('worldos.chaos.throttle_multiplier', 0.5);
+        return $probability * $multiplier;
+    }
+
+    /** Chaos quarantine: return influence scale 0..1 for a zone (0 = do not propagate to neighbors). */
+    public function quarantineInfluence(float $zoneInstability): float
+    {
+        $threshold = (float) config('worldos.chaos.quarantine_instability_threshold', 0.8);
+        if ($zoneInstability >= $threshold) {
+            return (float) config('worldos.chaos.quarantine_scale', 0.2);
+        }
+        return 1.0;
+    }
+
+    /**
     /**
      * Determine if a chaotic override should happen this tick.
      */

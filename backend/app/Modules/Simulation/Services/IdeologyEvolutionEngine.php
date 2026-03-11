@@ -5,6 +5,7 @@ namespace App\Modules\Simulation\Services;
 use App\Models\Chronicle;
 use App\Models\InstitutionalEntity;
 use App\Models\Universe;
+use App\Services\Simulation\IdeologyConversionService;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -15,7 +16,9 @@ class IdeologyEvolutionEngine
 {
     private const IDEOLOGY_KEYS = ['tradition', 'innovation', 'trust', 'violence', 'respect', 'myth'];
 
-    public function __construct() {}
+    public function __construct(
+        protected IdeologyConversionService $conversionService
+    ) {}
 
     /**
      * Compute dominant ideology for the universe from active institutions.
@@ -53,6 +56,7 @@ class IdeologyEvolutionEngine
         $store = (bool) config('worldos.ideology_evolution.store_in_state_vector', true);
         if ($store) {
             $this->storeIdeologyInState($universe, $agg, $previous);
+            $this->storeConversionRate($universe, $agg, $previous);
         }
 
         return [
@@ -103,6 +107,22 @@ class IdeologyEvolutionEngine
     {
         $vec = (array) ($universe->state_vector ?? []);
         $vec['dominant_ideology'] = $dominant;
+        if ($previous !== null) {
+            $vec['previous_dominant_ideology'] = $previous;
+        }
+        $universe->state_vector = $vec;
+        $universe->save();
+    }
+
+    /** Doc §10: Store conversion probability (ideology drift) in state. */
+    protected function storeConversionRate(Universe $universe, array $current, ?array $previous): void
+    {
+        if ($previous === null || empty($previous)) {
+            return;
+        }
+        $rate = $this->conversionService->conversionProbability($universe, $previous, $current);
+        $vec = (array) ($universe->state_vector ?? []);
+        $vec['ideology_conversion'] = ['rate_per_tick' => $rate];
         $universe->state_vector = $vec;
         $universe->save();
     }

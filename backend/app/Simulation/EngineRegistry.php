@@ -51,4 +51,19 @@ final class EngineRegistry
         });
         return $ordered;
     }
+
+    /**
+     * Engine manifest for deterministic replay (Doc §26): engine name => version.
+     *
+     * @return array<string, string>
+     */
+    public function getManifest(): array
+    {
+        $manifest = [];
+        foreach ($this->engines as $engine) {
+            $manifest[$engine->name()] = $engine->version();
+        }
+        ksort($manifest);
+        return $manifest;
+    }
 }

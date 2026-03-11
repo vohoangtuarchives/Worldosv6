@@ -6,11 +6,13 @@ import { type Snapshot } from "@/types/simulation";
 interface MetricGridProps {
     snapshot: Snapshot | null;
     className?: string;
+    /** "horizontal" = single row at top (compact cards); default = grid */
+    variant?: "grid" | "horizontal";
 }
 
 const FIVE_D_FIELDS = ["survival", "power", "wealth", "knowledge", "meaning"] as const;
 
-export function MetricGrid({ snapshot, className }: MetricGridProps) {
+export function MetricGrid({ snapshot, className, variant = "grid" }: MetricGridProps) {
     const metrics = snapshot?.metrics || {};
     const fields = (snapshot?.state_vector?.fields ?? {}) as Record<string, number>;
 
@@ -66,18 +68,26 @@ export function MetricGrid({ snapshot, className }: MetricGridProps) {
 
     const has5D = FIVE_D_FIELDS.some((f) => typeof fields[f] === "number");
 
+    const isHorizontal = variant === "horizontal";
+    const containerClass = isHorizontal
+        ? "flex flex-nowrap gap-2 overflow-x-auto pb-1 scrollbar-thin"
+        : (className?.includes("grid") || className?.includes("flex") ? className : "grid gap-4 md:grid-cols-2 lg:grid-cols-4");
+    const cardClass = isHorizontal
+        ? "flex-shrink-0 min-w-[120px] rounded-lg border border-border bg-card/80 px-3 py-2 backdrop-blur-sm transition-all hover:bg-muted/60 hover:border-border group"
+        : "rounded-lg border border-border bg-card/80 p-4 backdrop-blur-sm transition-all hover:bg-muted/60 hover:border-border group";
+
     return (
-        <div className="space-y-3">
-            <div className={className?.includes("grid") ? className : "grid gap-4 md:grid-cols-2 lg:grid-cols-4"}>
+        <div className={isHorizontal ? (className ?? "") : "space-y-3"}>
+            <div className={containerClass}>
                 {statCards.map((card) => (
-                    <div key={card.label} className="rounded-lg border border-border bg-card/80 p-4 backdrop-blur-sm transition-all hover:bg-muted/60 hover:border-border group">
-                        <div className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <h3 className="tracking-tight text-xs font-medium text-muted-foreground uppercase">{card.label}</h3>
+                    <div key={card.label} className={cardClass}>
+                        <div className="flex flex-row items-center justify-between space-y-0 pb-1">
+                            <h3 className="tracking-tight text-[10px] font-medium text-muted-foreground uppercase">{card.label}</h3>
                         </div>
-                        <div className={`text-2xl font-bold font-mono tracking-tighter ${card.color} group-hover:scale-105 transition-transform origin-left`}>
+                        <div className={`font-bold font-mono tracking-tighter ${card.color} group-hover:scale-105 transition-transform origin-left ${isHorizontal ? "text-lg" : "text-2xl"}`}>
                             {card.value}
                         </div>
-                        <p className="text-[10px] text-muted-foreground mt-1 font-mono">{card.desc}</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5 font-mono truncate" title={card.desc}>{card.desc}</p>
                     </div>
                 ))}
             </div>

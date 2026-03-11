@@ -1,0 +1,83 @@
+<?php
+
+namespace App\Services\Simulation;
+
+use App\Contracts\Repositories\UniverseRepositoryInterface;
+use App\Models\Idea;
+use App\Models\Universe;
+use Illuminate\Support\Facades\Log;
+
+/**
+ * Doc §9: Knowledge graph — nodes from Ideas/Artifacts, edges (stub prerequisite/derived_from).
+ * Writes state_vector['knowledge_graph'] = { nodes: [...], edges: [...], updated_tick }.
+ */
+final class KnowledgeGraphService
+{
+    public function __construct(
+        protected UniverseRepositoryInterface $universeRepository
+    ) {}
+
+    public function evaluate(Universe $universe, int $currentTick): void
+    {
+        $interval = (int) config('worldos.knowledge_graph.interval', 10);
+        if ($interval <= 0 || $currentTick % $interval !== 0) {
+            return;
+        }
+
+        if (config('worldos.simulation.rust_authoritative', false)) {
+            $stateVector = $this->getStateVector($universe);
+            if (isset($stateVector['knowledge_graph'])) {
+                return;
+            }
+        }
+
+        $ideas = Idea::where('universe_id', $universe->id)->get();
+        $nodes = [];
+        foreach ($ideas as $idea) {
+            $nodes[] = [
+                'id' => 'idea_' . $idea->id,
+                'type' => $idea->info_type ?? 'meme',
+                'knowledge_level' => min(1.0, max(0.0, (float) ($idea->influence_score ?? 0) / 100.0)),
+                'followers' => (float) ($idea->followers ?? 0),
+            ];
+        }
+
+        $edges = $this->buildStubEdges($ideas);
+
+        $stateVector = $this->getStateVector($universe);
+        $stateVector['knowledge_graph'] = [
+            'nodes' => array_slice($nodes, 0, (int) config('worldos.knowledge_graph.max_nodes', 500)),
+            'edges' => array_slice($edges, 0, (int) config('worldos.knowledge_graph.max_edges', 200)),
+            'updated_tick' => $currentTick,
+        ];
+        $this->universeRepository->update($universe->id, ['state_vector' => $stateVector]);
+        Log::debug("KnowledgeGraphService: Universe {$universe->id} knowledge_graph updated at tick {$currentTick}");
+    }
+
+    private function getStateVector(Universe $universe): array
+    {
+        $sv = $universe->state_vector;
+        if (is_string($sv)) {
+            $sv = json_decode($sv, true) ?? [];
+        }
+        return is_array($sv) ? $sv : [];
+    }
+
+    /**
+     * Stub: simple edges by idea_id order (derived_from / prerequisite placeholder).
+     */
+    private function buildStubEdges($ideas): array
+    {
+        $edges = [];
+        $ids = $ideas->pluck('id')->values()->all();
+        $n = count($ids);
+        for ($i = 0; $i < $n - 1; $i++) {
+            $edges[] = [
+                'from' => 'idea_' . $ids[$i],
+                'to' => 'idea_' . $ids[$i + 1],
+                'relation' => 'derived_from',
+            ];
+        }
+        return $edges;
+    }
+}

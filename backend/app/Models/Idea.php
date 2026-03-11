@@ -8,11 +8,19 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Idea extends Model
 {
+    /** Doc §8: rumor | propaganda | science | religion | meme */
+    public const INFO_TYPE_RUMOR = 'rumor';
+    public const INFO_TYPE_PROPAGANDA = 'propaganda';
+    public const INFO_TYPE_SCIENCE = 'science';
+    public const INFO_TYPE_RELIGION = 'religion';
+    public const INFO_TYPE_MEME = 'meme';
+
     protected $fillable = [
         'universe_id',
         'origin_actor_id',
         'artifact_id',
         'theme',
+        'info_type',
         'influence_score',
         'followers',
         'birth_tick',

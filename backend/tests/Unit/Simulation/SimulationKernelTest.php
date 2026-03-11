@@ -21,7 +21,9 @@ class SimulationKernelTest extends TestCase
         $registry = new EngineRegistry();
         $registry->register(new class implements \App\Simulation\Contracts\SimulationEngine {
             public function name(): string { return 'noop'; }
+            public function version(): string { return '1.0.0'; }
             public function priority(): int { return 0; }
+            public function phase(): string { return 'default'; }
             public function tickRate(): int { return 1; }
             public function handle(WorldState $state, TickContext $ctx): EngineResult { return EngineResult::empty(); }
         });
@@ -46,7 +48,9 @@ class SimulationKernelTest extends TestCase
         $registry->register(new class($ran) implements \App\Simulation\Contracts\SimulationEngine {
             public function __construct(private \stdClass $ran) {}
             public function name(): string { return 'every_two'; }
+            public function version(): string { return '1.0.0'; }
             public function priority(): int { return 1; }
+            public function phase(): string { return 'default'; }
             public function tickRate(): int { return 2; }
             public function handle(WorldState $state, TickContext $ctx): EngineResult {
                 $this->ran->value = ($state->getTick() % 2 === 0);

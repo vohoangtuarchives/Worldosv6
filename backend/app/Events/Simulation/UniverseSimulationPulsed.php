@@ -27,4 +27,12 @@ class UniverseSimulationPulsed implements ShouldBroadcast
     {
         return 'pulsed';
     }
+
+    /**
+     * Do not broadcast when snapshot is virtual (not persisted); avoids serialization and findOrFail on null id.
+     */
+    public function broadcastWhen(): bool
+    {
+        return $this->snapshot->exists;
+    }
 }

@@ -7,6 +7,7 @@ use App\Models\UniverseSnapshot;
 use App\Models\Actor;
 use App\Models\InstitutionalEntity;
 use App\Models\Chronicle;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -115,12 +116,20 @@ class ActorCognitiveService
         // Civilization tendency from cognitive profile
         $tendency = $this->detectCivilizationTendency($destinyGradient, $causalCuriosity, $anomalySensitivity);
 
+        // Doc §21: MentalState (beliefs, goals, emotions), PerceptionState, cognitive_biases
+        $mentalState = $this->computeMentalState($destinyGradient, $causalCuriosity, $anomalySensitivity, $existentialTension, $actorStats, $tendency);
+        $perceptionState = $this->computePerceptionState($state, $culturalCoherence, $anomalyEvents);
+        $cognitiveBiases = $this->computeCognitiveBiases($actorStats);
+
         return [
             'destiny_gradient'    => $destinyGradient,
             'causal_curiosity'    => $causalCuriosity,
             'anomaly_sensitivity' => $anomalySensitivity,
             'existential_tension' => $existentialTension,
             'civilization_tendency' => $tendency,
+            'mental_state'       => $mentalState,
+            'perception_state'   => $perceptionState,
+            'cognitive_biases'   => $cognitiveBiases,
         ];
     }
 
@@ -192,9 +201,50 @@ class ActorCognitiveService
         Log::info("ActorCognitiveService: [{$type}] triggered in Universe #{$universe->id} at tick {$tick}.");
     }
 
+    /** Doc §21: aggregate MentalState — beliefs, goals, emotions. */
+    protected function computeMentalState(float $destiny, float $curiosity, float $anomaly, float $tension, array $actorStats, string $tendency): array
+    {
+        $beliefs = $tendency === 'theocracy_prone' ? ['destiny', 'prophecy'] : ($tendency === 'scientific_prone' ? ['causality', 'evidence'] : ['mixed']);
+        $goals = $tension > 0.6 ? ['meaning', 'survival'] : ['growth', 'stability'];
+        return [
+            'beliefs' => $beliefs,
+            'goals'   => $goals,
+            'emotions' => [
+                'fear'  => $this->clamp((float)($actorStats['fear'] ?? 0.4) + $anomaly * 0.2),
+                'anger' => $this->clamp((1.0 - (float)($actorStats['curiosity'] ?? 0.5)) * 0.5),
+                'hope'  => $this->clamp($destiny * 0.4 + (float)($actorStats['curiosity'] ?? 0.5) * 0.3),
+                'pride' => $this->clamp($destiny * 0.3),
+            ],
+        ];
+    }
+
+    /** Doc §21: PerceptionState — information_accuracy, rumor influence. */
+    protected function computePerceptionState(array $state, float $culturalCoherence, int $anomalyEvents): array
+    {
+        $accuracy = max(0.2, min(1.0, $culturalCoherence * 0.8 + (1.0 - min(1.0, $anomalyEvents * 0.05)) * 0.4));
+        $rumorCount = (int) ($state['idea_diffusion']['rumor_count'] ?? 0);
+        return [
+            'information_accuracy' => round($accuracy, 4),
+            'rumors' => $rumorCount,
+        ];
+    }
+
+    /** Doc §21: cognitive_biases (aggregate indices from traits). */
+    protected function computeCognitiveBiases(array $actorStats): array
+    {
+        $dogmatism = (float)($actorStats['dogmatism'] ?? 0.5);
+        $curiosity = (float)($actorStats['curiosity'] ?? 0.5);
+        return [
+            'confirmation_bias' => round($this->clamp($dogmatism * 0.6 + (1 - $curiosity) * 0.3), 4),
+            'loss_aversion'      => round($this->clamp((float)($actorStats['fear'] ?? 0.4) * 0.7), 4),
+            'status_quo_bias'    => round($this->clamp($dogmatism * 0.5), 4),
+            'authority_bias'     => round($this->clamp($dogmatism * 0.6), 4),
+        ];
+    }
+
     protected function getActorTraitAverages(int $universeId): array
     {
-        $result = \DB::table('actors')
+        $result = DB::table('actors')
             ->where('universe_id', $universeId)
             ->where('is_alive', true)
             ->selectRaw("

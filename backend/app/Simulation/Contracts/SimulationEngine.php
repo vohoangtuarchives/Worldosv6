@@ -12,6 +12,11 @@ interface SimulationEngine
     public function name(): string;
 
     /**
+     * Semantic version for deterministic replay (e.g. "1.0.0"). Doc §26.
+     */
+    public function version(): string;
+
+    /**
      * Priority in tick pipeline (1 = first). Doc §3: Planet=1, Climate=2, Ecology=3, Civilization=4, …
      */
     public function priority(): int;

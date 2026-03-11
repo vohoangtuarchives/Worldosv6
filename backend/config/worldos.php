@@ -31,6 +31,83 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Rust authoritative simulation state (RUST_LARAVEL_SIMULATION_CONTRACT)
+    |--------------------------------------------------------------------------
+    | When true, Laravel MUST NOT overwrite civilization/economy/market/politics/war:
+    | pipeline stages skip writing if state_vector already has the corresponding key.
+    */
+    'simulation' => [
+        'rust_authoritative' => (bool) env('WORLDOS_SIMULATION_RUST_AUTHORITATIVE', false),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Chaos & Stability Control (Doc §32)
+    |--------------------------------------------------------------------------
+    */
+    'chaos' => [
+        'dampening_stability_factor' => (float) env('WORLDOS_CHAOS_DAMPENING_FACTOR', 0.6),
+        'throttle_multiplier' => (float) env('WORLDOS_CHAOS_THROTTLE_MULTIPLIER', 0.5),
+        'quarantine_instability_threshold' => (float) env('WORLDOS_CHAOS_QUARANTINE_THRESHOLD', 0.8),
+        'quarantine_scale' => (float) env('WORLDOS_CHAOS_QUARANTINE_SCALE', 0.2),
+    ],
+
+    'emergence' => [
+        'confidence_threshold' => (float) env('WORLDOS_EMERGENCE_CONFIDENCE_THRESHOLD', 0.7),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Social graph — trust, loyalty, rivalry (Doc §22)
+    |--------------------------------------------------------------------------
+    */
+    'social_graph' => [
+        'max_trust_edges' => (int) env('WORLDOS_SOCIAL_GRAPH_MAX_TRUST', 100),
+        'max_loyalty_edges' => (int) env('WORLDOS_SOCIAL_GRAPH_MAX_LOYALTY', 100),
+        'max_rivalry_edges' => (int) env('WORLDOS_SOCIAL_GRAPH_MAX_RIVALRY', 50),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Knowledge graph (Doc §9) — nodes from Ideas, stub edges
+    |--------------------------------------------------------------------------
+    */
+    'knowledge_graph' => [
+        'interval' => (int) env('WORLDOS_KNOWLEDGE_GRAPH_INTERVAL', 10),
+        'max_nodes' => (int) env('WORLDOS_KNOWLEDGE_GRAPH_MAX_NODES', 500),
+        'max_edges' => (int) env('WORLDOS_KNOWLEDGE_GRAPH_MAX_EDGES', 200),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Reality Calibration (Doc §33) — benchmarks + suggest, no auto-apply
+    |--------------------------------------------------------------------------
+    */
+    'calibration' => [
+        'auto_run' => (bool) env('WORLDOS_CALIBRATION_AUTO_RUN', false),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Observability (Doc §31) — Jaeger tracing optional
+    |--------------------------------------------------------------------------
+    | When tracing_enabled is true, simulation steps can emit spans (future).
+    */
+    'observability' => [
+        'tracing_enabled' => (bool) env('WORLDOS_OBSERVABILITY_TRACING_ENABLED', false),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Self-improving simulation (Doc §30) — stub hook, no closed loop
+    |--------------------------------------------------------------------------
+    */
+    'self_improving' => [
+        'enabled' => (bool) env('WORLDOS_SELF_IMPROVING_ENABLED', false),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Entropy floor (drift sàn tối thiểu)
     |--------------------------------------------------------------------------
     | Khi tick > 0, entropy từ engine/stub không được dưới giá trị này (tránh 0 thuần).
@@ -394,6 +471,7 @@ return [
     */
     'ideology_evolution' => [
         'store_in_state_vector' => (bool) env('WORLDOS_IDEOLOGY_STORE_IN_STATE', true),
+        'conversion_base_rate' => (float) env('WORLDOS_IDEOLOGY_CONVERSION_BASE_RATE', 0.01),
     ],
 
     /*
@@ -410,6 +488,117 @@ return [
         'cooldown_ticks' => (int) env('WORLDOS_GREAT_PERSON_COOLDOWN_TICKS', 500),
         'heroes_per_population' => (int) env('WORLDOS_GREAT_PERSON_HEROES_PER_POPULATION', 100000),
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Supreme Entity natural emergence (World Will / Outer God) — config-driven
+    |--------------------------------------------------------------------------
+    | scale: base probability scale. max_probability: safety cap. optimal_entropy_*: entropy factor peak.
+    | min_ticks_between_entities: cooldown; max_global_entities: cap active entities.
+    | complexity_population_cap: denominator for complexity = population / cap (clamped 0..1).
+    */
+    'emergence' => [
+        'scale' => (float) env('WORLDOS_EMERGENCE_SCALE', 0.02),
+        'max_probability' => (float) env('WORLDOS_EMERGENCE_MAX_PROBABILITY', 0.02),
+        'optimal_entropy_world_will' => (float) env('WORLDOS_EMERGENCE_OPTIMAL_ENTROPY_WORLD_WILL', 0.4),
+        'optimal_entropy_outer_god' => (float) env('WORLDOS_EMERGENCE_OPTIMAL_ENTROPY_OUTER_GOD', 0.85),
+        'ticks_per_year' => (int) env('WORLDOS_EMERGENCE_TICKS_PER_YEAR', 12),
+        'min_ticks_between_entities' => (int) env('WORLDOS_EMERGENCE_MIN_TICKS_BETWEEN', 200),
+        'max_global_entities' => (int) env('WORLDOS_EMERGENCE_MAX_GLOBAL_ENTITIES', 5),
+        'complexity_population_cap' => (int) env('WORLDOS_EMERGENCE_COMPLEXITY_POPULATION_CAP', 1_000_000),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Cosmic Phase (dominant axis + hysteresis)
+    |--------------------------------------------------------------------------
+    | Phase = argmax(faith, chaos, order, tech). Change only when
+    | new_dominant_score > previous_dominant_score + hysteresis.
+    */
+    'cosmic_phase' => [
+        'hysteresis' => (float) env('WORLDOS_COSMIC_PHASE_HYSTERESIS', 0.15),
+        // Optional: per-phase modifiers for narrative/engine (e.g. faith => ['faith_generation_multiplier' => 1.5])
+        'modifiers' => [
+            'faith' => [],
+            'chaos' => [],
+            'order' => [],
+            'tech' => [],
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Power Economy / Cosmic Energy Pool
+    |--------------------------------------------------------------------------
+    | Universe-level cosmic energy pool fed by cosmic_phase + energy_level and
+    | active Supreme Entities. Stored in state_vector.cosmic_energy_pool.
+    */
+    'power_economy' => [
+        'enabled' => (bool) env('WORLDOS_POWER_ECONOMY_ENABLED', false),
+        'cosmic_pool_max' => (float) env('WORLDOS_POWER_ECONOMY_COSMIC_POOL_MAX', 100.0),
+        'inflow_scale' => (float) env('WORLDOS_POWER_ECONOMY_INFLOW_SCALE', 0.1),
+        'decay_per_tick' => (float) env('WORLDOS_POWER_ECONOMY_DECAY_PER_TICK', 0.001),
+        'feed_zones' => (bool) env('WORLDOS_POWER_ECONOMY_FEED_ZONES', false),
+        'feed_zones_ratio' => (float) env('WORLDOS_POWER_ECONOMY_FEED_ZONES_RATIO', 0.01),
+        'feed_zones_cap_per_zone' => (float) env('WORLDOS_POWER_ECONOMY_FEED_ZONES_CAP_PER_ZONE', 2.0),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Economy — trade flow, hub_score (Doc §16)
+    |--------------------------------------------------------------------------
+    */
+    'economy' => [
+        'trade_route_capacity_factor' => (float) env('WORLDOS_ECONOMY_TRADE_ROUTE_CAPACITY', 0.5),
+        'hub_connectivity_factor' => (float) env('WORLDOS_ECONOMY_HUB_CONNECTIVITY', 0.3),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Inequality (Doc §7) — gini, surplus concentration
+    |--------------------------------------------------------------------------
+    */
+    'inequality' => [
+        'elite_population_share' => (float) env('WORLDOS_INEQUALITY_ELITE_SHARE', 0.1),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Legitimacy & elite (Doc §17)
+    |--------------------------------------------------------------------------
+    */
+    'legitimacy' => [
+        'elite_overproduction_threshold' => (float) env('WORLDOS_LEGITIMACY_ELITE_OVERPRODUCTION', 0.15),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Civilization Discovery (Doc §36) — fitness evaluation interval
+    |--------------------------------------------------------------------------
+    */
+    'civilization_discovery' => [
+        'fitness_interval' => (int) env('WORLDOS_CIVILIZATION_DISCOVERY_FITNESS_INTERVAL', 10),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Market (prices, volatility, events)
+    |--------------------------------------------------------------------------
+    | economy.market in state_vector; MARKET_CRASH / ECONOMIC_BOOM events.
+    */
+    'market' => [
+        'price_base_food' => (float) env('WORLDOS_MARKET_PRICE_BASE_FOOD', 1.0),
+        'price_min_food' => (float) env('WORLDOS_MARKET_PRICE_MIN_FOOD', 0.2),
+        'price_max_food' => (float) env('WORLDOS_MARKET_PRICE_MAX_FOOD', 5.0),
+        'crash_price_threshold' => (float) env('WORLDOS_MARKET_CRASH_PRICE_THRESHOLD', 0.4),
+        'boom_surplus_threshold' => (float) env('WORLDOS_MARKET_BOOM_SURPLUS_THRESHOLD', 50.0),
+        'emit_trade_route_event' => (bool) env('WORLDOS_MARKET_EMIT_TRADE_ROUTE_EVENT', true),
+        // Energy price from cosmic_energy_pool scarcity (pool low → price high). Laravel meta layer only.
+        'price_base_energy' => (float) env('WORLDOS_MARKET_PRICE_BASE_ENERGY', 1.0),
+        'price_min_energy' => (float) env('WORLDOS_MARKET_PRICE_MIN_ENERGY', 0.3),
+        'price_max_energy' => (float) env('WORLDOS_MARKET_PRICE_MAX_ENERGY', 4.0),
+    ],
+
     'hero_lifecycle' => [
         'influence_rising' => (float) env('WORLDOS_HERO_INFLUENCE_RISING', 30),
         'influence_peak' => (float) env('WORLDOS_HERO_INFLUENCE_PEAK', 70),
@@ -441,6 +630,7 @@ return [
     'pulse' => [
         'run_ideology' => (bool) env('WORLDOS_PULSE_RUN_IDEOLOGY', true),
         'run_great_person' => (bool) env('WORLDOS_PULSE_RUN_GREAT_PERSON', true),
+        'run_great_person_legacy' => (bool) env('WORLDOS_PULSE_RUN_GREAT_PERSON_LEGACY', true),
         'run_actor_decision' => (bool) env('WORLDOS_PULSE_RUN_ACTOR_DECISION', false),
     ],
 
@@ -480,6 +670,22 @@ return [
         'followers_threshold_for_school' => (int) env('WORLDOS_IDEA_FOLLOWERS_THRESHOLD', 10),
         'influence_growth_per_tick' => (float) env('WORLDOS_IDEA_INFLUENCE_GROWTH', 0.01),
         'run_on_pulse' => (bool) env('WORLDOS_PULSE_RUN_IDEA_DIFFUSION', false),
+        // Doc §8: artifact_type → info_type (rumor|propaganda|science|religion|meme)
+        'info_type_map' => [
+            'prophecy' => 'religion',
+            'invention' => 'science',
+            'doctrine' => 'propaganda',
+            'myth' => 'rumor',
+            'meme' => 'meme',
+        ],
+        // Doc §8: institutional amplification (church→religion, state→propaganda, academy→science)
+        'institutional_amplification' => [
+            'religion' => (float) env('WORLDOS_IDEA_AMP_RELIGION', 1.2),
+            'propaganda' => (float) env('WORLDOS_IDEA_AMP_PROPAGANDA', 1.15),
+            'science' => (float) env('WORLDOS_IDEA_AMP_SCIENCE', 1.25),
+            'rumor' => 1.0,
+            'meme' => 1.05,
+        ],
     ],
 
     /*
@@ -498,6 +704,7 @@ return [
     |--------------------------------------------------------------------------
     */
     'narrative' => [
+        'kafka_enabled' => (bool) env('WORLDOS_NARRATIVE_KAFKA_ENABLED', false),
         'era_interval' => (int) env('WORLDOS_NARRATIVE_ERA_INTERVAL', 200),
         'civilization_on_collapse' => true,
         'mythology_on_events' => true,

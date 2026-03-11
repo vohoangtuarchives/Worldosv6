@@ -3,21 +3,23 @@
 namespace Tests\Unit\Actions\Simulation;
 
 use App\Actions\Simulation\ForkUniverseAction;
+use App\Contracts\Repositories\BranchEventRepositoryInterface;
 use App\Contracts\Repositories\UniverseRepositoryInterface;
 use App\Models\BranchEvent;
 use App\Models\Universe;
 use App\Models\World;
 use App\Services\Saga\SagaService;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 use Mockery\MockInterface;
 
 class ForkUniverseActionTest extends TestCase
 {
-    use DatabaseTransactions;
+    use RefreshDatabase;
 
     private ForkUniverseAction $action;
     private MockInterface $universeRepoMock;
+    private MockInterface $branchRepoMock;
     private MockInterface $sagaServiceMock;
 
     protected function setUp(): void
@@ -25,8 +27,9 @@ class ForkUniverseActionTest extends TestCase
         parent::setUp();
 
         $this->universeRepoMock = $this->mock(UniverseRepositoryInterface::class);
+        $this->branchRepoMock = $this->mock(BranchEventRepositoryInterface::class);
         $this->sagaServiceMock = $this->mock(SagaService::class);
-        $this->action = new ForkUniverseAction($this->universeRepoMock, $this->sagaServiceMock);
+        $this->action = new ForkUniverseAction($this->universeRepoMock, $this->branchRepoMock, $this->sagaServiceMock);
     }
 
     private function createWorldAndUniverse(int $tick = 10): Universe
@@ -47,6 +50,9 @@ class ForkUniverseActionTest extends TestCase
     public function test_fork_creates_branch_event_and_spawns_universe(): void
     {
         $universe = $this->createWorldAndUniverse(10);
+
+        $this->branchRepoMock->shouldReceive('existsFork')->with($universe->id, 10)->andReturn(false);
+        $this->branchRepoMock->shouldReceive('hasForkAsParent')->with($universe->id)->andReturn(false);
 
         $decisionData = [
             'meta' => [
@@ -87,22 +93,14 @@ class ForkUniverseActionTest extends TestCase
     {
         $universe = $this->createWorldAndUniverse(10);
 
-        // Pre-create an existing fork event
-        BranchEvent::create([
-            'universe_id' => $universe->id,
-            'from_tick' => 10,
-            'event_type' => 'fork',
-            'payload' => ['reason' => 'already_forked'],
-        ]);
+        $this->branchRepoMock->shouldReceive('existsFork')->with($universe->id, 10)->andReturn(true);
 
-        // Should NOT be called
         $this->sagaServiceMock->shouldNotReceive('spawnUniverse');
         $this->universeRepoMock->shouldNotReceive('update');
 
         $this->action->execute($universe, 10, ['meta' => []]);
 
-        // Only the original branch event should exist
-        $this->assertEquals(1, BranchEvent::where('universe_id', $universe->id)
+        $this->assertEquals(0, BranchEvent::where('universe_id', $universe->id)
             ->where('from_tick', 10)
             ->where('event_type', 'fork')
             ->count()
@@ -113,6 +111,8 @@ class ForkUniverseActionTest extends TestCase
     {
         $universe = $this->createWorldAndUniverse(20);
 
+        $this->branchRepoMock->shouldReceive('existsFork')->with($universe->id, 20)->andReturn(false);
+        $this->branchRepoMock->shouldReceive('hasForkAsParent')->with($universe->id)->andReturn(false);
         $this->sagaServiceMock->shouldReceive('spawnUniverse')->once();
         $this->universeRepoMock->shouldReceive('update')->once()->andReturn(true);
 

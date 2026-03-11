@@ -8,6 +8,7 @@ use App\Models\Universe;
 use App\Models\World;
 use App\Simulation\EngineProductMapping;
 use App\Simulation\EngineRegistry;
+use App\Services\Simulation\SimulationMetricsExporter;
 use App\Modules\Simulation\Services\CivilizationMemoryEngine;
 use App\Modules\Simulation\Services\GreatPersonEngine;
 use App\Modules\Simulation\Services\IdeologyEvolutionEngine;
@@ -233,6 +234,61 @@ class WorldosEnginesController extends Controller
             'ok' => ! in_array(false, $engines, true),
             'engines' => $engines,
             'config' => $config,
+        ]);
+    }
+
+    /**
+     * Prometheus-format metrics (Doc §31): tick_duration_ms, event_queue_depth.
+     */
+    public function metrics(SimulationMetricsExporter $exporter): \Illuminate\Http\Response
+    {
+        return response($exporter->toPrometheusText(), 200, [
+            'Content-Type' => 'text/plain; charset=UTF-8',
+        ]);
+    }
+
+    /**
+     * State summary for dashboard (Doc plan Hướng 3): slice of state_vector (economy, demographic, politics, social_graph).
+     */
+    public function stateSummary(string $id): JsonResponse
+    {
+        $universe = Universe::find((int) $id);
+        if (! $universe) {
+            return response()->json(['message' => 'Universe not found'], 404);
+        }
+        $sv = $universe->state_vector;
+        if (is_string($sv)) {
+            $sv = json_decode($sv, true) ?? [];
+        }
+        $civilization = $sv['civilization'] ?? [];
+        $economy = $civilization['economy'] ?? [];
+        $demographic = $civilization['demographic'] ?? [];
+        $politics = $civilization['politics'] ?? [];
+        $socialGraph = $sv['social_graph'] ?? [];
+        $socialSummary = [
+            'trust_edges' => is_array($socialGraph['trust'] ?? null) ? count($socialGraph['trust']) : 0,
+            'loyalty_edges' => is_array($socialGraph['loyalty'] ?? null) ? count($socialGraph['loyalty']) : 0,
+            'rivalry_edges' => is_array($socialGraph['rivalry'] ?? null) ? count($socialGraph['rivalry']) : 0,
+            'updated_tick' => $socialGraph['updated_tick'] ?? null,
+        ];
+        $discovery = $civilization['discovery'] ?? null;
+        $knowledgeGraph = $sv['knowledge_graph'] ?? [];
+        $knowledgeGraphSummary = [
+            'node_count' => is_array($knowledgeGraph['nodes'] ?? null) ? count($knowledgeGraph['nodes']) : 0,
+            'edge_count' => is_array($knowledgeGraph['edges'] ?? null) ? count($knowledgeGraph['edges']) : 0,
+            'updated_tick' => $knowledgeGraph['updated_tick'] ?? null,
+        ];
+        $ideologyConversion = $sv['ideology_conversion'] ?? null;
+        return response()->json([
+            'universe_id' => $universe->id,
+            'current_tick' => $universe->current_tick,
+            'economy' => $economy,
+            'demographic' => $demographic,
+            'politics' => $politics,
+            'social_graph' => $socialSummary,
+            'discovery' => $discovery,
+            'knowledge_graph' => $knowledgeGraphSummary,
+            'ideology_conversion' => $ideologyConversion,
         ]);
     }
 }

@@ -8,13 +8,13 @@ use App\Models\MythScar;
 use App\Models\Universe;
 use App\Models\UniverseSnapshot;
 use App\Models\World;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 use Mockery\MockInterface;
 
 class ApplyMythScarActionTest extends TestCase
 {
-    use DatabaseTransactions;
+    use RefreshDatabase;
 
     private ApplyMythScarAction $action;
     private MockInterface $graphProviderMock;

@@ -169,12 +169,14 @@ Route::middleware('auth:sanctum')->prefix('worldos')->group(function () {
     Route::post('worlds/{id}/extract-lore', [WorldosEnginesController::class, 'worldExtractLore'])->name('worldos.worlds.extract-lore');
     Route::get('sagas/{id}/timelines', [WorldosEnginesController::class, 'sagaTimelines'])->name('worldos.sagas.timelines');
     Route::post('sagas/{id}/extract-lore', [WorldosEnginesController::class, 'sagaExtractLore'])->name('worldos.sagas.extract-lore');
+    Route::get('universes/{id}/state-summary', [WorldosEnginesController::class, 'stateSummary'])->name('worldos.universes.state-summary');
     Route::get('universes/{id}/civilization-memory', [WorldosEnginesController::class, 'civilizationMemory'])->name('worldos.universes.civilization-memory');
     Route::post('universes/{id}/mythology', [WorldosEnginesController::class, 'mythology'])->name('worldos.universes.mythology');
     Route::get('universes/{id}/ideology', [WorldosEnginesController::class, 'ideology'])->name('worldos.universes.ideology');
     Route::post('universes/{id}/great-person', [WorldosEnginesController::class, 'greatPerson'])->name('worldos.universes.great-person');
     Route::get('engines', [WorldosEnginesController::class, 'index'])->name('worldos.engines');
     Route::get('engines/status', [WorldosEnginesController::class, 'status'])->name('worldos.engines.status');
+    Route::get('metrics', [WorldosEnginesController::class, 'metrics'])->name('worldos.metrics');
 
     // POST worldos/sagas removed (Implicit Orchestration)
 
@@ -613,6 +615,41 @@ Route::middleware('auth:sanctum')->prefix('worldos')->group(function () {
             'universe_id' => $universe->id,
         ]);
     })->name('worldos.demo.seed');
+
+    Route::post('ai/policy-simulation', function (\Illuminate\Http\Request $request, AdvanceSimulationAction $advance, \App\Services\Simulation\FeatureExtractionService $featureExtraction) {
+        $universeId = (int) $request->input('universe_id', 0);
+        $policy = $request->input('policy', '');
+        $magnitude = (float) $request->input('magnitude', 0.3);
+        $ticks = (int) $request->input('ticks', 100);
+        if ($universeId < 1) {
+            return response()->json(['ok' => false, 'error' => 'universe_id required'], 422);
+        }
+        $universeRepo = app(\App\Contracts\Repositories\UniverseRepositoryInterface::class);
+        $universe = $universeRepo->find($universeId);
+        $snapshotRepo = app(\App\Repositories\UniverseSnapshotRepository::class);
+        $latestBefore = $universe ? $snapshotRepo->getLatest($universeId) : null;
+        $input_features = $universe ? $featureExtraction->extract($universe, $latestBefore) : [];
+
+        $result = $advance->execute($universeId, $ticks);
+
+        $output_features = [];
+        if (($result['ok'] ?? false) && $universeId) {
+            $universeAfter = $universeRepo->find($universeId);
+            $latestAfter = $snapshotRepo->getLatest($universeId);
+            $output_features = $universeAfter ? $featureExtraction->extract($universeAfter, $latestAfter) : [];
+        }
+
+        return response()->json([
+            'ok' => true,
+            'policy' => $policy,
+            'magnitude' => $magnitude,
+            'ticks_run' => $ticks,
+            'input_features' => $input_features,
+            'output_features' => $output_features,
+            'outcome' => $result['ok'] ?? false ? ['snapshot_tick' => $result['snapshot']['tick'] ?? null] : null,
+            'distribution' => [],
+        ]);
+    })->name('worldos.ai.policy-simulation');
 
     Route::post('simulation/advance', function (AdvanceSimulationAction $action) {
         \Illuminate\Support\Facades\Log::info('Simulation: advance route hit', [

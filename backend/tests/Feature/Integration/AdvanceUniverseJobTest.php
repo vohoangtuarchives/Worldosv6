@@ -6,14 +6,14 @@ use App\Actions\Simulation\AdvanceSimulationAction;
 use App\Models\Universe;
 use App\Models\World;
 use App\Modules\Simulation\Jobs\AdvanceUniverseJob;
-use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
 use Mockery\MockInterface;
 
 class AdvanceUniverseJobTest extends TestCase
 {
-    use DatabaseTransactions;
+    use RefreshDatabase;
 
     public function test_job_dispatches_to_queue(): void
     {

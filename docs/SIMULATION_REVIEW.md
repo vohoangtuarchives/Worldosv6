@@ -48,6 +48,8 @@ flowchart TB
 - **Listeners:** Đa số logic “sau mỗi tick” nằm trong listener `EvaluateSimulationResult` (attractor, event trigger, anomaly, chronicle, pressure, edict, great filter, ascension, narrative, …) và các listener khác lắng nghe `UniverseSimulationPulsed`.
 - **Post-tick trong Action:** Field engine, diffusion, cognitive, collapse, chaos, sovereignty, v.v. chạy ngay trong `AdvanceSimulationAction` sau khi snapshot được lưu.
 
+**Luồng listeners và merge:** ProcessInstitutionalFramework chạy **trước** EvaluateSimulationResult; Eval là nơi cuối cùng ghi `snapshot->metrics` và `snapshot->save()`; không listener nào sau Eval được ghi snapshot. Merge metrics = `array_replace_recursive(calculated_metrics, snapshot->metrics)` để cosmic impact (ethos, energy_level) từ Supreme Entity được giữ. Config: `worldos.emergence.*`, `worldos.cosmic_phase.hysteresis`; `worldos.cosmic_phase.modifiers` (faith/chaos/order/tech) — narrative/engine đọc `metrics.cosmic_phase.current_phase` + config để áp dụng hệ số khi cần. `snapshot.metrics` có `cosmic_phase` (current_phase, phase_strength, scores).
+
 ---
 
 ## 2. Engine client (nguồn entropy/stability)

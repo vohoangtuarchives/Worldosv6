@@ -24,6 +24,7 @@ class SimulationServiceProvider extends ServiceProvider
         $this->app->singleton(\App\Modules\Simulation\Services\ResonanceEngine::class);
         $this->app->singleton(\App\Modules\Simulation\Services\CausalCorrectionEngine::class);
         $this->app->singleton(\App\Modules\Simulation\Services\PressureCalculator::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\CosmicPhaseDetector::class);
         $this->app->singleton(\App\Modules\Simulation\Services\ScenarioEngine::class);
         $this->app->singleton(\App\Modules\Simulation\Services\MultiverseInteractionService::class);
         $this->app->singleton(\App\Modules\Simulation\Services\WorldRegulatorEngine::class);

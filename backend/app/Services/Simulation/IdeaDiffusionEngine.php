@@ -21,12 +21,16 @@ class IdeaDiffusionEngine
         $growth = (float) ($config['influence_growth_per_tick'] ?? 0.01);
         $followersThreshold = (int) ($config['followers_threshold_for_school'] ?? 10);
 
-        // Ensure every artifact with creator has an idea
+        $infoTypeByArtifact = $this->infoTypeFromArtifactType();
+        $amplification = $this->institutionalAmplification($universe);
+
+        // Ensure every artifact with creator has an idea (Doc §8: info_type rumor|propaganda|science|religion|meme)
         Artifact::where('universe_id', $universe->id)
             ->whereNotNull('creator_actor_id')
             ->whereDoesntHave('idea')
             ->get()
-            ->each(function (Artifact $a) {
+            ->each(function (Artifact $a) use ($infoTypeByArtifact) {
+                $infoType = $infoTypeByArtifact[$a->artifact_type ?? ''] ?? Idea::INFO_TYPE_MEME;
                 Idea::firstOrCreate(
                     [
                         'artifact_id' => $a->id,
@@ -35,6 +39,7 @@ class IdeaDiffusionEngine
                         'universe_id' => $a->universe_id,
                         'origin_actor_id' => $a->creator_actor_id,
                         'theme' => $a->theme ?? $a->artifact_type,
+                        'info_type' => $infoType,
                         'influence_score' => $a->impact_score,
                         'followers' => 0,
                         'birth_tick' => $a->tick_created,
@@ -42,10 +47,11 @@ class IdeaDiffusionEngine
                 );
             });
 
-        // Grow influence/followers for existing ideas
-        Idea::where('universe_id', $universe->id)->get()->each(function (Idea $idea) use ($growth) {
-            $idea->influence_score = min(1.0, $idea->influence_score + $growth * 0.5);
-            $idea->followers = $idea->followers + $growth * 5; // small bump
+        // Grow influence/followers for existing ideas; institutional amplification (Doc §8)
+        Idea::where('universe_id', $universe->id)->get()->each(function (Idea $idea) use ($growth, $amplification) {
+            $mult = $amplification[$idea->info_type ?? Idea::INFO_TYPE_MEME] ?? 1.0;
+            $idea->influence_score = min(1.0, $idea->influence_score + $growth * 0.5 * $mult);
+            $idea->followers = $idea->followers + $growth * 5 * $mult;
             $idea->save();
         });
 
@@ -111,5 +117,43 @@ class IdeaDiffusionEngine
                 ]);
                 }
             });
+    }
+
+    /** Map artifact_type → info_type (Doc §8). */
+    private function infoTypeFromArtifactType(): array
+    {
+        return config('worldos.idea_diffusion.info_type_map', [
+            'prophecy' => Idea::INFO_TYPE_RELIGION,
+            'invention' => Idea::INFO_TYPE_SCIENCE,
+            'doctrine' => Idea::INFO_TYPE_PROPAGANDA,
+            'myth' => Idea::INFO_TYPE_RUMOR,
+            'meme' => Idea::INFO_TYPE_MEME,
+        ]);
+    }
+
+    /** Institutional amplification: church → religion, state → propaganda, academy → science (Doc §8). */
+    private function institutionalAmplification(Universe $universe): array
+    {
+        $base = config('worldos.idea_diffusion.institutional_amplification', [
+            Idea::INFO_TYPE_RELIGION => 1.2,
+            Idea::INFO_TYPE_PROPAGANDA => 1.15,
+            Idea::INFO_TYPE_SCIENCE => 1.25,
+            Idea::INFO_TYPE_RUMOR => 1.0,
+            Idea::INFO_TYPE_MEME => 1.05,
+        ]);
+        $counts = InstitutionalEntity::where('universe_id', $universe->id)
+            ->whereNull('collapsed_at_tick')
+            ->get()
+            ->groupBy('entity_type');
+        if (($counts['church'] ?? collect())->isNotEmpty()) {
+            $base[Idea::INFO_TYPE_RELIGION] = ($base[Idea::INFO_TYPE_RELIGION] ?? 1.0) * 1.1;
+        }
+        if (($counts['state'] ?? collect())->isNotEmpty()) {
+            $base[Idea::INFO_TYPE_PROPAGANDA] = ($base[Idea::INFO_TYPE_PROPAGANDA] ?? 1.0) * 1.1;
+        }
+        if (($counts['philosophy_school'] ?? collect())->isNotEmpty()) {
+            $base[Idea::INFO_TYPE_SCIENCE] = ($base[Idea::INFO_TYPE_SCIENCE] ?? 1.0) * 1.1;
+        }
+        return $base;
     }
 }

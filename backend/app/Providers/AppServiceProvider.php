@@ -63,6 +63,12 @@ class AppServiceProvider extends ServiceProvider
             \App\Events\Simulation\UniverseSimulationPulsed::class,
             \App\Listeners\Simulation\GenerateNarrative::class
         );
+        // ProcessInstitutionalFramework (SupremeEntity, Institutions) must run BEFORE EvaluateSimulationResult
+        // so Eval can merge cosmic impact into metrics and save once; no listener after Eval should write snapshot.
+        \Illuminate\Support\Facades\Event::listen(
+            \App\Events\Simulation\UniverseSimulationPulsed::class,
+            \App\Modules\Institutions\Listeners\ProcessInstitutionalFramework::class
+        );
         \Illuminate\Support\Facades\Event::listen(
             \App\Events\Simulation\UniverseSimulationPulsed::class,
             \App\Listeners\Simulation\EvaluateSimulationResult::class
@@ -78,10 +84,6 @@ class AppServiceProvider extends ServiceProvider
         \Illuminate\Support\Facades\Event::listen(
             \App\Events\Simulation\UniverseSimulationPulsed::class,
             \App\Modules\Intelligence\Listeners\ProcessIntelligenceEvolution::class
-        );
-        \Illuminate\Support\Facades\Event::listen(
-            \App\Events\Simulation\UniverseSimulationPulsed::class,
-            \App\Modules\Institutions\Listeners\ProcessInstitutionalFramework::class
         );
         \Illuminate\Support\Facades\Event::listen(
             \App\Events\Simulation\SimulationEventOccurred::class,

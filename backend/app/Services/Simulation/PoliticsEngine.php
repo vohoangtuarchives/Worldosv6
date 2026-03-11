@@ -24,6 +24,9 @@ class PoliticsEngine
         }
 
         $stateVector = $this->getStateVector($universe);
+        if (config('worldos.simulation.rust_authoritative', false) && isset($stateVector['civilization']['politics'])) {
+            return;
+        }
         $civilization = $stateVector['civilization'] ?? null;
         $settlements = $civilization['settlements'] ?? [];
         if (empty($settlements)) {

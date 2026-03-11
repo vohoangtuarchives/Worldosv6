@@ -1,1198 +1,1733 @@
-# WorldOS — Kiến Trúc Simulation Engine Toàn Diện
+# WorldOS — Kiến Trúc Toàn Diện
 
-> Tài liệu tổng hợp thiết kế hệ thống mô phỏng lịch sử đa vũ trụ (Multiverse Civilization Simulator)
+> **Tài liệu thiết kế hệ thống mô phỏng nền văn minh (Civilization Simulation Platform)**
+> Stack: Rust (Simulation Kernel) · Laravel (Orchestration) · Next.js (Visualization) · Apache Kafka (Event Streaming)
 
 ---
 
 ## Mục Lục
 
-1. [Tổng Quan Kiến Trúc](#1-tổng-quan-kiến-trúc)
-2. [Các Bug Fixes Cần Thiết](#2-các-bug-fixes-cần-thiết)
-3. [WorldOS Kernel](#3-worldos-kernel)
-4. [Event Architecture (Kafka-style)](#4-event-architecture-kafka-style)
-5. [World State Model](#5-world-state-model)
-6. [Physical World Layer](#6-physical-world-layer)
-7. [Population Layer](#7-population-layer)
-8. [Civilization Layer](#8-civilization-layer)
-9. [Culture Layer](#9-culture-layer)
-10. [Knowledge Layer](#10-knowledge-layer)
-11. [Cognitive Layer](#11-cognitive-layer)
-12. [Narrative Layer](#12-narrative-layer)
-13. [Autonomic Evolution Engine](#13-autonomic-evolution-engine)
-14. [Multiverse Scheduler & Timeline Selection](#14-multiverse-scheduler--timeline-selection)
-15. [WorldOS Data Graph](#15-worldos-data-graph)
-16. [World Event Schema (50+ types)](#16-world-event-schema-50-types)
-17. [Implementation Blueprint](#17-implementation-blueprint)
-18. [Master Architecture Overview](#18-master-architecture-overview)
+1. [Tổng quan hệ thống](#1-tổng-quan-hệ-thống)
+2. [Giao thức giao tiếp](#2-giao-thức-giao-tiếp)
+3. [Simulation Kernel Architecture (Rust)](#3-simulation-kernel-architecture-rust)
+4. [World Model Representation](#4-world-model-representation)
+5. [Actor Cognition System (17 Traits)](#5-actor-cognition-system-17-traits)
+6. [Social Field Engine](#6-social-field-engine)
+7. [Economic Field Engine](#7-economic-field-engine)
+8. [Information Propagation Engine](#8-information-propagation-engine)
+9. [Innovation & Technology Engine](#9-innovation--technology-engine)
+10. [Religion & Ideology Engine](#10-religion--ideology-engine)
+11. [Great Person Engine](#11-great-person-engine)
+12. [Geopolitics & War Engine](#12-geopolitics--war-engine)
+13. [Demographic & Population Engine](#13-demographic--population-engine)
+14. [Climate & Environment Engine](#14-climate--environment-engine)
+15. [Infrastructure & Urban Development Engine](#15-infrastructure--urban-development-engine)
+16. [Global Trade & Economic Network Engine](#16-global-trade--economic-network-engine)
+17. [Civilization Cycle Engine](#17-civilization-cycle-engine)
+18. [Narrative & Historical Memory Engine](#18-narrative--historical-memory-engine)
+19. [Causality Graph Engine](#19-causality-graph-engine)
+20. [Emergence Detection Engine](#20-emergence-detection-engine)
+21. [Psychology & Consciousness Engine](#21-psychology--consciousness-engine)
+22. [AI-Driven Agents](#22-ai-driven-agents)
+23. [Simulation Execution Model](#23-simulation-execution-model)
+24. [Memory Layout & Performance Architecture](#24-memory-layout--performance-architecture)
+25. [Engine Dependency Graph](#25-engine-dependency-graph)
+26. [Engine Plugin & Versioning Architecture](#26-engine-plugin--versioning-architecture)
+27. [Time & Timeline Architecture](#27-time--timeline-architecture)
+28. [Distributed Simulation Architecture](#28-distributed-simulation-architecture)
+29. [AI Research Layer](#29-ai-research-layer)
+30. [Self-Improving Simulation Architecture](#30-self-improving-simulation-architecture)
+31. [Observability & Debugging Architecture](#31-observability--debugging-architecture)
+32. [Stability & Chaos Control Engine](#32-stability--chaos-control-engine)
+33. [Reality Calibration System](#33-reality-calibration-system)
+34. [Physics of Civilization Engine](#34-physics-of-civilization-engine)
+35. [Multiverse Simulation System](#35-multiverse-simulation-system)
+36. [Civilization Discovery Engine](#36-civilization-discovery-engine)
+37. [WorldOS Ultimate Architecture Map (80+ Engines)](#37-worldos-ultimate-architecture-map-80-engines)
+38. [Minimal Viable Kernel — Lộ trình triển khai](#38-minimal-viable-kernel--lộ-trình-triển-khai)
 
 ---
 
-## 1. Tổng Quan Kiến Trúc
+## 1. Tổng quan hệ thống
 
-WorldOS là một **simulation kernel** cho multiverse civilization. Nó không chỉ là tập hợp engine rời rạc mà là một hệ thống phân tầng giống OS kernel, trong đó:
+WorldOS là một **Computational Civilization Science Platform** — không chỉ là game simulation mà là digital laboratory nghiên cứu nền văn minh loài người.
 
-- **Engines = Processes**
-- **Events = System Calls**
-- **Kernel = Scheduler + State Manager**
+### Mục tiêu cốt lõi
+- Mô phỏng 100k–1M actors
+- Deterministic & replayable simulation
+- Toàn bộ physics + state transition trong Rust
+- Laravel chỉ orchestration, persistence, AI/Narrative
+- Emergent history — lịch sử tự xuất hiện, không hardcode
 
-### Pipeline Tổng Thể
+### Stack tổng thể
 
 ```
-Simulation Engine
-      ↓
-Autonomic Evolution Engine
-      ↓
-Multiverse Scheduler Engine
-      ↓
-Timeline Selection Engine
-      ↓
-Narrative Extraction Engine
+Next.js UI
+     │
+Laravel (Control + Persistence)
+     │
+   gRPC
+     │
+Rust Simulation Kernel
+     │
+Apache Kafka (Event Stream)
+     │
+Other Engines / AI / Narrative
 ```
 
-### 7 Tầng Kiến Trúc
+### Phân chia trách nhiệm
 
-| Tầng | Vai trò |
-|------|---------|
-| Physical World Layer | Địa lý, khí hậu, thiên tai |
-| Population Layer | Dân số, di cư, dịch bệnh, nông nghiệp |
-| Civilization Layer | Thành phố, đế chế, chiến tranh, thương mại |
-| Culture Layer | Tôn giáo, ngôn ngữ, nghệ thuật, thần thoại |
-| Knowledge Layer | Tri thức, công nghệ, phát minh |
-| Cognitive Layer | Tâm lý, tư tưởng, vĩ nhân |
-| Narrative Layer | Nhân quả, chọn lọc timeline, sinh ra lịch sử |
+| Layer | Công nghệ | Nhiệm vụ |
+|---|---|---|
+| Frontend | Next.js | Visualization, UI |
+| Control Plane | Laravel | Orchestration, API, Auth, AI Narrative |
+| Simulation Core | Rust | Physics, State Transition, Actor System |
+| Event Bus | Apache Kafka | Event Streaming, History Log |
+| Database | PostgreSQL | Snapshot, History, Metrics |
 
 ---
 
-## 2. Các Bug Fixes Cần Thiết
+## 2. Giao thức giao tiếp
 
-### 2.1 ForkUniverseAction — Phải Return Universe
+### So sánh giao thức
 
-**Vấn đề:** `ForkUniverseAction::execute()` khai báo `void`, listener gán `$childUniverse = ...` luôn nhận `null` → parent không bao giờ được set `status = 'halted'`.
+| Protocol | Latency | Reliability | Use case |
+|---|---|---|---|
+| JSON over HTTP | ~5–20ms | Thấp | Public API, Frontend ↔ Backend |
+| gRPC (HTTP/2 + Protobuf) | ~1–5ms | Cao | Service ↔ Service, Laravel → Rust |
+| Apache Kafka | ~10–50ms | Rất cao | Event streaming, History log |
+| NATS | < 1ms | Cao (JetStream) | Realtime control, Scheduler → Engine |
+| NATS JetStream | ~1–10ms | Cao | Realtime + Durability |
 
-**Fix:**
+### Kiến trúc giao tiếp được khuyến nghị
 
-```php
-// ForkUniverseAction.php
-public function execute(...): ?Universe
-{
-    if ($this->branchRepository->existsFork($universeId, $fromTick)) {
-        return null; // idempotent check
+```
+Laravel → Rust          : gRPC         (Sync control)
+Rust → System events    : Apache Kafka (Async event log)
+Scheduler → Engine      : NATS         (Realtime control)
+Laravel → Frontend      : WebSocket    (Realtime state)
+```
+
+### Các lệnh gRPC từ Laravel → Rust
+
+```protobuf
+// Control commands
+StartSimulation
+PauseSimulation
+InjectEvent
+ChangeParameter
+ForkTimeline
+
+// Query commands
+GetSnapshot
+GetMetrics
+GetActorState
+```
+
+### Sự kiện Rust → Kafka
+
+```
+world.events
+population.events
+history.events
+war.events
+```
+
+---
+
+## 3. Simulation Kernel Architecture (Rust)
+
+### Crate Layout
+
+```
+worldos/
+├── worldos-kernel      # Main simulation runtime
+├── worldos-world       # World state structures
+├── worldos-actors      # Actor ECS system
+├── worldos-engines     # Simulation engine plugins
+├── worldos-events      # Event definitions
+├── worldos-scheduler   # Execution model
+├── worldos-graph       # World graph
+├── worldos-snapshot    # Snapshot & replay
+├── worldos-io          # API / messaging bridge
+└── worldos-cli         # Developer tool
+```
+
+### Kernel Core Loop
+
+```rust
+loop {
+    process_commands();
+    simulate_tick(&mut world);
+    publish_events();
+    if snapshot_due() {
+        save_snapshot();
     }
-
-    $childUniverse = $this->sagaService->spawnUniverse(...);
-    return $childUniverse;
-}
-
-// EvaluateSimulationResult.php (Listener)
-$childUniverse = $this->forkUniverseAction->execute(...);
-if ($childUniverse && $activeCount >= 1) {
-    $this->universeRepository->update($universe->id, ['status' => 'halted']);
 }
 ```
 
-> ⚠️ **Lưu ý kiến trúc:** Action không nên kiểm tra DB trực tiếp — nên dùng `BranchRepository::existsFork()` để đảm bảo idempotent khi simulation replay event.
+### Tick Pipeline (thứ tự thực thi)
 
----
+```
+1. geography_update()
+2. climate_update()
+3. population_dynamics()
+4. actor_decisions()
+5. social_field_propagation()
+6. macro_dynamics()
+7. cascade_events()
+8. event_emission()
+```
 
-### 2.2 Universe Không Có Saga — Gán Saga Mặc Định
+### World State Struct
 
-**Vấn đề:** `handleFork` return sớm nếu `!$universe->saga`, bỏ qua fork.
-
-**Fix:** Đẩy logic vào `SagaService::ensureSaga()`:
-
-```php
-// SagaService.php
-public function ensureSaga(Universe $universe): ?Saga
-{
-    if ($universe->saga) return $universe->saga;
-    if (!$universe->world) return null;
-
-    $saga = $universe->world->sagas()->firstOrCreate(
-        ['name' => 'Default Saga of ' . $universe->world->name],
-        ['status' => 'active']
-    );
-
-    $universe->saga_id = $saga->id;
-    $universe->save();
-
-    return $saga;
+```rust
+struct WorldState {
+    actors: ActorStore,
+    institutions: InstitutionStore,
+    zones: ZoneStore,
+    social_fields: SocialFieldStore,
+    attractors: AttractorField,
+    rng: DeterministicRng,
+    tick: u64,
 }
 ```
 
 ---
 
-### 2.3 Entropy Threshold — Đưa Vào Config
+## 4. World Model Representation
 
-```php
-// config/worldos.php
-'autonomic' => [
-    'fork_entropy_min'          => 0.5,
-    'archive_entropy_threshold' => 0.99,
-],
+### Nguyên tắc: Data-Oriented Design (không phải OOP)
 
-// StrategicDecisionEngine.php
-$forkMin        = config('worldos.autonomic.fork_entropy_min', 0.5);
-$archiveThresh  = config('worldos.autonomic.archive_entropy_threshold', 0.99);
+**Sai (AoS — Array of Structs):**
+```rust
+// Cache miss nặng ở scale lớn
+struct Actor {
+    traits: Traits,
+    wealth: f32,
+    location: ZoneId,
+}
+Vec<Actor>
+```
+
+**Đúng (SoA — Structure of Arrays):**
+```rust
+// Cache-friendly, SIMD-friendly
+struct ActorStorage {
+    traits: Vec<[f32; 17]>,  // 17 traits per actor
+    wealth: Vec<f32>,
+    location: Vec<ZoneId>,
+    health: Vec<f32>,
+    influence: Vec<f32>,
+}
+```
+
+### Spatial Representation
+
+World map dùng **Grid System**:
+
+```rust
+// 4096 × 4096 tiles
+struct Tile {
+    elevation: f32,
+    temperature: f32,
+    rainfall: f32,
+    biome: BiomeType,
+}
+
+// Tiles group thành zones
+struct Zone {
+    id: ZoneId,
+    population: u32,
+    wealth: f32,
+    food_supply: f32,
+    infrastructure: f32,
+}
+```
+
+### World Graph Layers
+
+WorldOS dùng **Multi-Layer Graph**:
+
+| Layer | Nodes | Edges |
+|---|---|---|
+| Physical | zones, rivers, cities | adjacency, distance, routes |
+| Population | actors, families | kinship, friendship, authority |
+| Economic | cities, markets, ports | trade routes, supply chains |
+| Knowledge | ideas, theories, tech | influences, derives_from |
+| Social | actors, institutions | membership, loyalty, conflict |
+| Political | states, leaders, armies | war, treaty, vassalage |
+
+### Hot vs Cold State
+
+```
+Hot State  → Active zones, active agents (RAM)
+Warm State → Cities, institutions (PostgreSQL)
+Cold State → Historical archive (Object Storage)
+```
+
+### Memory Budget (100k actors)
+
+| Data | Per Actor | Total (100k) |
+|---|---|---|
+| Traits (17 × f32) | 68 bytes | ~6.8 MB |
+| Wealth, location, health | 12 bytes | ~1.2 MB |
+| Edges (social graph) | ~500 bytes avg | ~50 MB |
+| Zone state (4096 zones) | — | ~5 MB |
+| **Tổng ước tính** | | **~100–200 MB** |
+
+---
+
+## 5. Actor Cognition System (17 Traits)
+
+### Trait Vector
+
+```rust
+// Mỗi giá trị: 0.0 (không có) → 1.0 (cực mạnh)
+struct ActorTraits {
+    dom: f32,  // Dominance
+    amb: f32,  // Ambition
+    coe: f32,  // Cooperation
+    loy: f32,  // Loyalty
+    emp: f32,  // Empathy
+    sol: f32,  // Solitude
+    con: f32,  // Conformity
+    pra: f32,  // Pragmatism
+    cur: f32,  // Curiosity
+    dog: f32,  // Dogmatism
+    rsk: f32,  // Risk tolerance
+    fer: f32,  // Ferocity
+    ven: f32,  // Vengeance
+    hop: f32,  // Hope
+    grf: f32,  // Grief
+    pri: f32,  // Pride
+    shm: f32,  // Shame
+}
+```
+
+### Ví dụ profile actor (Napoleon-like)
+
+```
+dom: 0.90, amb: 0.95, rsk: 0.80, pri: 0.90, emp: 0.20
+```
+
+### Pipeline nhận thức mỗi tick
+
+```
+Perception → Belief Update → Goal Selection → Decision → Action
+```
+
+### Motivation Engine
+
+```rust
+// Từ traits + perception → internal drives
+power_drive    = dom * 0.7 + amb * 0.6 + authority_pressure * 0.4
+security_drive = fear_field + (1.0 - rsk) + loyalty_pressure
+wealth_drive   = pra * 0.6 + amb * 0.4
+```
+
+### Decision Utility
+
+```rust
+// Actor chọn action có utility cao nhất
+utility(revolt) =
+    power_drive * 0.6
+  + ven * 0.5
+  - fear_field * 0.4
+  - loy * 0.6
+
+// Dùng argmax hoặc softmax để tạo randomness
+chosen_action = argmax(utility(actions))
+```
+
+### Action types
+
+```
+work | trade | migrate | join_religion | revolt | join_army | follow_leader | start_movement
+```
+
+### Archetype Classifier
+
+```
+if dom > 0.8 && amb > 0.8  → Conqueror
+if cur > 0.8 && pra > 0.6  → Scholar
+if dom > 0.8 && emp > 0.7  → Leader
+if cur > 0.8 && dog < 0.3  → Reformer
 ```
 
 ---
 
-### 2.4 Navigator Không Được Override Fork
+## 6. Social Field Engine
 
-```php
-// DecisionEngine.php
-elseif (
-    $navScore['total'] <= self::ARCHIVE_THRESHOLD
-    && $recommendation !== 'fork'  // ← quan trọng
-) {
-    $recommendation = 'archive';
+### Khái niệm
+
+Social Field là "physics của xã hội" — các đại lượng lan truyền trong xã hội và tác động lên actor behavior.
+
+```rust
+struct SocialFieldStore {
+    fear: Field,
+    ideology: Field,
+    wealth: Field,
+    stability: Field,
+    information: Field,
+    authority: Field,
+}
+
+struct Field {
+    values: Vec<f32>,  // Index = ZoneId
+}
+```
+
+### Field Sources (nguồn sinh field)
+
+- **Actors**: rich merchants → wealth field; religious leader → ideology field
+- **Events**: war → fear spike; victory → pride spike
+- **Institutions**: church → religion field; state → authority field
+
+### Field Propagation
+
+```
+Diffusion:    dF/dt = diffusion_rate * laplacian(F)
+Decay:        F(t+1) = F(t) * decay_rate
+Interaction:  stability = wealth * 0.5 - fear * 0.6 + authority * 0.4
+```
+
+### Update Pipeline (mỗi tick)
+
+```rust
+fn update_social_fields(world: &mut WorldState) {
+    emit_actor_fields(world);
+    emit_institution_fields(world);
+    inject_event_shocks(world);
+    diffuse_fields(world);
+    decay_fields(world);
+    resolve_field_interactions(world);
+}
+```
+
+### Emergent Effects
+
+| Trigger | Cascade |
+|---|---|
+| Riot → fear spike | → migration → economic collapse |
+| Prophet actor | → ideology field → conversions → religion network |
+| Trade hubs | → wealth field concentration → population attractor |
+
+---
+
+## 7. Economic Field Engine
+
+### Zone Economy State
+
+```rust
+struct ZoneEconomy {
+    population: f32,
+    food_production: f32,
+    resource_production: f32,
+    storage_food: f32,
+    storage_goods: f32,
+    wealth: f32,
+    trade_attractiveness: f32,
+}
+```
+
+### Resource Types (4 nhóm lớn)
+
+```rust
+struct Resources {
+    food: f32,
+    raw: f32,    // Raw materials
+    goods: f32,  // Manufactured goods
+    luxury: f32,
+}
+```
+
+### Production Model
+
+```
+food_production = population × farm_efficiency × climate_factor
+```
+
+### Price Mechanism
+
+```
+price = demand / supply
+trade_flow = (zoneA_price - zoneB_price) × trade_route_capacity
+```
+
+### Inequality Dynamics
+
+```
+elite_share    = wealth × inequality_factor
+unrest_risk    ∝ inequality
+revolt_trigger = inequality > 0.75 && legitimacy < 0.3
+```
+
+### Economic Engine Pipeline
+
+```rust
+fn update_economy(world: &mut WorldState) {
+    production::update(world);
+    consumption::update(world);
+    trade::update(world);
+    price::update(world);
+    wealth::update(world);
+    inequality::update(world);
+    urban_growth::update(world);
 }
 ```
 
 ---
 
-### 2.5 Tránh Fork Vô Hạn (Bug Tiềm Ẩn)
+## 8. Information Propagation Engine
 
-Nên giới hạn: một universe chỉ được fork **1 lần**, hoặc giới hạn `max_generation <= 5`.
+### Information Object
 
-```php
-// Check trước khi fork
-if ($this->branchRepository->hasFork($universeId)) {
-    return null;
+```rust
+struct InfoUnit {
+    id: InfoId,
+    info_type: InfoType,  // rumor | propaganda | science | religion | meme
+    strength: f32,
+    novelty: f32,
+    credibility: f32,
+    emotional_intensity: f32,
+}
+```
+
+### Transmission Probability
+
+```
+P(spread) = trust × info_strength × novelty
+```
+
+### Actor Info State
+
+```rust
+struct ActorInfoState {
+    known_info: Vec<InfoId>,
+    belief_strength: Vec<f32>,
+}
+```
+
+### Diffusion Model (epidemic-based)
+
+```
+State transition: Unaware → Aware → Believer → Propagator
+adoption_score = curiosity + peer_influence - dogmatism
+```
+
+### Institutional Amplification
+
+```
+church   → religion field × church_power
+state    → propaganda × state_reach
+academy  → scientific ideas × education_level
+```
+
+### Pipeline mỗi tick
+
+```rust
+fn update_information(world: &mut WorldState) {
+    innovation::generate(world);
+    communication::spread(world);
+    mutation::apply(world);
+    institutions::amplify(world);
+    cascade::detect(world);
 }
 ```
 
 ---
 
-## 3. WorldOS Kernel
+## 9. Innovation & Technology Engine
 
-### Core Components
+### Knowledge Graph
 
-```
-WorldOS Kernel
-│
-├── Simulation Scheduler
-├── State Store
-├── Event Bus
-├── Engine Registry
-├── Tick Pipeline
-└── Persistence Layer
-```
-
-### Engine Interface (Chuẩn hóa tất cả engine)
-
-```php
-interface SimulationEngine
-{
-    public function name(): string;
-    public function priority(): int;
-    public function handle(WorldState $state, TickContext $ctx): EngineResult;
+```rust
+struct KnowledgeNode {
+    id: KnowledgeId,
+    domain: KnowledgeDomain,  // math | physics | engineering | medicine | philosophy
+    complexity: f32,
+    prerequisites: Vec<KnowledgeId>,
 }
 ```
 
-### EngineResult — Engine Không Sửa State Trực Tiếp
-
-```php
-class EngineResult
-{
-    public array $events = [];
-    public array $stateChanges = [];
-    public array $metrics = [];
-}
-```
-
-### Tick Pipeline (Thứ tự deterministic)
-
-| Priority | Engine |
-|----------|--------|
-| 1 | Planet Engine |
-| 2 | Climate Engine |
-| 3 | Ecology Engine |
-| 4 | Civilization Engine |
-| 5 | Politics Engine |
-| 6 | War Engine |
-| 7 | Trade Engine |
-| 8 | Knowledge Engine |
-| 9 | Culture Engine |
-| 10 | Ideology Engine |
-| 11 | Memory Engine |
-| 12 | Mythology Engine |
-| 13 | Evolution Engine |
-
-### Tick Execution Loop
-
-```php
-foreach ($engines as $engine) {
-    $result = $engine->handle($state, $ctx);
-    $kernel->applyChanges($result->stateChanges);
-    $kernel->emitEvents($result->events);
-}
-```
-
-> ⚠️ **Deterministic Simulation:** Random phải seed theo tick để có thể replay.
-> ```php
-> $seed = hash($universeId . $tick);
-> ```
-
-### Laravel Module Structure (DDD)
+### Ví dụ dependency chain
 
 ```
-Modules/
-  Simulation/
-    Kernel/
-      WorldKernel.php
-      TickPipeline.php
-      EngineRegistry.php
-    Contracts/
-      SimulationEngine.php
-    State/
-      WorldState.php
+arithmetic → algebra → calculus → physics → engineering
+```
+
+### Innovation Rate Formula
+
+```
+innovation_rate =
+    knowledge_stock
+  × curiosity_density
+  × economic_surplus
+  × institution_strength
+```
+
+### Research Actor Profile
+
+```
+curiosity > 0.85 && discipline > 0.75  →  candidate researcher
+```
+
+### Technology Level
+
+```
+primitive → agricultural → industrial → modern → digital
 ```
 
 ---
 
-## 4. Event Architecture (Kafka-style)
+## 10. Religion & Ideology Engine
 
-### Mọi thứ trong Universe = Event
+### Ideology Struct
 
-```json
-{
-  "event_id": "evt_98234",
-  "timestamp": 1347,
-  "type": "CropFailure",
-  "location": "Northern Europe",
-  "actors": ["peasants", "kingdom_france"],
-  "impact_score": 0.73,
-  "causes": ["climate_cooling"]
+```rust
+struct Ideology {
+    id: IdeologyId,
+    doctrine_strength: f32,
+    adaptability: f32,
+    institutional_support: f32,
+    emotional_resonance: f32,
 }
 ```
 
-### Planetary Event Topics
+### Emergence Triggers
 
 ```
-planet.events
- ├── climate.events
- ├── disaster.events
- ├── economy.events
- ├── war.events
- ├── culture.events
- ├── knowledge.events
- └── civilization.events
+high social inequality     → revolutionary ideology
+political instability      → new political doctrine
+cultural crisis            → new belief system
+technological change       → philosophical movement
 ```
 
-### Event Flow Trong Một Tick
+### Conversion Probability
+
+```
+conversion =
+    ideology_resonance
+  × peer_pressure
+  × dissatisfaction_with_current_system
+```
+
+### Ideology Lifecycle
+
+```
+Emergence → Growth → Institutionalization → Dominance → Fragmentation → Decline
+```
+
+---
+
+## 11. Great Person Engine
+
+### Emergence Conditions (cần cả 3)
+
+1. **Exceptional traits**: `ambition > 0.9 && risk > 0.8 && charisma > 0.85`
+2. **Historical opportunity**: world đang collapse, revolution, frontier expansion
+3. **Structural position**: military officer, political elite, scientist, prophet
+
+### Archetype
+
+```rust
+enum Archetype {
+    Conqueror, Reformer, Prophet, Scientist, Philosopher, Tyrant, Visionary,
+}
+```
+
+### Influence Model
+
+```rust
+struct InfluenceField {
+    radius: f32,
+    strength: f32,
+    decay: f32,
+}
+```
+
+### Legacy System
+
+```rust
+struct Legacy {
+    ideology_strength: f32,
+    institution_strength: f32,
+    cultural_memory: f32,
+}
+```
+
+---
+
+## 12. Geopolitics & War Engine
+
+### Polity Power Vector
+
+```rust
+struct PolityPower {
+    military_strength: f32,
+    economic_strength: f32,
+    technological_level: f32,
+    political_stability: f32,
+    legitimacy: f32,
+}
+total_power = military*0.4 + economic*0.3 + tech*0.2 + stability*0.1
+```
+
+### War Trigger Formula
+
+```
+war_probability =
+    territorial_tension
+  + resource_competition
+  + ideology_hostility
+  - diplomatic_relations
+```
+
+### Military Model
+
+```rust
+struct Army {
+    soldiers: u32,
+    training: f32,
+    technology: f32,
+    morale: f32,
+}
+combat_power = soldiers × training × technology × morale
+```
+
+### War Stages
+
+```
+Mobilization → Campaign → Battles → Attrition → Negotiation
+```
+
+---
+
+## 13. Demographic & Population Engine
+
+### Population State
+
+```rust
+struct PopulationState {
+    total: u64,
+    age_distribution: AgeDistribution,
+    urban_ratio: f32,
+    literacy_rate: f32,
+    health_index: f32,
+}
+```
+
+### Demographic Equations
+
+```
+birth_rate = fertility_base × economic_stability × cultural_factor × health_index
+death_rate = base_mortality - healthcare_quality + war_casualties + disease_risk
+urban_growth = economic_opportunity × infrastructure_level
+```
+
+### Demographic Transition Stages
+
+```
+Stage 1: high birth + high death
+Stage 2: high birth + lower death   (early development)
+Stage 3: lower birth + low death    (urbanization)
+Stage 4: aging society              (post-industrial)
+```
+
+---
+
+## 14. Climate & Environment Engine
+
+### Environment State (per Zone)
+
+```rust
+struct EnvironmentState {
+    temperature: f32,
+    rainfall: f32,
+    soil_fertility: f32,
+    water_availability: f32,
+    vegetation: f32,
+}
+```
+
+### Agriculture Capacity
+
+```
+food_production = soil_fertility × rainfall_factor × farming_technology
+```
+
+### Environmental Degradation
+
+```
+soil_fertility  -= overuse_rate
+vegetation      -= deforestation_rate
+```
+
+### Natural Disaster Struct
+
+```rust
+struct Disaster {
+    disaster_type: DisasterType,
+    intensity: f32,
+    affected_zones: Vec<ZoneId>,
+}
+```
+
+### Simulation Pipeline Position
+
+Climate & Environment là **Layer đầu tiên** — chạy trước tất cả engine khác.
+
+---
+
+## 15. Infrastructure & Urban Development Engine
+
+### Settlement Evolution
+
+```
+hamlet → village → town → city → metropolis → megacity
+```
+
+### Upgrade Condition
+
+```rust
+if population > city_threshold && trade_activity > 0.6 {
+    upgrade_settlement_level();
+}
+```
+
+### Infrastructure State
+
+```rust
+struct InfrastructureState {
+    roads: f32,
+    ports: f32,
+    water_supply: f32,
+    sanitation: f32,
+    energy: f32,
+}
+```
+
+### Urban Stress Model
+
+```
+urban_stress = density × inequality
+```
+
+---
+
+## 16. Global Trade & Economic Network Engine
+
+### Trade Route Formation
+
+```rust
+struct TradeRoute {
+    from: ZoneId,
+    to: ZoneId,
+    capacity: f32,
+    transport_cost: f32,
+}
+// Route exists when: profit > transport_cost
+```
+
+### Trade Flow Algorithm
+
+```
+flow = route_capacity × supply_factor × demand_factor
+```
+
+### Network Effects
+
+```
+economic_growth ∝ trade_connectivity
+hub_score = connectivity × economic_output
+```
+
+### Trade & Cultural Diffusion
+
+Trade routes lan truyền: religions, ideas, technologies, languages.
+
+---
+
+## 17. Civilization Cycle Engine
+
+### Macro State Vector
+
+```rust
+struct CivilizationState {
+    prosperity: f32,
+    cohesion: f32,
+    legitimacy: f32,
+    inequality: f32,
+    elite_competition: f32,
+    external_pressure: f32,
+}
+```
+
+### Civilization Phases
+
+```
+Formation → Expansion → Golden Age → Stagnation → Decline → Collapse → Fragmentation → Renewal
+```
+
+### Phase Detection Rules
+
+```
+Formation:   prosperity↑ && cohesion↑ && elite_competition < 0.3
+Golden Age:  prosperity > 0.7 && cohesion > 0.6 && innovation↑
+Decline:     prosperity↓ && inequality↑ && elite_competition↑
+Collapse:    legitimacy < 0.2 && cohesion < 0.2 && external_pressure > 0.7
+```
+
+### Elite Overproduction
+
+```
+elite_competition = elite_population / available_elite_positions
+// Khi elite_competition > 1.0 → faction formation → civil war risk
+```
+
+### Legitimacy Formula
+
+```
+legitimacy = prosperity*0.4 + ideology_alignment*0.3 - inequality*0.4
+```
+
+---
+
+## 18. Narrative & Historical Memory Engine
+
+### Event Struct
+
+```rust
+struct SimulationEvent {
+    id: EventId,
+    timestamp: u64,
+    event_type: EventType,
+    actors: Vec<ActorId>,
+    location: ZoneId,
+    impact: f32,
+}
+```
+
+### Historical Importance Score
+
+```
+importance = impact × affected_population × duration
+// importance > threshold → becomes historical_event
+```
+
+### Event Clustering (micro → macro)
+
+```
+economic_crisis + social_unrest + political_instability
+  → [cluster] → "The Great Revolution of Year 1830"
+```
+
+### Laravel Integration
+
+```
+Rust → Kafka event stream → Laravel → AI Narrative Generator → Civilization Chronicle
+```
+
+---
+
+## 19. Causality Graph Engine
+
+### Causal Event Struct
+
+```rust
+struct CausalEvent {
+    id: EventId,
+    causes: Vec<CausalLink>,
+    effects: Vec<CausalLink>,
+}
+struct CausalLink {
+    event_id: EventId,
+    weight: f32,
+}
+```
+
+### Cause Types
+
+- `direct_cause` — nguyên nhân trực tiếp
+- `contributing_cause` — yếu tố đóng góp
+- `trigger` — cò súng kích hoạt
+- `background_condition` — điều kiện nền
+
+### Query API (Laravel)
+
+```
+GET /events/{id}/causes
+GET /events/{id}/effects
+GET /events/{id}/causal-chain
+```
+
+---
+
+## 20. Emergence Detection Engine
+
+### Archetype Pattern Library
+
+```
+Industrialization pattern:
+    urbanization↑, capital_accum↑, innovation_cluster↑, transport_density↑
+    confidence_threshold: 0.7
+
+Revolution pattern:
+    inequality > 0.75, propaganda > 0.60, legitimacy < 0.30
+    confidence_threshold: 0.65
+```
+
+### Detection Algorithm
+
+```rust
+fn detect_emergence(world: &WorldState) -> Vec<EmergenceEvent> {
+    let indicators = collect_indicators(world);
+    let pattern_scores = score_patterns(&indicators);
+    pattern_scores
+        .filter(|s| s.confidence > 0.7)
+        .map(materialize_event)
+        .collect()
+}
+```
+
+### Pipeline Position
+
+```
+Simulation Engines (Economy, Population, War, ...)
+                   ↓
+       Emergence Detection Engine
+                   ↓
+          Narrative Engine
+```
+
+---
+
+## 21. Psychology & Consciousness Engine
+
+### Mental State
+
+```rust
+struct MentalState {
+    beliefs: BeliefVector,
+    goals: GoalVector,
+    emotions: EmotionVector,
+    perception: PerceptionState,
+}
+struct EmotionVector {
+    fear: f32, anger: f32, hope: f32, pride: f32,
+}
+struct GoalVector {
+    survival: f32, wealth: f32, power: f32, status: f32, ideology: f32,
+}
+```
+
+### Perception ≠ Reality
+
+```rust
+struct PerceptionState {
+    known_entities: Vec<EntityId>,
+    information_accuracy: f32,
+    rumors: Vec<InformationFragment>,
+}
+```
+
+### Cognitive Biases
+
+Confirmation bias, Loss aversion, Status quo bias, Authority bias.
+
+### Collective Behavior Emergence
+
+```
+economic_hardship → anger↑ → mass_protest → revolution
+fear + shared_enemy → cohesion↑ → nationalism
+```
+
+---
+
+## 22. AI-Driven Agents
+
+### Agent Core Model
+
+```rust
+struct Agent {
+    id: ActorId,
+    memory: MemoryState,
+    beliefs: BeliefModel,
+    goals: GoalModel,
+    planner: Planner,
+}
+```
+
+### Agent Cycle (mỗi tick)
+
+```
+observe_world → update_beliefs → evaluate_goals → plan_actions → execute
+```
+
+### Agent Hierarchy
+
+```
+Individual agents     (actors)
+Family agents         (household decisions)
+Institution agents    (empire, church, corporation)
+Civilization agents   (macro strategy)
+```
+
+### Social Interaction
+
+```rust
+struct SocialGraph {
+    trust: HashMap<(ActorId, ActorId), f32>,
+    loyalty: HashMap<(ActorId, ActorId), f32>,
+    rivalry: HashMap<(ActorId, ActorId), f32>,
+}
+```
+
+### Computational Scaling
+
+```
+10M population → 100k active agents
+(90% background population — aggregate model)
+```
+
+---
+
+## 23. Simulation Execution Model
+
+### Hybrid Model (khuyến nghị)
 
 ```
 Simulation Tick
-    ↓ generate physics events
-    ↓ publish to stream
-    ↓ engines consume
-    ↓ engines emit new events
-    ↓ causality graph update
-    ↓ world state update
-```
-
-### Ví Dụ Chuỗi Nhân Quả (1347)
-
-```
-climate.cooling
-    ↓ crop_failure
-    ↓ famine
-    ↓ population_drop
-    ↓ labor_shortage
-    ↓ economic_shift
-    ↓ renaissance_attractor
-```
-
----
-
-## 5. World State Model
-
-### Root Object
-
-```json
-{
-  "universe_id": "world_001",
-  "current_year": 1347,
-  "tick": 482993,
-  "planet": {},
-  "civilizations": [],
-  "population": {},
-  "economy": {},
-  "knowledge": {},
-  "culture": {},
-  "active_attractors": [],
-  "wars": [],
-  "alliances": []
-}
-```
-
-### Storage Strategy
-
-| Loại dữ liệu | Database |
-|-------------|----------|
-| Hot State (current tick) | Redis |
-| Event History | Kafka / Log |
-| Graph Relationships | Neo4j |
-| Analytics / Metrics | ClickHouse |
-| Snapshots | S3 / Object Store |
-
-### Snapshot Structure
-
-```json
-{
-  "year": 1347,
-  "snapshot_interval": "every 10 sim-years",
-  "planet": {},
-  "civilizations": [],
-  "population": {},
-  "economy": {},
-  "culture": {}
-}
-```
-
----
-
-## 6. Physical World Layer
-
-### 6.1 Geography Engine
-
-**Vai trò:** Nền tảng vật lý — địa hình, sông ngòi, tài nguyên định hình lịch sử civilization.
-
-```json
-{
-  "region_id": "r102",
-  "terrain": "plains",
-  "elevation": 340,
-  "climate_zone": "temperate",
-  "water_access": true,
-  "resources": ["iron", "timber"]
-}
-```
-
-| Terrain | Effect |
-|---------|--------|
-| Plains | Agriculture tốt |
-| Mountains | Phòng thủ tự nhiên |
-| Desert | Barrier di cư |
-| Coastline | Trade hubs |
-| River Valley | C揺cradle of civilization |
-
-**Settlement Score:**
-```
-settlement_score = water_access + fertile_soil + climate_stability
-```
-
----
-
-### 6.2 Climate Engine
-
-**Vai trò:** Long-term climate cycles — gây ra collapse hoặc rise của civilizations.
-
-**Climate State (mỗi region):**
-```json
-{
-  "temperature_avg": 13.2,
-  "rainfall": 620,
-  "drought_index": 0.3,
-  "storm_frequency": 0.12,
-  "climate_trend": "cooling"
-}
-```
-
-**Long-term Cycles:**
-- Orbital cycles (Milankovitch ~20k–100k years)
-- Ocean cycles (El Niño style)
-- Random shocks (volcano, meteor)
-
-**Agriculture Impact:**
-```
-yield = f(rainfall, temperature, soil_fertility, technology)
-```
-
----
-
-### 6.3 Agriculture Engine
-
-**Vai trò:** Quyết định population ceiling của civilization.
-
-```
-food_production = yield_per_hectare × farmland_area
-food_required   = population × calories_per_person
-
-if food_production < food_required → famine
-```
-
-**Agricultural Tech Stages:**
-1. Hunter-gatherer
-2. Early agriculture
-3. Irrigation farming
-4. Crop rotation
-5. Mechanized agriculture
-
-**Feedback Loop:**
-```
-population ↑ → farmland expansion → deforestation → soil degradation → yield ↓
-```
-
----
-
-## 7. Population Layer
-
-### 7.1 Population Engine
-
-**Model:**
-```
-population_next = population + births - deaths + immigration - emigration
-
-fertility_rate = culture_factor + economic_security + religion_factor
-              - urbanization - education_level
-
-mortality_rate = disease + war + famine + aging - medicine
-```
-
-**Population Cohort:**
-```json
-{
-  "civilization_id": "civ_france",
-  "location": "paris_region",
-  "size": 450000,
-  "age_distribution": {},
-  "fertility_rate": 0.042,
-  "mortality_rate": 0.031,
-  "health_index": 0.61,
-  "wealth_index": 0.44
-}
-```
-
----
-
-### 7.2 Migration Engine
-
-**Migration Types:**
-- Economic Migration
-- Climate Migration
-- War Refugees
-- Colonization
-- Nomadic Migration
-
-**Migration Probability:**
-```
-migration_rate = push_factor × pull_factor × mobility
-```
-
-**Migration Flow Object:**
-```json
-{
-  "migration_id": "mig_2390",
-  "year": 1348,
-  "origin_region": "north_valley",
-  "destination_region": "river_delta",
-  "population_moved": 24000,
-  "reason": "famine"
-}
-```
-
----
-
-### 7.3 Disease Engine
-
-**SIR Model:**
-```
-Population → Susceptible → Infected → Recovered
-
-R0 = infection_rate / recovery_rate
-if R0 > 1 → epidemic
-```
-
-**Pandemic Severity:**
-| Level | Type |
-|-------|------|
-| 1 | Local Outbreak |
-| 2 | Regional Epidemic |
-| 3 | Global Pandemic |
-
----
-
-## 8. Civilization Layer
-
-### 8.1 Civilization Formation Engine
-
-**Birth Conditions:**
-```
-cities >= 3
-+ shared_language
-+ shared_culture
-+ trade_connection
-+ political_center
-→ Civilization spawned
-```
-
-**Civilization Stages:**
-1. Tribal Confederation
-2. City State
-3. Kingdom
-4. Empire
-
-**Growth Model:**
-```
-growth_rate = agriculture_output + trade_flow + tech_bonus - war_loss - disease
-```
-
----
-
-### 8.2 City Simulation Engine
-
-```json
-{
-  "city_id": "city_rome",
-  "population": 1200000,
-  "economy": "trade_hub",
-  "infrastructure": ["roads", "aqueducts", "forums"],
-  "specialization": "political_capital",
-  "tech_level": 0.73
-}
-```
-
-**Urban Specialization:**
-- Trade City → market networks
-- Religious City → pilgrimage economy
-- Military City → garrison
-- Knowledge City → universities
-
----
-
-### 8.3 Empire Governance Engine
-
-```
-stability = legitimacy + economic_strength + military_control - corruption - inequality
-```
-
-**Collapse khi:** `stability < threshold`
-
-**Political Evolution:**
-```
-tribal confederation → monarchy → empire → republic → bureaucratic state
-```
-
----
-
-### 8.4 War Engine
-
-**Root Causes:**
-```
-WarPressure = resource_conflict + ideological_conflict + territorial_conflict + power_imbalance
-if WarPressure > threshold → war
-```
-
-**Combat Power:**
-```
-combat_power = manpower × technology × morale × leadership
-```
-
-**War Escalation:**
-1. Border skirmish
-2. Regional war
-3. Total war
-
----
-
-### 8.5 Trade & Economy Engine
-
-**Market Price:**
-```
-price = demand / supply
-```
-
-**Economic Growth:**
-```
-economic_output = production + trade_surplus
-```
-
-**Trade Route:**
-```json
-{
-  "route_id": "silk_road",
-  "regions": ["china", "central_asia", "europe"],
-  "volume": 0.73,
-  "risk": 0.22
-}
-```
-
----
-
-## 9. Culture Layer
-
-### 9.1 Religion Evolution Engine
-
-**Formation Conditions:**
-```
-social crisis + spiritual vacuum + charismatic leader + mythological narrative
-→ new religion
-```
-
-**Religion Tree:**
-```
-Religion
-   ├ Sect A
-   ├ Sect B
-   └ Sect C
-```
-
----
-
-### 9.2 Language Evolution Engine
-
-**Language Family Tree:**
-```
-Proto Language
-   ├── North Dialect → Northern Language
-   └── South Dialect → Southern Language
-```
-
-**Dialect Drift:**
-```
-language_difference += drift_rate × time × isolation_factor
-```
-
----
-
-### 9.3 Art & Culture Engine
-
-**Cultural Energy:**
-```
-cultural_output = wealth + education + social_stability
-```
-
-**Cultural Movement** xuất hiện khi: `intellectual_shift + technological_change + social_transformation`
-
----
-
-### 9.4 Mythology Generator Engine
-
-**Input:** `civilization_memories`
-
-**Pattern Detection:**
-- Flood Myth: `flood + population_collapse + survivor_group`
-- Hero Myth: `hero + war_victory`
-- Creation Myth: `first_civilization + cosmic_event`
-
-**Myth Evolution:**
-```
-100 năm:  "hero defeated enemy king"
-1000 năm: "hero chosen by the gods"
-3000 năm: "hero is a demi-god"
-```
-
----
-
-## 10. Knowledge Layer
-
-### 10.1 Knowledge Propagation Engine
-
-**Knowledge Node:**
-```json
-{
-  "domain": "mathematics",
-  "complexity": 0.72,
-  "prerequisite": ["geometry"],
-  "innovation_value": 0.81
-}
-```
-
-**Knowledge Graph:**
-```
-geometry → calculus → physics → engineering
-```
-
-**Innovation Rate:**
-```
-innovation_rate = knowledge_density × scholar_population
-```
-
----
-
-### 10.2 Technological Evolution Engine
-
-**Technology Graph (Dynamic, không phải cố định):**
-```json
-{
-  "tech_id": "steam_engine",
-  "dependencies": ["metalworking", "thermodynamics"],
-  "impact_domains": ["industry", "transport"],
-  "adoption_rate": 0.14
-}
-```
-
-**Tech Eras:**
-```
-Stone Age → Bronze Age → Iron Age → Classical → Medieval → Industrial → Information → AI
-```
-
-**Innovation Exponential:**
-```
-innovation_rate ∝ knowledge_nodes²
-```
-
----
-
-## 11. Cognitive Layer
-
-### 11.1 Psychology Engine
-
-**Agent Model:**
-```json
-{
-  "personality": "Big Five",
-  "intelligence": 0.85,
-  "ambition": 0.91,
-  "empathy": 0.42,
-  "curiosity": 0.88,
-  "risk_tolerance": 0.73
-}
-```
-
-**Social Contagion:**
-```
-idea_spread = contact_rate × persuasiveness × social_network
-```
-
----
-
-### 11.2 Ideology Evolution Engine
-
-**Ideology Vector:**
-```json
-{
-  "authority": 0.8,
-  "freedom": 0.2,
-  "militarism": 0.7,
-  "spirituality": 0.6,
-  "rationalism": 0.4
-}
-```
-
-**Birth Triggers:**
-- Economic inequality
-- Religious corruption
-- Political oppression
-- Scientific discovery
-
----
-
-### 11.3 Great Person Engine
-
-**Spawn Condition:**
-```
-if talent_score > 0.85 AND opportunity_score > 0.6
-    → spawn_great_person()
-```
-
-**Archetypes:**
-| Archetype | Key Traits | Impact |
-|-----------|-----------|--------|
-| Military Genius | strategy, charisma, discipline | War victories, empire expansion |
-| Scientific Genius | intellect, curiosity, persistence | Scientific paradigm shift |
-| Religious Prophet | charisma, spiritual insight | New religion, cultural shift |
-| Cultural Genius | creativity, artistic ability | Art movements, renaissance |
-
----
-
-## 12. Narrative Layer
-
-### 12.1 Causality Engine
-
-**Causal Graph:**
-```
-Event A → Event B → Event C
-      ↘ Event D → Event E
-```
-
-**Example Chain:**
-```
-Volcanic eruption → Crop failure → Food shortage → Civil unrest → Empire collapse
-```
-
----
-
-### 12.2 Attractor Engine
-
-**Historical Attractors (Civilization):**
-- Empire Rise
-- Empire Collapse
-- Renaissance
-- Scientific Revolution
-- Industrialization
-- Cultural Golden Age
-
-**Hybrid History Model (C — Chaos + Attractors):**
-```
-world_state(t+1) = world_state(t) + causality_effects + chaos_noise + attractor_gravity
-```
-
-**Example:**
-```
-Year 1347: Black Death (chaos)
-    ↓ population collapse (causality)
-    ↓ labor shortage
-    ↓ economic shift
-    ↓ Renaissance attractor activated
-```
-
----
-
-### 12.3 Narrative Extraction Engine
-
-**Pipeline:**
-```
-Timeline Events
       ↓
-Event Clustering
+Zone Updates (parallel)
       ↓
-Story Arc Detection (rise, conflict, collapse, rebirth)
+Event Generation
       ↓
-AI Story Generation (LLM)
+Event Queue Processing
       ↓
-Output: History Books, Lore, Characters
+Snapshot (if needed)
 ```
 
-**AI Prompt Example:**
-```
-Timeline summary:
-- Year 120: agriculture discovered
-- Year 240: kingdom formed
-- Year 400: empire collapsed
-- Year 550: renaissance
+### Multi-Scale Time
 
-Write a historical narrative describing the rise and fall of this civilization.
+| Engine | Time Scale |
+|---|---|
+| Climate | Yearly |
+| Population | Monthly |
+| Economy | Weekly/Monthly |
+| Actors | Daily |
+| War | Hourly |
+
+### Actor Activation Model
+
+```
+Active actors:  leaders, scientists, generals, rebels (vài nghìn)
+Passive:        background population (aggregate model)
+```
+
+### Time Compression
+
+```
+Peace time  → 1 tick = 1 year   (fast forward)
+War time    → 1 tick = 1 day    (slow motion)
+```
+
+### Parallel Execution
+
+```rust
+zones.par_iter_mut().for_each(|zone| update_zone(zone));
+actors.par_iter_mut().for_each(|actor| update_actor(actor));
 ```
 
 ---
 
-## 13. Autonomic Evolution Engine
+## 24. Memory Layout & Performance Architecture
 
-### Decision Logic
+### ECS + SoA Pattern
 
-```php
-class AutonomicEvolutionEngine
-{
-    public function evaluate(UniverseSnapshot $snapshot): EvolutionDecision
-    {
-        if ($snapshot->entropy >= config('worldos.autonomic.archive_entropy_threshold')) {
-            return EvolutionDecision::archive();
-        }
-
-        if ($snapshot->entropy >= config('worldos.autonomic.fork_entropy_min')) {
-            return EvolutionDecision::fork();
-        }
-
-        if ($snapshot->novelty < 0.1) {
-            return EvolutionDecision::mutate();
-        }
-
-        return EvolutionDecision::continue();
-    }
+```rust
+struct ActorStorage {
+    ids:       Vec<ActorId>,
+    traits:    Vec<[f32; 17]>,
+    wealth:    Vec<f32>,
+    location:  Vec<ZoneId>,
+    health:    Vec<f32>,
+    influence: Vec<f32>,
+    age:       Vec<u16>,
 }
 ```
 
-### Decision Types
+### Spatial Index
 
-| Decision | Condition |
-|----------|-----------|
-| **continue** | entropy thấp, complexity tăng |
-| **fork** | entropy >= fork_min |
-| **archive** | entropy >= archive_threshold |
-| **merge** | similarity > 0.92 giữa 2 universe |
-| **mutate** | novelty < stagnation_threshold |
-| **promote** | civilization đạt milestone đặc biệt |
-
-### Fork Count Strategy
-
-```
-fork_count = floor(entropy × 5)
-```
-
-| Entropy | Fork Count |
-|---------|-----------|
-| 0.62 | 3 |
-| 0.80 | 4 |
-| 0.95 | 5 |
-
----
-
-## 14. Multiverse Scheduler & Timeline Selection
-
-### Multiverse Scheduler
-
-**Priority Score:**
-```
-priority = novelty_weight × novelty
-         + complexity_weight × complexity
-         + civilization_weight × civilization_count
-         + entropy_weight × entropy
-```
-
-```php
-class MultiverseSchedulerEngine
-{
-    public function schedule(): Collection
-    {
-        return Universe::active()
-            ->orderByDesc('priority_score')
-            ->limit(config('worldos.scheduler.tick_budget'))
-            ->get();
-    }
+```rust
+struct ZoneActorIndex {
+    zone_to_actors: Vec<Vec<ActorId>>,
 }
 ```
 
-**Aging (tránh starvation):**
-```
-priority += idle_time × aging_factor
-```
+### Graph Storage (CSR Format)
 
----
-
-### Timeline Selection Engine
-
-**Timeline Score:**
-```
-score = 0.3 × tech_progress
-      + 0.2 × culture_diversity
-      + 0.2 × conflict_intensity
-      + 0.3 × novelty
+```rust
+struct SocialGraph {
+    offsets: Vec<usize>,
+    edges:   Vec<ActorId>,
+    weights: Vec<f32>,
+}
 ```
 
-**Interesting Events (tăng score):**
-- First agriculture
-- First empire
-- AI creation
-- Interstellar travel
-- Global war
-
----
-
-## 15. WorldOS Data Graph
-
-**Tech:** Neo4j / Amazon Neptune / ArangoDB
-
-### Core Node Types
-
-| Node | Key Fields |
-|------|-----------|
-| `Person` | id, name, birth_year, civilization, influence_score |
-| `Civilization` | id, name, start_year, end_year, population, tech_level |
-| `Religion` | id, name, founder, doctrine, followers |
-| `Technology` | id, name, invention_year, domain, impact_score |
-| `Event` | id, type, year, location, participants, impact |
-
-### Key Relationships
-
-```cypher
-Person   -[:FOUNDED]->    Religion
-Person   -[:INVENTED]->   Technology
-Civilization -[:FOUGHT]-> Civilization
-Technology   -[:ENABLED]-> Technology
-Event    -[:CHANGED]->    Civilization
-```
-
-### Example Graph
+### Performance Target
 
 ```
-Printing Press
-    ↓ enabled
-Knowledge Explosion
-    ↓ triggered
-Scientific Revolution
-    ↓ produced
-Newton → Classical Mechanics → Industrial Revolution
+100k actors, 4096 zones, 1M edges
+Tick time target: 5–20ms
+Throughput:       50–200 ticks/second
 ```
 
 ---
 
-## 16. World Event Schema (50+ types)
+## 25. Engine Dependency Graph
 
-### 1. Civilization Events
-```
-civilization_born | civilization_expand | civilization_split
-civilization_collapse | capital_moved
-```
+### Layer Dependencies (DAG)
 
-### 2. War Events
 ```
-war_declared | battle_fought | city_sieged | peace_treaty | empire_fall
-```
-
-### 3. Religion Events
-```
-religion_founded | religion_split | religious_reform | religion_spread | holy_war
+Layer 1: Physical World          (no dependencies)
+Layer 2: Environment & Resources
+Layer 3: Population & Demography
+Layer 4: Individual Behavior
+Layer 5: Information & Social
+Layer 6: Economy & Infrastructure
+Layer 7: Politics & Civilization
+Layer 8: Meta Systems (Causality, Emergence, Narrative, Timeline)
 ```
 
-### 4. Technology Events
+### Engine Communication Rule
+
 ```
-technology_invented | technology_diffused | tech_revolution | scientific_breakthrough
+Engines KHÔNG gọi trực tiếp nhau.
+Engine → emit event → event queue → other engines
 ```
 
-### 5. Cultural Events
+### Preventing Feedback Loops
+
 ```
-art_movement_born | cultural_golden_age | literary_revolution | architectural_style_born
+Rule: Engines chỉ READ world state trong tick
+      Engines EMIT events
+      Events được APPLY sau tick hoàn thành
 ```
 
-### 6. Economic Events
-```
-trade_route_established | market_crash | economic_boom | currency_created
+---
+
+## 26. Engine Plugin & Versioning Architecture
+
+### Engine Trait (Rust)
+
+```rust
+trait Engine {
+    fn name(&self) -> &'static str;
+    fn version(&self) -> EngineVersion;
+    fn dependencies(&self) -> Vec<EngineDependency>;
+    fn tick(&mut self, ctx: &mut EngineContext);
+}
 ```
 
-### 7. Population Events
-```
-migration_wave | population_boom | famine | plague_outbreak
-```
-
-### 8. Ideology Events
-```
-ideology_born | philosophy_school | political_revolution | constitution_written
-```
-
-### Event Schema Structure
+### Engine Manifest (per Universe)
 
 ```json
 {
-  "id": "UUID",
-  "type": "war_declared",
-  "year": 1843,
-  "location": "region_id",
-  "participants": ["civilization_a", "civilization_b"],
-  "consequences": [
-    "population_loss",
-    "territory_change",
-    "ideology_shift"
-  ]
+  "universe_id": "uni_102",
+  "engine_versions": {
+    "economy": "2.1",
+    "population": "1.4",
+    "war": "1.1",
+    "climate": "0.8"
+  },
+  "seed": 9128731
 }
 ```
 
-### Kafka Topic Structure
+Universe phải pin engine versions để đảm bảo deterministic replay.
+
+---
+
+## 27. Time & Timeline Architecture
+
+### Universe Struct
+
+```rust
+struct Universe {
+    id: UniverseId,
+    parent: Option<UniverseId>,
+    fork_tick: u64,
+    engine_manifest: EngineManifest,
+    seed: u64,
+}
+```
+
+### Timeline Branching
 
 ```
-world.events.civilization
-world.events.war
-world.events.religion
-world.events.tech
-world.events.population
-world.events.ideology
+Root Universe (seed: 9128731)
+    ├── Branch A: "No Roman Empire"
+    └── Branch B: "Global theocracy"
+```
+
+### Deterministic Replay
+
+```
+same_seed + same_engine_versions + same_events = same_history
+```
+
+### Snapshot Interval
+
+```
+snapshot every 100 ticks
+Snapshot includes: world_state, engine_states, event_queue, rng_state
 ```
 
 ---
 
-## 17. Implementation Blueprint
+## 28. Distributed Simulation Architecture
 
-### Tech Stack
-
-| Layer | Technology |
-|-------|-----------|
-| Simulation Core | Rust / Go |
-| API Layer | Laravel (PHP) |
-| Frontend | Next.js + WebGL |
-| Event Stream | Apache Kafka / Redpanda |
-| Hot State | Redis Cluster |
-| Graph History | Neo4j |
-| Analytics | ClickHouse |
-| Snapshots | S3 |
-
-### Laravel DDD Module Structure
+### Spatial Partition Strategy
 
 ```
-Modules/
-  World/
-  Ecology/
-  Civilization/
-  Trade/
-  Knowledge/
-  Culture/
-  Evolution/
-  Simulation/
-    Kernel/
-    Contracts/
-    State/
-    Services/
-      AutonomicEvolutionEngine.php
-      MultiverseSchedulerEngine.php
-      SagaService.php
-      DecisionEngine.php
-      StrategicDecisionEngine.php
+World Map (4096×4096)
+    ↓ chia thành
+64 Shards → Cluster Nodes
 ```
 
-### Million Timeline Architecture
+### Cross-Shard Interaction
 
-```
-Simulation Cluster
-  Worker Node 1 → 10,000 timelines
-  Worker Node 2 → 10,000 timelines
-  Worker Node 3 → 10,000 timelines
-  ...
-  Worker Node N → 10,000 timelines
-Total: 1,000,000 timelines
+```rust
+struct MigrationEvent {
+    from_shard: ShardId,
+    to_shard: ShardId,
+    population: u32,
+    cultural_group: CultureId,
+}
 ```
 
-**Simulation Pseudo Loop:**
+### Border Zone (Ghost Zones)
+
+Shard A có ghost copy của neighbor zones trong Shard B → tránh network round-trip.
+
+### Scaling Capacity
+
+| Cluster Size | Actor Capacity |
+|---|---|
+| 1 machine | ~100k actors |
+| 10 machines | ~1M actors |
+| 100 machines | ~10M actors |
+
+---
+
+## 29. AI Research Layer
+
+### Simulation Data Lake Schema
+
+```sql
+simulation_runs       (id, universe_id, start_tick, end_tick, parameters)
+simulation_events     (id, run_id, tick, event_type, location, payload)
+civilization_metrics  (id, run_id, tick, gdp, population, stability, ...)
+actor_decisions       (id, run_id, tick, actor_id, action, context)
+war_outcomes          (id, run_id, war_id, winner, duration, casualties)
+innovations           (id, run_id, tick, technology, civilization_id)
+```
+
+### Feature Extraction
+
 ```python
-for year in range(0, 10000):
-    run_climate_engine()
-    run_agriculture_engine()
-    run_population_engine()
-    run_civilization_engine()
-    run_war_engine()
-    run_culture_engine()
-    store_history()
+features = [
+    gdp_growth_rate,
+    inequality_gini,
+    urbanization_ratio,
+    literacy_rate,
+    war_frequency_50yr,
+    innovation_rate_100yr,
+    ideology_polarization,
+    elite_competition_index,
+]
+```
+
+### Policy Simulation
+
+```
+Laravel API: POST /ai/policy-simulation
+→ Fork timeline → run 1000 ticks → return outcome distribution
 ```
 
 ---
 
-## 18. Master Architecture Overview
+## 30. Self-Improving Simulation Architecture
+
+### Closed Learning Loop
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                    WorldOS Kernel                        │
-│         (Scheduler + State Manager + Event Bus)          │
-└────────────────────┬────────────────────────────────────┘
-                     │
-         ┌───────────┴───────────┐
-         │      Event Bus         │
-         │  (World State Stream)  │
-         └───────────┬───────────┘
-                     │
-  ┌──────────────────┼──────────────────┬──────────────────┐
-  │                  │                  │                  │
-  ▼                  ▼                  ▼                  ▼
-
-Physical Layer    Population Layer   Civilization Layer  Culture Layer
-──────────────    ────────────────   ──────────────────  ─────────────
-Geography         Population         Formation           Religion
-Climate           Migration          City Simulation     Language
-Natural Disaster  Disease            Governance          Art & Culture
-                  Agriculture        War Engine          Mythology
-                                     Trade & Economy
-
-  ┌──────────────────┬──────────────────┬──────────────────┐
-  │                  │                  │                  │
-  ▼                  ▼                  ▼                  ▼
-
-Knowledge Layer   Cognitive Layer    Narrative Layer     Meta Layer
-───────────────   ───────────────    ───────────────     ──────────
-Knowledge Prop.   Psychology         Causality           Evolution
-Tech Evolution    Ideology           Attractor           Scheduler
-Innovation        Great Person       Narrative Extract.  Timeline Select.
+Simulation → Historical Data → AI Analysis
+→ Rule Proposal → Sandbox Test → Evaluation → Deploy
 ```
 
-### 4 Nguyên Tắc Bất Biến Của Kernel
+### Rule Evolution Example
 
-| Nguyên tắc | Mô tả |
-|-----------|-------|
-| **Deterministic** | Replay được — seed random theo `hash(universe_id + tick)` |
-| **Event-driven** | Engines không gọi nhau trực tiếp, chỉ qua Event Bus |
-| **Scalable** | Worker pool song song — mỗi node chạy N timelines |
-| **Replayable** | Snapshot mỗi 10 sim-years — có thể time travel |
+**Rule v1:** `innovation_rate = curiosity × education`
+
+**AI proposes v2:** thêm `information_flow`, `trade_connectivity_bonus`.
+
+**Evaluation:** historical_plausibility, simulation_diversity → Deploy v2.
+
+### Laravel Role
+
+```php
+SimulationJob::dispatch($universe_id);
+AIAnalysisJob::dispatch($run_id);
+RuleProposalJob::dispatch($pattern_id);
+SandboxTestJob::dispatch($proposed_rule);
+```
 
 ---
 
-> **Kết quả cuối cùng:** Nếu implement đúng, WorldOS có thể tự sinh ra — không cần script sẵn — religions, empires, science, revolutions, art, mythology, và toàn bộ lịch sử của một thế giới hư cấu.
->
-> Đây là **procedural multiverse civilization generator** — kết hợp giữa Dwarf Fortress, Civilization VI, và một AI historian.
+## 31. Observability & Debugging Architecture
+
+### Ba trụ cột
+
+```
+Simulation Kernel
+      ├── Metrics   → Prometheus
+      ├── Traces    → Jaeger
+      └── Events    → Event Explorer UI
+```
+
+### Simulation Metrics (ví dụ)
+
+```
+population_total
+gdp_global
+war_count_active
+innovation_rate
+ideology_diversity
+tick_duration_ms
+event_queue_depth
+```
+
+### Causality Explorer UI
+
+```
+Click sự kiện "Revolution Year 1830"
+→ Hiện causal chain: Revolution ↑ food_shortage ↑ climate_drought ↑ inequality
+```
+
+### Simulation Replay
+
+```
+worldos-inspector replay --universe uni_102 --from-tick 1800 --to-tick 1830
+```
+
+---
+
+## 32. Stability & Chaos Control Engine
+
+### Chaos Score
+
+```
+chaos_score =
+    population_variance * 0.2
+  + economic_volatility * 0.3
+  + conflict_frequency * 0.3
+  + resource_shock * 0.2
+// chaos_score > 0.8 → kích hoạt stability control
+```
+
+### Stability Mechanisms
+
+1. **Dampening:** `inflation_rate = raw_inflation × stability_factor`
+2. **Event Throttling:** `if war_count > threshold: war_probability *= 0.5`
+3. **Biological Feedback:** `population↑ → food_scarcity↑ → birth_rate↓`
+4. **Chaos Quarantine:** zone quá bất ổn → giảm influence lan sang zones khác
+
+---
+
+## 33. Reality Calibration System
+
+### Historical Reference Data
+
+```sql
+INSERT INTO calibration_benchmarks VALUES
+('empire_lifespan_mean_years', 250),
+('war_frequency_per_century', 3.0),
+('industrial_revolution_tick', 1760),
+('population_1800_million', 1000);
+```
+
+### Auto-Calibration Loop
+
+```
+1. run simulation (1000 ticks)
+2. measure metrics
+3. compare with historical benchmarks
+4. adjust parameters (±10% per iteration)
+5. repeat
+```
+
+---
+
+## 34. Physics of Civilization Engine
+
+### Civilization Energy Model
+
+```
+E = resources + trade_volume + knowledge + infrastructure
+// E < survival_threshold → collapse_risk↑
+```
+
+### Social Entropy
+
+```
+entropy_rate =
+    corruption + inequality + institutional_decay + bureaucratic_overhead
+// entropy > threshold → collapse_probability↑
+```
+
+### Civilization Attractors
+
+```
+stable_empire
+trade_federation
+city_state_network
+religious_theocracy
+military_junta
+```
+
+### Phase Transition Detection
+
+```
+tribal → agrarian:     agriculture_tech > threshold && settlement_density > threshold
+agrarian → industrial: capital_accumulation > threshold && energy_tech > threshold
+```
+
+---
+
+## 35. Multiverse Simulation System
+
+### Universe Seed Structure
+
+```rust
+struct UniverseSeed {
+    geography: GeographySeed,
+    climate: ClimateSeed,
+    resources: ResourceSeed,
+    initial_population: u64,
+    innovation_probability: f32,
+    rng_master: u64,
+}
+```
+
+### Parallel Universe Cluster
+
+```
+Cluster Job Queue
+    ├── Universe 0001 (seed: 1827312)
+    ├── Universe 0002 (seed: 9182731)
+    └── ...
+Result Aggregator → Store metrics per universe → Cross-universe analysis
+```
+
+### Use Cases
+
+- What-if experiments ("What if Rome never fell?")
+- Parameter sensitivity analysis
+- Discovery of stable civilization configurations
+- AI training data generation
+
+---
+
+## 36. Civilization Discovery Engine
+
+### Civilization Genome
+
+```rust
+struct CivilizationGenome {
+    governance_model: GovernanceType,
+    economic_model: EconomicType,
+    belief_system: BeliefType,
+    innovation_structure: InnovationModel,
+    social_structure: SocialModel,
+}
+```
+
+### Evolutionary Search
+
+```
+Generation 0: Random genomes
+   ↓ simulate 1000 ticks
+   ↓ evaluate fitness
+   ↓ select top performers
+   ↓ mutation + crossover
+Generation N: Optimized genomes
+```
+
+### Fitness Evaluation
+
+```
+fitness =
+    lifespan_years      * 0.3
+  + innovation_rate     * 0.2
+  + population_peak      * 0.2
+  + stability_score      * 0.2
+  + cultural_richness   * 0.1
+```
+
+---
+
+## 37. WorldOS Ultimate Architecture Map (80+ Engines)
+
+### Layer 1 — Physical World (Rust)
+
+Planetary Physics, Geology & Tectonic, Climate & Atmosphere, Ocean & Hydrology, Ecosystem & Biodiversity, Resource Distribution, Natural Disaster, Agriculture & Food System.
+
+### Layer 2 — Population & Biology (Rust)
+
+Population Dynamics, Demography, Migration, Health & Disease.
+
+### Layer 3 — Individual Mind (Rust)
+
+Psychology, Emotion, Decision, Memory & Learning, Social Interaction.
+
+### Layer 4 — Information & Knowledge (Rust)
+
+Information Propagation, Knowledge & Technology Evolution, Education & Scholarship, Media & Communication.
+
+### Layer 5 — Economy (Rust)
+
+Production & Industry, Global Trade Network, Market & Price Dynamics, Finance & Banking, Infrastructure & Urban Development.
+
+### Layer 6 — Social Structure (Rust)
+
+Culture & Norm Emergence, Religion & Belief Systems, Institution Formation, Class & Inequality.
+
+### Layer 7 — Political & Power (Rust)
+
+Governance, Diplomacy, War & Conflict, Empire Dynamics.
+
+### Layer 8 — Civilization Dynamics (Rust)
+
+Innovation & Scientific Revolution, Civilization Cycle.
+
+### Layer 9 — Meta Simulation (Rust)
+
+Causality, Emergence Detection, Narrative & Historical Memory, Timeline Fork / Multiverse, Stability & Chaos Control, Reality Calibration.
+
+### Layer 10 — Core Infrastructure (Rust)
+
+Simulation Scheduler, World State Model, Event Streaming, AI Agent System, Spatial Partition.
+
+### Layer 11 — Research & Discovery (Laravel + Python)
+
+Multiverse Simulation, Civilization Discovery, Physics of Civilization, Self-Improving Architecture.
+
+### Layer 12 — AI Research (Python/ML)
+
+Pattern Discovery, Causal Analysis, Rule Evolution, Simulation Optimization.
+
+### Layer 13 — Observability (DevOps)
+
+Metrics (Prometheus), Traces (Jaeger), Event Inspector, Simulation Replay.
+
+---
+
+## 38. Minimal Viable Kernel — Lộ trình triển khai
+
+Không thể build 80 engines ngay. Đây là **12 engines cốt lõi** để bắt đầu:
+
+### Phase 1 — Core Foundation (3–6 tháng)
+
+```
+Priority engines:
+1. World State Model (zones, actors, SoA memory)
+2. Climate & Environment Engine (basic)
+3. Population Engine (birth, death, migration)
+4. Economic Field Engine (production, consumption, trade)
+5. Simulation Scheduler (hybrid tick + event)
+6. Event System (Kafka integration)
+```
+
+### Phase 2 — Society Layer (6–12 tháng)
+
+```
+7. Actor Cognition Engine (17 traits, decision model)
+8. Social Field Engine (fear, ideology, wealth fields)
+9. Information Propagation Engine
+10. War & Conflict Engine (basic)
+```
+
+### Phase 3 — Civilization Layer (12–18 tháng)
+
+```
+11. Civilization Cycle Engine
+12. Narrative Engine (basic event logging)
+```
+
+### Phase 4 — Research Platform (18+ tháng)
+
+```
+13. Causality Graph Engine
+14. Emergence Detection Engine
+15. AI Research Layer
+16. Self-Improving Architecture
+17. Multiverse Simulation System
+```
+
+### Laravel Control Endpoints (Phase 1)
+
+```php
+POST   /api/universes                  // Tạo universe mới
+POST   /api/universes/{id}/start       // Bắt đầu simulation
+POST   /api/universes/{id}/pause       // Dừng simulation
+POST   /api/universes/{id}/fork        // Fork timeline
+GET    /api/universes/{id}/snapshot    // Lấy world state
+GET    /api/universes/{id}/events      // Lấy event history
+POST   /api/universes/{id}/inject      // Inject custom event
+```
+
+---
+
+## Tóm tắt kiến trúc tổng thể
+
+```
+┌─────────────────────────────────────────────────┐
+│                  Next.js Frontend               │
+│        (World Map, Timeline, Civilization UI)   │
+└──────────────────────┬──────────────────────────┘
+                       │ WebSocket / REST
+┌──────────────────────▼──────────────────────────┐
+│              Laravel Control Plane              │
+│    (Orchestration, Persistence, AI Narrative)   │
+└──────┬───────────────────────────────┬──────────┘
+       │ gRPC                          │ Kafka consume
+┌──────▼──────────┐          ┌─────────▼──────────┐
+│  Rust Simulation│          │   AI Research Layer │
+│     Kernel      │          │  (Pattern, Rules)   │
+│  (40+ Engines)  │          └────────────────────┘
+└──────┬──────────┘
+       │ Kafka publish
+┌──────▼──────────────────────────────────────────┐
+│            Apache Kafka Event Stream            │
+│         (war, migration, innovation, ...)       │
+└─────────────────────────────────────────────────┘
+       │
+┌──────▼──────────────────────────────────────────┐
+│          Distributed Simulation Cluster         │
+│     (Multiple Rust nodes, spatial sharding)     │
+└─────────────────────────────────────────────────┘
+       │
+┌──────▼──────────────────────────────────────────┐
+│                  PostgreSQL                     │
+│    (Snapshots, Events, Metrics, Timelines)      │
+└─────────────────────────────────────────────────┘
+```
+
+---
+
+*WorldOS — từ simulation engine đến Computational Civilization Science Platform*
+
+*"Simulate history. Explore alternatives. Discover new civilizations."*
