@@ -81,7 +81,7 @@ Other Engines / AI / Narrative
 |---|---|---|
 | Frontend | Next.js | Visualization, UI |
 | Control Plane | Laravel | Orchestration, API, Auth, AI Narrative |
-| Simulation Core | Rust | Physics, State Transition, Actor System |
+| Simulation Core | Rust | Physics, State Transition, Actor System, **Rule Engine (DSL)** |
 | Event Bus | Apache Kafka | Event Streaming, History Log |
 | Database | PostgreSQL | Snapshot, History, Metrics |
 
@@ -178,6 +178,13 @@ loop {
 7. cascade_events()
 8. event_emission()
 ```
+
+### DSL & Rule VM (Core)
+
+**Rule Engine / DSL** là thành phần core cùng cấp với Simulation Kernel: Kernel quản lý state + physics; DSL quản lý **luật** thế giới (điều kiện → sự kiện/hành động).
+
+- **Spec & state contract:** [WorldOS_DSL_Spec.md](WorldOS_DSL_Spec.md) — cú pháp rule (when/chance/then), state contract (path đọc từ state_vector), actions (emit_event, adjust_stability, adjust_entropy).
+- **Vị trí trong pipeline:** Sau khi có snapshot từ `advance()` (hoặc post-tick trong Laravel): state được gửi vào Rule VM (Rust); VM trả danh sách events/actions; Laravel emit `SimulationEventOccurred` và apply điều chỉnh. Bật qua `worldos.rule_engine.enabled`; rules từ `worldos.rule_engine.rules_dsl` hoặc `worldos.rule_engine.rules_path`.
 
 ### World State Struct
 
@@ -1619,7 +1626,9 @@ Causality, Emergence Detection, Narrative & Historical Memory, Timeline Fork / M
 
 ### Layer 10 — Core Infrastructure (Rust)
 
-Simulation Scheduler, World State Model, Event Streaming, AI Agent System, Spatial Partition.
+Simulation Scheduler, World State Model, **Rule Engine / DSL (Rule VM)**, Event Streaming, AI Agent System, Spatial Partition.
+
+**DSL & Rule VM:** Luật thế giới (khi nào cách mạng, chaos threshold, v.v.) mô tả bằng DSL; Rule VM trong Rust đọc state (state contract) và trả events/actions. Laravel gọi VM sau mỗi snapshot (khi bật `worldos.rule_engine.enabled`), emit event và apply điều chỉnh. Spec: [WorldOS_DSL_Spec.md](WorldOS_DSL_Spec.md).
 
 ### Layer 11 — Research & Discovery (Laravel + Python)
 

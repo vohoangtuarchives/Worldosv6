@@ -8,6 +8,8 @@ description = "WorldOS V6 gRPC server (simulation engine stub)"
 tokio = { version = "1", features = ["full"] }
 tonic = "0.12"
 worldos-core = { path = "../worldos-core" }
+worldos-rules = { path = "../worldos-rules" }
+rand = "0.8"
 prost = "0.13"
 axum = { version = "0.7", features = ["json"] }
 tower = "0.4"

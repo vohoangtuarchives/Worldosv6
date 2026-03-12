@@ -17,7 +17,8 @@ class WorldosReplayCommand extends Command
     protected $signature = 'worldos:replay
                             {universe : Universe ID}
                             {--from-tick= : Start tick (snapshot must exist)}
-                            {--to-tick= : End tick (optional; if present and snapshot exists, compare output)}';
+                            {--to-tick= : End tick (optional; if present and snapshot exists, compare output)}
+                            {--allow-manifest-mismatch : Run even when snapshot engine_manifest differs from current (replay may be non-deterministic)}';
 
     protected $description = 'Doc 21 §4d: Replay simulation from from-tick to to-tick for deterministic debugging';
 
@@ -50,6 +51,10 @@ class WorldosReplayCommand extends Command
         $storedManifest = is_array($snapAtN->metrics['engine_manifest'] ?? null) ? $snapAtN->metrics['engine_manifest'] : null;
         $currentManifest = $engineRegistry->getManifest();
         if ($storedManifest !== null && $storedManifest !== $currentManifest) {
+            if (! $this->option('allow-manifest-mismatch')) {
+                $this->error('Engine manifest at snapshot differs from current. Deterministic replay requires same seed + same engine_manifest. Use --allow-manifest-mismatch to run anyway (non-deterministic).');
+                return 1;
+            }
             $this->warn('Engine manifest at snapshot differs from current (replay may not be deterministic).');
         }
 

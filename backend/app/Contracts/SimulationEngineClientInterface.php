@@ -40,4 +40,14 @@ interface SimulationEngineClientInterface
      * @return array{is_strange_attractor: bool, is_bounded: bool, recurrence_rate: float, max_lyapunov_estimate: float, trajectory_variance: float, basin_center: array, basin_radius: float, regime_transitions: array}
      */
     public function analyzeTrajectory(array $points, float $threshold = 0.1): array;
+
+    /**
+     * Evaluate DSL rules against world state (Rule VM in Rust).
+     * Returns list of events and state adjustments to apply.
+     *
+     * @param  array  $state  World state (state_vector + entropy, stability_index, etc.)
+     * @param  string|null  $rulesDsl  Optional DSL text; if null/empty, uses no rules
+     * @return array{ok: bool, outputs: array, error_message?: string}
+     */
+    public function evaluateRules(array $state, ?string $rulesDsl = null): array;
 }

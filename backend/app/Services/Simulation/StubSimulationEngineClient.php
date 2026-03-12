@@ -71,4 +71,13 @@ class StubSimulationEngineClient implements SimulationEngineClientInterface
             'regime_transitions' => [],
         ];
     }
+
+    public function evaluateRules(array $state, ?string $rulesDsl = null): array
+    {
+        return [
+            'ok' => true,
+            'outputs' => [],
+            'error_message' => null,
+        ];
+    }
 }

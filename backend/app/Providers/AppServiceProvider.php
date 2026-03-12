@@ -86,8 +86,20 @@ class AppServiceProvider extends ServiceProvider
             \App\Modules\Intelligence\Listeners\ProcessIntelligenceEvolution::class
         );
         \Illuminate\Support\Facades\Event::listen(
+            \App\Events\Simulation\UniverseSimulationPulsed::class,
+            \App\Listeners\Simulation\PublishSimulationAdvancedToKafka::class
+        );
+        \Illuminate\Support\Facades\Event::listen(
             \App\Events\Simulation\SimulationEventOccurred::class,
             \App\Listeners\Simulation\SyncWorldEventToGraph::class
+        );
+        \Illuminate\Support\Facades\Event::listen(
+            \App\Events\Simulation\SimulationEventOccurred::class,
+            \App\Listeners\Simulation\PublishRuleFiredToKafka::class
+        );
+        \Illuminate\Support\Facades\Event::listen(
+            \App\Events\Simulation\RuleProposed::class,
+            \App\Listeners\Simulation\PersistRuleProposal::class
         );
         \Illuminate\Support\Facades\Event::listen(
             \App\Events\Simulation\SimulationEventOccurred::class,

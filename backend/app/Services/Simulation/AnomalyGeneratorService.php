@@ -8,10 +8,24 @@ use Illuminate\Support\Facades\Log;
 
 /**
  * AnomalyGeneratorService: Triggers unclassifiable anomalies (§V25).
- * Called randomly by the Chaos Engine or when strange conditions align.
+ * Natural disasters (Doc §14): struct disaster (type, zone_id, intensity, tick) in state_vector and events.
  */
 class AnomalyGeneratorService
 {
+    /** Natural disaster types (Doc §14 Disaster struct). */
+    public const DISASTER_DROUGHT = 'drought';
+    public const DISASTER_FLOOD = 'flood';
+    public const DISASTER_QUAKE = 'earthquake';
+    public const DISASTER_STORM = 'storm';
+    public const DISASTER_PESTILENCE = 'pestilence';
+
+    public const DISASTER_TYPES = [
+        self::DISASTER_DROUGHT,
+        self::DISASTER_FLOOD,
+        self::DISASTER_QUAKE,
+        self::DISASTER_STORM,
+        self::DISASTER_PESTILENCE,
+    ];
     /**
      * Spawn a random anomaly inside the state vector.
      */
@@ -83,5 +97,45 @@ class AnomalyGeneratorService
 
             Log::warning("ANOMALY: [{$type}] spawned in Universe #{$universe->id}.");
         }
+    }
+
+    /**
+     * Spawn a natural disaster (Doc §14): write Disaster struct to state_vector.disasters and Chronicle.
+     *
+     * @param  array{type?: string, zone_id?: int|string, intensity?: float}  $overrides
+     */
+    public function spawnNaturalDisaster(Universe $universe, array $overrides = []): void
+    {
+        $type = $overrides['type'] ?? self::DISASTER_TYPES[array_rand(self::DISASTER_TYPES)];
+        $zoneId = $overrides['zone_id'] ?? null;
+        $intensity = (float) ($overrides['intensity'] ?? 0.3 + (mt_rand() / mt_getrand_max()) * 0.6);
+        $tick = $universe->current_tick ?? 0;
+
+        $disaster = [
+            'type' => $type,
+            'zone_id' => $zoneId,
+            'intensity' => round($intensity, 2),
+            'tick' => $tick,
+        ];
+
+        $vec = is_array($universe->state_vector) ? $universe->state_vector : [];
+        $disasters = $vec['disasters'] ?? [];
+        $disasters[] = $disaster;
+        $vec['disasters'] = array_slice($disasters, -20);
+        $universe->state_vector = $vec;
+        $universe->save();
+
+        Chronicle::create([
+            'universe_id' => $universe->id,
+            'from_tick' => $tick,
+            'to_tick' => $tick,
+            'type' => 'natural_disaster',
+            'raw_payload' => [
+                'action' => 'disaster_occurred',
+                'disaster' => $disaster,
+            ],
+        ]);
+
+        Log::info("Natural disaster [{$type}] in Universe #{$universe->id}", $disaster);
     }
 }

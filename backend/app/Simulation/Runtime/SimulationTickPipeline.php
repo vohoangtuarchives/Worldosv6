@@ -4,8 +4,11 @@ namespace App\Simulation\Runtime;
 
 use App\Models\Universe;
 use App\Models\UniverseSnapshot;
+use App\Services\Simulation\SimulationTracer;
 use App\Simulation\Runtime\Contracts\SimulationStageInterface;
 use App\Simulation\Runtime\Contracts\TickSchedulerInterface;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
 
 final class SimulationTickPipeline
@@ -32,7 +35,17 @@ final class SimulationTickPipeline
                 continue;
             }
             try {
-                $stage->run($universe, $tick, $savedSnapshot, $context);
+                $tracing = Config::get('worldos.observability.tracing_enabled', false);
+                if ($tracing) {
+                    $start = microtime(true);
+                    SimulationTracer::span("stage.{$key}", function () use ($stage, $universe, $tick, $savedSnapshot, $context) {
+                        $stage->run($universe, $tick, $savedSnapshot, $context);
+                    });
+                    $durationMs = (microtime(true) - $start) * 1000;
+                    Cache::put("worldos.engine_execution_ms.{$universe->id}.{$key}", round($durationMs, 2), now()->addHours(1));
+                } else {
+                    $stage->run($universe, $tick, $savedSnapshot, $context);
+                }
                 $universe->refresh();
             } catch (\Throwable $e) {
                 Log::error("SimulationTickPipeline: stage failed", [

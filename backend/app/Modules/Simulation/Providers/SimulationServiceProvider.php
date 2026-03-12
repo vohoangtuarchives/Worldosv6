@@ -61,6 +61,16 @@ class SimulationServiceProvider extends ServiceProvider
         });
         $this->app->singleton(\App\Simulation\Contracts\WorldEventBusInterface::class, \App\Simulation\WorldEventBus::class);
         $this->app->singleton(\App\Simulation\WorldEventBus::class);
+        $this->app->bind(\App\Contracts\SimulationEventStreamProducerInterface::class, function ($app) {
+            if (! config('worldos.event_stream.kafka_enabled', false)) {
+                return $app->make(\App\Services\Simulation\EventStream\NullSimulationEventStreamProducer::class);
+            }
+            return new \App\Services\Simulation\EventStream\KafkaRestSimulationEventStreamProducer(
+                config('worldos.event_stream.rest_proxy_url'),
+                config('worldos.event_stream.topic_simulation_advanced'),
+                config('worldos.event_stream.topic_events'),
+            );
+        });
         $this->app->bind(\App\Simulation\Contracts\WorldOsGraphServiceInterface::class, function ($app) {
             $enabled = config('worldos.graph.enabled', false);
             $uri = config('worldos.graph.uri', '');
@@ -101,32 +111,19 @@ class SimulationServiceProvider extends ServiceProvider
         $this->app->singleton(\App\Simulation\Engines\ReligionEngine::class);
         $this->app->singleton(\App\Simulation\Engines\ArtCultureEngine::class);
         $this->app->singleton(\App\Simulation\Engines\PsychologyEngine::class);
+        $this->app->tag(config('worldos.engine_registry.engines', []), 'simulation_engine');
         $this->app->singleton(\App\Simulation\EngineRegistry::class, function ($app) {
             $registry = new \App\Simulation\EngineRegistry();
-            $registry->register($app->make(\App\Modules\World\Services\GeographyEngine::class));
-            $registry->register($app->make(\App\Simulation\Engines\PotentialFieldEngine::class));
-            $registry->register($app->make(\App\Simulation\Engines\CosmicPressureEngine::class));
-            $registry->register($app->make(\App\Simulation\Engines\StructuralDecayEngine::class));
-            $registry->register($app->make(\App\Simulation\Engines\AdaptiveTopologyEngine::class));
-            $registry->register($app->make(\App\Simulation\Engines\LawEvolutionEngine::class));
-            $registry->register($app->make(\App\Simulation\Engines\ZoneConflictEngine::class));
-            $registry->register($app->make(\App\Simulation\Engines\CulturalDriftEngine::class));
-            $registry->register($app->make(\App\Simulation\Engines\ClimateEngine::class));
-            $registry->register($app->make(\App\Simulation\Engines\AgricultureEngine::class));
-            $registry->register($app->make(\App\Simulation\Engines\PopulationEngine::class));
-            $registry->register($app->make(\App\Simulation\Engines\MigrationEngine::class));
-            $registry->register($app->make(\App\Simulation\Engines\DiseaseEngine::class));
-            $registry->register($app->make(\App\Simulation\Engines\CivilizationFormationEngine::class));
-            $registry->register($app->make(\App\Simulation\Engines\CitySimulationEngine::class));
-            $registry->register($app->make(\App\Simulation\Engines\GovernanceEngine::class));
-            $registry->register($app->make(\App\Simulation\Engines\TradeEngine::class));
-            $registry->register($app->make(\App\Simulation\Engines\KnowledgePropagationEngine::class));
-            $registry->register($app->make(\App\Simulation\Engines\TechEvolutionEngine::class));
-            $registry->register($app->make(\App\Simulation\Engines\ReligionEngine::class));
-            $registry->register($app->make(\App\Simulation\Engines\ArtCultureEngine::class));
-            $registry->register($app->make(\App\Simulation\Engines\PsychologyEngine::class));
-            $registry->register($app->make(\App\Simulation\Engines\CausalityEngine::class));
+            foreach ($app->tagged('simulation_engine') as $engine) {
+                $registry->register($engine);
+            }
             return $registry;
+        });
+        $this->app->singleton(\App\Simulation\SimulationScheduler::class, function ($app) {
+            return new \App\Simulation\SimulationScheduler(
+                $app->make(\App\Simulation\EngineRegistry::class),
+                $app->make(\App\Simulation\Runtime\Contracts\TickSchedulerInterface::class)
+            );
         });
         $this->app->singleton(\App\Simulation\SimulationKernel::class, function ($app) {
             return new \App\Simulation\SimulationKernel(
@@ -159,6 +156,54 @@ class SimulationServiceProvider extends ServiceProvider
             return new \App\Simulation\Runtime\SimulationTickPipeline($scheduler, $stages);
         });
         $this->app->singleton(\App\Simulation\Runtime\SimulationTickOrchestrator::class);
+
+        // State cache (optional) — Phase 2 §2.3
+        $this->app->bind(\App\Simulation\Contracts\StateCacheInterface::class, function ($app) {
+            $driver = config('worldos.state_cache.driver', 'null');
+            if ($driver === 'redis') {
+                return new \App\Simulation\StateCache\RedisStateCache(
+                    config('worldos.state_cache.key_prefix', 'worldos:'),
+                    config('worldos.state_cache.ttl_seconds', 300)
+                );
+            }
+            return $app->make(\App\Simulation\StateCache\NullStateCache::class);
+        });
+
+        // Snapshot archive (S3/MinIO optional) — Doc §10
+        $this->app->bind(\App\Simulation\Contracts\SnapshotArchiveInterface::class, function ($app) {
+            $driver = config('worldos.snapshot.archive_driver', 'null');
+            if ($driver === 's3') {
+                return new \App\Simulation\SnapshotArchive\S3SnapshotArchive(
+                    config('worldos.snapshot.archive.disk', 's3'),
+                    config('worldos.snapshot.archive.prefix', 'worldos/snapshots')
+                );
+            }
+            return $app->make(\App\Simulation\SnapshotArchive\NullSnapshotArchive::class);
+        });
+
+        // Phase 2: Simulation Supervisor
+        $this->app->singleton(\App\Simulation\Supervisor\EngineDriver::class);
+        $this->app->singleton(\App\Simulation\Supervisor\StateSynchronizer::class);
+        $this->app->singleton(\App\Simulation\Supervisor\SnapshotManager::class);
+        $this->app->singleton(\App\Simulation\Supervisor\EventDispatcher::class);
+        $this->app->singleton(\App\Simulation\Supervisor\RuntimePipeline::class, function ($app) {
+            $handlers = [
+                $app->make(\App\Simulation\Supervisor\Handlers\CognitivePostSnapshotHandler::class),
+                $app->make(\App\Simulation\Supervisor\Handlers\CollapsePostSnapshotHandler::class),
+                $app->make(\App\Simulation\Supervisor\Handlers\SocialGraphPostSnapshotHandler::class),
+                $app->make(\App\Simulation\Supervisor\Handlers\DemographicRatesPostSnapshotHandler::class),
+                $app->make(\App\Simulation\Supervisor\Handlers\UrbanStressAgriculturePostSnapshotHandler::class),
+                $app->make(\App\Simulation\Supervisor\Handlers\KnowledgeGraphPostSnapshotHandler::class),
+                $app->make(\App\Simulation\Supervisor\Handlers\CivilizationDiscoveryPostSnapshotHandler::class),
+                $app->make(\App\Simulation\Supervisor\Handlers\SelfImprovingPostSnapshotHandler::class),
+                $app->make(\App\Simulation\Supervisor\Handlers\RuleVmPostSnapshotHandler::class),
+            ];
+            return new \App\Simulation\Supervisor\RuntimePipeline(
+                $app->make(\App\Simulation\Runtime\SimulationTickOrchestrator::class),
+                $handlers
+            );
+        });
+        $this->app->singleton(\App\Simulation\Supervisor\SimulationSupervisor::class);
     }
 
     public function boot(): void

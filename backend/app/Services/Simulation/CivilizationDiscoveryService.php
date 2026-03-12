@@ -5,11 +5,13 @@ namespace App\Services\Simulation;
 use App\Contracts\Repositories\UniverseRepositoryInterface;
 use App\Models\Universe;
 use App\Models\UniverseSnapshot;
+use App\Services\Saga\SagaService;
 use Illuminate\Support\Facades\Log;
 
 /**
  * Civilization Discovery Engine (Doc §36): genome, evolutionary search, fitness evaluation.
  * Writes state_vector.civilization.discovery.fitness when run every N ticks.
+ * Phase 3: runGeneration includes optional crossover (merge state of two parents) + mutate.
  */
 final class CivilizationDiscoveryService
 {
@@ -18,7 +20,8 @@ final class CivilizationDiscoveryService
     public const BELIEF_TYPES = ['animist', 'theistic', 'philosophical', 'secular'];
 
     public function __construct(
-        protected UniverseRepositoryInterface $universeRepository
+        protected UniverseRepositoryInterface $universeRepository,
+        protected SagaService $sagaService,
     ) {}
 
     public function fitness(
@@ -77,18 +80,129 @@ final class CivilizationDiscoveryService
     }
 
     /**
-     * Stub for evolutionary search / GA: run one generation (evaluate fitness, optional selection).
-     * When implemented: evaluate fitness for each universe, apply selection/crossover/mutate, return next generation IDs.
+     * Run one GA generation: evaluate fitness, selection (top-k), optional crossover+mutate (Phase 3 §3.3).
      *
      * @param  array<int>  $universeIds
-     * @return array{evaluated: array<int>, selected: array<int>}
+     * @return array{evaluated: array<int, float>, selected: array<int>, next_generation: array<int>}
      */
     public function runGeneration(array $universeIds): array
     {
+        if (empty($universeIds)) {
+            return ['evaluated' => [], 'selected' => [], 'next_generation' => []];
+        }
+
+        $fitnessMap = [];
+        foreach ($universeIds as $id) {
+            $universe = $this->universeRepository->find($id);
+            if (! $universe) {
+                continue;
+            }
+            $vec = $this->getStateVector($universe);
+            $discovery = $vec['civilization']['discovery'] ?? null;
+            $fitness = isset($discovery['fitness']) ? (float) $discovery['fitness'] : 0.0;
+            $fitnessMap[$id] = $fitness;
+        }
+
+        $topK = (int) config('worldos.civilization_discovery.ga_top_k', 2);
+        $topK = max(1, min($topK, count($fitnessMap)));
+        arsort($fitnessMap, SORT_NUMERIC);
+        $selected = array_slice(array_keys($fitnessMap), 0, $topK, true);
+        $selected = array_values(array_map('intval', $selected));
+
+        $nextGeneration = $selected;
+        $crossoverEnabled = config('worldos.civilization_discovery.ga_crossover_enabled', false);
+        if ($crossoverEnabled && count($selected) >= 2) {
+            $childId = $this->crossoverAndMutate($selected[0], $selected[1]);
+            if ($childId !== null) {
+                $nextGeneration[] = $childId;
+                Log::info('CivilizationDiscoveryService: GA crossover+mutate created child universe', ['child_id' => $childId]);
+            }
+        }
+
         return [
-            'evaluated' => $universeIds,
-            'selected' => $universeIds,
+            'evaluated' => $fitnessMap,
+            'selected' => $selected,
+            'next_generation' => $nextGeneration,
         ];
+    }
+
+    /**
+     * Crossover (Cách A): merge state_vector of two parents; spawn child from first parent; mutate; return child id.
+     */
+    private function crossoverAndMutate(int $parentAId, int $parentBId): ?int
+    {
+        $parentA = $this->universeRepository->find($parentAId);
+        $parentB = $this->universeRepository->find($parentBId);
+        if (! $parentA?->world || ! $parentB) {
+            return null;
+        }
+        $vecA = $this->getStateVector($parentA);
+        $vecB = $this->getStateVector($parentB);
+        $merged = $this->mergeStateVector($vecA, $vecB);
+        $mutateRate = (float) config('worldos.civilization_discovery.ga_mutate_rate', 0.05);
+        $merged = $this->mutateStateVector($merged, $mutateRate);
+
+        $child = $this->sagaService->spawnUniverse(
+            $parentA->world,
+            $parentA->id,
+            $parentA->saga_id,
+            ['reason' => 'ga_crossover', 'meta' => ['parent_b_id' => $parentBId]]
+        );
+        $this->universeRepository->update($child->id, ['state_vector' => $merged]);
+        return (int) $child->id;
+    }
+
+    /**
+     * Merge state vectors: zones from A, civilization (incl. discovery) from B, entropy/innovation averaged.
+     *
+     * @param  array<string, mixed>  $vecA
+     * @param  array<string, mixed>  $vecB
+     * @return array<string, mixed>
+     */
+    private function mergeStateVector(array $vecA, array $vecB): array
+    {
+        $merged = $vecA;
+        $civB = $vecB['civilization'] ?? [];
+        if (! empty($civB)) {
+            $civA = $merged['civilization'] ?? [];
+            $merged['civilization'] = array_merge($civA, $civB);
+        }
+        if (isset($vecB['entropy']) && isset($vecA['entropy'])) {
+            $merged['entropy'] = (float) (($vecA['entropy'] + $vecB['entropy']) / 2);
+        }
+        if (isset($vecB['innovation']) || isset($vecA['innovation'])) {
+            $merged['innovation'] = (float) ((($vecA['innovation'] ?? 0.5) + ($vecB['innovation'] ?? 0.5)) / 2);
+        }
+        return $merged;
+    }
+
+    /**
+     * Apply small random delta to scalar fields (entropy, innovation, stability) for mutation.
+     *
+     * @param  array<string, mixed>  $vec
+     * @return array<string, mixed>
+     */
+    private function mutateStateVector(array $vec, float $rate): array
+    {
+        if ($rate <= 0) {
+            return $vec;
+        }
+        $r = fn () => (mt_rand() / mt_getrandmax()) * 2 * $rate - $rate;
+        if (isset($vec['entropy']) && is_numeric($vec['entropy'])) {
+            $vec['entropy'] = max(0, min(1, (float) $vec['entropy'] + $r()));
+        }
+        if (isset($vec['innovation']) && is_numeric($vec['innovation'])) {
+            $vec['innovation'] = max(0, min(1, (float) $vec['innovation'] + $r()));
+        }
+        if (isset($vec['stability_index']) && is_numeric($vec['stability_index'])) {
+            $vec['stability_index'] = max(0, min(1, (float) $vec['stability_index'] + $r()));
+        }
+        $civ = $vec['civilization'] ?? [];
+        if (isset($civ['discovery']['fitness']) && is_numeric($civ['discovery']['fitness'])) {
+            $civ['discovery']['fitness'] = max(0, (float) $civ['discovery']['fitness'] + $r() * 10);
+            $vec['civilization'] = $civ;
+        }
+        return $vec;
     }
 
     private function getStateVector(Universe $universe): array

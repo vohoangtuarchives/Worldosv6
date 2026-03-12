@@ -76,6 +76,12 @@ return [
         'interval' => (int) env('WORLDOS_KNOWLEDGE_GRAPH_INTERVAL', 10),
         'max_nodes' => (int) env('WORLDOS_KNOWLEDGE_GRAPH_MAX_NODES', 500),
         'max_edges' => (int) env('WORLDOS_KNOWLEDGE_GRAPH_MAX_EDGES', 200),
+        // relation_type: derived_from (A derived from B), prerequisite (A is prerequisite for B). Key = idea info_type, value = list of source types.
+        'derived_from_types' => [
+            'science' => ['meme', 'propaganda'],
+            'religion' => ['rumor', 'meme'],
+            'propaganda' => ['rumor'],
+        ],
     ],
 
     /*
@@ -99,11 +105,39 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | AI Civilization Interpreter (Doc §4.6, §18) — narrative from snapshot
+    |--------------------------------------------------------------------------
+    | template: optional string with {{tick}}, {{entropy}}, {{war_stage}}, {{population}}, {{religion}}.
+    */
+    'narrative_interpreter' => [
+        'template' => env('WORLDOS_NARRATIVE_INTERPRETER_TEMPLATE'), // optional
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Rule Engine / DSL (Doc WorldOS_DSL_Spec) — Rule VM in Rust
+    |--------------------------------------------------------------------------
+    | When enabled, after each saved snapshot the Rule VM is called with state;
+    | outputs (events, adjust_stability, adjust_entropy) are applied.
+    | rules_dsl: optional inline DSL string; if null, pass from caller or leave empty.
+    | rules_path: optional path to .dsl file (e.g. engine/worldos-rules/rules/civilization.dsl).
+    */
+    'rule_engine' => [
+        'enabled' => (bool) env('WORLDOS_RULE_ENGINE_ENABLED', false),
+        'rules_dsl' => env('WORLDOS_RULE_ENGINE_DSL'), // optional inline DSL
+        'rules_path' => env('WORLDOS_RULE_ENGINE_RULES_PATH'), // optional path to .dsl file
+        'use_deployed_from_table' => (bool) env('WORLDOS_RULE_ENGINE_USE_DEPLOYED_FROM_TABLE', false), // Doc §30: append latest deployed rule from rule_proposals
+    ],
+    /*
+    |--------------------------------------------------------------------------
     | Self-improving simulation (Doc §30) — stub hook, no closed loop
     |--------------------------------------------------------------------------
     */
     'self_improving' => [
         'enabled' => (bool) env('WORLDOS_SELF_IMPROVING_ENABLED', false),
+        'candidate_rules' => [
+            'simulation_tick' => env('WORLDOS_SELF_IMPROVING_CANDIDATE_DSL', 'rule entropy > 0.8 => emit_event entropy_critical'),
+        ],
     ],
 
     /*
@@ -143,6 +177,51 @@ return [
     'event_bus' => [
         'driver' => env('WORLDOS_EVENT_BUS_DRIVER', 'database'),
         'stream_key' => env('WORLDOS_EVENT_BUS_STREAM_KEY', 'world_events'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Event Stream (Kafka) — Phase 1, doc §38
+    |--------------------------------------------------------------------------
+    | Publish simulation events to Kafka for history log, AI/Narrative layer.
+    | rest_proxy_url: Confluent Kafka REST Proxy or Redpanda REST (e.g. http://localhost:8082).
+    | Message format: JSON with universe_id, tick, type (simulation_advanced|rule_fired), event_name?, payload, occurred_at (ISO8601).
+    */
+    'event_stream' => [
+        'kafka_enabled' => (bool) env('WORLDOS_EVENT_STREAM_KAFKA_ENABLED', false),
+        'rest_proxy_url' => rtrim(env('WORLDOS_EVENT_STREAM_REST_PROXY_URL', 'http://localhost:8082'), '/'),
+        'topic_simulation_advanced' => env('WORLDOS_EVENT_STREAM_TOPIC_ADVANCED', 'worldos.simulation.advanced'),
+        'topic_events' => env('WORLDOS_EVENT_STREAM_TOPIC_EVENTS', 'worldos.simulation.events'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | State cache (optional) — Phase 2 §2.3
+    |--------------------------------------------------------------------------
+    | When driver=redis, state_vector + tick are written to Redis after each sync (TTL).
+    | EngineDriver may prefer cached state when preparing advance input. Reduces DB read.
+    */
+    'state_cache' => [
+        'driver' => env('WORLDOS_STATE_CACHE_DRIVER', 'null'),
+        'ttl_seconds' => (int) env('WORLDOS_STATE_CACHE_TTL_SECONDS', 300),
+        'key_prefix' => env('WORLDOS_STATE_CACHE_KEY_PREFIX', 'worldos:'),
+    ],
+
+    'urban_stress_agriculture' => [
+        'enabled' => (bool) env('WORLDOS_URBAN_STRESS_AGRICULTURE_ENABLED', true),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Snapshot archive (Doc §10, RÀ_SOÁT_TMP mục 7) — cold storage S3/MinIO
+    |--------------------------------------------------------------------------
+    */
+    'snapshot' => [
+        'archive_driver' => env('WORLDOS_SNAPSHOT_ARCHIVE_DRIVER', 'null'), // null | s3
+        'archive' => [
+            'disk' => env('WORLDOS_SNAPSHOT_ARCHIVE_DISK', 's3'),
+            'prefix' => env('WORLDOS_SNAPSHOT_ARCHIVE_PREFIX', 'worldos/snapshots'),
+        ],
     ],
 
     /*
@@ -578,6 +657,44 @@ return [
     */
     'civilization_discovery' => [
         'fitness_interval' => (int) env('WORLDOS_CIVILIZATION_DISCOVERY_FITNESS_INTERVAL', 10),
+        'ga_top_k' => (int) env('WORLDOS_CIVILIZATION_DISCOVERY_GA_TOP_K', 2),
+        'ga_universe_ids' => array_filter(array_map('intval', explode(',', env('WORLDOS_CIVILIZATION_DISCOVERY_GA_UNIVERSE_IDS', '')))),
+        'ga_crossover_enabled' => (bool) env('WORLDOS_CIVILIZATION_DISCOVERY_GA_CROSSOVER_ENABLED', false),
+        'ga_mutate_rate' => (float) env('WORLDOS_CIVILIZATION_DISCOVERY_GA_MUTATE_RATE', 0.05),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Engine Registry (Phase 3 auto-register) — FQCN list for SimulationEngine
+    |--------------------------------------------------------------------------
+    | Tagged as 'simulation_engine'; EngineRegistry resolves via tagged().
+    */
+    'engine_registry' => [
+        'engines' => [
+            \App\Modules\World\Services\GeographyEngine::class,
+            \App\Simulation\Engines\PotentialFieldEngine::class,
+            \App\Simulation\Engines\CosmicPressureEngine::class,
+            \App\Simulation\Engines\StructuralDecayEngine::class,
+            \App\Simulation\Engines\AdaptiveTopologyEngine::class,
+            \App\Simulation\Engines\LawEvolutionEngine::class,
+            \App\Simulation\Engines\ZoneConflictEngine::class,
+            \App\Simulation\Engines\CulturalDriftEngine::class,
+            \App\Simulation\Engines\ClimateEngine::class,
+            \App\Simulation\Engines\AgricultureEngine::class,
+            \App\Simulation\Engines\PopulationEngine::class,
+            \App\Simulation\Engines\MigrationEngine::class,
+            \App\Simulation\Engines\DiseaseEngine::class,
+            \App\Simulation\Engines\CivilizationFormationEngine::class,
+            \App\Simulation\Engines\CitySimulationEngine::class,
+            \App\Simulation\Engines\GovernanceEngine::class,
+            \App\Simulation\Engines\TradeEngine::class,
+            \App\Simulation\Engines\KnowledgePropagationEngine::class,
+            \App\Simulation\Engines\TechEvolutionEngine::class,
+            \App\Simulation\Engines\ReligionEngine::class,
+            \App\Simulation\Engines\ArtCultureEngine::class,
+            \App\Simulation\Engines\PsychologyEngine::class,
+            \App\Simulation\Engines\CausalityEngine::class,
+        ],
     ],
 
     /*

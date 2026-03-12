@@ -179,4 +179,38 @@ class HttpSimulationEngineClient implements SimulationEngineClientInterface
 
         return $response->json();
     }
+
+    public function evaluateRules(array $state, ?string $rulesDsl = null): array
+    {
+        $url = rtrim($this->baseUrl, '/').'/evaluate-rules';
+        $payload = [
+            'state' => $state,
+            'rules_dsl' => $rulesDsl,
+        ];
+
+        try {
+            $response = Http::timeout(15)->post($url, $payload);
+        } catch (\Throwable $e) {
+            return [
+                'ok' => false,
+                'outputs' => [],
+                'error_message' => $e->getMessage(),
+            ];
+        }
+
+        if (! $response->successful()) {
+            return [
+                'ok' => false,
+                'outputs' => [],
+                'error_message' => $response->body() ?: 'HTTP '.$response->status(),
+            ];
+        }
+
+        $data = $response->json();
+        return [
+            'ok' => $data['ok'] ?? false,
+            'outputs' => $data['outputs'] ?? [],
+            'error_message' => $data['error_message'] ?? null,
+        ];
+    }
 }

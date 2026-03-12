@@ -64,20 +64,41 @@ final class KnowledgeGraphService
     }
 
     /**
-     * Stub: simple edges by idea_id order (derived_from / prerequisite placeholder).
+     * Build edges: derived_from (by info_type + knowledge_level order), prerequisite (by config).
      */
     private function buildStubEdges($ideas): array
     {
-        $edges = [];
-        $ids = $ideas->pluck('id')->values()->all();
-        $n = count($ids);
-        for ($i = 0; $i < $n - 1; $i++) {
-            $edges[] = [
-                'from' => 'idea_' . $ids[$i],
-                'to' => 'idea_' . $ids[$i + 1],
-                'relation' => 'derived_from',
-            ];
+        $list = $ideas->sortBy('birth_tick')->values()->all();
+        $byId = [];
+        foreach ($list as $idea) {
+            $byId[$idea->id] = $idea;
         }
-        return $edges;
+        $edges = [];
+        $derivedFromTypes = config('worldos.knowledge_graph.derived_from_types', []);
+        foreach ($list as $idea) {
+            $sourceTypes = $derivedFromTypes[$idea->info_type ?? 'meme'] ?? [];
+            foreach ($list as $other) {
+                if ($other->id >= $idea->id) {
+                    continue;
+                }
+                if (in_array($other->info_type ?? 'meme', $sourceTypes, true)) {
+                    $edges[] = [
+                        'source_idea_id' => $other->id,
+                        'target_idea_id' => $idea->id,
+                        'relation_type' => 'derived_from',
+                        'relation' => 'derived_from',
+                        'from' => 'idea_' . $other->id,
+                        'to' => 'idea_' . $idea->id,
+                    ];
+                }
+            }
+        }
+        foreach ($edges as &$e) {
+            if (! isset($e['relation'])) {
+                $e['relation'] = $e['relation_type'] ?? 'derived_from';
+            }
+        }
+        unset($e);
+        return array_slice($edges, 0, (int) config('worldos.knowledge_graph.max_edges', 200));
     }
 }

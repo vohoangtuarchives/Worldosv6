@@ -101,6 +101,95 @@ class HttpSimulationEngineClientTest extends TestCase
         $this->assertNotEmpty($result['error_message']);
     }
 
+    /** Contract: advance snapshot contains all keys required by WorldOS_DSL_Spec / state contract (state_vector, entropy, stability_index, metrics, sci, instability_gradient, global_fields). */
+    public function test_advance_snapshot_contains_contract_keys(): void
+    {
+        Http::fake([
+            'engine:50052/advance' => Http::response([
+                'ok' => true,
+                'snapshot' => [
+                    'universe_id' => 1,
+                    'tick' => 1,
+                    'state_vector' => ['zones' => []],
+                    'entropy' => 0.4,
+                    'stability_index' => 0.7,
+                    'metrics' => ['sci' => 0.9],
+                    'sci' => 0.9,
+                    'instability_gradient' => 0.05,
+                    'global_fields' => ['civ_stability' => 0.8],
+                ],
+                'error_message' => '',
+            ], 200),
+        ]);
+
+        $result = $this->client->advance(1, 1, []);
+
+        $this->assertTrue($result['ok']);
+        $snap = $result['snapshot'];
+        $this->assertIsArray($snap);
+        $this->assertArrayHasKey('tick', $snap);
+        $this->assertArrayHasKey('state_vector', $snap);
+        $this->assertArrayHasKey('entropy', $snap);
+        $this->assertArrayHasKey('stability_index', $snap);
+        $this->assertArrayHasKey('metrics', $snap);
+        $this->assertArrayHasKey('sci', $snap);
+        $this->assertArrayHasKey('instability_gradient', $snap);
+        $this->assertArrayHasKey('global_fields', $snap);
+        $this->assertEquals(0.8, $snap['global_fields']['civ_stability'] ?? null);
+    }
+
+    /** Contract: evaluate-rules receives state (per RuleVmService::buildStateForVm) and returns outputs; client parses ok and outputs. */
+    public function test_evaluate_rules_sends_state_and_parses_outputs(): void
+    {
+        Http::fake([
+            'engine:50052/evaluate-rules' => Http::response([
+                'ok' => true,
+                'outputs' => [
+                    ['type' => 'event', 'event_name' => 'high_entropy'],
+                    ['type' => 'adjust_stability', 'adjust_stability_delta' => -0.1],
+                ],
+                'error_message' => null,
+            ], 200),
+        ]);
+
+        $state = [
+            'tick' => 5,
+            'entropy' => 0.7,
+            'global_entropy' => 0.7,
+            'stability_index' => 0.6,
+            'sci' => 0.8,
+            'instability_gradient' => 0.1,
+            'knowledge_core' => 0.5,
+        ];
+        $rulesDsl = 'rule entropy > 0.5 => emit_event high_entropy';
+
+        $result = $this->client->evaluateRules($state, $rulesDsl);
+
+        $this->assertTrue($result['ok']);
+        $this->assertIsArray($result['outputs']);
+        $this->assertCount(2, $result['outputs']);
+        $this->assertEquals('event', $result['outputs'][0]['type']);
+        $this->assertEquals('high_entropy', $result['outputs'][0]['event_name']);
+        $this->assertEquals('adjust_stability', $result['outputs'][1]['type']);
+        $this->assertEquals(-0.1, $result['outputs'][1]['adjust_stability_delta']);
+
+        Http::assertSent(function ($request) use ($state, $rulesDsl) {
+            if ($request->url() !== 'http://engine:50052/evaluate-rules') {
+                return false;
+            }
+            $body = json_decode($request->body(), true);
+            if (!is_array($body) || !isset($body['state'])) {
+                return false;
+            }
+            foreach (['tick', 'entropy', 'stability_index', 'sci', 'instability_gradient', 'knowledge_core'] as $key) {
+                if (!array_key_exists($key, $body['state'])) {
+                    return false;
+                }
+            }
+            return ($body['rules_dsl'] ?? null) === $rulesDsl;
+        });
+    }
+
     // ─── Merge ──────────────────────────────────────────────────
 
     public function test_merge_sends_correct_payload_and_parses_response(): void

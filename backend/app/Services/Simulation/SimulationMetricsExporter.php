@@ -53,6 +53,26 @@ final class SimulationMetricsExporter
         $lines[] = '# TYPE worldos_event_queue_depth gauge';
         $lines[] = 'worldos_event_queue_depth 0';
 
+        $lines[] = '';
+        $lines[] = '# HELP worldos_engine_execution_time_seconds Per-stage execution time (when tracing enabled).';
+        $lines[] = '# TYPE worldos_engine_execution_time_seconds gauge';
+        foreach ($universes as $u) {
+            $stages = ['actor', 'culture', 'civilization', 'economy', 'politics', 'war', 'ecology', 'meta'];
+            foreach ($stages as $stage) {
+                $ms = Cache::get("worldos.engine_execution_ms.{$u->id}.{$stage}");
+                if ($ms !== null) {
+                    $sec = (float) $ms / 1000;
+                    $lines[] = sprintf('worldos_engine_execution_time_seconds{universe_id="%d",stage="%s"} %s', $u->id, $stage, number_format($sec, 4, '.', ''));
+                }
+            }
+        }
+
+        $lines[] = '';
+        $lines[] = '# HELP worldos_event_rate Events per minute (placeholder; wire to event bus for real count).';
+        $lines[] = '# TYPE worldos_event_rate gauge';
+        $eventRate = Cache::get('worldos.event_rate_last_minute');
+        $lines[] = 'worldos_event_rate ' . ($eventRate !== null ? number_format((float) $eventRate, 2, '.', '') : '0');
+
         return implode("\n", $lines);
     }
 }

@@ -25,7 +25,7 @@ Tham chiếu thêm: [WORLDOS_ENGINES_AND_MODULES.md](WORLDOS_ENGINES_AND_MODULES
 | 6 | Social Field Engine | **Có** | FieldDiffusionEngine (Laravel) + global_fields (Rust) |
 | 7 | Economic Field Engine | **Có** | GlobalEconomyEngine, MarketEngine, CosmicEnergyPool, **InequalityEngine** (gini, surplus_concentration) |
 | 8 | Information Propagation Engine | **Có** | IdeaDiffusionEngine: info_type (rumor/propaganda/science/religion/meme), institutional amplification (church/state/academy) |
-| 9 | Innovation & Technology Engine | **Có** | InnovationRateService, technology level **Có**; KnowledgeGraphService (stub) — state_vector.knowledge_graph **Có** |
+| 9 | Innovation & Technology Engine | **Có** | InnovationRateService, technology level **Có**; KnowledgeGraphService — nodes + **edges (derived_from theo config)** **Có**; state_vector.knowledge_graph **Có** |
 | 10 | Religion & Ideology Engine | **Có** | IdeologyEvolutionEngine; IdeologyConversionService (conversion **Có**) |
 | 11 | Great Person Engine | **Có** | GreatPersonEngine, AscensionEngine, Supreme Entity; **GreatPersonLegacyService** (state_vector.great_person_legacy) **Có** |
 | 12 | Geopolitics & War Engine | **Có** | WarEngine có; army (soldiers, training, technology, morale), war_stage **Có** |
@@ -34,28 +34,28 @@ Tham chiếu thêm: [WORLDOS_ENGINES_AND_MODULES.md](WORLDOS_ENGINES_AND_MODULES
 | 15 | Infrastructure & Urban Development Engine | **Có** | Settlement evolution **Có**; infrastructure (roads, ports, water_supply, sanitation, energy) trong settlements **Có** |
 | 16 | Global Trade & Economic Network Engine | **Có** | GlobalEconomyEngine: trade_flow, hub_scores (connectivity + surplus); config worldos.economy |
 | 17 | Civilization Cycle Engine | **Có** | CivilizationCollapseEngine, DynamicAttractorEngine, AttractorEngine; **LegitimacyEliteService** (legitimacy_aggregate, elite_ratio, elite_overproduction) |
-| 18 | Narrative & Historical Memory Engine | **Có** | WorldEventType, Chronicle, CivilizationMemoryEngine, NarrativeExtractionEngine; Kafka **Thiếu** |
+| 18 | Narrative & Historical Memory Engine | **Có** | WorldEventType, Chronicle, CivilizationMemoryEngine, NarrativeExtractionEngine, **CivilizationNarrativeInterpreter**; Kafka optional |
 | 19 | Causality Graph Engine | **Có** | RedisCausalityGraphService, NullCausalityGraphService; API có khi dùng Redis |
 | 20 | Emergence Detection Engine | **Có** | AttractorEngine có; confidence_threshold 0.7, emergence_events **Có** |
 | 21 | Psychology & Consciousness Engine | **Có** | ActorCognitiveService: mental_state (beliefs, goals, emotions), perception_state (information_accuracy, rumors), cognitive_biases |
 | 22 | AI-Driven Agents / Social graph | **Có** | SocialGraphService: trust, loyalty, rivalry edges từ institutional membership; state_vector.social_graph |
-| 23 | Simulation Execution Model | **Có** | Hybrid tick + event, pipeline; multi-scale time; activation model **Có (doc)** (SimulationEngine::tickRate, EngineRegistry) |
-| 24 | Memory Layout & Performance Architecture | **Một phần** | ECS/SoA zone có; spatial index, CSR **Thiếu**; tick_duration_ms + worldos:benchmark-tick **Có** |
+| 23 | Simulation Execution Model | **Có** | Hybrid tick + event, pipeline; **SimulationScheduler** (class + ENGINE_LAYER_MAPPING); multi-scale time; activation model **Có** (SimulationEngine::tickRate, EngineRegistry) |
+| 24 | Memory Layout & Performance Architecture | **Một phần** | ECS/SoA zone có; **spatial index (ZoneActorIndex), CSR (SocialGraphCsr) Có** trong Rust engine/worldos-core/src/memory.rs; tick_duration_ms + worldos:benchmark-tick **Có** |
 | 25 | Engine Dependency Graph | **Có** | Stage order, ENGINE_LAYER_MAPPING; event-driven **Có**, “không gọi trực tiếp” **Một phần** |
-| 26 | Engine Plugin & Versioning Architecture | **Có** | SimulationEngine::version() **Có**; engine_manifest trên Universe + snapshot metrics **Có**; replay cảnh báo manifest **Có** |
-| 27 | Time & Timeline Architecture | **Có** | Universe, fork, snapshot **Có**; deterministic replay **Một phần** |
-| 28 | Distributed Simulation Architecture | **Thiếu** | Single-node; shards, cross-shard, ghost zones **Thiếu** |
+| 26 | Engine Plugin & Versioning Architecture | **Có** | SimulationEngine::version() **Có**; engine_manifest trên Universe + snapshot metrics **Có**; replay so sánh manifest, fail khi khác (trừ --allow-manifest-mismatch) **Có** |
+| 27 | Time & Timeline Architecture | **Có** | Universe, fork, snapshot **Có**; deterministic replay **Có** (doc DETERMINISTIC_REPLAY.md, worldos:replay --allow-manifest-mismatch) |
+| 28 | Distributed Simulation Architecture | **Thiếu** | Single-node; shards, cross-shard, ghost zones **Thiếu**; design doc DISTRIBUTED_SIMULATION_ARCHITECTURE.md **Có** |
 | 29 | AI Research Layer | **Có** | POST worldos/ai/policy-simulation **Có**; FeatureExtractionService (input_features, output_features); data lake đủ |
-| 30 | Self-Improving Simulation Architecture | **Stub** | SelfImprovingSimulationService stub; hook trong AdvanceSimulationAction (config worldos.self_improving.enabled) gọi proposeRule; closed loop / rule versioning **Thiếu** |
-| 31 | Observability & Debugging Architecture | **Có** | Event UI **Có**; Prometheus **Có** (GET worldos/metrics); replay CLI **Có** (worldos:replay); Jaeger **Stub** (SimulationTracer::span khi tracing_enabled) |
+| 30 | Self-Improving Simulation Architecture | **Có** | SelfImprovingSimulationService proposeRule; DeployRuleProposalService, worldos:deploy-rule-proposal; rule_proposals.version + engine_manifest_snapshot; RuleVmService use_deployed_from_table; closed loop / rule versioning **Có** |
+| 31 | Observability & Debugging Architecture | **Có** | Event UI **Có**; Prometheus **Có** (tick_duration_ms, engine_execution_time_seconds, event_rate); replay CLI **Có**; Jaeger **Một phần** (SimulationTracer span + cache per-stage khi tracing_enabled) |
 | 32 | Stability & Chaos Control Engine | **Có** | ChaosEngine có; 4 cơ chế dampening, throttle, quarantine **Có** (config worldos.chaos) |
 | 33 | Reality Calibration System | **Có** | calibration_benchmarks, RealityCalibrationService (getBenchmarks, compareWithBenchmarks, suggestAdjustments); worldos:calibration-check |
 | 34 | Physics of Civilization Engine | **Có** | CosmicEnergyPool, entropy, attractors, phase transition (Laravel) **Có** |
 | 35 | Multiverse Simulation System | **Có** | MultiverseSchedulerEngine, fork, nhiều universes; distributed cluster **Thiếu** |
-| 36 | Civilization Discovery Engine | **Một phần** | Genome + fitness **Có**; evaluate() + runGeneration() stub **Có**; vòng GA đầy đủ **Thiếu** |
+| 36 | Civilization Discovery Engine | **Có** | Genome + fitness **Có**; runGeneration **đầy đủ** (selection, crossover, mutate); command worldos:discovery-run-generation |
 | 37 | WorldOS Ultimate Map (80+ Engines) | **Một phần** | Nhiều engine có theo từng layer; đủ 80+ **Thiếu** |
 
-**Tổng kết nhanh (§6–§37):** **Có** 22 · **Một phần** 2 · **Stub** 2 · **Thiếu** 7.
+**Tổng kết nhanh (§6–§37):** **Có** 29 · **Một phần** 2 · **Stub** 0 · **Thiếu** 1.
 
 ---
 
@@ -102,7 +102,7 @@ Tham chiếu thêm: [WORLDOS_ENGINES_AND_MODULES.md](WORLDOS_ENGINES_AND_MODULES
 | SoA (Structure of Arrays) | **Rust** | ZoneState theo zone; traits/state trong types |
 | Grid / Zones | **Có** | ZoneStateSerial (id, state, neighbors), ZoneState (entropy, material_stress, civ_fields, …) |
 | Multi-layer graph | **Một phần** | Attractors, scars; graph sync Neo4j (SyncToGraph) optional |
-| Hot/Warm/Cold state | **Một phần** | Snapshot (DB), state_vector JSON; cold archive (VoidArchive) |
+| Hot/Warm/Cold state | **Một phần** | Snapshot (DB), state_vector JSON; **cold archive Có** (SnapshotArchiveInterface → S3/MinIO) |
 
 ---
 
@@ -152,7 +152,7 @@ Tham chiếu thêm: [WORLDOS_ENGINES_AND_MODULES.md](WORLDOS_ENGINES_AND_MODULES
 
 | Thành phần | Trạng thái | Code |
 |------------|------------|------|
-| Knowledge graph / prerequisites | **Có (stub)** | KnowledgeGraphService — nodes từ Idea (id, type, knowledge_level, followers), edges stub (derived_from); state_vector.knowledge_graph; config worldos.knowledge_graph |
+| Knowledge graph / prerequisites | **Có** | KnowledgeGraphService — nodes từ Idea; edges **Có** (derived_from theo config worldos.knowledge_graph.derived_from_types); state_vector.knowledge_graph; config worldos.knowledge_graph |
 | Innovation rate formula | **Có** | InnovationRateService::compute(knowledgeStock, curiosityDensity, economicSurplus, institutionStrength) |
 | Technology level | **Có** | InnovationRateService::technologyLevelFromKnowledge — primitive → agricultural → industrial → modern → digital |
 
@@ -202,8 +202,8 @@ Tham chiếu thêm: [WORLDOS_ENGINES_AND_MODULES.md](WORLDOS_ENGINES_AND_MODULES
 | Thành phần | Trạng thái | Code |
 |------------|------------|------|
 | Environment state (per zone) | **Laravel** | PlanetaryClimateEngine, GeologicalEngine; geography/resources |
-| Agriculture capacity | **Một phần** | GeographyResourceService (resource_capacity → Rust input); food_production trong spec chưa đủ |
-| Natural disaster | **Một phần** | AnomalyGeneratorService; chưa Disaster struct theo spec |
+| Agriculture capacity | **Có** | UrbanStressAgricultureService — agriculture_capacity per_zone + aggregate trong state_vector; GeographyResourceService (resource_capacity → Rust) |
+| Natural disaster | **Có** | AnomalyGeneratorService::spawnNaturalDisaster(); Disaster struct (type, zone_id, intensity, tick) trong state_vector.disasters + Chronicle |
 
 ---
 
@@ -213,7 +213,7 @@ Tham chiếu thêm: [WORLDOS_ENGINES_AND_MODULES.md](WORLDOS_ENGINES_AND_MODULES
 |------------|------------|------|
 | Settlement evolution (hamlet → city) | **Laravel** | CivilizationSettlementEngine — settlements, tier |
 | Infrastructure state | **Có** | CivilizationSettlementEngine — mỗi settlement có infrastructure (roads, ports, water_supply, sanitation, energy) trong state_vector |
-| Urban stress | **Một phần** | material_stress, inequality trong metrics |
+| Urban stress | **Có** | UrbanStressAgricultureService — settlements[].urban_stress; material_stress, inequality trong metrics |
 
 ---
 
@@ -243,7 +243,7 @@ Tham chiếu thêm: [WORLDOS_ENGINES_AND_MODULES.md](WORLDOS_ENGINES_AND_MODULES
 |------------|------------|------|
 | Event struct / importance | **Laravel** | WorldEventType, SimulationEventOccurred, Chronicle, BranchEvent |
 | Event clustering (micro → macro) | **Laravel** | CivilizationMemoryEngine, NarrativeExtractionEngine, ChronicleTimelineView |
-| Kafka → Laravel → AI Narrative | **Một phần** | Laravel Event + NarrativeAiService; config worldos.narrative.kafka_enabled (false) — Kafka optional, driver tương lai |
+| Kafka → Laravel → AI Narrative | **Một phần** | Laravel Event + NarrativeAiService; Kafka optional. **CivilizationNarrativeInterpreter** (interpretSnapshot từ snapshot) **Có** |
 
 ---
 
@@ -260,8 +260,8 @@ Tham chiếu thêm: [WORLDOS_ENGINES_AND_MODULES.md](WORLDOS_ENGINES_AND_MODULES
 
 | Thành phần | Trạng thái | Code |
 |------------|------------|------|
-| Pattern library (Industrialization, Revolution) | **Laravel** | AttractorEngine (rules), DynamicAttractorEngine; chưa pattern confidence 0.7 |
-| detect_emergence() | **Một phần** | AttractorEngine::evaluate(); chưa score_patterns chuẩn doc |
+| Pattern library (Industrialization, Revolution) | **Laravel** | AttractorEngine (rules), DynamicAttractorEngine; pattern library + confidence_threshold 0.7 **Có** |
+| detect_emergence() / score_patterns | **Có** | AttractorEngine::evaluate(); AttractorEngine::scorePatterns(snapshot) **Có** (pattern_id + score theo doc) |
 
 ---
 
@@ -302,8 +302,8 @@ Tham chiếu thêm: [WORLDOS_ENGINES_AND_MODULES.md](WORLDOS_ENGINES_AND_MODULES
 | Thành phần | Trạng thái | Code |
 |------------|------------|------|
 | ECS + SoA | **Rust** | ZoneState array, global_fields; chưa full ActorStorage SoA 17 traits |
-| Spatial index (zone → actors) | **Thiếu** | Chưa ZoneActorIndex |
-| Graph CSR | **Thiếu** | Chưa Compressed Sparse Row cho social graph |
+| Spatial index (zone → actors) | **Có** | ZoneActorIndex (engine/worldos-core/src/memory.rs) — zone_to_actors |
+| Graph CSR | **Có** | SocialGraphCsr (engine/worldos-core/src/memory.rs) — offsets, edges, weights |
 | Tick duration metric | **Có** | AdvanceSimulationAction tính tick_duration_ms; Cache `worldos.tick_duration_ms.{universe_id}`; snapshot metrics có thể chứa timing |
 | Performance target (5–20 ms/tick) | **Chưa đo** | Cần script benchmark (vd. advance N tick rồi đọc Cache / metrics) |
 
@@ -325,7 +325,7 @@ Tham chiếu thêm: [WORLDOS_ENGINES_AND_MODULES.md](WORLDOS_ENGINES_AND_MODULES
 |------------|------------|------|
 | Engine trait (name, version, dependencies, tick) | **Có** | SimulationEngine (priority, tickRate, handle); SimulationEngine::version(), HasEngineVersion |
 | Engine manifest per universe | **Có** | Universe.engine_manifest; AdvanceSimulationAction ghi engine_manifest từ EngineRegistry::getManifest(); snapshot metrics chứa engine_manifest |
-| Pin engine versions (replay) | **Một phần** | worldos:replay so sánh engine_manifest với snapshot; cảnh báo khi khác (chưa pin cứng) |
+| Pin engine versions (replay) | **Một phần** | worldos:replay so sánh engine_manifest với snapshot; **fail khi manifest khác** (trừ --allow-manifest-mismatch); chưa pin cứng version trong DB |
 
 ---
 
@@ -335,7 +335,7 @@ Tham chiếu thêm: [WORLDOS_ENGINES_AND_MODULES.md](WORLDOS_ENGINES_AND_MODULES
 |------------|------------|------|
 | Universe (id, parent, fork_tick, seed) | **Có** | Universe model, SagaService spawnUniverse, ForkUniverseAction |
 | Timeline branching | **Có** | Fork, BranchEvent, parent/child universes |
-| Deterministic replay | **Một phần** | Seed; cùng engine version chưa đảm bảo |
+| Deterministic replay | **Có** | Doc DETERMINISTIC_REPLAY.md; worldos:replay fail khi engine_manifest khác (--allow-manifest-mismatch để chạy anyway) |
 | Snapshot interval | **Có** | Snapshot model, advance trả snapshot |
 
 ---
@@ -365,8 +365,8 @@ Tham chiếu thêm: [WORLDOS_ENGINES_AND_MODULES.md](WORLDOS_ENGINES_AND_MODULES
 | Thành phần | Trạng thái | Code |
 |------------|------------|------|
 | Stub / hook | **Có** | SelfImprovingSimulationService; AdvanceSimulationAction gọi proposeRule khi worldos.self_improving.enabled |
-| Closed loop (Simulation → AI → Rule proposal → Sandbox → Deploy) | **Thiếu** | — |
-| Rule versioning (v1, v2, sandbox) | **Thiếu** | — |
+| Closed loop (Simulation → AI → Rule proposal → Sandbox → Deploy) | **Có** | DeployRuleProposalService, worldos:deploy-rule-proposal; rule_proposals.deployed_at; RuleVmService use_deployed_from_table |
+| Rule versioning (v1, v2, sandbox) | **Có** | rule_proposals.version, engine_manifest_snapshot; DeployRuleProposalService::deploy(); PersistRuleProposal listener |
 
 ---
 
@@ -374,10 +374,10 @@ Tham chiếu thêm: [WORLDOS_ENGINES_AND_MODULES.md](WORLDOS_ENGINES_AND_MODULES
 
 | Thành phần | Trạng thái | Code |
 |------------|------------|------|
-| Metrics (Prometheus) | **Có** | GET worldos/metrics, SimulationMetricsExporter — Prometheus text format |
-| Traces (Jaeger) | **Stub** | config worldos.observability.tracing_enabled (false); khi bật sẽ span simulation steps (tương lai) |
+| Metrics (Prometheus) | **Có** | GET worldos/metrics, SimulationMetricsExporter — tick_duration_ms, engine_execution_time_seconds, event_rate |
+| Traces (Jaeger) | **Một phần** | config worldos.observability.tracing_enabled; SimulationTracer span; per-stage duration cache (worldos.engine_execution_ms.{id}.{stage}); export Prometheus |
 | Event Explorer UI | **Có** | EventFeed, ChronicleTimelineView |
-| Simulation replay (CLI) | **Có** | php artisan worldos:replay — so sánh engine_manifest |
+| Simulation replay (CLI) | **Có** | php artisan worldos:replay — so sánh engine_manifest, --allow-manifest-mismatch |
 
 ---
 
@@ -426,7 +426,7 @@ Tham chiếu thêm: [WORLDOS_ENGINES_AND_MODULES.md](WORLDOS_ENGINES_AND_MODULES
 |------------|------------|------|
 | Civilization genome | **Có** | CivilizationDiscoveryService — GOVERNANCE_TYPES, ECONOMIC_TYPES, BELIEF_TYPES |
 | Fitness evaluation | **Có** | CivilizationDiscoveryService::evaluate() — fitness tính và ghi state_vector.civilization.discovery.fitness mỗi N tick; fitness() formula **Có** |
-| Evolutionary search | **Một phần** | runGeneration(universeIds) stub — trả về evaluated/selected; vòng GA đầy đủ (selection, crossover, mutate) **Thiếu** / roadmap |
+| Evolutionary search | **Có** | runGeneration(universeIds): selection top-k, crossover (merge state hai parent + spawn child qua SagaService), mutate (entropy, innovation, stability); config ga_crossover_enabled, ga_mutate_rate; command worldos:discovery-run-generation (--ids, --json) |
 
 ---
 
@@ -451,8 +451,8 @@ Tham chiếu thêm: [WORLDOS_ENGINES_AND_MODULES.md](WORLDOS_ENGINES_AND_MODULES
 ## Tóm tắt ưu tiên so với doc
 
 1. **Đã tương đối sát spec:** Kernel loop, World/Zone state, Actor traits, Social/Economic field (Laravel), Market, Civilization cycle (một phần), Narrative/Memory, Causality, Fork/Timeline, Attractors, Chaos, Cosmic Energy.
-2. **Cần bổ sung trong Laravel:** Inequality engine, Legitimacy/elite overproduction chi tiết. (Đã có: Information propagation info_type + institutional amplification, Innovation rate formula, War stages, Demographic transition, Infrastructure state, Trade flow + hub_scores, Psychology mental_state/perception/biases, Social graph trust/loyalty/rivalry.)
-3. **Cần bổ sung trong Rust:** SoA đầy đủ cho actors, ZoneActorIndex, CSR graph (nếu scale lớn), engine manifest versioning.
-4. **Hạ tầng / research:** Kafka event stream, NATS, Distributed sharding. **Calibration Có** (suggestAdjustments, calibration-check). Self-improving loop, Civilization Discovery stub. **Observability:** Prometheus **Có**, replay CLI **Có**, Jaeger stub **Có** (SimulationTracer::span).
+2. **Đã bổ sung (plan “Làm tiếp phần còn thiếu”):** SimulationScheduler; Self-Improving rule versioning + deploy (DeployRuleProposalService, worldos:deploy-rule-proposal, use_deployed_from_table); deterministic replay (doc + --allow-manifest-mismatch); AI Civilization Interpreter (CivilizationNarrativeInterpreter); observability (engine_execution_time_seconds, event_rate, tracing span); KnowledgeGraph edges (derived_from_types); Emergence score_patterns (AttractorEngine::scorePatterns); Natural disaster struct (AnomalyGeneratorService::spawnNaturalDisaster); Urban stress / Agriculture capacity (UrbanStressAgricultureService); ZoneActorIndex + SocialGraphCsr (Rust memory.rs); Snapshot archive S3 (SnapshotArchiveInterface); doc Distributed, NATS, 80+ engines roadmap, Memory Architecture. Inequality engine **Có** (InequalityEngine); Information propagation, Innovation rate, War stages, Demographic transition, Infrastructure, Trade flow + hub_scores, Psychology, Social graph **Có**.
+3. **Cần bổ sung trong Rust (tùy scale):** SoA đầy đủ cho actors; tích hợp ZoneActorIndex/CSR vào advance khi cần.
+4. **Hạ tầng / research:** Kafka event stream **Có** (Phase 1); NATS optional (doc NATS_OPTIONAL.md). **Calibration Có**. **Self-improving** closed loop + rule versioning **Có**. **Civilization Discovery GA đầy đủ Có**. **Observability:** Prometheus **Có** (tick_duration, engine_execution_time, event_rate), replay CLI **Có**, Jaeger **Một phần** (span + cache).
 
-Cập nhật lần cuối: theo codebase và WORLDOS_ARCHITECTURE.md hiện tại.
+Cập nhật lần cuối: theo codebase và WORLDOS_ARCHITECTURE.md hiện tại; đã cập nhật sau triển khai plan “Làm tiếp phần còn thiếu Mapping”.

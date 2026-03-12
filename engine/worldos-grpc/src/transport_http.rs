@@ -14,6 +14,7 @@ use crate::{KernelGenome, TrajectoryPoint, WorldConfig};
 pub struct AdvanceHttpRequest {
     pub universe_id: u64,
     pub ticks: u64,
+    /// Optional: JSON that deserializes to worldos_core::UniverseState (tick, zones, entropy, global_fields, …). If absent/empty, engine bootstraps one zone.
     #[serde(default)]
     pub state_input: Option<serde_json::Value>,
     #[serde(default)]
@@ -347,6 +348,142 @@ async fn analyze_trajectory_http(Json(body): Json<TrajectoryAnalysisHttpRequest>
 }
 
 // ═══════════════════════════════════════════════════════
+// Evaluate Rules (DSL Rule VM)
+// ═══════════════════════════════════════════════════════
+
+#[derive(Debug, Deserialize)]
+pub struct EvaluateRulesHttpRequest {
+    /// World state: JSON with paths per WorldOS_DSL_Spec §3 (tick, entropy, stability_index, sci, civilization.*, zones.*, etc.). Laravel builds this via RuleVmService::buildStateForVm(universe, snapshot).
+    pub state: serde_json::Value,
+    /// Optional DSL text; if empty, VM uses no rules or default embedded rules.
+    #[serde(default)]
+    pub rules_dsl: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct RuleOutputHttp {
+    #[serde(rename = "type")]
+    pub output_type: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub event_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub adjust_stability_delta: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub adjust_entropy_delta: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub add_path: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub add_path_delta: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub set_path: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub set_path_value: Option<serde_json::Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub spawn_actor_kind: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct EvaluateRulesHttpResponse {
+    pub ok: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error_message: Option<String>,
+    pub outputs: Vec<RuleOutputHttp>,
+}
+
+async fn evaluate_rules_http(Json(body): Json<EvaluateRulesHttpRequest>) -> Json<EvaluateRulesHttpResponse> {
+    let mut vm = worldos_rules::RuleVm::new();
+    if let Some(ref dsl) = body.rules_dsl {
+        if !dsl.is_empty() {
+            if let Err(e) = vm.load_rules(dsl) {
+                return Json(EvaluateRulesHttpResponse {
+                    ok: false,
+                    error_message: Some(e.to_string()),
+                    outputs: vec![],
+                });
+            }
+        }
+    }
+    let tick = body.state.get("tick").and_then(|v| v.as_u64()).unwrap_or(0);
+    let outputs = vm.evaluate(&body.state, tick, None::<&mut rand::rngs::StdRng>, None);
+    let outputs_http: Vec<RuleOutputHttp> = outputs
+        .into_iter()
+        .map(|o| match o {
+            worldos_rules::RuleOutput::Event { name, .. } => RuleOutputHttp {
+                output_type: "event".to_string(),
+                event_name: Some(name),
+                adjust_stability_delta: None,
+                adjust_entropy_delta: None,
+                add_path: None,
+                add_path_delta: None,
+                set_path: None,
+                set_path_value: None,
+                spawn_actor_kind: None,
+            },
+            worldos_rules::RuleOutput::AdjustStability { delta } => RuleOutputHttp {
+                output_type: "adjust_stability".to_string(),
+                event_name: None,
+                adjust_stability_delta: Some(delta),
+                adjust_entropy_delta: None,
+                add_path: None,
+                add_path_delta: None,
+                set_path: None,
+                set_path_value: None,
+                spawn_actor_kind: None,
+            },
+            worldos_rules::RuleOutput::AdjustEntropy { delta } => RuleOutputHttp {
+                output_type: "adjust_entropy".to_string(),
+                event_name: None,
+                adjust_stability_delta: None,
+                adjust_entropy_delta: Some(delta),
+                add_path: None,
+                add_path_delta: None,
+                set_path: None,
+                set_path_value: None,
+                spawn_actor_kind: None,
+            },
+            worldos_rules::RuleOutput::AddPath { path, delta } => RuleOutputHttp {
+                output_type: "add_path".to_string(),
+                event_name: None,
+                adjust_stability_delta: None,
+                adjust_entropy_delta: None,
+                add_path: Some(path),
+                add_path_delta: Some(delta),
+                set_path: None,
+                set_path_value: None,
+                spawn_actor_kind: None,
+            },
+            worldos_rules::RuleOutput::SetPath { path, value } => RuleOutputHttp {
+                output_type: "set_path".to_string(),
+                event_name: None,
+                adjust_stability_delta: None,
+                adjust_entropy_delta: None,
+                add_path: None,
+                add_path_delta: None,
+                set_path: Some(path),
+                set_path_value: Some(value),
+                spawn_actor_kind: None,
+            },
+            worldos_rules::RuleOutput::SpawnActor { kind } => RuleOutputHttp {
+                output_type: "spawn_actor".to_string(),
+                event_name: None,
+                adjust_stability_delta: None,
+                adjust_entropy_delta: None,
+                add_path: None,
+                add_path_delta: None,
+                set_path: None,
+                set_path_value: None,
+                spawn_actor_kind: Some(kind),
+            },
+        })
+        .collect();
+    Json(EvaluateRulesHttpResponse {
+        ok: true,
+        error_message: None,
+        outputs: outputs_http,
+    })
+}
+
+// ═══════════════════════════════════════════════════════
 // Router
 // ═══════════════════════════════════════════════════════
 
@@ -357,4 +494,5 @@ pub fn router() -> Router {
         .route("/observe", post(observe_http))
         .route("/batch-advance", post(batch_advance_http))
         .route("/analyze-trajectory", post(analyze_trajectory_http))
+        .route("/evaluate-rules", post(evaluate_rules_http))
 }

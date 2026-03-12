@@ -60,6 +60,8 @@ Sau khi khởi chạy thành công, các dịch vụ sẽ hoạt động tại c
 | **Redis** | `6379` | Cache & Queue. |
 | **Centrifugo** | `8000` | Real-time WebSocket server. |
 
+Nếu dùng `deployment/docker-compose.prod.yml`, hệ thống có thêm service **Redpanda** (Kafka API + REST). Để bật event stream Kafka: đặt env `WORLDOS_EVENT_STREAM_KAFKA_ENABLED=true` và `WORLDOS_EVENT_STREAM_REST_PROXY_URL=http://redpanda:8082`; consumer: `php artisan worldos:kafka-consume-events`. Chi tiết: `backend/docs/EVENT_STREAM_SCHEMA.md`.
+
 ## 5. Thao tác thường gặp
 
 ### Truy cập Shell của Backend

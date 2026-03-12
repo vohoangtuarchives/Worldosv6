@@ -36,6 +36,14 @@ Doc §3 pipeline thứ tự: 1 Planet, 2 Climate, 3 Ecology, 4 Civilization, 5 P
 
 Engine đăng ký trong `SimulationServiceProvider` qua `EngineRegistry`; thứ tự chạy theo `phase()` rồi `priority()` (Doc 21 §6).
 
+## SimulationScheduler (Doc §4.3, §23; RÀ_SOÁT_TMP mục 1)
+
+**SimulationScheduler** ([SimulationScheduler.php](../app/Simulation/SimulationScheduler.php)) là component quản lý tick assignment ở mức universe: (1) danh sách engine active tại mỗi tick (`enginesActiveAtTick(tick)` = EngineRegistry.getOrdered() lọc theo `tick % tickRate === 0`), (2) thứ tự stage và interval từ TickScheduler (config `worldos.tick_pipeline`). Kernel và Pipeline không bắt buộc dùng trực tiếp SimulationScheduler; Scheduler là điểm đặt tên rõ cho "ai quyết định chạy gì ở tick nào". Singleton: `App\Simulation\SimulationScheduler`.
+
+## Engine Dependency Graph / Communication (Doc §25)
+
+**Quy tắc:** Engine **không gọi trực tiếp** engine khác. Giao tiếp qua **event**: emit `SimulationEventOccurred` / `WorldEventBus::publish`, engine khác subscribe listener. Hiện tại một số stage (vd. EconomyStage) gọi nhiều service (GlobalEconomy rồi Market); refactor dần: chuyển sang engine A emit event → engine B listener. Tham chiếu: [WORLDOS_ARCHITECTURE_MAPPING.md](WORLDOS_ARCHITECTURE_MAPPING.md) §25.
+
 ## Sản phẩm / Output (Products)
 
 Ánh xạ **engine → sản phẩm tiểu biểu** (entity types mà engine tạo hoặc cập nhật) và **product → engines** dùng cho UI tab Thực thể ("Engine liên quan"): xem [ENGINE_PRODUCTS.md](ENGINE_PRODUCTS.md). API `GET /worldos/engines` trả về `engines` (name, phase, priority, tick_rate, product_types) và `product_to_engines`. Engine có thể dùng trait `HasProductTypes` và override `productTypes()`; map tĩnh trong `config/worldos_engine_products.php`. Command: `php artisan worldos:engine-products`.
