@@ -133,7 +133,7 @@ export default function IpFactoryPage() {
   const firstUniverseId = universes[0]?.id ?? 0;
 
   return (
-    <div className="min-h-dvh bg-[hsl(var(--background))] flex flex-col">
+    <div className="h-full flex flex-1 flex-col overflow-hidden bg-[hsl(var(--background))]">
       <header className="border-b border-border/60 px-6 py-4 flex items-center justify-between bg-card/30 backdrop-blur-sm">
         <div className="flex items-center gap-3">
           <div className="h-8 w-8 rounded-[var(--radius)] bg-[linear-gradient(135deg,hsl(var(--left-brain)),hsl(var(--cosmos)))] glow-cosmos" />

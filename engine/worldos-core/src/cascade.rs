@@ -1,8 +1,7 @@
 //! Event-driven cascade: when Pressure > COLLAPSE_THRESHOLD, emit event and cascade Famine → Riots → Collapse.
 
 use crate::constants;
-use crate::universe::UniverseState;
-use crate::types::{CascadePhase, WorldConfig};
+use crate::types::{CascadePhase, WorldConfig, UniverseState};
 
 fn phase_name(p: CascadePhase) -> &'static str {
     match p {
@@ -36,12 +35,13 @@ pub fn tick_with_cascade(
     state: &mut UniverseState,
     world: &WorldConfig,
     max_cascade: usize,
+    macro_idx: Option<&crate::memory::ZoneActorIndex>,
 ) -> Vec<SimEvent> {
-    state.tick(world);
+    state.tick(world, macro_idx);
     let mut events = Vec::new();
 
     for i in 0..state.zones.len() {
-        let p = state.pressure_at_zone(i);
+        let p = state.pressure_at_zone(i, macro_idx);
         let phase = state.zones[i].state.cascade_phase;
 
         // Doc 21 §10: Hazard model — P(phase change) = sigmoid(pressure); deterministic RNG(seed, tick, zone_id).
@@ -233,11 +233,18 @@ pub fn tick_with_cascade(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::types::WorldConfig;
-    use crate::universe::UniverseState;
+    use crate::types::{UniverseState, WorldConfig};
 
     fn world_config() -> WorldConfig {
-        WorldConfig { world_id: 1, axiom: None, world_seed: None, origin: String::new(), genome: None }
+        WorldConfig { 
+            world_id: 1, 
+            axiom: None, 
+            world_seed: None, 
+            origin: String::new(), 
+            genome: None,
+            behavior_graph: None,
+            ..Default::default()
+        }
     }
 
     fn set_high_pressure(state: &mut UniverseState, zone_idx: usize) {
@@ -254,7 +261,7 @@ mod tests {
         let world = world_config();
         let mut state = UniverseState::with_one_zone(1, 100.0);
         set_high_pressure(&mut state, 0);
-        assert!(state.pressure_at_zone(0) >= constants::COLLAPSE_THRESHOLD);
+        assert!(state.pressure_at_zone(0, None) >= constants::COLLAPSE_THRESHOLD);
 
         // Hazard model: P(phase change) = sigmoid(pressure); may need several ticks to advance.
         let mut seen_famine = false;
@@ -262,7 +269,7 @@ mod tests {
         let mut seen_collapse = false;
         for _ in 0..20 {
             set_high_pressure(&mut state, 0);
-            let ev = tick_with_cascade(&mut state, &world, 20);
+            let _ev = tick_with_cascade(&mut state, &world, 20, None);
             match state.zones[0].state.cascade_phase {
                 CascadePhase::Famine => seen_famine = true,
                 CascadePhase::Riots => seen_riots = true,

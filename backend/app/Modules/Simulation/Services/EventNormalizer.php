@@ -24,7 +24,7 @@ class EventNormalizer
     /**
      * Build (do not publish) a tick-summary WorldEvent for Narrative v2: Fact is recorded first, then event published.
      */
-    public function buildTickSummaryEvent(Universe $universe, UniverseSnapshot $snapshot, array $decisionData = []): ?WorldEvent
+    public function buildTickSummaryEvent(Universe $universe, UniverseSnapshot $snapshot, array $decisionData = [], array $scars = []): ?WorldEvent
     {
         $tick = (int) ($snapshot->tick ?? 0);
         if ($tick < 0) {
@@ -41,6 +41,7 @@ class EventNormalizer
                 'action' => $decisionData['action'] ?? null,
                 'meta' => $decisionData['meta'] ?? [],
             ],
+            'scars' => $scars,
         ];
 
         return WorldEvent::create(

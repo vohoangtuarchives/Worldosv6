@@ -16,10 +16,13 @@ class WorldSimulationStatusService
         $scheduled = $scheduler->scheduleWithScores($world, 0);
         $priorityByUniverse = [];
         foreach ($scheduled as $item) {
-            $priorityByUniverse[$item['universe']->id] = [
-                'priority' => $item['priority'],
-                'order_index' => $item['order_index'],
-            ];
+            $uId = $item['universe']->id ?? $item->universe->id ?? null;
+            if ($uId) {
+                $priorityByUniverse[$uId] = [
+                    'priority' => $item['priority'] ?? $item->priority ?? 0,
+                    'order_index' => $item['order_index'] ?? $item->order_index ?? 0,
+                ];
+            }
         }
 
         $snapshotInterval = (int) ($world->snapshot_interval ?? config('worldos.snapshot_interval', 10));
@@ -84,6 +87,7 @@ class WorldSimulationStatusService
                     'knowledge' => $sv['knowledge'] ?? [],
                     'culture' => $sv['culture'] ?? [],
                     'active_attractors' => $sv['active_attractors'] ?? [],
+                    'ecology' => $sv['ecology'] ?? $sv['eco_fields'] ?? [],
                     'wars' => $sv['wars'] ?? [],
                     'alliances' => $sv['alliances'] ?? [],
                     'metrics' => is_array($snap->metrics) ? $snap->metrics : [],
@@ -120,7 +124,7 @@ class WorldSimulationStatusService
             ],
             'pipeline' => [
                 'phase' => 'scheduler',
-                'steps' => ['simulation', 'autonomic', 'scheduler', 'timeline_selection', 'narrative'],
+                'steps' => ['simulation', 'autonomic', 'scheduler', 'decision', 'cascade', 'ecology', 'timeline_selection', 'narrative'],
             ],
             'scheduler' => [
                 'tick_budget' => $tickBudget,

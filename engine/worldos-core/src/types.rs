@@ -1,8 +1,9 @@
 use crate::agent::Agent;
 use serde::{Deserialize, Serialize};
+use crate::sharding::{ShardId, ShardMap, GhostZone};
 
 /// World: genotype, immutable rules. Not ticked.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct WorldConfig {
     pub world_id: u64,
     #[serde(default)]
@@ -12,7 +13,59 @@ pub struct WorldConfig {
     pub origin: String,
     #[serde(default)]
     pub genome: Option<KernelGenome>,
+    #[serde(default)]
+    pub behavior_graph: Option<Vec<crate::behavior_graph::BehaviorNode>>,
+    #[serde(default)]
+    pub sharding_config: Option<ShardMap>,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UniverseState {
+    pub universe_id: u64,
+    pub tick: u64,
+    pub zones: Vec<ZoneStateSerial>,
+    pub global_entropy: f64,
+    pub knowledge_core: f64,
+    #[serde(default)]
+    pub instability_gradient: f64,
+    #[serde(default)]
+    pub sci: f64, // Structural Coherence Index (§4.3)
+    #[serde(default)]
+    pub global_fields: CivilizationFields,
+    #[serde(default)]
+    pub scars: Vec<serde_json::Value>,
+    #[serde(default)]
+    pub attractors: Vec<CivilizationAttractor>,
+    #[serde(default)]
+    pub dark_attractors: Vec<DarkAttractor>,
+    /// Deep Sim Phase 4: macro agents (army, ruler, trader). Laravel spawns; kernel applies pressure.
+    #[serde(default)]
+    pub macro_agents: Vec<MacroAgent>,
+    #[serde(default)]
+    pub actor_table: ActorTable,
+    #[serde(default)]
+    pub behavior_context: BehaviorContext,
+    #[serde(default)]
+    pub local_shard_id: ShardId,
+    #[serde(default)]
+    pub ghost_zones: Vec<GhostZone>,
+    #[serde(default)]
+    pub archetype_discovery: Option<DiscoveryResult>,
+    #[serde(default)]
+    pub narrative_tags: Vec<NarrativeTag>,
+    #[serde(default)]
+    pub fork_recommendation: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ZoneStateSerial {
+    pub id: u32,
+    pub state: ZoneState,
+    pub neighbors: Vec<u32>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct ZoneId(pub u32);
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct KernelGenome {
@@ -50,6 +103,12 @@ pub struct CulturalVector {
     pub institutional_respect: f64,
     #[serde(default)]
     pub myth_belief: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NarrativeTag {
+    pub slug: String,
+    pub weight: f32,
 }
 
 /// Level 7 Attractor Fields: Survival, Power, Wealth, Knowledge, Meaning.
@@ -108,6 +167,48 @@ pub enum CivilizationPhase {
     Empire,
     Industrial,
     Information,
+}
+
+/// Simulation intelligence archetypes
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ArchetypeProfile {
+    pub name: String,
+    pub survival: f64,
+    pub power: f64,
+    pub wealth: f64,
+    pub knowledge: f64,
+    pub meaning: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DiscoveryResult {
+    pub name: String,
+    pub distance: f64,
+    pub is_novel: bool,
+}
+
+/// Biome types for ecological simulation.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Biome {
+    #[default]
+    Barren,
+    Tundra,
+    Forest,
+    Steppe,
+    Desert,
+    Ocean,
+}
+
+/// Ecological metrics for a zone.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct EcologicalFields {
+    #[serde(default)]
+    pub biodiversity: f64,
+    #[serde(default)]
+    pub biomass: f64,
+    #[serde(default)]
+    pub resource_stress: f64,
 }
 
 /// Civilization Attractor: zone emits field that pulls neighbor civ_fields (Rome, Athens, Venice...).
@@ -217,6 +318,10 @@ pub struct ZoneState {
     /// Wealth/resource proxy [0,1] for trade flow between zones (Deep Sim Phase C). Flow: k_trade * (wealth_i - wealth_j); when 0, initialized from resource_capacity or (base_mass, material_stress).
     #[serde(default)]
     pub wealth_proxy: f64,
+    #[serde(default)]
+    pub biome: Biome,
+    #[serde(default)]
+    pub eco_fields: EcologicalFields,
 }
 
 /// Quantum Overlay: Controls probabilistic state and observer effect (§57).
@@ -235,6 +340,123 @@ pub struct ActiveMaterial {
     #[serde(default)]
     pub recursive_core: Option<RecursiveCore>,
 }
+
+// ==========================================
+// CORE-SIMULATION DIVERGENCE LAYER MODELS
+// ==========================================
+
+/// Macro Layer: Civilization Emotion Field
+/// Fields diffuse across zones influencing crowd and actor behaviors.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct EmotionField {
+    #[serde(default)]
+    pub fear: f32,
+    #[serde(default)]
+    pub anger: f32,
+    #[serde(default)]
+    pub hope: f32,
+    #[serde(default)]
+    pub trust: f32,
+}
+
+/// Meso Layer: Crowd Dynamics
+/// Generated dynamically by clustering actors with similar locations and emotions.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Crowd {
+    pub id: u64,
+    pub zone_id: u32,
+    pub size: u32,
+    pub emotion: EmotionField,
+    pub dominant_meme: u64, // Extracted bitmask of dominant meme
+}
+
+/// Micro Layer: Behavior Graph Node
+/// Represents a state in the actor's decision graph.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BehaviorNode {
+    pub id: u32,
+    pub action_id: u32,
+    // (Optional) Expressions or conditions evaluated by the Rule VM
+    // pub conditions: Vec<Condition>, 
+    // pub transitions: Vec<u32>,
+}
+
+/// Actor Storage: Struct of Arrays (SoA) Layout for maximum performance
+/// Scales to 1,000,000 actors.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct ActorTable {
+    pub ids: Vec<u64>,
+    pub hunger: Vec<f32>,
+    pub energy: Vec<f32>,
+    pub fear: Vec<f32>,
+    pub traits_mask: Vec<u64>,     // Bitmask for personality traits
+    pub memes_mask: Vec<u64>,      // Bitmask for cultural memes
+    pub zone_ids: Vec<u32>,        // Zone ID mapping
+    pub current_node: Vec<u16>,    // Current node ID in the Behavior Graph
+}
+
+impl ActorTable {
+    pub fn new() -> Self {
+        Self::default()
+    }
+    
+    pub fn push(&mut self, id: u64, zone: u32) {
+        self.ids.push(id);
+        self.hunger.push(0.0);
+        self.energy.push(1.0);
+        self.fear.push(0.0);
+        self.traits_mask.push(0);
+        self.memes_mask.push(0);
+        self.zone_ids.push(zone);
+        self.current_node.push(0); // 0 = Idle node
+    }
+}
+
+/// Simulation Global State for Behaviors
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct BehaviorContext {
+    pub emotion_fields: Vec<EmotionField>, // Indexed by zone_id
+    #[serde(default)]
+    pub crowd_rules: Vec<CrowdRule>,
+    #[serde(default)]
+    pub social_rules: Vec<SocialRule>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CrowdRule {
+    pub min_anger: f32,
+    pub min_fear: f32,
+    pub min_size: u32,
+    pub influence: CrowdInfluence,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum CrowdInfluence {
+    SetNode(u16),
+    AddFear(f32),
+    AddAnger(f32),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SocialRule {
+    pub condition: SocialCondition,
+    pub action: SocialAction,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum SocialCondition {
+    FearGt(f32),
+    TrustLt(f32),
+    AngerGt(f32),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum SocialAction {
+    SetTraitMask(u64),
+    SetNode(u16),
+}
+
+// ==========================================
 
 /// Recursive Core: Metadata for a nested simulation running inside a material (§59).
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -281,6 +503,8 @@ impl ZoneState {
             population_proxy: 0.0,
             resource_capacity: 0.0,
             wealth_proxy: 0.0,
+            biome: Biome::Barren,
+            eco_fields: EcologicalFields::default(),
         }
     }
 

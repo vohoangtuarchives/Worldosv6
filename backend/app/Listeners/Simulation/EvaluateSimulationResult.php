@@ -72,6 +72,7 @@ class EvaluateSimulationResult
         protected \App\Services\Narrative\ReligionSpreadEngine $religionSpreadEngine,
         protected \App\Services\Narrative\ProphecyFulfillment $prophecyFulfillment,
         protected \App\Services\Simulation\CosmicEnergyPoolService $cosmicEnergyPoolService,
+        protected \App\Modules\Simulation\Services\AdaptiveSchedulerService $adaptiveScheduler,
     ) {}
 
     public function handle(UniverseSimulationPulsed $event): void
@@ -94,7 +95,9 @@ class EvaluateSimulationResult
             $rng = new SimulationRandom((int) ($universe->seed ?? 0), (int) $snapshot->tick, 0);
 
             // Emerging Civilizations (Handled by Institutions Module)
-            $this->zoneConflictEngine->resolveConflicts($universe, $snapshot, $rng);
+            if ($this->adaptiveScheduler->shouldRun('zone_conflict', $universe, $snapshot)) {
+                $this->zoneConflictEngine->resolveConflicts($universe, $snapshot, $rng);
+            }
 
             // Attractor field: evaluate active attractors, persist to state_vector for event modulation
             $this->attractorEngine->evaluate($universe, $snapshot);
@@ -153,7 +156,12 @@ class EvaluateSimulationResult
             // 6a. WorldEvent + Historical Fact (Phase 1–2): build event → record fact → publish event.
             if (config('worldos.narrative_v2.enable_world_event', true)) {
                 try {
-                    $worldEvent = $this->eventNormalizer->buildTickSummaryEvent($universe, $snapshot, $decisionData);
+                    $worldEvent = $this->eventNormalizer->buildTickSummaryEvent(
+                        $universe,
+                        $snapshot,
+                        $decisionData,
+                        $event->engineResponse['scars'] ?? []
+                    );
                     if ($worldEvent !== null) {
                         $this->historicalFactEngine->record($worldEvent, $snapshot);
                         $this->worldEventBus->publish($worldEvent);
@@ -173,24 +181,30 @@ class EvaluateSimulationResult
 
             // 6c. Actor Decision (Phase 2): key actors → capabilities → action_distribution → roll → actor_events
             if (config('worldos.pulse.run_actor_decision', false)) {
-                try {
-                    $this->runActorDecisionForUniverse($universe, $snapshot, $rng);
-                } catch (\Throwable $e) {
-                    \Illuminate\Support\Facades\Log::warning('Actor decision failed: ' . $e->getMessage());
+                if ($this->adaptiveScheduler->shouldRun('actor_decision', $universe, $snapshot)) {
+                    try {
+                        $this->runActorDecisionForUniverse($universe, $snapshot, $rng);
+                    } catch (\Throwable $e) {
+                        \Illuminate\Support\Facades\Log::warning('Actor decision failed: ' . $e->getMessage());
+                    }
                 }
             }
             if (config('worldos.idea_diffusion.run_on_pulse', false)) {
-                try {
-                    $this->ideaDiffusionEngine->process($universe, (int) $snapshot->tick);
-                } catch (\Throwable $e) {
-                    \Illuminate\Support\Facades\Log::warning('Idea diffusion failed: ' . $e->getMessage());
+                if ($this->adaptiveScheduler->shouldRun('idea_diffusion', $universe, $snapshot)) {
+                    try {
+                        $this->ideaDiffusionEngine->process($universe, (int) $snapshot->tick);
+                    } catch (\Throwable $e) {
+                        \Illuminate\Support\Facades\Log::warning('Idea diffusion failed: ' . $e->getMessage());
+                    }
                 }
             }
             if (config('worldos.institution.run_decay_on_pulse', false)) {
-                try {
-                    $this->institutionDecayService->process($universe, (int) $snapshot->tick);
-                } catch (\Throwable $e) {
-                    \Illuminate\Support\Facades\Log::warning('Institution decay failed: ' . $e->getMessage());
+                if ($this->adaptiveScheduler->shouldRun('institution_decay', $universe, $snapshot)) {
+                    try {
+                        $this->institutionDecayService->process($universe, (int) $snapshot->tick);
+                    } catch (\Throwable $e) {
+                        \Illuminate\Support\Facades\Log::warning('Institution decay failed: ' . $e->getMessage());
+                    }
                 }
             }
 
@@ -208,25 +222,29 @@ class EvaluateSimulationResult
 
             // 9b. Ideology Evolution & Great Person (Phase K)
             if (config('worldos.pulse.run_ideology', true)) {
-                try {
-                    $ideologyResult = $this->ideologyEvolutionEngine->getDominantIdeology($universe);
-                    if (! empty($ideologyResult['previous_dominant'])) {
-                        $this->ideologyEvolutionEngine->recordShiftIfSignificant(
-                            $universe,
-                            (int) $snapshot->tick,
-                            $ideologyResult['dominant'],
-                            $ideologyResult['previous_dominant']
-                        );
+                if ($this->adaptiveScheduler->shouldRun('ideology_evolution', $universe, $snapshot)) {
+                    try {
+                        $ideologyResult = $this->ideologyEvolutionEngine->getDominantIdeology($universe);
+                        if (! empty($ideologyResult['previous_dominant'])) {
+                            $this->ideologyEvolutionEngine->recordShiftIfSignificant(
+                                $universe,
+                                (int) $snapshot->tick,
+                                $ideologyResult['dominant'],
+                                $ideologyResult['previous_dominant']
+                            );
+                        }
+                    } catch (\Throwable $e) {
+                        \Illuminate\Support\Facades\Log::warning('Pulse: Ideology evolution failed: ' . $e->getMessage());
                     }
-                } catch (\Throwable $e) {
-                    \Illuminate\Support\Facades\Log::warning('Pulse: Ideology evolution failed: ' . $e->getMessage());
                 }
             }
             if (config('worldos.pulse.run_great_person', true)) {
-                try {
-                    $this->greatPersonEngine->spawnIfEligible($universe, (int) $snapshot->tick);
-                } catch (\Throwable $e) {
-                    \Illuminate\Support\Facades\Log::warning('Pulse: Great Person spawn failed: ' . $e->getMessage());
+                if ($this->adaptiveScheduler->shouldRun('great_person', $universe, $snapshot)) {
+                    try {
+                        $this->greatPersonEngine->spawnIfEligible($universe, (int) $snapshot->tick);
+                    } catch (\Throwable $e) {
+                        \Illuminate\Support\Facades\Log::warning('Pulse: Great Person spawn failed: ' . $e->getMessage());
+                    }
                 }
             }
             if (config('worldos.pulse.run_great_person_legacy', true)) {
@@ -504,22 +522,23 @@ class EvaluateSimulationResult
         $this->narrativeScheduler->scheduleEventForChronicle($universe->id, $chronicle->id);
 
         // Narrative 4-tier + Belief loop: interval-based jobs (era, religion spread, prophecy, legend)
-        $this->runNarrativeIntervals($universe, (int) $snapshot->tick);
+        $this->runNarrativeIntervals($universe, $snapshot);
     }
 
     /**
      * Run narrative interval jobs: era (every era_interval), religion spread, prophecy, legend.
      */
-    protected function runNarrativeIntervals(\App\Models\Universe $universe, int $tick): void
+    protected function runNarrativeIntervals(\App\Models\Universe $universe, $snapshot): void
     {
+        $tick = (int) $snapshot->tick;
         $eraInterval = (int) config('worldos.narrative.era_interval', 200);
         $religionInterval = (int) config('worldos.narrative.religion_interval', 200);
         $prophecyInterval = (int) config('worldos.narrative.prophecy_interval', 500);
         $legendInterval = (int) config('worldos.narrative.legend_interval', 100);
 
-        if ($tick > 0 && $eraInterval > 0 && $tick % $eraInterval === 0) {
+        if ($tick > 0 && $eraInterval > 0 && $this->adaptiveScheduler->shouldRun('era_detect', $universe, $snapshot)) {
             try {
-                $startTick = $tick - $eraInterval;
+                $startTick = max(0, $tick - $eraInterval);
                 $era = $this->eraDetector->detectAndCreate($universe, $startTick, $tick);
                 if ($era !== null) {
                     $this->narrativeScheduler->scheduleEra($universe->id, $startTick, $tick, $era->id);
@@ -529,7 +548,7 @@ class EvaluateSimulationResult
             }
         }
 
-        if ($religionInterval > 0 && $tick % $religionInterval === 0) {
+        if ($religionInterval > 0 && $this->adaptiveScheduler->shouldRun('religion_spread', $universe, $snapshot)) {
             try {
                 $this->religionSpreadEngine->runForUniverse($universe, $tick);
             } catch (\Throwable $e) {
@@ -537,7 +556,7 @@ class EvaluateSimulationResult
             }
         }
 
-        if ($prophecyInterval > 0 && $tick % $prophecyInterval === 0) {
+        if ($prophecyInterval > 0 && $this->adaptiveScheduler->shouldRun('prophecy', $universe, $snapshot)) {
             try {
                 $this->narrativeScheduler->scheduleProphecy($universe->id, $tick);
                 $this->prophecyFulfillment->evaluateForUniverse($universe->id, $tick);
@@ -546,7 +565,7 @@ class EvaluateSimulationResult
             }
         }
 
-        if ($legendInterval > 0 && $tick % $legendInterval === 0) {
+        if ($legendInterval > 0 && $this->adaptiveScheduler->shouldRun('legend', $universe, $snapshot)) {
             try {
                 $agent = \App\Models\LegendaryAgent::where('universe_id', $universe->id)->inRandomOrder()->first();
                 if ($agent !== null) {

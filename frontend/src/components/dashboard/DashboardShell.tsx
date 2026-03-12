@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { useSimulation } from "@/context/SimulationContext";
 import { PageContainer } from "@/components/ui/page-container";
 import { Loader2, LayoutDashboard, FlaskConical, Radio, Globe, BookOpen, Package, Network, Sparkles } from "lucide-react";
-import { DashboardErrorBanner } from "./DashboardErrorBanner";
+import { ErrorBanner } from "@/components/ui/error-banner";
 
 const navItems = [
   { href: "/dashboard/micro", label: "Micro", icon: LayoutDashboard },
@@ -28,7 +28,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
   const { universeId, refresh, loading: isProcessing, error: simError } = useSimulation();
 
   return (
-    <div className="flex min-h-screen bg-background text-foreground font-sans flex-col">
+    <div className="flex flex-1 h-full bg-background text-foreground font-sans flex-col">
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none opacity-30">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-muted via-background to-background" />
       </div>
@@ -77,7 +77,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
 
         <div className="flex-1 min-h-0 overflow-auto">
           <PageContainer className="space-y-6 py-6">
-            {simError && <DashboardErrorBanner message={simError} />}
+            {simError && <ErrorBanner message={simError} />}
             {children}
           </PageContainer>
         </div>

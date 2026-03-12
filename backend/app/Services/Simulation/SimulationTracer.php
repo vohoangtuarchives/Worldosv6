@@ -3,13 +3,13 @@
 namespace App\Services\Simulation;
 
 use Illuminate\Support\Facades\Log;
+use Keepsuit\LaravelOpenTelemetry\Facades\Tracer;
+use Closure;
 
 /**
- * Doc §31: Stub for simulation tracing (Jaeger/OpenTelemetry).
- * When worldos.observability.tracing_enabled is true, span boundaries are logged (duration_ms).
- * To use a real tracer: install OpenTelemetry SDK, bind a TracerInterface in the container,
- * and delegate span creation here to that tracer (e.g. startSpan/endSpan or scope).
- * No-op when disabled.
+ * Doc §31: Simulation tracing (Jaeger/OpenTelemetry).
+ * When worldos.observability.tracing_enabled is true, delegates span creation
+ * to the keepsuit/laravel-opentelemetry tracer.
  */
 final class SimulationTracer
 {
@@ -25,15 +25,23 @@ final class SimulationTracer
         if (! config('worldos.observability.tracing_enabled', false)) {
             return $callback();
         }
+
+        if (class_exists(Tracer::class)) {
+            $closure = $callback instanceof Closure ? $callback : Closure::fromCallable($callback);
+            
+            // The measure method executes the closure inside an active span scope
+            return Tracer::newSpan($name)->measure($closure);
+        }
+
+        // Fallback if package is not installed but tracing is enabled
         $start = microtime(true);
-        Log::debug("SimulationTracer: span_start [{$name}]");
+        Log::debug("SimulationTracer: fallback_span_start [{$name}]");
         try {
             $result = $callback();
-            Log::debug("SimulationTracer: span_end [{$name}]", ['duration_ms' => round((microtime(true) - $start) * 1000, 2)]);
-
+            Log::debug("SimulationTracer: fallback_span_end [{$name}]", ['duration_ms' => round((microtime(true) - $start) * 1000, 2)]);
             return $result;
         } catch (\Throwable $e) {
-            Log::debug("SimulationTracer: span_error [{$name}]", ['error' => $e->getMessage()]);
+            Log::debug("SimulationTracer: fallback_span_error [{$name}]", ['error' => $e->getMessage()]);
             throw $e;
         }
     }

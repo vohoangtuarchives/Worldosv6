@@ -88,6 +88,12 @@ export interface WorldStateSnapshot {
     active_attractors?: string[];
     wars?: unknown[];
     alliances?: unknown[];
+    ecology?: {
+        biome?: string;
+        biomass?: number;
+        biodiversity?: number;
+        resource_stress?: number;
+    };
     metrics?: Record<string, unknown>;
 }
 

@@ -2,45 +2,12 @@
 //! 3-phase tick: (1) zone local update, (2) aggregate, (3) diffusion.
 
 use std::collections::HashMap;
-use serde::{Deserialize, Serialize};
 
 use crate::constants;
-use crate::types::{CascadePhase, CivilizationFields, CulturalVector, MacroAgent, MacroAgentType, SimulationMetrics, UniverseSnapshot, ZoneState};
+use crate::types::*;
+use crate::sharding::GhostZone;
 
-/// Opaque zone key (for future SlotMap use).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub struct ZoneId(pub u32);
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct UniverseState {
-    pub universe_id: u64,
-    pub tick: u64,
-    pub zones: Vec<ZoneStateSerial>,
-    pub global_entropy: f64,
-    pub knowledge_core: f64,
-    #[serde(default)]
-    pub instability_gradient: f64,
-    #[serde(default)]
-    pub sci: f64, // Structural Coherence Index (§4.3)
-    #[serde(default)]
-    pub global_fields: CivilizationFields,
-    #[serde(default)]
-    pub scars: Vec<serde_json::Value>,
-    #[serde(default)]
-    pub attractors: Vec<crate::types::CivilizationAttractor>,
-    #[serde(default)]
-    pub dark_attractors: Vec<crate::types::DarkAttractor>,
-    /// Deep Sim Phase 4: macro agents (army, ruler, trader). Laravel spawns; kernel applies pressure.
-    #[serde(default)]
-    pub macro_agents: Vec<MacroAgent>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ZoneStateSerial {
-    pub id: u32,
-    pub state: ZoneState,
-    pub neighbors: Vec<u32>,
-}
 
 /// Doc 21 §4: Phase-dependent diffusion multiplier (collapse spreads faster).
 fn phase_diffusion_factor(phase: CascadePhase) -> f64 {
@@ -54,6 +21,71 @@ fn phase_diffusion_factor(phase: CascadePhase) -> f64 {
 }
 
 impl UniverseState {
+    /// Update a ghost zone's state from an external snapshot
+    pub fn apply_ghost_update(&mut self, snapshot: ZoneStateSerial) {
+        if let Some(ghost) = self.ghost_zones.iter_mut().find(|gz| gz.id == snapshot.id) {
+            ghost.state_snapshot = snapshot;
+        }
+    }
+
+    pub fn build_macro_index(&self) -> crate::memory::ZoneActorIndex {
+        let num_zones = self.zones.len();
+        let mut id_to_idx = HashMap::with_capacity(num_zones);
+        for (idx, z) in self.zones.iter().enumerate() {
+            id_to_idx.insert(z.id, idx);
+        }
+        let mut index = crate::memory::ZoneActorIndex::new(num_zones);
+        for (ma_idx, ma) in self.macro_agents.iter().enumerate() {
+            if let Some(&z_idx) = id_to_idx.get(&ma.zone_id) {
+                index.add_actor_to_zone(z_idx, ma_idx as u64);
+            }
+        }
+        index
+    }
+
+    pub fn run_archetype_discovery(&mut self) {
+        let archetypes = Self::get_standard_archetypes();
+        let current = &self.global_fields;
+        
+        let mut best_name = "Fragmented".to_string();
+        let mut best_dist = f64::MAX;
+
+        for arch in archetypes {
+            let dist = (
+                (arch.survival - current.survival).powi(2) +
+                (arch.power - current.power).powi(2) +
+                (arch.wealth - current.wealth).powi(2) +
+                (arch.knowledge - current.knowledge).powi(2) +
+                (arch.meaning - current.meaning).powi(2)
+            ).sqrt();
+            if dist < best_dist {
+                best_dist = dist;
+                best_name = arch.name;
+            }
+        }
+
+        let is_novel = best_dist > 0.35;
+        self.archetype_discovery = Some(DiscoveryResult {
+            name: best_name,
+            distance: best_dist,
+            is_novel,
+        });
+
+        // Recommend Fork if system is highly unstable or highly novel
+        self.fork_recommendation = is_novel || self.instability_gradient > 0.7;
+    }
+
+    fn get_standard_archetypes() -> Vec<ArchetypeProfile> {
+        vec![
+            ArchetypeProfile { name: "Hegemon".into(), survival: 0.8, power: 0.9, wealth: 0.4, knowledge: 0.3, meaning: 0.5 },
+            ArchetypeProfile { name: "Merchant Republic".into(), survival: 0.5, power: 0.6, wealth: 0.9, knowledge: 0.7, meaning: 0.4 },
+            ArchetypeProfile { name: "Technocracy".into(), survival: 0.4, power: 0.5, wealth: 0.7, knowledge: 0.9, meaning: 0.3 },
+            ArchetypeProfile { name: "Theocracy".into(), survival: 0.7, power: 0.8, wealth: 0.3, knowledge: 0.4, meaning: 0.9 },
+            ArchetypeProfile { name: "Utopia".into(), survival: 0.8, power: 0.4, wealth: 0.8, knowledge: 0.8, meaning: 0.8 },
+            ArchetypeProfile { name: "Survivalist".into(), survival: 0.9, power: 0.3, wealth: 0.2, knowledge: 0.2, meaning: 0.4 },
+        ]
+    }
+
     fn refresh_aggregates(&mut self) {
         let n = self.zones.len() as f64;
         if n <= 0.0 {
@@ -117,6 +149,13 @@ impl UniverseState {
             attractors: Vec::new(),
             dark_attractors: Vec::new(),
             macro_agents: Vec::new(),
+            actor_table: crate::types::ActorTable::default(),
+            behavior_context: crate::types::BehaviorContext::default(),
+            local_shard_id: 0,
+            ghost_zones: Vec::new(),
+            archetype_discovery: None,
+            narrative_tags: Vec::new(),
+            fork_recommendation: false,
         }
     }
 
@@ -141,15 +180,65 @@ impl UniverseState {
             attractors: Vec::new(),
             dark_attractors: Vec::new(),
             macro_agents: Vec::new(),
+            actor_table: crate::types::ActorTable::default(),
+            behavior_context: crate::types::BehaviorContext::default(),
+            local_shard_id: 0,
+            ghost_zones: Vec::new(),
+            archetype_discovery: None,
+            narrative_tags: Vec::new(),
+            fork_recommendation: false,
         }
     }
 
     /// Run one 3-phase tick (simplified: no SlotMap in this struct; we use vec for serialization).
-    pub fn tick(&mut self, world: &crate::types::WorldConfig) {
+    pub fn tick(&mut self, world: &crate::types::WorldConfig, macro_idx: Option<&crate::memory::ZoneActorIndex>) {
+        // Ensure behavior_context has enough zones
+        if self.behavior_context.emotion_fields.len() < self.zones.len() {
+            self.behavior_context.emotion_fields.resize(self.zones.len(), crate::types::EmotionField::default());
+        }
+
+        // 0. LAYERED BEHAVIOR PIPELINE (Phase 3 Architecture)
+        
+        // A. Macro Layer: Update Emotion Fields (Diffusion/Decay)
+        let emotion_engine = crate::emotion_field::EmotionFieldEngine::new(0.01);
+        emotion_engine.update(&mut self.behavior_context, &self.actor_table);
+
+        // B. Social/Cognitive Layer: Update Beliefs and Power structures
+        let belief_engine = crate::social_layers::BeliefSystemEngine::new(0.05);
+        belief_engine.update(&mut self.actor_table, &mut self.behavior_context);
+
+        let power_engine = crate::social_layers::PowerStructureEngine::new(0.1);
+        power_engine.apply_coercion(&mut self.actor_table, &self.behavior_context);
+
+        let culture_engine = crate::culture_engine::CultureEngine::new(0.02);
+        culture_engine.update(&mut self.actor_table, &self.behavior_context, &self.zones);
+
+        // C. Meso Layer: Cluster Crowds and Apply Crowd Dynamics
+        let mut mass_engine = crate::mass_behavior::MassBehaviorEngine::new();
+        mass_engine.detect_crowds(&self.actor_table, &self.behavior_context);
+        mass_engine.apply_dynamics(&mut self.actor_table, &self.behavior_context);
+
+        // D. Micro Layer: Evaluate Behavior Graph (Data-Driven)
+        let nodes = world.behavior_graph.clone().unwrap_or_default();
+        let mut micro_engine = crate::behavior_graph::BehaviorGraphEngine::new(nodes); 
+        micro_engine.evaluate(&mut self.actor_table, &self.behavior_context);
+
         let genome = world.genome.clone().unwrap_or_default();
-        // Phase 1: local zone update (entropy, organization, decay)
+        // Phase 1: local zone update (entropy, organization, decay, ecology)
         let k1 = genome.entropy_coefficient * constants::K1_ENTROPY_PER_STRUCTURED;
+        let eco_engine = crate::ecological_engine::EcologicalEngine::new(0.85);
+
         for (idx, z) in self.zones.iter_mut().enumerate() {
+            // Ecological Update (§Phase 2)
+            if let Some(event_desc) = eco_engine.update(&mut z.state) {
+                 self.scars.push(serde_json::json!({
+                    "type": "ecological_event",
+                    "description": event_desc,
+                    "zone_id": z.id,
+                    "tick": self.tick
+                }));
+            }
+
             let base = z.state.base_mass;
             let structured = z.state.structured_mass;
             let entropy = z.state.entropy;
@@ -245,10 +334,21 @@ impl UniverseState {
         }
 
         // Deep Sim Phase 4: Ruler agents reduce entropy (order) in their zone.
-        for z in &mut self.zones {
-            for ma in &self.macro_agents {
-                if ma.zone_id == z.id && ma.agent_type == MacroAgentType::Ruler {
-                    z.state.entropy = (z.state.entropy - 0.01 * ma.strength.clamp(0.0, 1.0)).max(0.0);
+        if let Some(idx) = macro_idx {
+            for (i, z) in self.zones.iter_mut().enumerate() {
+                for &ma_id in idx.actors_in_zone(i) {
+                    let ma = &self.macro_agents[ma_id as usize];
+                    if ma.agent_type == MacroAgentType::Ruler {
+                        z.state.entropy = (z.state.entropy - 0.01 * ma.strength.clamp(0.0, 1.0)).max(0.0);
+                    }
+                }
+            }
+        } else {
+            for z in &mut self.zones {
+                for ma in &self.macro_agents {
+                    if ma.zone_id == z.id && ma.agent_type == MacroAgentType::Ruler {
+                        z.state.entropy = (z.state.entropy - 0.01 * ma.strength.clamp(0.0, 1.0)).max(0.0);
+                    }
                 }
             }
         }
@@ -289,6 +389,12 @@ impl UniverseState {
             self.global_fields.meaning = self.zones.iter().map(|z| z.state.civ_fields.meaning).sum::<f64>() / n;
         }
 
+        // Level-8: Archetype Discovery — recognize civilization patterns
+        self.run_archetype_discovery();
+
+        // Level-8: Narrative Synthesis
+        let culture_engine = crate::culture_engine::CultureEngine::new(0.01);
+        self.narrative_tags = culture_engine.generate_narrative_tags(&self.zones);
         // Level-8: Attractor Field Engine — zones pulled by civilization attractors
         self.apply_attractor_fields();
         // Level-8: Dark Attractor — high entropy/trauma/inequality pulls toward collapse
@@ -337,41 +443,62 @@ impl UniverseState {
             })
             .collect();
 
+        let zone_map: HashMap<u32, usize> = self.zones.iter().enumerate().map(|(idx, z)| (z.id, idx)).collect();
+        let ghost_map: HashMap<u32, usize> = self.ghost_zones.iter().enumerate().map(|(idx, gz)| (gz.id, idx)).collect();
+
         for i in 0..self.zones.len() {
             let zone = &self.zones[i];
-            let neighbors: Vec<usize> = zone.neighbors.iter()
-                .map(|&id| id as usize)
-                .filter(|&j| j < self.zones.len() && i != j)
-                .collect();
+            let n_len = zone.neighbors.len() as f64;
+            if n_len < 1e-9 { continue; }
             
-            if neighbors.is_empty() { continue; }
-            let n_len = neighbors.len() as f64;
             let phase_factor = phase_diffusion_factor(zone.state.cascade_phase);
 
             let mut s_diff_sum = 0.0;
             let mut t_diff_sum = 0.0;
             let mut c_diff_sum = CulturalVector::default();
+            let mut civ_diff_sum = CivilizationFields::default();
 
-            for &j in &neighbors {
-                let neighbor = &self.zones[j];
-                
-                // Entropy diff (T2 - Relations)
-                s_diff_sum += neighbor.state.entropy - zone.state.entropy;
-                // Tech/Knowledge diff
-                t_diff_sum += neighbor.state.knowledge_frontier - zone.state.knowledge_frontier;
-                
-                // Culture diff
-                c_diff_sum.tradition_rigidity += neighbor.state.cultural.tradition_rigidity - zone.state.cultural.tradition_rigidity;
-                c_diff_sum.innovation_openness += neighbor.state.cultural.innovation_openness - zone.state.cultural.innovation_openness;
-                c_diff_sum.collective_trust += neighbor.state.cultural.collective_trust - zone.state.cultural.collective_trust;
-                c_diff_sum.violence_tolerance += neighbor.state.cultural.violence_tolerance - zone.state.cultural.violence_tolerance;
-                c_diff_sum.institutional_respect += neighbor.state.cultural.institutional_respect - zone.state.cultural.institutional_respect;
-                c_diff_sum.myth_belief += neighbor.state.cultural.myth_belief - zone.state.cultural.myth_belief;
+            for &id in &zone.neighbors {
+                if let Some(&j) = zone_map.get(&id) {
+                    let neighbor = &self.zones[j];
+                    s_diff_sum += neighbor.state.entropy - zone.state.entropy;
+                    t_diff_sum += neighbor.state.knowledge_frontier - zone.state.knowledge_frontier;
+                    
+                    c_diff_sum.tradition_rigidity += neighbor.state.cultural.tradition_rigidity - zone.state.cultural.tradition_rigidity;
+                    c_diff_sum.innovation_openness += neighbor.state.cultural.innovation_openness - zone.state.cultural.innovation_openness;
+                    c_diff_sum.collective_trust += neighbor.state.cultural.collective_trust - zone.state.cultural.collective_trust;
+                    c_diff_sum.violence_tolerance += neighbor.state.cultural.violence_tolerance - zone.state.cultural.violence_tolerance;
+                    c_diff_sum.institutional_respect += neighbor.state.cultural.institutional_respect - zone.state.cultural.institutional_respect;
+                    c_diff_sum.myth_belief += neighbor.state.cultural.myth_belief - zone.state.cultural.myth_belief;
+
+                    civ_diff_sum.survival += neighbor.state.civ_fields.survival - zone.state.civ_fields.survival;
+                    civ_diff_sum.power += neighbor.state.civ_fields.power - zone.state.civ_fields.power;
+                    civ_diff_sum.wealth += neighbor.state.civ_fields.wealth - zone.state.civ_fields.wealth;
+                    civ_diff_sum.knowledge += neighbor.state.civ_fields.knowledge - zone.state.civ_fields.knowledge;
+                    civ_diff_sum.meaning += neighbor.state.civ_fields.meaning - zone.state.civ_fields.meaning;
+                } else if let Some(&k) = ghost_map.get(&id) {
+                    let ghost = &self.ghost_zones[k].state_snapshot.state;
+                    s_diff_sum += ghost.entropy - zone.state.entropy;
+                    t_diff_sum += ghost.knowledge_frontier - zone.state.knowledge_frontier;
+                    
+                    c_diff_sum.tradition_rigidity += ghost.cultural.tradition_rigidity - zone.state.cultural.tradition_rigidity;
+                    c_diff_sum.innovation_openness += ghost.cultural.innovation_openness - zone.state.cultural.innovation_openness;
+                    c_diff_sum.collective_trust += ghost.cultural.collective_trust - zone.state.cultural.collective_trust;
+                    c_diff_sum.violence_tolerance += ghost.cultural.violence_tolerance - zone.state.cultural.violence_tolerance;
+                    c_diff_sum.institutional_respect += ghost.cultural.institutional_respect - zone.state.cultural.institutional_respect;
+                    c_diff_sum.myth_belief += ghost.cultural.myth_belief - zone.state.cultural.myth_belief;
+
+                    civ_diff_sum.survival += ghost.civ_fields.survival - zone.state.civ_fields.survival;
+                    civ_diff_sum.power += ghost.civ_fields.power - zone.state.civ_fields.power;
+                    civ_diff_sum.wealth += ghost.civ_fields.wealth - zone.state.civ_fields.wealth;
+                    civ_diff_sum.knowledge += ghost.civ_fields.knowledge - zone.state.civ_fields.knowledge;
+                    civ_diff_sum.meaning += ghost.civ_fields.meaning - zone.state.civ_fields.meaning;
+                }
             }
 
             let beta_zone = beta * phase_factor;
             entropy_deltas[i] = beta_zone * s_diff_sum / n_len;
-            tech_deltas[i] = beta_zone * 0.5 * t_diff_sum / n_len; // Tech diffuses slower
+            tech_deltas[i] = beta_zone * 0.5 * t_diff_sum / n_len;
             
             culture_deltas[i].tradition_rigidity = beta_zone * c_diff_sum.tradition_rigidity / n_len;
             culture_deltas[i].innovation_openness = beta_zone * c_diff_sum.innovation_openness / n_len;
@@ -380,49 +507,56 @@ impl UniverseState {
             culture_deltas[i].institutional_respect = beta_zone * c_diff_sum.institutional_respect / n_len;
             culture_deltas[i].myth_belief = beta_zone * c_diff_sum.myth_belief / n_len;
 
-            // Civ Field Diffusion (M2 Migration)
-            let mut civ_diff_sum = CivilizationFields::default();
-            for &j in &neighbors {
-                let neighbor = &self.zones[j];
-                civ_diff_sum.survival += neighbor.state.civ_fields.survival - zone.state.civ_fields.survival;
-                civ_diff_sum.power += neighbor.state.civ_fields.power - zone.state.civ_fields.power;
-                civ_diff_sum.wealth += neighbor.state.civ_fields.wealth - zone.state.civ_fields.wealth;
-                civ_diff_sum.knowledge += neighbor.state.civ_fields.knowledge - zone.state.civ_fields.knowledge;
-                civ_diff_sum.meaning += neighbor.state.civ_fields.meaning - zone.state.civ_fields.meaning;
-            }
-
             civ_field_deltas[i].survival = beta_zone * civ_diff_sum.survival / n_len;
             civ_field_deltas[i].power = beta_zone * civ_diff_sum.power / n_len;
             civ_field_deltas[i].wealth = beta_zone * civ_diff_sum.wealth / n_len;
             civ_field_deltas[i].knowledge = beta_zone * civ_diff_sum.knowledge / n_len;
             civ_field_deltas[i].meaning = beta_zone * civ_diff_sum.meaning / n_len;
 
-            // Population flow (Doc 21 §4.1): flow_ij = k * (pressure_i - pressure_j), only positive flow.
+            // Flow deltas (Population & Trade) require local update for both sides if local,
+            // or just local side if neighbor is ghost.
             let pi = population_pressures[i];
-            for &j in &neighbors {
-                let pj = population_pressures[j];
-                let flow = if pi > pj {
-                    (constants::POPULATION_FLOW_COEFFICIENT * (pi - pj) / n_len)
-                        .min(constants::MAX_POPULATION_FLOW_PER_TICK)
-                } else {
-                    0.0
-                };
-                population_deltas[i] -= flow;
-                population_deltas[j] += flow;
-            }
-
-            // Trade flow (Deep Sim Phase C): flow_ij = k_trade * (wealth_i - wealth_j); apply once per edge (i < j) to avoid double-counting.
             let wi = effective_wealth[i];
-            for &j in &neighbors {
-                if j <= i {
+
+            for &id in &zone.neighbors {
+                let (pj, wj) = if let Some(&j) = zone_map.get(&id) {
+                    (population_pressures[j], effective_wealth[j])
+                } else if let Some(&k) = ghost_map.get(&id) {
+                    let ghost = &self.ghost_zones[k].state_snapshot.state;
+                    // Recompute pressure for ghost (simplified or use stored)
+                    let resources = if ghost.resource_capacity > 1e-9 {
+                        (ghost.resource_capacity * 1.5 + 0.5).max(0.1)
+                    } else {
+                        (ghost.base_mass * 0.01 + 1.0) * (1.0 - ghost.material_stress * 0.5) + ghost.free_energy * 0.001
+                    };
+                    let g_pj = (ghost.population_proxy + 1e-6) / (resources + 1e-6);
+                    let g_wj = if ghost.wealth_proxy > 1e-9 { ghost.wealth_proxy } else { 0.5 }; // Default wealth for ghost if unset
+                    (g_pj, g_wj)
+                } else {
                     continue;
+                };
+
+                // Population flow
+                if pi > pj {
+                    let flow = (constants::POPULATION_FLOW_COEFFICIENT * (pi - pj) / n_len)
+                        .min(constants::MAX_POPULATION_FLOW_PER_TICK);
+                    population_deltas[i] -= flow;
+                    // If local, apply symmetry
+                    if let Some(&j) = zone_map.get(&id) {
+                        population_deltas[j] += flow;
+                    }
                 }
-                let wj = effective_wealth[j];
-                let flow = (constants::TRADE_FLOW_COEFFICIENT * (wi - wj) / n_len)
-                    .max(-constants::MAX_TRADE_FLOW_PER_TICK)
-                    .min(constants::MAX_TRADE_FLOW_PER_TICK);
-                trade_deltas[i] -= flow;
-                trade_deltas[j] += flow;
+
+                // Trade flow (avoid double counting by only processing if i < id)
+                if (zone.id as u64) < (id as u64) {
+                    let flow = (constants::TRADE_FLOW_COEFFICIENT * (wi - wj) / n_len)
+                        .max(-constants::MAX_TRADE_FLOW_PER_TICK)
+                        .min(constants::MAX_TRADE_FLOW_PER_TICK);
+                    trade_deltas[i] -= flow;
+                    if let Some(&j) = zone_map.get(&id) {
+                        trade_deltas[j] += flow;
+                    }
+                }
             }
         }
 
@@ -497,17 +631,25 @@ impl UniverseState {
     }
 
     /// Pressure = f(inequality, entropy, trauma, MaterialStress) (§3.2).
-    pub fn pressure_at_zone(&self, zone_index: usize) -> f64 {
+    pub fn pressure_at_zone(&self, zone_index: usize, macro_idx: Option<&crate::memory::ZoneActorIndex>) -> f64 {
         if zone_index >= self.zones.len() {
             return 0.0;
         }
         let z = &self.zones[zone_index].state;
         let base = (z.inequality * 0.2 + z.entropy * 0.3 + z.trauma * 0.2 + z.material_stress * 0.3).clamp(0.0, 1.0);
         let zone_id = self.zones[zone_index].id;
-        let army_sum: f64 = self.macro_agents.iter()
-            .filter(|a| a.zone_id == zone_id && a.agent_type == MacroAgentType::Army)
-            .map(|a| a.strength)
-            .sum();
+        let army_sum: f64 = if let Some(idx) = macro_idx {
+            idx.actors_in_zone(zone_index).iter()
+                .map(|&ma_id| &self.macro_agents[ma_id as usize])
+                .filter(|ma| ma.agent_type == MacroAgentType::Army)
+                .map(|ma| ma.strength)
+                .sum()
+        } else {
+            self.macro_agents.iter()
+                .filter(|a| a.zone_id == zone_id && a.agent_type == MacroAgentType::Army)
+                .map(|a| a.strength)
+                .sum()
+        };
         (base + army_sum * constants::MACRO_ARMY_PRESSURE_COEFF).clamp(0.0, 1.0)
     }
 
@@ -565,6 +707,9 @@ impl UniverseState {
                 z.state.knowledge_frontier = (z.state.knowledge_frontier + boost).min(z.state.tech_ceiling);
                 z.state.tech_ceiling = (z.state.tech_ceiling + boost * 0.5).min(1.0);
                 z.state.free_energy += boost * z.state.base_mass * 0.1;
+
+                // Feedback Loop: High intelligence organizes the system, reducing local entropy
+                z.state.entropy = (z.state.entropy - boost * 0.5).max(0.0);
             }
         }
     }
@@ -613,8 +758,9 @@ impl UniverseState {
         let mut futures = Vec::with_capacity(num_branches);
         for _ in 0..num_branches {
             let mut sim = self.clone();
+            let idx = sim.build_macro_index();
             for _ in 0..horizon {
-                sim.tick(world);
+                sim.tick(world, Some(&idx));
             }
             futures.push(crate::types::FutureOutcome {
                 entropy: sim.global_entropy,
@@ -780,7 +926,7 @@ mod tests {
 
     #[test]
     fn test_material_resonance_same_slug_amplifies_effect() {
-        let world = WorldConfig { world_id: 1, axiom: None, world_seed: None, origin: String::new(), genome: None };
+        let world = WorldConfig { world_id: 1, ..Default::default() };
         let coeff = PressureCoefficients { entropy: 0.5, order: 0.0, innovation: 0.0, growth: 0.0 };
 
         let mut state_one = UniverseState::with_one_zone(1, 100.0);
@@ -791,7 +937,7 @@ mod tests {
             recursive_core: None,
         });
         let entropy_before_one = state_one.zones[0].state.entropy;
-        state_one.tick(&world);
+        state_one.tick(&world, None);
         let delta_one = state_one.zones[0].state.entropy - entropy_before_one;
 
         let mut state_two = UniverseState::with_one_zone(1, 100.0);
@@ -808,7 +954,7 @@ mod tests {
             recursive_core: None,
         });
         let entropy_before_two = state_two.zones[0].state.entropy;
-        state_two.tick(&world);
+        state_two.tick(&world, None);
         let delta_two = state_two.zones[0].state.entropy - entropy_before_two;
 
         assert!(delta_two > delta_one, "two same-slug materials should produce larger entropy delta (1.5x resonance)");
@@ -817,15 +963,15 @@ mod tests {
 
     #[test]
     fn test_tick_determinism() {
-        let world = WorldConfig { world_id: 1, axiom: None, world_seed: None, origin: String::new(), genome: None };
+        let world = WorldConfig { world_id: 1, ..Default::default() };
         let mut state_a = UniverseState::with_one_zone(1, 100.0);
         state_a.zones[0].state.entropy = 0.5;
         state_a.zones[0].state.knowledge_frontier = 10.0;
         
         let mut state_b = state_a.clone();
         
-        state_a.tick(&world);
-        state_b.tick(&world);
+        state_a.tick(&world, None);
+        state_b.tick(&world, None);
         
         // Assert identical outcomes
         assert_eq!(state_a.global_entropy, state_b.global_entropy, "Tick must be deterministic for entropy");
@@ -835,7 +981,7 @@ mod tests {
 
     #[test]
     fn test_boundedness_invariants() {
-        let world = WorldConfig { world_id: 1, axiom: None, world_seed: None, origin: String::new(), genome: None };
+        let world = WorldConfig { world_id: 1, ..Default::default() };
         let mut state = UniverseState::with_one_zone(1, 100.0);
         
         // Inject extreme out-of-bounds values
@@ -844,7 +990,7 @@ mod tests {
         state.zones[0].state.knowledge_frontier = 5000.0;
         state.zones[0].state.tech_ceiling = 10.0; // frontier > ceiling
         
-        state.tick(&world);
+        state.tick(&world, None);
         
         let z = &state.zones[0].state;
         assert!(z.material_stress >= 0.0 && z.material_stress <= 1.0, "Material stress must clamp 0-1");
@@ -858,7 +1004,7 @@ mod tests {
     /// and verify that ALL state variables remain within valid bounds on every tick.
     #[test]
     fn test_exhaustive_multi_tick_boundedness() {
-        let world = WorldConfig { world_id: 1, axiom: None, world_seed: None, origin: String::new(), genome: None };
+        let world = WorldConfig { world_id: 1, ..Default::default() };
         let mut state = UniverseState::with_one_zone(1, 100.0);
 
         // Start with extreme out-of-bounds values
@@ -870,7 +1016,7 @@ mod tests {
         state.zones[0].state.inequality = -20.0;
 
         for tick_num in 0..100 {
-            state.tick(&world);
+            state.tick(&world, None);
             let z = &state.zones[0].state;
 
             assert!(z.material_stress >= 0.0 && z.material_stress <= 1.0,
@@ -895,7 +1041,7 @@ mod tests {
     /// Snapshot reproducibility: two identical states must produce byte-identical snapshots.
     #[test]
     fn test_snapshot_reproducibility() {
-        let world = WorldConfig { world_id: 1, axiom: None, world_seed: None, origin: String::new(), genome: None };
+        let world = WorldConfig { world_id: 1, ..Default::default() };
 
         let mut state_a = UniverseState::with_one_zone(1, 100.0);
         state_a.zones[0].state.entropy = 0.6;
@@ -904,8 +1050,8 @@ mod tests {
 
         // Run both for 10 ticks
         for _ in 0..10 {
-            state_a.tick(&world);
-            state_b.tick(&world);
+            state_a.tick(&world, None);
+            state_b.tick(&world, None);
         }
 
         let snap_a = state_a.to_snapshot();
@@ -925,7 +1071,7 @@ mod tests {
     /// Multi-zone determinism: a universe with 3 zones must be deterministic.
     #[test]
     fn test_multi_zone_determinism() {
-        let world = WorldConfig { world_id: 1, axiom: None, world_seed: None, origin: String::new(), genome: None };
+        let world = WorldConfig { world_id: 1, ..Default::default() };
 
         let build = || {
             let mut s = UniverseState::new(1);
@@ -947,8 +1093,8 @@ mod tests {
         let mut b = build();
 
         for _ in 0..20 {
-            a.tick(&world);
-            b.tick(&world);
+            a.tick(&world, None);
+            b.tick(&world, None);
         }
 
         assert_eq!(a.global_entropy, b.global_entropy, "Multi-zone global_entropy must be deterministic");
@@ -990,7 +1136,7 @@ mod tests {
     /// Level-8: Possibility Space Navigator returns one outcome per branch, with valid metrics.
     #[test]
     fn test_explore_futures() {
-        let world = WorldConfig { world_id: 1, axiom: None, world_seed: None, origin: String::new(), genome: None };
+        let world = WorldConfig { world_id: 1, ..Default::default() };
         let state = UniverseState::with_one_zone(1, 100.0);
         let horizon = 10u32;
         let num_branches = 5;
@@ -1008,7 +1154,7 @@ mod tests {
     #[test]
     fn test_level8_engines_boundedness() {
         use crate::types::{CivilizationAttractor, DarkAttractor, CivilizationPhase};
-        let world = WorldConfig { world_id: 1, axiom: None, world_seed: None, origin: String::new(), genome: None };
+        let world = WorldConfig { world_id: 1, ..Default::default() };
         let mut state = UniverseState::with_one_zone(1, 100.0);
         state.attractors.push(CivilizationAttractor {
             id: 1,
@@ -1030,7 +1176,7 @@ mod tests {
             collapse_probability: 0.2,
         });
         for _ in 0..50 {
-            state.tick(&world);
+            state.tick(&world, None);
         }
         let z = &state.zones[0].state;
         assert!(z.civ_fields.power >= 0.0 && z.civ_fields.power <= 1.0);
@@ -1044,7 +1190,7 @@ mod tests {
     /// Trade flow (Deep Sim Phase C): wealth_proxy flows from higher to lower between neighbors.
     #[test]
     fn test_trade_flow_redistributes_wealth() {
-        let world = WorldConfig { world_id: 1, axiom: None, world_seed: None, origin: String::new(), genome: None };
+        let world = WorldConfig { world_id: 1, ..Default::default() };
         let mut state = UniverseState::new(1);
         let mut z0 = ZoneState::new(100.0);
         z0.wealth_proxy = 0.8;
@@ -1057,13 +1203,98 @@ mod tests {
 
         let w0_before = state.zones[0].state.wealth_proxy;
         let w1_before = state.zones[1].state.wealth_proxy;
-        state.tick(&world);
+        state.tick(&world, None);
         let w0_after = state.zones[0].state.wealth_proxy;
         let w1_after = state.zones[1].state.wealth_proxy;
 
         assert!(w0_after < w0_before, "wealth should flow out of richer zone 0");
         assert!(w1_after > w1_before, "wealth should flow into poorer zone 1");
         assert!((w0_after + w1_after - (w0_before + w1_before)).abs() < 0.001, "total wealth approximately conserved");
+    }
+
+    /// Ghost Zone Diffusion: local zone should diffuse with ghost zone.
+    #[test]
+    fn test_ghost_zone_diffusion() {
+        use crate::sharding::GhostZone;
+        let world = WorldConfig { world_id: 1, ..Default::default() };
+        let mut state = UniverseState::new(1);
+        
+        let mut z_local = ZoneState::new(100.0);
+        z_local.entropy = 0.2;
+        state.zones.push(ZoneStateSerial { id: 0, state: z_local, neighbors: vec![99] });
+        
+        let mut z_ghost = ZoneState::new(100.0);
+        z_ghost.entropy = 0.8;
+        let gz = GhostZone {
+            id: 99,
+            shard_id: 2,
+            state_snapshot: ZoneStateSerial { id: 99, state: z_ghost, neighbors: vec![0] },
+        };
+        state.ghost_zones.push(gz);
+
+        let entropy_before = state.zones[0].state.entropy;
+        state.tick(&world, None);
+        let entropy_after = state.zones[0].state.entropy;
+
+        assert!(entropy_after > entropy_before, "entropy should flow from ghost (0.8) to local (0.2)");
+    }
+
+    /// Level-8 Intelligence & Narrative: verify archetype discovery and tag generation.
+    #[test]
+    fn test_intelligence_and_narrative() {
+        let world = WorldConfig { world_id: 1, ..Default::default() };
+        let mut state = UniverseState::new(1);
+        
+        // Setup a Tech-heavy zone
+        let mut z = ZoneState::new(100.0);
+        z.knowledge_frontier = 0.8;
+        z.tech_ceiling = 1.0;
+        z.free_energy = 80.0;
+        z.entropy = 0.1;
+        
+        z.civ_fields.knowledge = 0.9;
+        z.civ_fields.wealth = 0.7;
+        z.civ_fields.power = 0.4;
+        z.civ_fields.survival = 0.4;
+        z.civ_fields.meaning = 0.2;
+        
+        // Setup high innovation culture
+        z.cultural.innovation_openness = 0.9;
+        z.cultural.collective_trust = 0.8;
+        
+        state.zones.push(ZoneStateSerial { id: 0, state: z, neighbors: vec![] });
+        
+        // Test Intelligence Explosion directly
+        state.apply_intelligence_explosion();
+        assert!(state.zones[0].state.embodied_knowledge > 0.0, "Should have boosted embodied knowledge");
+        
+        // Test Discovery directly by setting global fields
+        state.global_fields = crate::types::CivilizationFields {
+            survival: 0.4,
+            power: 0.4,
+            wealth: 0.7,
+            knowledge: 0.9,
+            meaning: 0.2,
+        };
+        state.run_archetype_discovery();
+        
+        // Test Narrative directly
+        let culture_engine = crate::culture_engine::CultureEngine::new(0.01);
+        state.narrative_tags = culture_engine.generate_narrative_tags(&state.zones);
+        
+        println!("Test Global Fields: {:?}", state.global_fields);
+        if let Some(d) = &state.archetype_discovery {
+            println!("Test Discovery: name={}, dist={}", d.name, d.distance);
+        }
+        let discovery = state.archetype_discovery.as_ref().expect("Should have discovery result");
+        assert_eq!(discovery.name, "Technocracy");
+        
+        // Check Narrative Tags
+        let has_renaissance = state.narrative_tags.iter().any(|t| t.slug == "renaissance_flame");
+        assert!(has_renaissance, "Should have renaissance_flame tag");
+        
+        // Check Intelligence Explosion impact
+        assert!(state.zones[0].state.embodied_knowledge > 0.0);
     }
 }
 

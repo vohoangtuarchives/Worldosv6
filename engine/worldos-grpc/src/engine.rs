@@ -60,8 +60,9 @@ pub fn run_advance(
         }
     };
 
+    let macro_idx = state.build_macro_index();
     for _ in 0..ticks {
-        let _events = tick_with_cascade(&mut state, &world, 4);
+        let _events = tick_with_cascade(&mut state, &world, 4, Some(&macro_idx));
     }
 
     let snap = state.to_snapshot();
@@ -123,7 +124,8 @@ pub fn run_observe(
         world_seed: None,
         genome: None,
     };
-    let _events = tick_with_cascade(&mut state, &world, 4);
+    let macro_idx = state.build_macro_index();
+    let _events = tick_with_cascade(&mut state, &world, 4, Some(&macro_idx));
 
     let snap = state.to_snapshot();
     let state_vector_json = serde_json::to_string(&snap.state_vector).unwrap_or_else(|_| "{}".to_string());

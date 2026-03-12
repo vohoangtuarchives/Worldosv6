@@ -319,7 +319,7 @@ export default function TimelinePage() {
 
   if (loading) {
     return (
-      <div className="w-screen h-screen bg-background flex flex-col items-center justify-center font-mono text-foreground">
+      <div className="w-full h-full bg-background flex flex-col items-center justify-center font-mono text-foreground">
         <LoadingSpinner size="lg" className="mb-4 text-primary" />
         <p className="tracking-widest uppercase opacity-80 text-sm text-muted-foreground">Đang cộng hưởng với WorldOS Core...</p>
       </div>
@@ -328,7 +328,7 @@ export default function TimelinePage() {
 
   if (error) {
     return (
-      <div className="w-screen h-screen bg-background flex flex-col items-center justify-center p-8">
+      <div className="w-full h-full bg-background flex flex-col items-center justify-center p-8">
         <div className="max-w-md w-full space-y-4">
           <div className="flex flex-col items-center gap-2 text-destructive">
             <AlertTriangle className="w-12 h-12" />
@@ -341,7 +341,7 @@ export default function TimelinePage() {
   }
 
   return (
-    <div style={{ width: "100vw", height: "100vh" }}>
+    <div className="w-full h-full">
       <ReactFlow nodes={graphData.nodes} edges={graphData.edges} nodeTypes={nodeTypesMemo} fitView fitViewOptions={{ padding: 0.15 }}>
         <Background gap={24} size={1} color="#222" style={{ background: "transparent" }} />
         <Controls style={{ background: "#18181b", border: "1px solid #333" }} />
