@@ -13,11 +13,15 @@ use App\Services\Simulation\WarEngine;
 final class WarStage implements SimulationStageInterface
 {
     public function __construct(
-        protected WarEngine $warEngine
+        protected WarEngine $warEngine,
+        protected \App\Simulation\Runtime\State\StateManager $stateManager
     ) {}
 
     public function run(Universe $universe, int $tick, ?UniverseSnapshot $savedSnapshot = null, array $context = []): void
     {
-        $this->warEngine->evaluate($universe, $tick);
+        $state = $this->stateManager->get();
+        if (!$state) return;
+
+        $this->warEngine->runWithState($state, $tick);
     }
 }

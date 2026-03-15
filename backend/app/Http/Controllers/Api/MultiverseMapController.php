@@ -15,32 +15,57 @@ class MultiverseMapController extends Controller
 {
     public function index(): JsonResponse
     {
-        $universes = Universe::all(['id', 'name', 'parent_universe_id', 'status', 'structural_coherence', 'entropy']);
+        $universes = Universe::all(['id', 'name', 'parent_universe_id', 'multiverse_id', 'status', 'structural_coherence', 'entropy', 'state_vector']);
 
         $nodes = $universes->map(function($u) {
             return [
                 'id' => $u->id,
                 'label' => $u->name,
                 'status' => $u->status,
+                'multiverse_id' => $u->multiverse_id,
                 'metrics' => [
                     'sci' => $u->structural_coherence,
                     'entropy' => $u->entropy,
+                    'attractor' => $u->state_vector['active_attractor'] ?? 'unknown',
                 ],
                 'type' => $u->parent_universe_id ? 'branch' : 'origin'
             ];
         });
 
+        // 1. Birth edges (Causal)
         $edges = $universes->whereNotNull('parent_universe_id')->map(function($u) {
             return [
                 'from' => $u->parent_universe_id,
                 'to' => $u->id,
-                'type' => 'birth'
+                'type' => 'birth',
+                'label' => 'Causal Birth'
             ];
-        });
+        })->values()->toArray();
+
+        // 2. Quantum Trade Routes (Economic Sync)
+        $tradeEdges = [];
+        $activeUniverses = $universes->where('status', 'active')->values();
+        
+        for ($i = 0; $i < $activeUniverses->count(); $i++) {
+            for ($j = $i + 1; $j < $activeUniverses->count(); $j++) {
+                $ua = $activeUniverses[$i];
+                $ub = $activeUniverses[$j];
+
+                if ($ua->multiverse_id === $ub->multiverse_id && abs($ua->entropy - $ub->entropy) <= 0.1) {
+                    $tradeEdges[] = [
+                        'from' => $ua->id,
+                        'to' => $ub->id,
+                        'type' => 'trade',
+                        'label' => 'Quantum Trade',
+                        'intensity' => 1 - abs($ua->entropy - $ub->entropy) // Higher intensity if more synced
+                    ];
+                }
+            }
+        }
 
         return response()->json([
             'nodes' => $nodes,
-            'edges' => $edges->values(),
+            'edges' => array_merge($edges, $tradeEdges),
         ]);
     }
 
@@ -64,6 +89,7 @@ class MultiverseMapController extends Controller
                     'status'           => $u->status ?? 'active',
                     'sci'              => (int) round($u->structural_coherence ?? 0),
                     'parentUniverseId' => $u->parent_universe_id ? (string) $u->parent_universe_id : null,
+                    'saliency'         => (float) ($u->state_vector['meta']['time_saliency'] ?? 0),
                 ];
             });
 

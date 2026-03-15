@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('narrative_jobs', function (Blueprint $table) {
             $table->id();
             $table->foreignId('universe_id')->constrained()->cascadeOnDelete();
-            $table->string('engine', 64); // event, era, civilization, mythology, religion, prophecy, legend
+            $table->string('engine', 64); // event, era, civilization, mythology, religion, causal_trajectory, legend
             $table->json('payload');
             $table->string('status', 32)->default('pending'); // pending, processing, completed, failed
             $table->timestamps();

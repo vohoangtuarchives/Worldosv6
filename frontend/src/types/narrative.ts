@@ -3,6 +3,9 @@ export type NarrativeFactKind =
   | "entropy-shift"
   | "stability-shift"
   | "knowledge-shift"
+  | "militarism-shift"
+  | "spirituality-shift"
+  | "institutional-shift"
   | "civilization-field"
   | "event-summary";
 

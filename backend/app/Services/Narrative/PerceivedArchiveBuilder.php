@@ -18,6 +18,7 @@ class PerceivedArchiveBuilder
         protected EventTriggerMapper $events,
         protected ResidualInjector $residual,
         protected TraitMapper $traitMapper,
+        protected NarrativeDslService $narrativeDsl,
         protected \App\Services\AI\EpistemicService $epistemic,
         protected \App\Services\Simulation\TheDreamingService $dreaming
     ) {}
@@ -106,7 +107,9 @@ class PerceivedArchiveBuilder
                 foreach ($avgCulture as $dim => $total) {
                     $val = $total / $count;
                     if ($instability > 0.5) {
-                        $val += (mt_rand(-10, 10) / 100); // Add epistemic noise
+                        $seed = crc32("archive_builder_" . $universeId . "_" . $tick . "_" . $dim);
+                        $prng = new \App\Services\Simulation\SimulationPRNG($seed);
+                        $val += ($prng->nextInt(-10, 10) / 100); // Add epistemic noise
                     }
                     $avgCulture[$dim] = round(max(0, min(1, $val)), 2);
                 }
@@ -123,12 +126,15 @@ class PerceivedArchiveBuilder
                 $traits = $agent['trait_vector'] ?? array_fill(0, 17, 0);
                 $isNotable = ($traits[1] > 0.8 || $traits[4] > 0.8 || $traits[8] > 0.8 || $traits[13] > 0.8);
                 if ($isNotable) {
+                    $agentArchetype = $agent['archetype'] ?? 'Commoner';
+                    $evaluation = $this->narrativeDsl->evaluateAgent($traits, $agentArchetype);
+
                     $agentReflections[] = [
                         'name' => $agent['name'] ?? 'Ẩn danh',
-                        'archetype' => $agent['archetype'] ?? 'Commoner',
+                        'archetype' => $evaluation['new_archetype'] ?? $agentArchetype,
                         'description' => $this->traitMapper->mapToDescription($traits),
-                        'thinking' => $this->traitMapper->generateMonologueSeed($traits, $agent['archetype'] ?? 'Commoner'),
-                        'fate_tags' => $this->traitMapper->getFateTags($traits)
+                        'thinking' => $this->traitMapper->generateMonologueSeed($traits, $agentArchetype),
+                        'fate_tags' => $evaluation['fate_tags'] ?? []
                     ];
                 }
             }
@@ -172,12 +178,14 @@ class PerceivedArchiveBuilder
                 'instability' => round($instability, 3),
                 'sci' => round($vector['sci'] ?? 1.0, 3),
                 'reality_stability' => round($this->epistemic->calculateStability($this->getUniverseModel($universeId)), 3),
+                'fate_pressure' => round(($vector['pressures']['fate_pressure'] ?? $vector['fate_pressure'] ?? 0.0), 3),
                 'civ_fields' => [
                     'survival'  => round(($vector['civ_fields']['survival'] ?? $vector['survival'] ?? $vector['global_fields']['survival'] ?? 0.0), 3),
                     'power'     => round(($vector['civ_fields']['power'] ?? $vector['power'] ?? $vector['global_fields']['power'] ?? 0.0), 3),
                     'wealth'    => round(($vector['civ_fields']['wealth'] ?? $vector['wealth'] ?? $vector['global_fields']['wealth'] ?? 0.0), 3),
                     'knowledge' => round(($vector['civ_fields']['knowledge'] ?? $vector['knowledge'] ?? $vector['global_fields']['knowledge'] ?? 0.0), 3),
                     'meaning'   => round(($vector['civ_fields']['meaning'] ?? $vector['meaning'] ?? $vector['global_fields']['meaning'] ?? 0.0), 3),
+                    'resonance' => round(($vector['civ_fields']['resonance'] ?? $vector['resonance_field'] ?? $vector['field_resonance_field'] ?? 0.0), 3),
                 ],
             ]
         ];

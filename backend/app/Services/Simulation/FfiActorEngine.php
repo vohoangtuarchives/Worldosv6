@@ -27,8 +27,20 @@ class FfiActorEngine
                     float* hunger,
                     float* energy,
                     float* fear,
+                    uint8_t* heroic_types,
+                    uint64_t* lineage_ids,
                     uint64_t* memes,
                     uint32_t* mut_actions_out
+                );
+
+                int process_fields_v7(
+                    size_t count,
+                    double* fields,
+                    const uint32_t* neighbor_counts,
+                    const uint32_t* neighbor_offsets,
+                    const uint32_t* neighbors,
+                    double diffusion_rate,
+                    double preservation_rate
                 );
             ", $libraryPath);
         }
@@ -44,6 +56,8 @@ class FfiActorEngine
         array $hunger,
         array $energy,
         array $fear,
+        array $heroicTypes,
+        array $lineageIds,
         array $memes
     ): array {
         if ($this->ffi === null) {
@@ -62,6 +76,8 @@ class FfiActorEngine
         $cHunger = $this->ffi->new("float[$count]");
         $cEnergy = $this->ffi->new("float[$count]");
         $cFear = $this->ffi->new("float[$count]");
+        $cHeroicTypes = $this->ffi->new("uint8_t[$count]");
+        $cLineageIds = $this->ffi->new("uint64_t[$count]");
         $cMemes = $this->ffi->new("uint64_t[$count]");
         $cActionsOut = $this->ffi->new("uint32_t[$count]");
 
@@ -72,6 +88,8 @@ class FfiActorEngine
             $cHunger[$i] = $hunger[$i];
             $cEnergy[$i] = $energy[$i];
             $cFear[$i] = $fear[$i];
+            $cHeroicTypes[$i] = $heroicTypes[$i];
+            $cLineageIds[$i] = $lineageIds[$i];
             $cMemes[$i] = $memes[$i];
         }
 
@@ -83,6 +101,8 @@ class FfiActorEngine
             $cHunger,
             $cEnergy,
             $cFear,
+            $cHeroicTypes,
+            $cLineageIds,
             $cMemes,
             $cActionsOut
         );
@@ -102,5 +122,68 @@ class FfiActorEngine
         }
 
         return $outputActions;
+    }
+
+    /**
+     * Process 8-field attractor dynamics (Diffusion + Decay) in Rust.
+     */
+    public function processFieldsV7(
+        array $fields, // 2D array [count][8]
+        array $neighborCounts,
+        array $neighborOffsets,
+        array $neighbors,
+        float $diffusionRate,
+        float $preservationRate
+    ): array {
+        if ($this->ffi === null) {
+            return $fields; // Mock or DLL missing
+        }
+
+        $count = count($fields);
+        if ($count === 0) return [];
+
+        // Allocate C memory
+        $cFields = $this->ffi->new("double[" . ($count * 8) . "]");
+        $cNCounts = $this->ffi->new("uint32_t[$count]");
+        $cNOffsets = $this->ffi->new("uint32_t[$count]");
+        $cNListCount = count($neighbors);
+        $cNList = $this->ffi->new("uint32_t[$cNListCount]");
+
+        // Pack data
+        for ($i = 0; $i < $count; $i++) {
+            $row = array_values($fields[$i]); // Ensure indexed
+            for ($f = 0; $f < 8; $f++) {
+                $cFields[$i * 8 + $f] = (double)($row[$f] ?? 0.0);
+            }
+            $cNCounts[$i] = (int)$neighborCounts[$i];
+            $cNOffsets[$i] = (int)$neighborOffsets[$i];
+        }
+
+        foreach ($neighbors as $k => $val) {
+            $cNList[$k] = (int)$val;
+        }
+
+        // Call Rust
+        $this->ffi->process_fields_v7(
+            $count,
+            $cFields,
+            $cNCounts,
+            $cNOffsets,
+            $cNList,
+            $diffusionRate,
+            $preservationRate
+        );
+
+        // Unpack output
+        $newFields = [];
+        for ($i = 0; $i < $count; $i++) {
+            $row = [];
+            for ($f = 0; $f < 8; $f++) {
+                $row[] = (float)$cFields[$i * 8 + $f];
+            }
+            $newFields[] = $row;
+        }
+
+        return $newFields;
     }
 }

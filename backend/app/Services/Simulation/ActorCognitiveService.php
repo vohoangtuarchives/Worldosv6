@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Log;
  * ActorCognitiveService – computes 3 cognitive variables per universe each tick.
  *
  * These 3 variables cause civilization archetypes to self-emerge without scripting:
- *   destiny_gradient   → high = religion, prophecy, chosen heroes
+ *   destiny_gradient   → high = religion, causal_trajectory, chosen heroes
  *   causal_curiosity   → high = science, technology, engineering
  *   anomaly_sensitivity → high = magic systems, myth, supernatural beliefs
  *
@@ -29,7 +29,7 @@ use Illuminate\Support\Facades\Log;
  */
 class ActorCognitiveService
 {
-    /** Threshold above which destiny → prophecy/religion events */
+    /** Threshold above which destiny → causal_trajectory/religion events */
     const DESTINY_THRESHOLD = 0.75;
 
     /** Threshold above which curiosity → scientific_revolution event */
@@ -163,11 +163,11 @@ class ActorCognitiveService
             ]);
         }
 
-        // Prophecy Surge: high destiny → religion / chosen one
+        // CausalTrajectory Surge: high destiny → religion / chosen one
         if ($cognitive['destiny_gradient'] >= self::DESTINY_THRESHOLD) {
-            $this->emitEvent($universe, $tick, 'prophecy_surge', [
+            $this->emitEvent($universe, $tick, 'causal_trajectory_surge', [
                 'destiny_gradient' => $cognitive['destiny_gradient'],
-                'description'      => 'Thiên mệnh gradient cao — prophecy, giáo phái, hoặc anh hùng được chọn đang xuất hiện.',
+                'description'      => 'Thiên mệnh gradient cao — causal_trajectory, giáo phái, hoặc anh hùng được chọn đang xuất hiện.',
             ]);
         }
 
@@ -204,7 +204,7 @@ class ActorCognitiveService
     /** Doc §21: aggregate MentalState — beliefs, goals, emotions. */
     protected function computeMentalState(float $destiny, float $curiosity, float $anomaly, float $tension, array $actorStats, string $tendency): array
     {
-        $beliefs = $tendency === 'theocracy_prone' ? ['destiny', 'prophecy'] : ($tendency === 'scientific_prone' ? ['causality', 'evidence'] : ['mixed']);
+        $beliefs = $tendency === 'theocracy_prone' ? ['destiny', 'causal_trajectory'] : ($tendency === 'scientific_prone' ? ['causality', 'evidence'] : ['mixed']);
         $goals = $tension > 0.6 ? ['meaning', 'survival'] : ['growth', 'stability'];
         return [
             'beliefs' => $beliefs,

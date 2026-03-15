@@ -11,6 +11,18 @@ interface IdeologyPanelProps {
 
 const IDEOLOGY_KEYS = ["tradition", "innovation", "trust", "violence", "respect", "myth"] as const;
 
+function getIdeologyLabel(key: string): string {
+  const labels: Record<string, string> = {
+    tradition: "Truyền thống",
+    innovation: "Cải tiến",
+    trust: "Lòng tin",
+    violence: "Bạo lực",
+    respect: "Sùng tín",
+    myth: "Huyền thoại",
+  };
+  return labels[key] ?? key;
+}
+
 export function IdeologyPanel({ universeId, refreshTrigger = 0 }: IdeologyPanelProps) {
   const [data, setData] = useState<{
     dominant: Record<string, number>;
@@ -71,7 +83,7 @@ export function IdeologyPanel({ universeId, refreshTrigger = 0 }: IdeologyPanelP
           const v = typeof dominant[key] === "number" ? dominant[key] : 0.5;
           return (
             <div key={key} className="flex items-center gap-2">
-              <span className="text-muted-foreground capitalize w-20 text-[10px] truncate">{key}</span>
+              <span className="text-muted-foreground capitalize w-20 text-[10px] truncate">{getIdeologyLabel(key)}</span>
               <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
                 <div className="h-full bg-amber-500/70 rounded-full transition-all" style={{ width: `${v * 100}%` }} />
               </div>

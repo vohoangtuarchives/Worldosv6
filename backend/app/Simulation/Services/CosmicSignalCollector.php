@@ -2,7 +2,7 @@
 
 namespace App\Simulation\Services;
 
-use App\Simulation\Domain\WorldState;
+use App\Simulation\Runtime\State\WorldState;
 
 /**
  * Collects cosmic-level signals from WorldState for Phase Pressure calculation.

@@ -74,7 +74,8 @@ class MaterialEvolutionEngine
                     $childMaterial = $mutation->childMaterial ?? null;
                     if (!$childMaterial) continue;
                     // 20% chance to discover child material per high-IP tick
-                    if (mt_rand(0, 100) < 20) {
+                    $prng = clone \App\Services\Simulation\SimulationPRNG::forUniverse($universe);
+                    if ($prng->nextInt(0, 100) < 20) {
                         $universe->materialInstances()->create([
                             'material_id' => $mutation->child_material_id,
                             'lifecycle' => Material::LIFECYCLE_DORMANT,

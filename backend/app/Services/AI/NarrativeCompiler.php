@@ -12,6 +12,13 @@ use Illuminate\Support\Facades\Log;
  */
 class NarrativeCompiler
 {
+    protected ?\App\Models\Universe $universe = null;
+
+    public function setUniverse(\App\Models\Universe $universe): self
+    {
+        $this->universe = $universe;
+        return $this;
+    }
     /**
      * Compile a narrative. Tries LLM first; falls back to template.
      */
@@ -127,7 +134,12 @@ class NarrativeCompiler
 
     protected function pick(array $items): string
     {
-        return $items[array_rand($items)];
+        $prng = $this->universe 
+            ? \App\Services\Simulation\SimulationPRNG::forUniverse($this->universe)
+            : new \App\Services\Simulation\SimulationPRNG(rand(1, 1000));
+            
+        if (count($items) === 0) return '';
+        return $prng->randomElement($items);
     }
 
     protected function getTemplates(float $noise): array

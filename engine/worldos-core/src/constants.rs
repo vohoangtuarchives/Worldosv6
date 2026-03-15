@@ -2,6 +2,8 @@
 
 /// Entropy increase per unit structured_mass gained: entropy += k1 * Δstructured (§4.1).
 pub const K1_ENTROPY_PER_STRUCTURED: f64 = 0.01;
+/// Rate at which fields are preserved between ticks if not reinforced (§Level-9).
+pub const FIELD_PRESERVATION_RATE: f64 = 0.4;
 
 /// Baseline entropy drift per tick: có drift thì entropy không thể là 0 (§4.1).
 pub const ENTROPY_DRIFT_PER_TICK: f64 = 0.003;

@@ -23,9 +23,13 @@ class ProcessActorEnergyAction
         private \App\Modules\Intelligence\Services\EvolutionPressureService $evolutionPressure
     ) {}
 
-    public function handle(Universe $universe, array $simulationResponse): void
+    public function runWithState(\App\Simulation\Runtime\State\WorldState $state, array $simulationResponse): void
     {
-        $actors = $this->actorRepository->findByUniverse($universe->id);
+        $actors = $state->getActorEntities();
+        if (empty($actors)) return;
+
+        $universeId = (int) $state->get('universe_id');
+        $seed = (int) $state->get('seed', 0);
         $ticks = max(1, (int) ($simulationResponse['_ticks'] ?? 1));
 
         $metabolismBase = (float) config('worldos.intelligence.metabolism_base', 0.5);
@@ -36,24 +40,26 @@ class ProcessActorEnergyAction
         $reproduceCost = (float) config('worldos.intelligence.reproduce_cost', 80);
         $reproduceEnergyRatioChild = (float) config('worldos.intelligence.reproduce_energy_ratio_child', 0.3);
         $mutationRate = (float) config('worldos.intelligence.mutation_rate', 0.05);
-        $snapshotTick = (int) (($simulationResponse['snapshot'] ?? [])['tick'] ?? $universe->current_tick ?? 0);
+        $snapshotTick = (int) (($simulationResponse['snapshot'] ?? [])['tick'] ?? $state->get('tick', 0));
 
-        $zones = $this->getZonesFromUniverse($universe);
-        $stateVector = is_array($universe->state_vector) ? $universe->state_vector : [];
-        $zonesModified = false;
-        $pressure = $this->evolutionPressure->fromUniverse($universe);
+        $zones = $state->get('zones', []);
+        $pressure = $state->get('ecosystem.pressure', []);
+        if (empty($pressure)) {
+            $pressure = $this->evolutionPressure->fromUniverseId($universeId);
+        }
 
-        $ecologicalCollapse = $stateVector['ecological_collapse'] ?? null;
+        $ecologicalCollapse = $state->get('ecological_collapse', []);
         $collapseActive = is_array($ecologicalCollapse) && !empty($ecologicalCollapse['active'])
             && $snapshotTick <= (int) ($ecologicalCollapse['until_tick'] ?? PHP_INT_MAX);
+            
         if ($collapseActive && $resourceRegenRate > 0) {
             $resourceRegenRate *= (float) config('worldos.intelligence.ecological_collapse_resource_regeneration_factor', 0.5);
         }
 
+        $newActors = [];
+
         foreach ($actors as $actor) {
-            if (!$actor->isAlive) {
-                continue;
-            }
+            if (!$actor->isAlive) continue;
 
             $metrics = $actor->metrics ?? [];
             $metrics = $this->ensureEnergyMetrics($metrics, $actor->traits ?? [], $actor->metrics['physic'] ?? null, $energyMaxDefault, $metabolismBase);
@@ -73,17 +79,14 @@ class ProcessActorEnergyAction
                 $gather = min($gatherRate * $ticks, $available, max(0, $maxEnergy - $energy));
                 if ($gather > 0) {
                     $energy += $gather;
-                    if (!isset($zone['state'])) {
-                        $zone['state'] = [];
-                    }
+                    if (!isset($zone['state'])) $zone['state'] = [];
                     $zone['state'][$foodKey] = max(0, $available - $gather);
-                    $zonesModified = true;
                 }
             }
 
             $energy = max(0, min($maxEnergy, $energy));
 
-            // Reproduction: energy > cost, roll with fertility (longevity) and fitness
+            // Reproduction
             if ($energy > $reproduceCost) {
                 $longevity = (float) ($actor->traits[17] ?? $actor->traits['Longevity'] ?? 0.5);
                 $fitness = $this->evolutionPressure->fitness($actor->traits ?? [], $actor->metrics['physic'] ?? null, $pressure);
@@ -91,36 +94,36 @@ class ProcessActorEnergyAction
                 if ($collapseActive) {
                     $reproduceProb *= (float) config('worldos.intelligence.ecological_collapse_reproduction_factor', 0.4);
                 }
-                $rng = new SimulationRng((int) ($universe->seed ?? 0), $snapshotTick, ($actor->id ?? 0) + 200000);
+                $rng = new SimulationRng($seed, $snapshotTick, ($actor->id ?? 0) + 200000);
                 if ($rng->nextFloat() < $reproduceProb) {
-                    $childTraits = $this->mutateVector($actor->traits ?? [], $mutationRate, new SimulationRng((int) ($universe->seed ?? 0), $snapshotTick, ($actor->id ?? 0) + 300000));
-                    $childPhysic = $this->mutateVector($actor->metrics['physic'] ?? ActorEntity::defaultPhysicVector(), $mutationRate, new SimulationRng((int) ($universe->seed ?? 0), $snapshotTick, ($actor->id ?? 0) + 400000));
+                    $childTraits = $this->mutateVector($actor->traits ?? [], $mutationRate, new SimulationRng($seed, $snapshotTick, ($actor->id ?? 0) + 300000));
+                    $childPhysic = $this->mutateVector($actor->metrics['physic'] ?? ActorEntity::defaultPhysicVector(), $mutationRate, new SimulationRng($seed, $snapshotTick, ($actor->id ?? 0) + 400000));
                     $childEnergy = $energy * $reproduceEnergyRatioChild;
                     $energy -= $reproduceCost;
                     $childMetrics = [
-                            'physic' => $childPhysic,
-                            'spawned_at_tick' => $snapshotTick,
-                            'energy' => $childEnergy,
-                            'max_energy' => $metrics['max_energy'] ?? $energyMaxDefault,
-                            'metabolism' => $metrics['metabolism'] ?? $metabolismBase,
-                        ];
-                        $childCulture = $this->inheritCultureWithMutation(
-                            $actor->metrics['culture'] ?? null,
-                            $mutationRate,
-                            new SimulationRng((int) ($universe->seed ?? 0), $snapshotTick, ($actor->id ?? 0) + 500000)
-                        );
-                        if ($childCulture !== null) {
-                            $childMetrics['culture'] = $childCulture;
-                        }
-                        $child = $this->spawnActorAction->handle([
-                            'universe_id' => $universe->id,
-                            'name' => $actor->name . ' Jr.',
-                            'archetype' => $actor->archetype,
-                            'traits' => $childTraits,
-                            'metrics' => $childMetrics,
-                            'generation' => ($actor->generation ?? 1) + 1,
-                        ]);
-                    Log::info("Intelligence: Actor {$actor->name} ({$actor->id}) reproduced in Universe {$universe->id}, child {$child->name}.");
+                        'physic' => $childPhysic,
+                        'spawned_at_tick' => $snapshotTick,
+                        'energy' => $childEnergy,
+                        'max_energy' => $metrics['max_energy'] ?? $energyMaxDefault,
+                        'metabolism' => $metrics['metabolism'] ?? $metabolismBase,
+                    ];
+                    $childCulture = $this->inheritCultureWithMutation(
+                        $actor->metrics['culture'] ?? null,
+                        $mutationRate,
+                        new SimulationRng($seed, $snapshotTick, ($actor->id ?? 0) + 500000)
+                    );
+                    if ($childCulture !== null) $childMetrics['culture'] = $childCulture;
+                    
+                    $childEntity = $this->spawnActorAction->handle([
+                        'universe_id' => $universeId,
+                        'name' => $actor->name . ' Jr.',
+                        'archetype' => $actor->archetype,
+                        'traits' => $childTraits,
+                        'metrics' => $childMetrics,
+                        'generation' => ($actor->generation ?? 1) + 1,
+                    ]);
+                    $newActors[] = $childEntity;
+                    Log::info("Intelligence: Actor {$actor->name} ({$actor->id}) reproduced in Universe {$universeId}, child {$childEntity->name}.");
                 }
             }
 
@@ -130,41 +133,36 @@ class ProcessActorEnergyAction
 
             if ($energy <= 0) {
                 $actor->isAlive = false;
-                Log::info("Intelligence: Actor {$actor->name} ({$actor->id}) starved (energy <= 0) in Universe {$universe->id}.");
+                Log::info("Intelligence: Actor {$actor->name} ({$actor->id}) starved (energy <= 0) in Universe {$universeId}.");
             }
-
             $actor->metrics = $metrics;
-            $this->actorRepository->save($actor);
         }
 
-        // Resource regeneration (per-zone; biome factor from Ecological Phase Transition)
+        // Resource regeneration
         if (!empty($zones) && $resourceRegenRate > 0) {
             foreach ($zones as &$zone) {
-                if (!isset($zone['state'])) {
-                    $zone['state'] = [];
-                }
+                if (!isset($zone['state'])) $zone['state'] = [];
                 $foodKey = array_key_exists('food', $zone['state']) ? 'food' : 'resources';
                 $current = (float) ($zone['state'][$foodKey] ?? 0);
                 $biomeFactor = \App\Services\Simulation\EcologicalPhaseTransitionEngine::resourceRegenFactorForZone($zone['state']);
                 $zone['state'][$foodKey] = $current + $resourceRegenRate * $ticks * $biomeFactor;
-                $zonesModified = true;
             }
         }
 
-        if ($zonesModified) {
-            $stateVector['zones'] = $zones;
-            $this->universeRepository->update($universe->id, ['state_vector' => $stateVector]);
+        $state->set('zones', $zones);
+        if (!empty($newActors)) {
+            $state->setActorEntities(array_merge($state->getActorEntities(), $newActors));
         }
     }
 
-    private function getZonesFromUniverse(Universe $universe): array
+    public function handle(Universe $universe, array $simulationResponse): void
     {
-        $stateVector = $universe->state_vector;
-        if (is_string($stateVector)) {
-            $stateVector = json_decode($stateVector, true) ?? [];
-        }
-        $zones = $stateVector['zones'] ?? [];
-        return is_array($zones) ? $zones : [];
+        // Deprecated
+    }
+
+    private function getZonesFromState(\App\Simulation\Runtime\State\WorldState $state): array
+    {
+        return $state->get('zones', []);
     }
 
     /**

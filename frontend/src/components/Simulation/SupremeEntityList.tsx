@@ -14,6 +14,7 @@ interface SupremeEntity {
     domain: string;
     description: string;
     power_level: number;
+    karma: number; // Nợ nhân quả
     alignment: Record<string, number>;
     status: string;
     ascended_at_tick: number;
@@ -69,6 +70,11 @@ export function SupremeEntityList({ universeId }: { universeId: number }) {
                                         <div className="text-xs font-mono text-amber-400 font-bold">
                                             PWR: {entity.power_level.toFixed(2)}
                                         </div>
+                                        {entity.karma !== undefined && (
+                                            <div className={`text-[9px] font-bold font-mono ${Math.abs(entity.karma) > 50 ? 'text-rose-400 animate-pulse' : 'text-slate-500'}`}>
+                                                KARMA: {entity.karma.toFixed(1)}
+                                            </div>
+                                        )}
                                         <div className="text-[9px] text-slate-500 uppercase">
                                             Level
                                         </div>

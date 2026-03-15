@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Universe extends Model
 {
     protected $fillable = [
-        'world_id', 'saga_id', 'multiverse_id', 'parent_universe_id', 'forked_at_tick',
+        'world_id', 'multiverse_id', 'parent_universe_id', 'forked_at_tick',
         'seed', 'current_tick', 'level', 'epoch', 'status', 'state_vector', 'engine_manifest', 'name',
         'observation_load', 'last_observed_at', 'observer_bonus',
         'structural_coherence', 'entropy', 'kernel_genome', 'fitness_score',
@@ -30,11 +30,6 @@ class Universe extends Model
     public function world(): BelongsTo
     {
         return $this->belongsTo(World::class);
-    }
-
-    public function saga(): BelongsTo
-    {
-        return $this->belongsTo(Saga::class);
     }
 
     public function multiverse(): BelongsTo

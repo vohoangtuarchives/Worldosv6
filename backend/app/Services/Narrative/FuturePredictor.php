@@ -5,7 +5,7 @@ namespace App\Services\Narrative;
 use App\Models\UniverseSnapshot;
 
 /**
- * Builds a structured summary from state vector / snapshot for prophecy prompt.
+ * Builds a structured summary from state vector / snapshot for causal_trajectory prompt.
  */
 class FuturePredictor
 {

@@ -9,7 +9,7 @@ use App\Actions\Simulation\RunMicroModeAction;
 use App\Actions\Simulation\ForkUniverseAction;
 use App\Actions\Simulation\TimelineMergeAction;
 use App\Repositories\UniverseRepository;
-use App\Services\Saga\SagaService;
+use App\Services\Orchestrator\ImplicitOrchestratorService;
 use App\Services\Simulation\AttractorEngine;
 use App\Services\Simulation\DynamicAttractorEngine;
 use App\Services\Simulation\EventTriggerProcessor;
@@ -19,6 +19,8 @@ use App\Modules\Simulation\Services\EpochEngine;
 use App\Modules\Simulation\Services\ObservationInterferenceEngine;
 use App\Modules\Simulation\Services\TrajectoryModelingEngine;
 use App\Simulation\Support\SimulationRandom;
+use App\Models\UniverseSnapshot;
+use App\Simulation\Runtime\Domain\UniverseState;
 use Illuminate\Contracts\Queue\ShouldQueue;
 
 class EvaluateSimulationResult
@@ -28,7 +30,7 @@ class EvaluateSimulationResult
         protected ApplyMythScarAction $applyMythScarAction,
         protected RunMicroModeAction $runMicroModeAction,
         protected ForkUniverseAction $forkUniverseAction,
-        protected SagaService $sagaService,
+        protected ImplicitOrchestratorService $orchestrator,
         protected UniverseRepository $universeRepository,
         protected UniverseRepositoryInterface $simulationUniverseRepository,
         protected \App\Modules\Simulation\Services\PressureCalculator $pressureCalculator,
@@ -70,7 +72,7 @@ class EvaluateSimulationResult
         protected \App\Services\Narrative\NarrativeScheduler $narrativeScheduler,
         protected \App\Services\Narrative\EraDetector $eraDetector,
         protected \App\Services\Narrative\ReligionSpreadEngine $religionSpreadEngine,
-        protected \App\Services\Narrative\ProphecyFulfillment $prophecyFulfillment,
+        protected \App\Services\Narrative\CausalTrajectoryFulfillment $causal_trajectoryFulfillment,
         protected \App\Services\Simulation\CosmicEnergyPoolService $cosmicEnergyPoolService,
         protected \App\Modules\Simulation\Services\AdaptiveSchedulerService $adaptiveScheduler,
     ) {}
@@ -217,7 +219,10 @@ class EvaluateSimulationResult
             // 9. Great Filter, Ascension, Supreme Entities & Convergence (Handled by Institutions Module)
             $this->greatFilterEngine->process($universe, (int)$snapshot->tick, $snapshot->state_vector ?? [], $rng);
             $this->convergenceEngine->process($universe, (int)$snapshot->tick);
-            $this->ascensionEngine->evaluate($universe, $snapshot);
+            
+            $uState = UniverseState::fromModels($universe, $snapshot);
+            $this->ascensionEngine->evaluate($uState);
+            
             $this->omegaPointEngine->process($universe, $snapshot);
 
             // 9b. Ideology Evolution & Great Person (Phase K)
@@ -293,12 +298,12 @@ class EvaluateSimulationResult
 
     protected function handleFork($universe, int $tick, array $decision): void
     {
-        $saga = $this->sagaService->ensureSaga($universe);
+        $saga = $this->orchestrator->ensureSaga($universe);
         if (!$saga) {
             return;
         }
 
-        $activeCount = \App\Models\Universe::where('saga_id', $saga->id)
+        $activeCount = \App\Models\Universe::where($saga->id)
             ->where('status', 'active')
             ->count();
 
@@ -485,7 +490,7 @@ class EvaluateSimulationResult
         }
 
         // Compile mythic text (compiler uses historical_block in prompt when present)
-        $narrative = $this->narrativeCompiler->compile($perceivedData, $noise);
+        $narrative = $this->narrativeCompiler->setUniverse($universe)->compile($perceivedData, $noise);
 
         $rawPayload = [
             'action' => 'legacy_event',
@@ -521,19 +526,19 @@ class EvaluateSimulationResult
         // Schedule LLM narrative via queue (no sync LLM call)
         $this->narrativeScheduler->scheduleEventForChronicle($universe->id, $chronicle->id);
 
-        // Narrative 4-tier + Belief loop: interval-based jobs (era, religion spread, prophecy, legend)
+        // Narrative 4-tier + Belief loop: interval-based jobs (era, religion spread, causal_trajectory, legend)
         $this->runNarrativeIntervals($universe, $snapshot);
     }
 
     /**
-     * Run narrative interval jobs: era (every era_interval), religion spread, prophecy, legend.
+     * Run narrative interval jobs: era (every era_interval), religion spread, causal_trajectory, legend.
      */
     protected function runNarrativeIntervals(\App\Models\Universe $universe, $snapshot): void
     {
         $tick = (int) $snapshot->tick;
         $eraInterval = (int) config('worldos.narrative.era_interval', 200);
         $religionInterval = (int) config('worldos.narrative.religion_interval', 200);
-        $prophecyInterval = (int) config('worldos.narrative.prophecy_interval', 500);
+        $causal_trajectoryInterval = (int) config('worldos.narrative.causal_trajectory_interval', 500);
         $legendInterval = (int) config('worldos.narrative.legend_interval', 100);
 
         if ($tick > 0 && $eraInterval > 0 && $this->adaptiveScheduler->shouldRun('era_detect', $universe, $snapshot)) {
@@ -556,12 +561,12 @@ class EvaluateSimulationResult
             }
         }
 
-        if ($prophecyInterval > 0 && $this->adaptiveScheduler->shouldRun('prophecy', $universe, $snapshot)) {
+        if ($causal_trajectoryInterval > 0 && $this->adaptiveScheduler->shouldRun('causal_trajectory', $universe, $snapshot)) {
             try {
-                $this->narrativeScheduler->scheduleProphecy($universe->id, $tick);
-                $this->prophecyFulfillment->evaluateForUniverse($universe->id, $tick);
+                $this->narrativeScheduler->scheduleCausalTrajectory($universe->id, $tick);
+                $this->causal_trajectoryFulfillment->evaluateForUniverse($universe->id, $tick);
             } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::warning('Narrative interval: Prophecy failed: ' . $e->getMessage());
+                \Illuminate\Support\Facades\Log::warning('Narrative interval: CausalTrajectory failed: ' . $e->getMessage());
             }
         }
 
@@ -578,12 +583,12 @@ class EvaluateSimulationResult
     }
 
     /**
-     * Build belief context for ActorDecisionEngine: religion, prophecy belief, legend level.
+     * Build belief context for ActorDecisionEngine: religion, causal_trajectory belief, legend level.
      */
     protected function getBeliefContextForActor(\App\Models\Actor $actor): array
     {
         $hasReligion = $actor->religions()->exists();
-        $hasProphecyBelief = $actor->prophecyBeliefs()->exists();
+        $hasCausalTrajectoryBelief = $actor->causal_trajectoryBeliefs()->exists();
         $legendLevel = (int) $actor->legends()->max('legend_level');
         if ($legendLevel === 0 && $actor->supremeEntity) {
             $legendaryAgent = \App\Models\LegendaryAgent::where('original_agent_id', $actor->id)->first();
@@ -594,7 +599,7 @@ class EvaluateSimulationResult
         }
         return [
             'has_religion' => $hasReligion,
-            'has_prophecy_belief' => $hasProphecyBelief,
+            'has_causal_trajectory_belief' => $hasCausalTrajectoryBelief,
             'legend_level' => $legendLevel,
         ];
     }

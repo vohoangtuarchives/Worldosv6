@@ -54,8 +54,10 @@ class ChaosEngine
             return;
         }
 
-        // Extremely low chance to break reality per tick (0.01%)
-        if (rand(0, 10000) > 1) {
+        $prng = \App\Services\Simulation\SimulationPRNG::forUniverse($universe);
+
+        // Rare full anomaly
+        if ($prng->nextInt(0, 10000) > 1) {
             return;
         }
 
@@ -65,8 +67,12 @@ class ChaosEngine
     protected function triggerParadox(Universe $universe): void
     {
         // Pick a random paradox
-        $paradoxes = ['entropy_inversion', 'sci_singularity', 'zone_collapse'];
-        $paradox = $paradoxes[array_rand($paradoxes)];
+        $paradoxes = ['entropy_inversion', 'sci_singularity', 'zone_collapse',
+            'time_loop',
+        ];
+
+        $prng = clone \App\Services\Simulation\SimulationPRNG::forUniverse($universe);
+        $paradox = $prng->randomElement($paradoxes);
 
         switch ($paradox) {
             case 'entropy_inversion':

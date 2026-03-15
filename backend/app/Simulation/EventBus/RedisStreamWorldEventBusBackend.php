@@ -41,7 +41,16 @@ final class RedisStreamWorldEventBusBackend implements WorldEventBusBackendInter
                 'causes' => json_encode($event->causes),
                 'at' => now()->toIso8601String(),
             ];
-            Redis::xAdd($streamKey, '*', $payload, self::MAX_LEN);
+            if (config('database.redis.client') === 'predis') {
+                $flat = [];
+                foreach ($payload as $k => $v) {
+                    $flat[] = $k;
+                    $flat[] = (string)$v;
+                }
+                Redis::connection()->executeRaw(['XADD', $streamKey, 'MAXLEN', '~', (string)self::MAX_LEN, '*', ...$flat]);
+            } else {
+                Redis::xAdd($streamKey, '*', $payload, self::MAX_LEN);
+            }
         } catch (\Throwable $e) {
             Log::warning('WorldEventBus Redis XADD failed: ' . $e->getMessage(), ['event_id' => $event->id]);
         }

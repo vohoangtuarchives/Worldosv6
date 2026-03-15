@@ -1,122 +1,147 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
+import { useSimulation } from "@/context/SimulationContext";
 import { api } from "@/lib/api";
 import { HeroCard, type HeroCardEntity } from "@/components/Simulation/HeroCard";
-import { useSimulation } from "@/context/SimulationContext";
+import { Sparkles, Users, Search, Filter, History } from "lucide-react";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 export default function HeroesPage() {
-  const { universeId: contextUniverseId } = useSimulation();
-  const [filter, setFilter] = useState<string>("All");
+  const { universeId } = useSimulation();
   const [heroes, setHeroes] = useState<HeroCardEntity[]>([]);
   const [loading, setLoading] = useState(true);
-  const [universeId, setUniverseId] = useState<number | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterType, setFilterType] = useState<string>("ALL");
 
   useEffect(() => {
-    const id = contextUniverseId ?? (typeof window !== "undefined" ? Number(window.localStorage.getItem("universe_id")) : null);
-    setUniverseId(id ?? null);
-  }, [contextUniverseId]);
+    if (!universeId) return;
 
-  useEffect(() => {
-    if (universeId == null) {
-      setLoading(false);
-      setHeroes([]);
-      return;
-    }
-    setLoading(true);
-    api
-      .greatPersons(universeId)
-      .then((data: HeroCardEntity[]) => {
+    const fetchHeroes = async () => {
+      try {
+        setLoading(true);
+        const data = await api.greatPersons(universeId);
         setHeroes(Array.isArray(data) ? data : []);
-      })
-      .catch(() => setHeroes([]))
-      .finally(() => setLoading(false));
+      } catch (err) {
+        console.error("Failed to fetch heroes:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchHeroes();
   }, [universeId]);
 
-  const filteredHeroes = useMemo(() => {
-    if (filter === "All") return heroes;
-    return heroes.filter((h) => h.domain === filter || h.entity_type === filter || getTypeLabel(h.entity_type) === filter);
-  }, [heroes, filter]);
+  const filteredHeroes = heroes.filter((h) => {
+    const matchesSearch = h.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesFilter = filterType === "ALL" || h.entity_type.toUpperCase().includes(filterType);
+    return matchesSearch && matchesFilter;
+  });
 
-  const domains = useMemo(() => {
-    const set = new Set<string>();
-    heroes.forEach((h) => {
-      if (h.domain) set.add(h.domain);
-      set.add(getTypeLabel(h.entity_type));
-    });
-    return ["All", ...Array.from(set).sort()];
-  }, [heroes]);
+  const heroTypes = [
+    { key: "ALL", label: "Tất cả" },
+    { key: "PROPHET", label: "Thánh Nhân" },
+    { key: "GENERAL", label: "Tướng Quân" },
+    { key: "SCIENTIST", label: "Học Giả" },
+    { key: "RULER", label: "Minh Quân" },
+    { key: "MERCHANT", label: "Phú Hộ" },
+    { key: "ARTIST", label: "Nghệ Sĩ" },
+  ];
 
   return (
-    <div className="flex h-[calc(100vh-3.5rem)]">
-      <div className="w-64 border-r border-border bg-card/40 p-4 space-y-6 overflow-y-auto shrink-0">
-        <div>
-          <div className="font-semibold text-lg text-foreground px-2 mb-2">Loại vĩ nhân</div>
-          <nav className="space-y-1">
-            {domains.map((domain) => (
-              <button
-                key={domain}
-                onClick={() => setFilter(domain)}
-                className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
-                  filter === domain ? "bg-muted text-amber-400 font-medium" : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
-                }`}
+    <div className="flex-1 flex flex-col bg-background text-foreground animate-in fade-in duration-500">
+      <header className="p-6 border-b border-border/50 bg-card/20 backdrop-blur-md sticky top-0 z-20">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div>
+             <h1 className="text-2xl font-black tracking-tighter flex items-center gap-2 text-gradient-amber">
+               <Sparkles className="w-6 h-6 text-amber-400" />
+               Đền Thờ Anh Hùng
+             </h1>
+             <p className="text-xs text-muted-foreground mt-1 uppercase tracking-widest font-medium opacity-70">
+               Những cá nhân kiệt xuất làm thay đổi quỹ đạo nhị phân
+             </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-4">
+             <div className="relative group">
+               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-amber-400 transition-colors" />
+               <input 
+                type="text" 
+                placeholder="Tìm tên vĩ nhân..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 pr-4 py-2 bg-card/40 border border-border/50 rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-amber-500/50 w-full md:w-64 transition-all"
+               />
+             </div>
+
+             <div className="flex items-center gap-1 bg-card/40 border border-border/50 rounded-xl p-1 overflow-x-auto max-w-[calc(100vw-2rem)] custom-scrollbar">
+                {heroTypes.map((type) => (
+                  <button
+                    key={type.key}
+                    onClick={() => setFilterType(type.key)}
+                    className={`px-3 py-1.5 text-[10px] font-bold uppercase tracking-tighter rounded-lg transition-all whitespace-nowrap ${
+                      filterType === type.key 
+                        ? "bg-amber-500/20 text-amber-400 border border-amber-500/40 shadow-sm"
+                        : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                    }`}
+                  >
+                    {type.label}
+                  </button>
+                ))}
+             </div>
+          </div>
+        </div>
+      </header>
+
+      <main className="flex-1 p-6 relative">
+        {loading ? (
+          <div className="flex flex-col items-center justify-center h-96 gap-4">
+            <LoadingSpinner size="lg" className="text-amber-500" />
+            <p className="text-sm font-mono text-muted-foreground animate-pulse">Đang triệu hồi các linh hồn kiệt xuất...</p>
+          </div>
+        ) : filteredHeroes.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6 pb-20">
+            {filteredHeroes.map((hero) => (
+              <HeroCard key={hero.id} entity={hero} universeId={universeId} />
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center h-96 space-y-4">
+            <div className="p-6 rounded-full bg-card/20 border border-dashed border-border/50">
+               <Users className="w-12 h-12 text-muted-foreground/30" />
+            </div>
+            <div className="text-center">
+               <h3 className="text-lg font-bold text-foreground/80">Không tìm thấy vĩ nhân nào</h3>
+               <p className="text-sm text-white/40 mt-1 max-w-sm">
+                 Vũ trụ này có vẻ đang ở giai đoạn hỗn mang hoặc chưa đạt đủ áp lực lịch sử để kết tinh các anh hùng.
+               </p>
+            </div>
+            {(searchTerm || filterType !== "ALL") && (
+              <button 
+                onClick={() => { setSearchTerm(""); setFilterType("ALL"); }}
+                className="text-xs font-bold text-amber-500 hover:text-amber-400 uppercase tracking-widest mt-4 flex items-center gap-2"
               >
-                {domain}
-                <span className="ml-auto float-right text-xs opacity-50">
-                  {domain === "All" ? heroes.length : heroes.filter((h) => h.domain === domain || getTypeLabel(h.entity_type) === domain).length}
-                </span>
+                <Filter className="w-3 h-3" /> Xóa bộ lọc
               </button>
-            ))}
-          </nav>
-        </div>
-      </div>
-
-      <div className="flex-1 overflow-y-auto p-8 pt-6">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-3xl font-bold tracking-tight text-gradient-cosmos glow-cosmos-text">
-            Vĩ nhân / Heroes
-          </h2>
-          {universeId != null && (
-            <span className="text-sm text-muted-foreground font-mono">Universe {universeId}</span>
-          )}
-        </div>
-
-        {loading && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="rounded-xl border border-border bg-card/40 h-64 animate-pulse" />
-            ))}
+            )}
           </div>
         )}
 
-        {!loading && filteredHeroes.length === 0 && (
-          <p className="text-muted-foreground">
-            {universeId == null
-              ? "Chọn universe để xem danh sách vĩ nhân."
-              : "Chưa có vĩ nhân nào trong universe này. Vĩ nhân xuất hiện khi simulation đạt điều kiện (entropy, institutions, cooldown)."}
-          </p>
-        )}
-
-        {!loading && filteredHeroes.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredHeroes.map((entity) => (
-              <HeroCard key={entity.id} entity={entity} universeId={universeId} />
-            ))}
-          </div>
-        )}
-      </div>
+        {/* Footer info block */}
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-xl border-t border-border/50 z-30 flex items-center justify-center gap-8 shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
+           <div className="flex items-center gap-2">
+              <History className="w-4 h-4 text-muted-foreground" />
+              <div className="flex flex-col">
+                 <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-tighter">Tổng số vĩ nhân</span>
+                 <span className="text-sm font-mono font-bold text-amber-400">{heroes.length}</span>
+              </div>
+           </div>
+           <div className="w-px h-8 bg-border/50" />
+           <div className="flex items-center gap-2 text-xs text-muted-foreground italic">
+              "Kinh điển sinh ra từ sự hỗn mang, anh hùng xuất hiện khi trật tự sụp đổ."
+           </div>
+        </div>
+      </main>
     </div>
   );
-}
-
-function getTypeLabel(entityType: string): string {
-  const key = (entityType || "").replace(/^great_person_/, "");
-  const labels: Record<string, string> = {
-    prophet: "Tiên tri",
-    general: "Đại tướng",
-    sage: "Hiền nhân",
-    builder: "Kiến trúc sư",
-    scholar: "Đại học giả",
-  };
-  return labels[key] ?? entityType;
 }

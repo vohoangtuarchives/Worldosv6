@@ -125,6 +125,17 @@ export default function NarrativeStudio() {
   const [epicChronicleError, setEpicChronicleError] = useState<string | null>(null);
   const [epicFromTick, setEpicFromTick] = useState<number | null>(null);
   const [epicToTick, setEpicToTick] = useState<number | null>(null);
+  const [filterKind, setFilterKind] = useState<string>("all");
+
+  const FACT_KINDS = [
+    { label: "Tất cả", value: "all" },
+    { label: "Biên niên", value: "chronicle" },
+    { label: "Biến động", value: "shift" },
+    { label: "Trường VM", value: "civilization-field" },
+    { label: "Quân sự", value: "militarism-shift" },
+    { label: "Tâm linh", value: "spirituality-shift" },
+    { label: "Định chế", value: "institutional-shift" },
+  ];
 
   useEffect(() => {
     let active = true;
@@ -215,10 +226,16 @@ export default function NarrativeStudio() {
     setActiveVersionId(null);
   }, [selectedUniverseId]);
 
-  const facts = useMemo(
-    () => buildNarrativeFacts({ universe: selectedUniverse, snapshots, chronicles }),
-    [selectedUniverse, snapshots, chronicles]
-  );
+  const filteredFacts = useMemo(() => {
+    const rawFacts = buildNarrativeFacts({ universe: selectedUniverse, snapshots, chronicles });
+    if (filterKind === "all") return rawFacts;
+    if (filterKind === "shift") {
+      return rawFacts.filter(f => f.kind.endsWith("-shift"));
+    }
+    return rawFacts.filter(f => f.kind === filterKind);
+  }, [selectedUniverse, snapshots, chronicles, filterKind]);
+
+  const facts = filteredFacts;
 
   const generatedDraft = useMemo(
     () => buildPresetDraft(activePreset, selectedUniverse, facts),
@@ -428,6 +445,22 @@ export default function NarrativeStudio() {
                 <h2 className="text-lg font-semibold">Dữ liệu WorldOS</h2>
                 <p className="text-sm text-muted-foreground">Dữ liệu raw từ mô phỏng: snapshot và biên niên.</p>
               </div>
+            </div>
+
+            <div className="mb-4 flex flex-wrap gap-1.5 p-1 rounded-lg bg-background/40 border border-border/40">
+              {FACT_KINDS.map((k) => (
+                <button
+                  key={k.value}
+                  onClick={() => setFilterKind(k.value)}
+                  className={`px-2.5 py-1 text-[10px] uppercase tracking-wider font-bold rounded-md transition-all ${
+                    filterKind === k.value
+                      ? "bg-primary text-primary-foreground shadow-lg"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                  }`}
+                >
+                  {k.label}
+                </button>
+              ))}
             </div>
 
             <div className="space-y-3">

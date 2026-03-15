@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Saga;
 use App\Models\Universe;
 use App\Models\World;
 use App\Simulation\EngineProductMapping;
@@ -279,6 +278,9 @@ class WorldosEnginesController extends Controller
             'updated_tick' => $knowledgeGraph['updated_tick'] ?? null,
         ];
         $ideologyConversion = $sv['ideology_conversion'] ?? null;
+        $cosmic = $sv['cosmic'] ?? [];
+        $meta = $sv['meta'] ?? [];
+        
         return response()->json([
             'universe_id' => $universe->id,
             'current_tick' => $universe->current_tick,
@@ -289,6 +291,15 @@ class WorldosEnginesController extends Controller
             'discovery' => $discovery,
             'knowledge_graph' => $knowledgeGraphSummary,
             'ideology_conversion' => $ideologyConversion,
+            // Phase 69/70 V10 Data
+            'zenith' => [
+                'data_mass' => $cosmic['data_mass'] ?? 0,
+                'time_dilation' => $cosmic['time_dilation'] ?? 0,
+                'time_saliency' => $meta['time_saliency'] ?? 0,
+                'active_myths' => count($meta['active_myths'] ?? []),
+                'meaning_systems' => count($meta['meaning_systems'] ?? []),
+                'mutation_rate' => $meta['rule_mutation_rate'] ?? 0,
+            ]
         ]);
     }
 }

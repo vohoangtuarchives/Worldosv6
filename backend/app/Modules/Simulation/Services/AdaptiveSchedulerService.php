@@ -62,7 +62,7 @@ class AdaptiveSchedulerService
             'great_person' => (int) config('worldos.pulse.great_person_interval', 50),
             'era_detect' => (int) config('worldos.narrative.era_interval', 200),
             'religion_spread' => (int) config('worldos.narrative.religion_interval', 200),
-            'prophecy' => (int) config('worldos.narrative.prophecy_interval', 500),
+            'causal_trajectory' => (int) config('worldos.narrative.causal_trajectory_interval', 500),
             'legend' => (int) config('worldos.narrative.legend_interval', 100),
             default => 10,
         };

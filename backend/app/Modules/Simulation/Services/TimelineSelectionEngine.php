@@ -2,7 +2,6 @@
 
 namespace App\Modules\Simulation\Services;
 
-use App\Models\Saga;
 use App\Models\Universe;
 use App\Models\World;
 use Illuminate\Support\Collection;
@@ -34,7 +33,7 @@ class TimelineSelectionEngine
      */
     public function selectBestForSaga(Saga $saga, ?int $limit = null): Collection
     {
-        $universes = Universe::where('saga_id', $saga->id)->get();
+        $universes = Universe::where($saga->id)->get();
         return $this->rankAndLimit($universes, $limit);
     }
 

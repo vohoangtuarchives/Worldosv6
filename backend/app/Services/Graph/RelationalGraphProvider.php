@@ -61,6 +61,44 @@ class RelationalGraphProvider implements GraphProviderInterface
             ];
         }
 
+        // 4. Ecology Nodes (Zones)
+        $sv = is_string($universe->state_vector) ? json_decode($universe->state_vector, true) : ($universe->state_vector ?? []);
+        $zones = $sv['zones'] ?? [];
+        foreach ($zones as $idx => $zone) {
+            $state = $zone['state'] ?? $zone;
+            $nodes[] = [
+                'id' => "ecology_zone_{$universeId}_{$idx}",
+                'type' => 'Ecology',
+                'label' => "Zone {$idx}: " . ($state['ecosystem_state'] ?? 'Stable'),
+                'data' => [
+                    'temperature' => $state['temperature'] ?? null,
+                    'biome' => $state['ecosystem_state'] ?? null,
+                    'ice' => $state['ice_coverage'] ?? 0,
+                ]
+            ];
+        }
+
+        // 5. Actors (Heroic or High Influence ones first)
+        $actors = \App\Models\Actor::where('universe_id', $universeId)
+            ->where('is_alive', true)
+            ->orderByDesc('metrics->influence')
+            ->limit(40)
+            ->get();
+
+        foreach ($actors as $actor) {
+            $nodes[] = [
+                'id' => "actor_{$actor->id}",
+                'type' => 'Actor',
+                'label' => $actor->name,
+                'data' => [
+                    'id' => $actor->id,
+                    'archetype' => $actor->archetype,
+                    'is_heroic' => $actor->is_heroic ?? false,
+                    'influence' => $actor->metrics['influence'] ?? 0,
+                ]
+            ];
+        }
+
         return $nodes;
     }
 
@@ -105,6 +143,39 @@ class RelationalGraphProvider implements GraphProviderInterface
                     'target' => "scar_{$scar->id}",
                     'type' => 'INFLICTED_BY'
                 ];
+            }
+        }
+
+        // 3. Ecology Relations (Latest Snapshot to Zones)
+        $universe = Universe::where('id', $universeId)->first();
+        $sv = is_string($universe->state_vector) ? json_decode($universe->state_vector, true) : ($universe->state_vector ?? []);
+        $zones = $sv['zones'] ?? [];
+        foreach ($zones as $idx => $zone) {
+            $edges[] = [
+                'id' => "ecology_link_{$universeId}_{$idx}",
+                'source' => "universe_{$universeId}",
+                'target' => "ecology_zone_{$universeId}_{$idx}",
+                'type' => 'SUSTAINS'
+            ];
+        }
+
+        // 4. Social Relations (Trust, Loyalty, Rivalry)
+        $socialGraph = $sv['social_graph'] ?? [];
+        foreach (['trust', 'loyalty', 'rivalry'] as $type) {
+            $relations = $socialGraph[$type] ?? [];
+            foreach ($relations as $rel) {
+                // rel format: [from_id, to_id, value]
+                if (is_array($rel) && count($rel) >= 2) {
+                    $edges[] = [
+                        'id' => "social_{$type}_{$rel[0]}_{$rel[1]}",
+                        'source' => "actor_{$rel[0]}",
+                        'target' => "actor_{$rel[1]}",
+                        'type' => strtoupper($type),
+                        'data' => [
+                            'weight' => $rel[2] ?? 0.5
+                        ]
+                    ];
+                }
             }
         }
 

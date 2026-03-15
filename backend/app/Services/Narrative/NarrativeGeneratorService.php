@@ -104,6 +104,7 @@ class NarrativeGeneratorService
             "wrote a treatise on philosophy.",
             "traveled to a distant land."
         ];
-        return $events[array_rand($events)];
+        $prng = \App\Services\Simulation\SimulationPRNG::forUniverse($universe);
+        return $prng->randomElement($events);
     }
 }

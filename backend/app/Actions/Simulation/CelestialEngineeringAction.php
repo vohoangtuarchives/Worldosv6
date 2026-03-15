@@ -18,7 +18,7 @@ class CelestialEngineeringAction
     /**
      * Thực thi các can thiệp vĩ mô (Edicts/Axiom Shifts) từ Ngai vàng Kiến trúc sư (§1.4, §50).
      */
-    public function executeMacro(int $worldId, string $type, array $payload): void
+    public function executeMacro(int $worldId, string $type, array $payload, ?Universe $universe = null): void
     {
         $world = World::findOrFail($worldId);
 
@@ -30,7 +30,11 @@ class CelestialEngineeringAction
         }
 
         if ($type === 'macro_edict') {
-            $this->omenService->applyOmenToEdict($payload);
+            // If universe is not provided, try to find the first active one from the world
+            $targetUniverse = $universe ?? $world->universes()->where('status', 'active')->first();
+            if ($targetUniverse) {
+                $this->omenService->applyOmenToEdict($targetUniverse, $payload);
+            }
         }
 
         switch ($type) {

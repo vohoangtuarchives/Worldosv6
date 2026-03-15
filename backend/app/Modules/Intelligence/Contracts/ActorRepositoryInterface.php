@@ -19,6 +19,11 @@ interface ActorRepositoryInterface
     public function findActiveByUniverse(int $universeId): array;
     
     public function save(ActorEntity $actor): void;
+
+    /**
+     * @param ActorEntity[] $actors
+     */
+    public function saveBatch(array $actors): void;
     
     public function delete(int $id): void;
     

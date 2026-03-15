@@ -6,6 +6,12 @@ use App\Models\Universe;
 use App\Models\UniverseInteraction;
 use App\Models\Chronicle;
 use App\Actions\Simulation\MergeUniverseAction;
+use App\Services\Simulation\RuleVmService;
+use function config;
+use function app;
+use function now;
+use function abs;
+use function is_array;
 
 /**
  * Convergence Engine: Orchestrates the merging of multiverse timelines.
@@ -14,6 +20,7 @@ use App\Actions\Simulation\MergeUniverseAction;
 class ConvergenceEngine
 {
     public function __construct(
+        protected RuleVmService $ruleVm,
         protected ?MergeUniverseAction $mergeAction = null
     ) {}
 
@@ -69,12 +76,21 @@ class ConvergenceEngine
 
         if (!$alignA || !$alignB || !is_array($alignA) || !is_array($alignB)) return false;
 
-        // Similarity check: Difference in all 3 axes < 0.05
-        $diff = abs($alignA['spirituality'] - $alignB['spirituality']) +
-                abs($alignA['hardtech'] - $alignB['hardtech']) +
-                abs($alignA['entropy'] - $alignB['entropy']);
+        // Prepare State for DSL
+        $vmState = [
+            'diff_spirituality' => abs(($alignA['spirituality'] ?? 0) - ($alignB['spirituality'] ?? 0)),
+            'diff_hardtech' => abs(($alignA['hardtech'] ?? 0) - ($alignB['hardtech'] ?? 0)),
+            'diff_entropy' => abs(($alignA['entropy'] ?? 0) - ($alignB['entropy'] ?? 0)),
+            'entropy' => (float) ($a->state_vector['entropy'] ?? 0.5), // required for the same DSL file context
+        ];
 
-        return $diff < 0.15; // Threshold for convergence
+        $dslPath = 'legend/fate_bifurcation';
+        $tempState = \App\Simulation\Runtime\State\WorldState::fromArray(array_merge(
+            ['universe_id' => $a->id],
+            $vmState
+        ));
+        $this->ruleVm->evaluateAndApplyWithState($tempState, $dslPath, 0);
+        return (bool) $tempState->get('should_merge', false);
     }
 
     protected function triggerConvergence(Universe $a, Universe $b, int $tick): void
@@ -126,18 +142,27 @@ class ConvergenceEngine
         $vec = $universe->state_vector ?? [];
         $entropy = (float)($vec['entropy'] ?? 0.0);
 
-        if ($entropy > 0.99) {
+        // Evaluate DSL for Omega Point
+        $vmState = ['entropy' => $entropy];
+        $dslPath = 'legend/fate_bifurcation';
+        $tempState = \App\Simulation\Runtime\State\WorldState::fromArray(array_merge(
+            ['universe_id' => $universe->id],
+            $vmState
+        ));
+        $this->ruleVm->evaluateAndApplyWithState($tempState, $dslPath, $tick);
+        $isOmega = (bool) $tempState->get('is_omega_point', false);
+
+        if ($isOmega) {
             Chronicle::create([
                 'universe_id' => $universe->id,
                 'from_tick' => $tick,
                 'to_tick' => $tick,
                 'type' => 'omega_point',
                 'raw_payload' => [
-                'action' => 'legacy_event',
-                'description' => "ĐIỂM OMEGA: Vũ trụ đã chạm tới giới hạn tuyệt đối của sự tồn tại. Mọi cấu trúc vật chất và ý thức dần tan biến vào Hư vô vĩnh hằng."
-            ],
+                    'action' => 'legacy_event',
+                    'description' => "ĐIỂM OMEGA: Vũ trụ đã chạm tới giới hạn tuyệt đối của sự tồn tại. Mọi cấu trúc vật chất và ý thức dần tan biến vào Hư vô vĩnh hằng."
+                ],
             ]);
-            
             $universe->update(['status' => 'archived']);
         }
     }

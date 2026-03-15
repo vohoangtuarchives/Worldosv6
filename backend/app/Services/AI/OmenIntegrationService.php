@@ -2,6 +2,7 @@
 
 namespace App\Services\AI;
 
+use App\Models\Universe;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -15,13 +16,14 @@ class OmenIntegrationService
      * Get the current 'Cosmic Omen' based on external factors.
      * For demonstration, we simulate fetching news sentiment.
      */
-    public function getCurrentOmen(): array
+    public function getCurrentOmen(Universe $universe): array
     {
         // In a real production environment, this would call NewsAPI, RSS, or Twitter API.
         // We'll simulate a 'Reality Leak' here.
         
         $sentiments = ['positive', 'negative', 'neutral', 'volatile'];
-        $chosen = $sentiments[array_rand($sentiments)];
+        $prng = \App\Services\Simulation\SimulationPRNG::forUniverse($universe);
+        $chosen = $prng->randomElement($sentiments);
 
         $omens = [
             'positive' => [
@@ -56,9 +58,9 @@ class OmenIntegrationService
     /**
      * Apply the current Omen to a World state.
      */
-    public function applyOmenToEdict(array &$edictPayload): void
+    public function applyOmenToEdict(Universe $universe, array &$edictPayload): void
     {
-        $omen = $this->getCurrentOmen();
+        $omen = $this->getCurrentOmen($universe);
         
         $edictPayload['sci_impact'] = ($edictPayload['sci_impact'] ?? 0) + $omen['sci_modifier'];
         $edictPayload['entropy_impact'] = ($edictPayload['entropy_impact'] ?? 0) + $omen['entropy_modifier'];

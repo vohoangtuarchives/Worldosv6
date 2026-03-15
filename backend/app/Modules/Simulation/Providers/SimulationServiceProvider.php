@@ -51,6 +51,9 @@ class SimulationServiceProvider extends ServiceProvider
             \App\Modules\Simulation\Services\AutonomicEvolutionEngine::class
         );
 
+        // State Management (Phase 37)
+        $this->app->singleton(\App\Simulation\Runtime\State\StateManager::class);
+
         // Simulation Kernel (effect-based, deterministic tick) + Event Bus (Tier 3, Phase 5 Track A)
         $this->app->singleton(\App\Simulation\SimulationEventBus::class);
         $this->app->bind(\App\Simulation\Contracts\WorldEventBusBackendInterface::class, function ($app) {
@@ -111,6 +114,43 @@ class SimulationServiceProvider extends ServiceProvider
         $this->app->singleton(\App\Simulation\Engines\ReligionEngine::class);
         $this->app->singleton(\App\Simulation\Engines\ArtCultureEngine::class);
         $this->app->singleton(\App\Simulation\Engines\PsychologyEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\MultiverseOsmosisEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\MetaAttractorEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\CivilizationPhysicsEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\CausalHistoryEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\OmegaConvergenceEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\CausalBridgeEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\PostApotheosisEngine::class);
+        $this->app->singleton(\App\Services\Simulation\ObserverSpectrumService::class);
+        $this->app->singleton(\App\Simulation\Engines\ResonanceBleedingEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\DynamicLawEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\RealityAnchorEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\DeepTimeMemoryEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\HigherDimensionalEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\InfiniteRecursionEngine::class);
+        $this->app->singleton(\App\Simulation\Runtime\EventDrivenScheduler::class);
+        $this->app->singleton(\App\Simulation\Engines\IdealismEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\SingularityEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\AutopoieticEvolutionEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\InformationDensityEngine::class);
+        $this->app->singleton(\App\Services\Simulation\CausalCacheService::class);
+        $this->app->singleton(\App\Services\Simulation\RuleMutationService::class);
+        $this->app->singleton(\App\Services\Simulation\StructuralHashService::class);
+        $this->app->singleton(\App\Services\Simulation\HolographicCompressionService::class);
+        
+        // Advanced V10 Engines
+        $this->app->singleton(\App\Simulation\Engines\InformationPropagationEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\PowerStructureEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\CulturalAttractorEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\MythogenesisEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\MeaningEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\KnowledgeEvolutionEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\CivilizationPhaseTransitionEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\SingularityStabilityEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\AscensionEngine::class);
+        $this->app->singleton(\App\Services\Simulation\ZenithMetricsService::class);
+        $this->app->singleton(\App\Services\Simulation\ReasoningService::class);
+        $this->app->singleton(\App\Services\Simulation\CivilizationCollapseEngine::class);
         $this->app->tag(config('worldos.engine_registry.engines', []), 'simulation_engine');
         $this->app->singleton(\App\Simulation\EngineRegistry::class, function ($app) {
             $registry = new \App\Simulation\EngineRegistry();
@@ -134,18 +174,33 @@ class SimulationServiceProvider extends ServiceProvider
         });
 
         // Simulation Runtime: Tick Scheduler + Pipeline + Orchestrator (refactor from AdvanceSimulationAction)
-        $this->app->singleton(\App\Simulation\Runtime\Contracts\TickSchedulerInterface::class, \App\Simulation\Runtime\TickScheduler::class);
+        $this->app->singleton(\App\Services\Simulation\SimulationClock::class);
+        $this->app->singleton(\App\Simulation\Runtime\Contracts\TickSchedulerInterface::class, \App\Simulation\Runtime\PhaseScheduler::class);
         $this->app->singleton(\App\Simulation\Runtime\SimulationTickPipeline::class, function ($app) {
             $scheduler = $app->make(\App\Simulation\Runtime\Contracts\TickSchedulerInterface::class);
             $stageMap = [
-                'actor' => \App\Simulation\Runtime\Stages\ActorStage::class,
-                'culture' => \App\Simulation\Runtime\Stages\CultureStage::class,
+                // Phase: environment
+                'rule'         => \App\Simulation\Runtime\Stages\RuleStage::class,
+                'environment'  => \App\Simulation\Runtime\Stages\EnvironmentStage::class,
+                'physics'      => \App\Simulation\Runtime\Stages\PhysicsStage::class,
+                
+                // Phase: life
+                'population'   => \App\Simulation\Runtime\Stages\PopulationStage::class,
+                'ecology'      => \App\Simulation\Runtime\Stages\EcologyStage::class,
+                
+                // Phase: mind
+                'actor'        => \App\Simulation\Runtime\Stages\ActorStage::class,
+                
+                // Phase: social
                 'civilization' => \App\Simulation\Runtime\Stages\CivilizationStage::class,
-                'economy' => \App\Simulation\Runtime\Stages\EconomyStage::class,
-                'politics' => \App\Simulation\Runtime\Stages\PoliticsStage::class,
-                'war' => \App\Simulation\Runtime\Stages\WarStage::class,
-                'ecology' => \App\Simulation\Runtime\Stages\EcologyStage::class,
-                'meta' => \App\Simulation\Runtime\Stages\MetaCosmicStage::class,
+                'field'        => \App\Simulation\Runtime\Stages\CivilizationFieldStage::class,
+                'economy'      => \App\Simulation\Runtime\Stages\EconomyStage::class,
+                'politics'     => \App\Simulation\Runtime\Stages\PoliticsStage::class,
+                'culture'      => \App\Simulation\Runtime\Stages\CultureStage::class,
+                
+                // Phase: meta
+                'war'          => \App\Simulation\Runtime\Stages\WarStage::class,
+                'meta'         => \App\Simulation\Runtime\Stages\MetaCosmicStage::class,
             ];
             $stages = [];
             foreach ($scheduler->stageOrder() as $key) {
@@ -153,7 +208,24 @@ class SimulationServiceProvider extends ServiceProvider
                     $stages[$key] = $app->make($stageMap[$key]);
                 }
             }
-            return new \App\Simulation\Runtime\SimulationTickPipeline($scheduler, $stages);
+            return new \App\Simulation\Runtime\SimulationTickPipeline(
+                $scheduler, 
+                $stages,
+                $app->make(\App\Simulation\Runtime\State\StateManager::class),
+                $app->make(\App\Simulation\Runtime\EventDrivenScheduler::class),
+                $app->make(\App\Simulation\Engines\AutopoieticEvolutionEngine::class),
+                $app->make(\App\Services\Simulation\RuleMutationService::class),
+                $app->make(\App\Simulation\Engines\InformationPropagationEngine::class),
+                $app->make(\App\Simulation\Engines\PowerStructureEngine::class),
+                $app->make(\App\Simulation\Engines\CulturalAttractorEngine::class),
+                $app->make(\App\Simulation\Engines\MythogenesisEngine::class),
+                $app->make(\App\Simulation\Engines\MeaningEngine::class),
+                $app->make(\App\Simulation\Engines\KnowledgeEvolutionEngine::class),
+                $app->make(\App\Simulation\Engines\CivilizationPhaseTransitionEngine::class),
+                $app->make(\App\Simulation\Engines\SingularityStabilityEngine::class),
+                $app->make(\App\Simulation\Engines\AscensionEngine::class),
+                $app->make(\App\Services\Simulation\ZenithMetricsService::class)
+            );
         });
         $this->app->singleton(\App\Simulation\Runtime\SimulationTickOrchestrator::class);
 
@@ -196,7 +268,7 @@ class SimulationServiceProvider extends ServiceProvider
                 $app->make(\App\Simulation\Supervisor\Handlers\KnowledgeGraphPostSnapshotHandler::class),
                 $app->make(\App\Simulation\Supervisor\Handlers\CivilizationDiscoveryPostSnapshotHandler::class),
                 $app->make(\App\Simulation\Supervisor\Handlers\SelfImprovingPostSnapshotHandler::class),
-                $app->make(\App\Simulation\Supervisor\Handlers\RuleVmPostSnapshotHandler::class),
+                // RuleVm already handled in RuleStage
             ];
             return new \App\Simulation\Supervisor\RuntimePipeline(
                 $app->make(\App\Simulation\Runtime\SimulationTickOrchestrator::class),

@@ -213,4 +213,43 @@ class HttpSimulationEngineClient implements SimulationEngineClientInterface
             'error_message' => $data['error_message'] ?? null,
         ];
     }
+
+    /**
+     * V7 §57: Observer Effect — Observe a zone, triggering wavefunction collapse.
+     * Gửi lệnh tới Rust Engine để tăng observer_presence và tiêu hao Entropy.
+     */
+    public function observe(int $universeId, int $zoneId, float $entropyCost = 0.02): array
+    {
+        $url = rtrim($this->baseUrl, '/').'/observe';
+        $payload = [
+            'universe_id' => $universeId,
+            'zone_id' => $zoneId,
+            'entropy_cost' => $entropyCost,
+        ];
+
+        try {
+            $response = Http::timeout(15)->post($url, $payload);
+        } catch (\Throwable $e) {
+            return [
+                'ok' => false,
+                'error_message' => $e->getMessage(),
+            ];
+        }
+
+        if (!$response->successful()) {
+            return [
+                'ok' => false,
+                'error_message' => $response->body() ?: 'HTTP '.$response->status(),
+            ];
+        }
+
+        $data = $response->json();
+        return [
+            'ok' => $data['ok'] ?? true,
+            'zone_id' => $zoneId,
+            'entropy_cost' => $entropyCost,
+            'message' => $data['message'] ?? 'Observation Interference applied.',
+            'error_message' => $data['error_message'] ?? null,
+        ];
+    }
 }

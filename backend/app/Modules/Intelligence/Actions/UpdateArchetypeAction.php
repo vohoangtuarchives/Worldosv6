@@ -16,9 +16,10 @@ class UpdateArchetypeAction
         array $worldAxiom,
         float $entropy,
         array $ratios = [],
-        ?\App\Modules\Intelligence\Domain\Phase\PhaseScore $phaseScore = null
+        ?\App\Modules\Intelligence\Domain\Phase\PhaseScore $phaseScore = null,
+        array $zoneFields = []
     ): ActorState {
-        $newArchetype = $this->classifier->classify($actor, $worldAxiom, $entropy, $ratios, $phaseScore);
+        $newArchetype = $this->classifier->classify($actor, $worldAxiom, $entropy, $ratios, $phaseScore, $zoneFields);
 
         if ($newArchetype !== null && $newArchetype !== $actor->archetype) {
             $metrics = $actor->metrics;

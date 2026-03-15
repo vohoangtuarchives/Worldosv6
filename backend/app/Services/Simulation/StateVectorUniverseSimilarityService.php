@@ -16,22 +16,30 @@ final class StateVectorUniverseSimilarityService implements UniverseSimilaritySe
 
     public function getMergeCandidate(UniverseSnapshot $snapshot): ?array
     {
+        $threshold = (float) config('worldos.autonomic.merge_similarity_threshold', 0.92);
+        $neighbors = $this->getNeighbors($snapshot, $threshold);
+        
+        if (empty($neighbors)) return null;
+
+        // Return the best one
+        usort($neighbors, fn($a, $b) => $b['similarity'] <=> $a['similarity']);
+        return $neighbors[0];
+    }
+
+    public function getNeighbors(UniverseSnapshot $snapshot, float $threshold = 0.5): array
+    {
         $universe = $snapshot->universe;
         if (!$universe || !$universe->world_id) {
-            return null;
+            return [];
         }
 
-        $threshold = (float) config('worldos.autonomic.merge_similarity_threshold', 0.92);
         $currentVec = $this->extractFeatureVector($snapshot);
-
         $siblings = Universe::where('world_id', $universe->world_id)
             ->where('status', 'active')
             ->where('id', '!=', $universe->id)
             ->get();
 
-        $bestCandidate = null;
-        $bestSimilarity = $threshold;
-
+        $neighbors = [];
         foreach ($siblings as $sibling) {
             $siblingSnap = UniverseSnapshot::where('universe_id', $sibling->id)
                 ->orderByDesc('tick')
@@ -42,16 +50,17 @@ final class StateVectorUniverseSimilarityService implements UniverseSimilaritySe
 
             $siblingVec = $this->extractFeatureVector($siblingSnap);
             $similarity = $this->similarity($currentVec, $siblingVec);
-            if ($similarity >= $bestSimilarity) {
-                $bestSimilarity = $similarity;
-                $bestCandidate = [
+            
+            if ($similarity >= $threshold) {
+                $neighbors[] = [
                     'universe_id' => (int) $sibling->id,
-                    'similarity'  => round($bestSimilarity, 4),
+                    'similarity'  => round($similarity, 4),
+                    'state_vector' => $siblingSnap->state_vector, // Load state vector for bleeding
                 ];
             }
         }
 
-        return $bestCandidate;
+        return $neighbors;
     }
 
     /**

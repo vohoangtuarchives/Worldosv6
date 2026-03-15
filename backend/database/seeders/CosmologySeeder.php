@@ -3,10 +3,9 @@
 namespace Database\Seeders;
 
 use App\Models\Multiverse;
-use App\Models\Saga;
 use App\Models\Universe;
 use App\Models\World;
-use App\Services\Saga\SagaService;
+use App\Services\Orchestrator\ImplicitOrchestratorService;
 use Illuminate\Database\Seeder;
 
 class CosmologySeeder extends Seeder
@@ -43,10 +42,10 @@ class CosmologySeeder extends Seeder
             ]
         );
 
-        $sagaService = app(SagaService::class);
+        $orchestrator = app(ImplicitOrchestratorService::class);
         $existingUniverse = Universe::where('world_id', $world->id)->first();
         if (! $existingUniverse) {
-            $sagaService->spawnUniverse($world);
+            $orchestrator->spawnUniverse($world);
         }
 
         $this->command?->info('Cosmology seeded: 1 Multiverse, 1 World, 1 Universe (Implicit Saga).');

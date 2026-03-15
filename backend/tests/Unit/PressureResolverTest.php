@@ -5,7 +5,6 @@ namespace Tests\Unit;
 use App\Models\Material;
 use App\Models\MaterialInstance;
 use App\Models\Multiverse;
-use App\Models\Saga;
 use App\Models\Universe;
 use App\Models\World;
 use App\Services\Material\PressureResolver;
@@ -28,10 +27,8 @@ class PressureResolverTest extends TestCase
             'origin' => 'generic',
             'global_tick' => 0,
         ]);
-        $saga = Saga::create(['world_id' => $world->id, 'name' => 'S', 'status' => 'active']);
         return Universe::create([
             'world_id' => $world->id,
-            'saga_id' => $saga->id,
             'multiverse_id' => $mv->id,
             'current_tick' => 0,
             'status' => 'active',

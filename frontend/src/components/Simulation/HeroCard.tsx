@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Sparkles, Swords, BookOpen, Hammer, GraduationCap } from "lucide-react";
+import { Sparkles, Swords, BookOpen, Shield, Coins, Palette } from "lucide-react";
 import Link from "next/link";
 
 export interface HeroCardEntity {
@@ -21,31 +21,34 @@ interface HeroCardProps {
 }
 
 function getHeroIcon(entityType: string) {
-  const key = entityType.replace(/^great_person_/, "");
+  const key = entityType.toUpperCase().replace(/^GREAT_PERSON_/, "");
   switch (key) {
-    case "prophet":
+    case "PROPHET":
       return <Sparkles className="w-8 h-8 text-amber-400" />;
-    case "general":
+    case "GENERAL":
       return <Swords className="w-8 h-8 text-red-400" />;
-    case "sage":
+    case "SCIENTIST":
       return <BookOpen className="w-8 h-8 text-emerald-400" />;
-    case "builder":
-      return <Hammer className="w-8 h-8 text-cyan-400" />;
-    case "scholar":
-      return <GraduationCap className="w-8 h-8 text-violet-400" />;
+    case "RULER":
+      return <Shield className="w-8 h-8 text-cyan-400" />;
+    case "MERCHANT":
+      return <Coins className="w-8 h-8 text-yellow-400" />;
+    case "ARTIST":
+      return <Palette className="w-8 h-8 text-pink-400" />;
     default:
-      return <span className="text-4xl font-bold text-muted-foreground">{entityType.charAt(entityType.length - 1)?.toUpperCase() ?? "?"}</span>;
+      return <span className="text-4xl font-bold text-muted-foreground">{key.charAt(0)}</span>;
   }
 }
 
 function getTypeLabel(entityType: string): string {
-  const key = entityType.replace(/^great_person_/, "");
+  const key = entityType.toUpperCase().replace(/^GREAT_PERSON_/, "");
   const labels: Record<string, string> = {
-    prophet: "Tiên tri",
-    general: "Đại tướng",
-    sage: "Hiền nhân",
-    builder: "Kiến trúc sư",
-    scholar: "Đại học giả",
+    PROPHET: "Thánh Nhân",
+    GENERAL: "Đại Tướng Quân",
+    SCIENTIST: "Học Giả Vĩ Đại",
+    RULER: "Minh Quân",
+    MERCHANT: "Đại Phú Hộ",
+    ARTIST: "Đại Nghệ Sĩ",
   };
   return labels[key] ?? entityType;
 }

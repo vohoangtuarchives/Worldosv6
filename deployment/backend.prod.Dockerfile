@@ -23,12 +23,19 @@ WORKDIR /var/www
 # Copy code
 COPY . /var/www
 
-# Install dependencies (no dev). --no-scripts avoids post-autoload (package:discover) during build when .env is missing.
-RUN composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev --no-scripts
+# Install dependencies (no dev).
+RUN composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev
 
-# Set permissions
-RUN chown -R www-data:www-data /var/www \
-    && chmod -R 775 /var/www/storage /var/www/bootstrap/cache
+# Set permissions early for artisan commands
+RUN chown -R www-data:www-data /var/www
+
+# Warm up package discovery and optimization (no DB needed for these)
+RUN php artisan package:discover --ansi \
+    && php artisan config:cache \
+    && php artisan route:cache \
+    && php artisan view:cache
+
+RUN chmod -R 775 /var/www/storage /var/www/bootstrap/cache
 
 # Keep a copy of public for entrypoint (when backend_public volume is mounted over /var/www/public)
 RUN cp -a /var/www/public /var/www/public.from-image

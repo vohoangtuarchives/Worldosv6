@@ -11,9 +11,24 @@ use Illuminate\Support\Facades\Log;
 /**
  * Behavior & Decision Engine (Tier 6).
  * Needs (hunger, safety, reproduction, social), goal from needs, Utility AI (score actions),
- * execution state (idle, eating, fleeing, mating, exploring). Personality from traits.
+ * execution state (idle, eating, fleeing, mating, exploring). Cognitive modeling via DSL.
  * Stagger tick (actor_id % N === tick % N) for performance.
  */
+use App\Services\Simulation\RuleVmService;
+use function resource_path;
+use function app;
+use function config;
+use function array_filter;
+use function max;
+use function file_get_contents;
+use function exp;
+use function mt_srand;
+use function mt_rand;
+use function is_array;
+use function json_decode;
+use function is_string;
+use function in_array;
+
 class ActorBehaviorEngine
 {
     public const NEED_HUNGER = 'hunger';
@@ -26,207 +41,225 @@ class ActorBehaviorEngine
     public const ACTION_FLEE = 'fleeing';
     public const ACTION_MATE = 'mating';
     public const ACTION_EXPLORE = 'exploring';
+    public const ACTION_BATTLE = 'battle';
+    public const ACTION_RESEARCH = 'research';
+    public const ACTION_TRADE = 'trade';
+    public const ACTION_MEDITATE = 'meditate';
 
     public function __construct(
         protected ActorRepositoryInterface $actorRepository,
-        protected UniverseRepositoryInterface $universeRepository
+        protected UniverseRepositoryInterface $universeRepository,
+        protected \App\Services\Narrative\TraitMapper $traitMapper,
+        protected \App\Services\Simulation\ActorDecisionEngine $decisionEngine,
+        protected RuleVmService $ruleVm
     ) {}
 
     /**
-     * Run behavior decision for actors this tick. Call after ProcessActorSurvival.
+     * Run behavior decision for actors this tick using standardized WorldState.
      */
-    public function evaluate(Universe $universe, int $currentTick): void
+    public function runWithState(\App\Simulation\Runtime\State\WorldState $state, int $currentTick): void
     {
         $interval = (int) config('worldos.intelligence.behavior_tick_interval', 1);
         if ($interval <= 0 || $currentTick % $interval !== 0) {
             return;
         }
 
-        $actors = $this->actorRepository->findByUniverse($universe->id);
+        $universeId = (int) $state->get('universe_id', 0);
+        $actors = $state->getActorEntities();
         $alive = array_filter($actors, fn($a) => $a->isAlive);
         if (empty($alive)) {
             return;
         }
 
         $stagger = max(1, (int) config('worldos.intelligence.behavior_stagger_modulus', 3));
-        $stateVector = $this->getStateVector($universe);
-        $collapseActive = $this->isCollapseActive($stateVector, $currentTick);
-        $seed = (int) ($universe->seed ?? 0) + $universe->id * 31;
-        $saved = 0;
+        $collapseActive = $this->isCollapseActive($state->toArray(), $currentTick);
+        $seed = (int) ($state->get('seed', 0)) + $universeId * 31;
+        $updated = 0;
 
         foreach ($alive as $actor) {
             if (($actor->id ?? 0) % $stagger !== $currentTick % $stagger) {
                 continue;
             }
-            $this->decideAndApply($actor, $universe, $currentTick, $collapseActive, $seed);
-            $this->actorRepository->save($actor);
-            $saved++;
+            $this->decideAndApplyWithState($actor, $state, $currentTick, $collapseActive, $seed);
+            $updated++;
         }
 
-        if ($saved > 0) {
-            Log::debug("ActorBehaviorEngine: Universe {$universe->id} tick {$currentTick}, {$saved} actors updated");
+        if ($updated > 0) {
+            Log::debug("ActorBehaviorEngine: Universe {$universeId} tick {$currentTick}, {$updated} actors updated in state pool");
         }
     }
 
-    private function decideAndApply(
+    public function evaluate(Universe $universe, int $currentTick): void
+    {
+        // Deprecated: Pipeline handles runWithState
+    }
+
+    private function decideAndApplyWithState(
         ActorEntity $actor,
-        Universe $universe,
+        \App\Simulation\Runtime\State\WorldState $state,
         int $tick,
         bool $collapseActive,
         int $seed
     ): void {
-        $traits = $actor->traits ?? [];
         $metrics = $actor->metrics ?? [];
-        $energy = (float) ($metrics['energy'] ?? 100);
-        $maxEnergy = (float) ($metrics['max_energy'] ?? 200);
-        $starving = !empty($metrics['starving']);
+        $traits = $actor->traits ?? [];
+        $archetype = $actor->archetype ?? 'Commoner';
 
-        $needs = $this->computeNeeds($actor, $energy, $maxEnergy, $starving, $collapseActive);
-        $goal = $this->dominantNeed($needs);
-        $personality = $this->personalityFromTraits($traits);
-        $culture = CultureEngine::getCultureForActor($metrics);
-        $scores = $this->scoreActions($needs, $goal, $personality, $energy, $maxEnergy, $culture, $seed, $actor->id ?? 0, $tick);
+        // 1. Prepare State for Rule VM
+        $classifier = app(\App\Modules\Intelligence\Domain\Archetype\ArchetypeClassifier::class);
+        $definition = $classifier->getDefinition($archetype);
+        $motivation = $definition?->motivationVector ?? [];
+        $culture = \App\Modules\Intelligence\Services\CultureEngine::getCultureForActor($metrics);
+        
+        $fields = $state->getFields();
+        $causalIntegrity = (float) ($state->get('causal_integrity', 1.0));
+
+        $vmState = [
+            'energy'           => (float) ($metrics['energy'] ?? 100),
+            'maxEnergy'        => (float) ($metrics['max_energy'] ?? 200),
+            'starving'         => !empty($metrics['starving']),
+            'generation'       => (int) ($metrics['generation'] ?? 1),
+            'collapse_active'  => $collapseActive,
+            'causal_integrity' => $causalIntegrity,
+            'is_heroic'        => (bool) ($actor->isHeroic ?? false),
+            'heroic_type'      => $actor->heroicType ?? '',
+            'traits'           => $actor->traits ?? [],
+            
+            // Capabilities (Physical & Mental)
+            'intellect'        => (float) ($metrics['intellect'] ?? 0.5),
+            'charisma'         => (float) ($metrics['charisma'] ?? 0.5),
+            'creativity'       => (float) ($metrics['creativity'] ?? 0.5),
+            'authority'        => (float) ($metrics['authority'] ?? 0.5),
+            
+            // Belief flags
+            'has_religion'     => !empty($metrics['religion_id']),
+            'has_causal_trajectory_belief' => !empty($metrics['has_trajectory']),
+            'legend_level'     => (int) ($metrics['legend_level'] ?? 0),
+
+            // Archetype motivations
+            'arch_survival'    => (float) ($motivation['survival'] ?? 0.5),
+            'arch_reproduction'=> (float) ($motivation['reproduction'] ?? 0.5),
+            'arch_wealth'      => (float) ($motivation['wealth'] ?? 0.5),
+            'arch_power'       => (float) ($motivation['power'] ?? 0.5),
+            'arch_knowledge'   => (float) ($motivation['knowledge'] ?? 0.5),
+            'arch_meaning'     => (float) ($motivation['meaning'] ?? 0.5),
+            'arch_status'      => (float) ($motivation['status'] ?? 0.5),
+            'arch_belonging'   => (float) ($motivation['belonging'] ?? 0.5),
+            // Global fields resonance (Phase 30: 8-Attractor aligned)
+            'field_survival'     => (float) ($fields['survival'] ?? 0.5),
+            'field_reproduction' => (float) ($fields['reproduction'] ?? 0.5),
+            'field_wealth'       => (float) ($fields['wealth'] ?? 0.5),
+            'field_power'        => (float) ($fields['power'] ?? 0.5),
+            'field_knowledge'    => (float) ($fields['knowledge'] ?? 0.5),
+            'field_meaning'      => (float) ($fields['meaning'] ?? 0.5),
+            'field_status'       => (float) ($fields['status'] ?? 0.5),
+            'field_belonging'    => (float) ($fields['belonging'] ?? 0.5),
+
+            // Culture (8D Memes)
+            'meme_survival'    => (float) ($culture[\App\Modules\Intelligence\Services\CultureEngine::MEME_SURVIVAL] ?? 0.5),
+            'meme_reproduction'=> (float) ($culture[\App\Modules\Intelligence\Services\CultureEngine::MEME_REPRODUCTION] ?? 0.5),
+            'meme_wealth'      => (float) ($culture[\App\Modules\Intelligence\Services\CultureEngine::MEME_WEALTH] ?? 0.5),
+            'meme_power'       => (float) ($culture[\App\Modules\Intelligence\Services\CultureEngine::MEME_POWER] ?? 0.5),
+            'meme_knowledge'   => (float) ($culture[\App\Modules\Intelligence\Services\CultureEngine::MEME_KNOWLEDGE] ?? 0.5),
+            'meme_meaning'     => (float) ($culture[\App\Modules\Intelligence\Services\CultureEngine::MEME_MEANING] ?? 0.5),
+            'meme_status'      => (float) ($culture[\App\Modules\Intelligence\Services\CultureEngine::MEME_STATUS] ?? 0.5),
+            'meme_belonging'   => (float) ($culture[\App\Modules\Intelligence\Services\CultureEngine::MEME_BELONGING] ?? 0.5),
+        ];
+
+        // 2. Evaluate Cognitive Model via DSL
+        $dslPath = resource_path('worldos_rules/intel/cognitive_models.dsl');
+        $dsl = @file_get_contents($dslPath) ?: '';
+        $result = $this->ruleVm->evaluateRawState($vmState, $dsl);
+        $finalState = $result['state'] ?? [];
+
+        // 3. Action Selection
+        // Macro-narrative actions (Phase 43 integration)
+        $decisionDist = $this->decisionEngine->getActionDistribution($actor, $state, $tick);
+        
+        $scores = [
+            self::ACTION_IDLE     => (float) ($finalState['score_idle'] ?? 0.1),
+            self::ACTION_EAT      => (float) ($finalState['score_eat'] ?? 0.0),
+            self::ACTION_FLEE     => (float) ($finalState['score_flee'] ?? 0.0),
+            self::ACTION_MATE     => (float) ($finalState['score_mate'] ?? 0.0),
+            self::ACTION_EXPLORE  => ($decisionDist['explore'] ?? 0.0) + (float) ($finalState['score_explore'] ?? 0.1),
+            self::ACTION_BATTLE   => ($decisionDist['war'] ?? 0.0) + (float) ($finalState['score_battle'] ?? 0.0),
+            self::ACTION_RESEARCH => ($decisionDist['teach'] ?? 0.0) + (float) ($finalState['score_research'] ?? 0.0),
+            self::ACTION_TRADE    => ($decisionDist['trade'] ?? 0.0) + (float) ($finalState['score_trade'] ?? 0.0),
+            self::ACTION_MEDITATE => ($decisionDist['meditate'] ?? 0.0) + (float) ($finalState['score_meditate'] ?? 0.0),
+        ];
+
+        // Apply faction bias (still calculated in PHP for simplicity of reference)
+        $factions = $state->get('factions', []);
+        $factionBias = $this->getFactionBias($actor->id, $factions);
+        foreach ($factionBias as $act => $mul) {
+            if (isset($scores[$act])) $scores[$act] *= $mul;
+        }
+
         $action = $this->selectAction($scores, $seed, $actor->id ?? 0, $tick);
 
+        // 4. Update Actor Metrics
+        $monologue = $this->traitMapper->generateMonologueSeed($traits, $archetype);
+        
         $metrics['behavior_state'] = $action;
-        $metrics['current_goal'] = $goal;
-        $metrics['needs'] = $needs;
+        $metrics['needs'] = [
+            self::NEED_HUNGER => (float) ($finalState['hunger'] ?? 0.5),
+            self::NEED_SAFETY => (float) ($finalState['safety'] ?? 0.8),
+            self::NEED_REPRODUCTION => (float) ($finalState['reproduction'] ?? 0.2),
+            self::NEED_SOCIAL => (float) ($finalState['social_need'] ?? 0.5),
+        ];
+        $metrics['reasoning'] = $monologue;
         $metrics['last_behavior_tick'] = $tick;
         $actor->metrics = $metrics;
+
+        // Trace
+        \App\Models\ActorEvent::create([
+            'actor_id'   => $actor->id,
+            'tick'       => $tick,
+            'event_type' => 'behavior_decision',
+            'context'    => [
+                'action'    => $action,
+                'reasoning' => $monologue,
+                'scores'    => $scores
+            ]
+        ]);
     }
 
-    private function computeNeeds(
-        ActorEntity $actor,
-        float $energy,
-        float $maxEnergy,
-        bool $starving,
-        bool $collapseActive
-    ): array {
-        $traits = $actor->traits ?? [];
-        $longevity = (float) ($traits[17] ?? $traits['Longevity'] ?? 0.5);
-        $solidarity = (float) ($traits[5] ?? $traits['Solidarity'] ?? 0.5);
-
-        $energyRatio = $maxEnergy > 0 ? $energy / $maxEnergy : 0.5;
-        $hunger = $starving ? 1.0 : (1.0 - $energyRatio);
-        $hunger = max(0.0, min(1.0, $hunger));
-
-        $safety = $collapseActive ? 0.3 : 0.7;
-        $safety = max(0.0, min(1.0, $safety));
-
-        $reproduction = $energyRatio > 0.5 ? (1.0 - $longevity) * 0.5 + 0.3 : 0.2;
-        $reproduction = max(0.0, min(1.0, $reproduction));
-
-        $social = 1.0 - $solidarity;
-        $social = max(0.0, min(1.0, $social));
-
-        return [
-            self::NEED_HUNGER => $hunger,
-            self::NEED_SAFETY => $safety,
-            self::NEED_REPRODUCTION => $reproduction,
-            self::NEED_SOCIAL => $social,
-        ];
-    }
-
-    private function dominantNeed(array $needs): string
+    private function getFactionBias(int $actorId, array $factions): array
     {
-        $max = -1.0;
-        $goal = self::NEED_HUNGER;
-        foreach ($needs as $need => $value) {
-            if ($value > $max) {
-                $max = $value;
-                $goal = $need;
+        foreach ($factions as $f) {
+            $members = $f['member_actor_ids'] ?? [];
+            if (in_array($actorId, $members)) {
+                return $f['collective_decision_bias'] ?? [];
             }
         }
-        return $goal;
+        return [];
     }
 
-    /**
-     * @return array{aggression: float, curiosity: float, cooperation: float, fear: float}
-     */
-    private function personalityFromTraits(array $traits): array
-    {
-        $dominance = (float) ($traits[0] ?? $traits['Dominance'] ?? 0.5);
-        $coercion = (float) ($traits[2] ?? $traits['Coercion'] ?? 0.5);
-        $empathy = (float) ($traits[4] ?? $traits['Empathy'] ?? 0.5);
-        $solidarity = (float) ($traits[5] ?? $traits['Solidarity'] ?? 0.5);
-        $curiosity = (float) ($traits[8] ?? $traits['Curiosity'] ?? 0.5);
-        $fear = (float) ($traits[11] ?? $traits['Fear'] ?? 0.5);
-
-        return [
-            'aggression' => ($dominance + $coercion) / 2,
-            'curiosity' => $curiosity,
-            'cooperation' => ($solidarity + $empathy) / 2,
-            'fear' => $fear,
-        ];
-    }
-
-    /**
-     * @return array<string, float> action => score
-     */
-    private function scoreActions(
-        array $needs,
-        string $goal,
-        array $personality,
-        float $energy,
-        float $maxEnergy,
-        array $culture,
-        int $seed,
-        int $actorId,
-        int $tick
-    ): array {
-        $scores = [
-            self::ACTION_IDLE => 0.1,
-            self::ACTION_EAT => 0.0,
-            self::ACTION_FLEE => 0.0,
-            self::ACTION_MATE => 0.0,
-            self::ACTION_EXPLORE => 0.0,
-        ];
-
-        $hunger = $needs[self::NEED_HUNGER] ?? 0;
-        $safety = $needs[self::NEED_SAFETY] ?? 0.5;
-        $reproduction = $needs[self::NEED_REPRODUCTION] ?? 0;
-        $social = $needs[self::NEED_SOCIAL] ?? 0.5;
-
-        $scores[self::ACTION_EAT] = $hunger * 1.2 + ($goal === self::NEED_HUNGER ? 0.4 : 0);
-        if ($energy >= $maxEnergy * 0.9) {
-            $scores[self::ACTION_EAT] *= 0.2;
-        }
-
-        $scores[self::ACTION_FLEE] = (1.0 - $safety) * $personality['fear'] + ($goal === self::NEED_SAFETY ? 0.3 : 0);
-
-        $scores[self::ACTION_MATE] = $reproduction * 0.8 + ($goal === self::NEED_REPRODUCTION ? 0.3 : 0);
-        if ($energy < $maxEnergy * 0.4) {
-            $scores[self::ACTION_MATE] *= 0.3;
-        }
-
-        $scores[self::ACTION_EXPLORE] = $personality['curiosity'] * 0.5 + ($goal === self::NEED_SOCIAL ? 0.2 : 0);
-
-        $cultureWeight = (float) config('worldos.intelligence.culture_weight_in_behavior', 0.2);
-        if ($cultureWeight > 0 && !empty($culture)) {
-            $survival = (float) ($culture[CultureEngine::MEME_SURVIVAL] ?? 0.5);
-            $socialM = (float) ($culture[CultureEngine::MEME_SOCIAL] ?? 0.5);
-            $ritual = (float) ($culture[CultureEngine::MEME_RITUAL] ?? 0.5);
-            $technology = (float) ($culture[CultureEngine::MEME_TECHNOLOGY] ?? 0.5);
-            $scores[self::ACTION_EAT] += $cultureWeight * $survival * 0.3;
-            $scores[self::ACTION_MATE] += $cultureWeight * $socialM * 0.25;
-            $scores[self::ACTION_EXPLORE] += $cultureWeight * ($ritual + $technology) * 0.25;
-        }
-
-        return $scores;
-    }
 
     private function selectAction(array $scores, int $seed, int $actorId, int $tick): string
     {
-        $best = self::ACTION_IDLE;
-        $bestScore = -1.0;
-        foreach ($scores as $action => $score) {
-            if ($score > $bestScore) {
-                $bestScore = $score;
-                $best = $action;
+        // Probability-based selection (Softmax-ish) for variability
+        $total = 0;
+        foreach ($scores as $s) {
+            $total += exp($s * 5); // T=0.2 factor for sharpness
+        }
+
+        // Deterministic Rand for this actor/tick
+        mt_srand($seed + $actorId + $tick);
+        $rand = mt_rand(0, 1000000) / 1000000.0;
+        
+        $current = 0;
+        foreach ($scores as $action => $s) {
+            $prob = exp($s * 5) / $total;
+            $current += $prob;
+            if ($rand <= $current) {
+                return $action;
             }
         }
-        return $best;
+
+        return self::ACTION_IDLE;
     }
+
 
     private function isCollapseActive(array $stateVector, int $tick): bool
     {

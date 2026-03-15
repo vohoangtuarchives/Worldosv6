@@ -11,7 +11,6 @@ return new class extends Migration
         Schema::create('narrative_series', function (Blueprint $table) {
             $table->id();
             $table->foreignId('universe_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('saga_id')->nullable()->constrained()->nullOnDelete();
             $table->string('title');
             $table->string('genre_key')->default('wuxia');
             $table->unsignedInteger('current_book_index')->default(1);

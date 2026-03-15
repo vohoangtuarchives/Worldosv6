@@ -149,40 +149,61 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
     useEffect(() => {
         if (!universeId || isPaused || typeof window === "undefined") return;
 
-        const url = api.universeSnapshotStreamUrl(universeId);
-        const es = new EventSource(url);
+        let es: EventSource | null = null;
         let vitalDebounce: ReturnType<typeof setTimeout> | null = null;
+        let retryCount = 0;
+        const maxRetries = 5;
 
-        es.onmessage = (event) => {
-            try {
-                const data = JSON.parse(event.data);
-                setLatestSnapshot({
-                    tick: data.tick,
-                    entropy: data.entropy,
-                    stability_index: data.stability_index,
-                    metrics: data.metrics ?? {},
-                });
-                if (vitalDebounce) clearTimeout(vitalDebounce);
-                vitalDebounce = setTimeout(() => {
-                    fetchVitalData(universeId);
-                    vitalDebounce = null;
-                }, 1500);
-            } catch (_) {
-                // ignore parse errors
-            }
+        const connect = () => {
+            if (es) es.close();
+            
+            const url = api.universeSnapshotStreamUrl(universeId);
+            es = new EventSource(url);
+
+            es.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    setLatestSnapshot({
+                        tick: data.tick,
+                        entropy: data.entropy,
+                        stability_index: data.stability_index,
+                        metrics: data.metrics ?? {},
+                    });
+                    retryCount = 0; // Reset on success
+                    setError(null);
+
+                    if (vitalDebounce) clearTimeout(vitalDebounce);
+                    vitalDebounce = setTimeout(() => {
+                        fetchVitalData(universeId);
+                        vitalDebounce = null;
+                    }, 1500);
+                } catch (_) {
+                    // ignore parse errors
+                }
+            };
+
+            es.onerror = () => {
+                if (retryCount < maxRetries) {
+                    retryCount++;
+                    const delay = Math.min(1000 * Math.pow(2, retryCount), 10000);
+                    console.warn(`SSE Connection lost. Retrying in ${delay}ms... (Attempt ${retryCount}/${maxRetries})`);
+                    setError(`Đang kết nối lại (${retryCount}/${maxRetries})...`);
+                    setTimeout(connect, delay);
+                } else {
+                    setError("Mất kết nối realtime. Vui lòng làm mới trang.");
+                    if (es) es.close();
+                }
+            };
         };
 
-        es.onerror = () => {
-            setError("Mất kết nối realtime. Thử Làm mới.");
-            es.close();
-        };
+        connect();
 
         // Initial fetch (vital + auxiliary)
         refresh(true);
 
         return () => {
             if (vitalDebounce) clearTimeout(vitalDebounce);
-            es.close();
+            if (es) es.close();
         };
     }, [universeId, isPaused, fetchVitalData, refresh]);
 

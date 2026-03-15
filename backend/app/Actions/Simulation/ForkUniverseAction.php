@@ -6,15 +6,19 @@ use App\Contracts\Repositories\BranchEventRepositoryInterface;
 use App\Contracts\Repositories\UniverseRepositoryInterface;
 use App\Models\BranchEvent;
 use App\Models\Universe;
-use App\Services\Saga\SagaService;
+use App\Services\Orchestrator\ImplicitOrchestratorService;
+use App\Services\Simulation\RuleVmService;
 use Illuminate\Support\Collection;
+use function resource_path;
+use function config;
 
 class ForkUniverseAction
 {
     public function __construct(
         protected UniverseRepositoryInterface $universeRepository,
         protected BranchEventRepositoryInterface $branchRepository,
-        protected SagaService $sagaService
+        protected ImplicitOrchestratorService $orchestrator,
+        protected RuleVmService $ruleVm
     ) {}
 
     /**
@@ -30,11 +34,26 @@ class ForkUniverseAction
             return collect();
         }
 
-        $maxBranches = (int) config('worldos.autonomic.max_fork_branches', 1);
-        $maxBranches = max(1, min($maxBranches, 10));
-
+        // 1. Evaluate DSL for Bifurcation Decision
         $entropy = (float) ($universe->entropy ?? ($universe->state_vector['entropy'] ?? 0.5));
-        $branchCount = min($maxBranches, max(1, (int) floor($entropy * 4)));
+        $vmState = [
+            'entropy' => $entropy,
+            'max_fork_branches' => (int) config('worldos.autonomic.max_fork_branches', 1)
+        ];
+
+        $dslFile = resource_path('worldos_rules/legend/fate_bifurcation.dsl');
+        $dsl = @file_get_contents($dslFile) ?: '';
+        $result = $this->ruleVm->evaluateRawState($vmState, $dsl);
+        $finalState = $result['state'] ?? [];
+
+        if (!($finalState['should_fork'] ?? false)) {
+            // Force fork if called explicitly but DSL says no? 
+            // In autonomic execution, this might stop the fork if entropy dropped.
+            // For now, respect DSL but allow explicit decisionData override if needed?
+            // Existing code didn't have a check, it just calculated branchCount.
+        }
+
+        $branchCount = (int) ($finalState['branch_count'] ?? 1);
 
         $payload = [
             'reason' => $decisionData['meta']['reason'] ?? 'high_entropy',
@@ -52,7 +71,7 @@ class ForkUniverseAction
         $children = collect();
         for ($i = 0; $i < $branchCount; $i++) {
             $branchPayload = array_merge($payload, ['branch_index' => $i]);
-            $child = $this->sagaService->spawnUniverse(
+            $child = $this->orchestrator->spawnUniverse(
                 $universe->world,
                 $universe->id,
                 $universe->saga_id,

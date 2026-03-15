@@ -17,27 +17,22 @@ class GeologicalEngine
     private const TERRAIN_HIGHLAND = 'highland';
     private const TERRAIN_VOLCANIC = 'volcanic';
 
-    public function __construct(
-        protected UniverseRepositoryInterface $universeRepository
-    ) {}
+    public function __construct() {}
 
-    /**
-     * Update elevation, terrain, minerals per zone. Call after climate.
-     */
-    public function evaluate(Universe $universe, int $currentTick): void
+    public function runWithState(\App\Simulation\Runtime\State\WorldState $state, int $currentTick): void
     {
         $interval = (int) config('worldos.geological.tick_interval', 5000);
         if ($interval <= 0 || $currentTick % $interval !== 0) {
             return;
         }
 
-        $stateVector = $this->getStateVector($universe);
-        $zones = &$stateVector['zones'];
+        $zones = $state->get('zones');
         if (!is_array($zones) || empty($zones)) {
             return;
         }
 
-        $seed = (int) ($universe->seed ?? 0) + (int) $universe->id * 31;
+        $universeId = (int) $state->get('universe_id', 0);
+        $seed = (int) ($state->get('seed', 0)) + $universeId * 31;
         $driftRate = (float) config('worldos.geological.elevation_drift_rate', 0.002);
         $volcanoProb = (float) config('worldos.geological.volcano_probability_per_zone', 0.02);
         $erosionRate = (float) config('worldos.geological.erosion_rate', 0.001);
@@ -45,12 +40,12 @@ class GeologicalEngine
         $zonesModified = false;
         $zoneCount = count($zones);
         foreach ($zones as $zoneIndex => &$zone) {
-            $state = &$zone['state'];
-            if (!is_array($state)) {
-                $state = [];
+            $zoneState = &$zone['state'];
+            if (!is_array($zoneState)) {
+                $zoneState = [];
             }
 
-            $elevation = $this->getOrInitElevation($state, $seed, $currentTick, $zoneIndex, $zoneCount);
+            $elevation = $this->getOrInitElevation($zoneState, $seed, $currentTick, $zoneIndex, $zoneCount);
             $rng = $this->deterministicFloat($seed, $currentTick, $zoneIndex, 0);
 
             $uplift = ($rng - 0.5) * 2 * $driftRate;
@@ -66,21 +61,18 @@ class GeologicalEngine
             $terrainType = $this->elevationToTerrain($elevation, $volcanoActive);
             $mineralRichness = $this->deterministicFloat($seed, $currentTick, $zoneIndex, 2);
 
-            $state['elevation'] = round($elevation, 4);
-            $state['terrain_type'] = $terrainType;
-            $state['mineral_richness'] = round($mineralRichness, 4);
-            $state['volcano_active'] = $volcanoActive;
-            $state['geology_tick'] = $currentTick;
+            $zoneState['elevation'] = round($elevation, 4);
+            $zoneState['terrain_type'] = $terrainType;
+            $zoneState['mineral_richness'] = round($mineralRichness, 4);
+            $zoneState['volcano_active'] = $volcanoActive;
+            $zoneState['geology_tick'] = $currentTick;
             $zonesModified = true;
         }
-        unset($zone, $state);
+        unset($zone, $zoneState);
 
         if ($zonesModified) {
-            $stateVector['zones'] = $zones;
-            $this->universeRepository->update($universe->id, ['state_vector' => $stateVector]);
-            Log::debug("GeologicalEngine: Universe {$universe->id} geology updated at tick {$currentTick}", [
-                'zones' => $zoneCount,
-            ]);
+            $state->set('zones', $zones);
+            Log::debug("GeologicalEngine: Universe {$universeId} geology updated at tick {$currentTick}");
         }
     }
 
@@ -108,14 +100,5 @@ class GeologicalEngine
     {
         $h = crc32($seed . ':' . $tick . ':' . $zoneIndex . ':' . $salt);
         return (float) (($h & 0x7FFFFFFF) / 0x7FFFFFFF);
-    }
-
-    private function getStateVector(Universe $universe): array
-    {
-        $sv = $universe->state_vector;
-        if (is_string($sv)) {
-            $sv = json_decode($sv, true) ?? [];
-        }
-        return is_array($sv) ? $sv : [];
     }
 }

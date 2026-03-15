@@ -9,7 +9,8 @@ class AutonomicPulseAction
     public function __construct(
         protected AdvanceSimulationAction $advanceAction,
         protected \App\Modules\Simulation\Services\WorldRegulatorEngine $worldAutonomicEngine,
-        protected \App\Modules\Simulation\Services\MultiverseSchedulerEngine $scheduler
+        protected \App\Modules\Simulation\Services\MultiverseSchedulerEngine $scheduler,
+        protected \App\Services\Simulation\EvolutionarySparkService $sparkService
     ) {}
 
     /**
@@ -33,6 +34,9 @@ class AutonomicPulseAction
                     
                     // 1. Advance Simulation (triggers Event & all side-effects via Listeners)
                     $response = $this->advanceAction->execute($universe->id, $ticksPerPulse);
+
+                    // 2. Evolutionary Spark (Doc §P45: ensure qualitative depth)
+                    $this->sparkService->spark($universe, (int)$universe->current_tick);
                     
                     if ($response['ok'] ?? false) {
                         $results[$universe->id] = 'success';

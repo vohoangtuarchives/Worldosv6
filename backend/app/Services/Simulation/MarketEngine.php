@@ -19,95 +19,112 @@ class MarketEngine
         protected UniverseRepositoryInterface $universeRepository
     ) {}
 
-    public function evaluate(Universe $universe, int $currentTick): void
+    public function runWithState(\App\Simulation\Runtime\State\WorldState $state, int $currentTick): void
     {
         $interval = (int) config('worldos.intelligence.economy_tick_interval', 20);
         if ($interval <= 0 || $currentTick % $interval !== 0) {
             return;
         }
 
-        $stateVector = $this->getStateVector($universe);
-        if (config('worldos.simulation.rust_authoritative', false) && isset($stateVector['economy']['market'])) {
-            return;
-        }
-        $civilization = $stateVector['civilization'] ?? null;
-        $economy = $civilization['economy'] ?? null;
+        // 1. Thu thập dữ liệu từ Manifold (Causal Soul & Politics)
+        $activeMyths = $state->get('meta.active_myths', []);
+        $governanceType = $state->get('civilization.politics.governance_type', 'TRADITIONAL_POLITY');
+        $socialCohesion = (float)$state->get('civilization.politics.social_cohesion', 0.5);
+
+        $economy = $state->get('civilization.economy', []);
         $totalSurplus = (float) ($economy['total_surplus'] ?? 0);
         $totalConsumption = (float) ($economy['total_consumption'] ?? 0.01);
         $supply = max(0.01, $totalSurplus + $totalConsumption);
 
-        $priceBase = (float) config('worldos.market.price_base_food', 1.0);
-        $priceMin = (float) config('worldos.market.price_min_food', 0.2);
-        $priceMax = (float) config('worldos.market.price_max_food', 5.0);
-        $priceFactor = $totalConsumption / $supply;
-        $priceFood = $priceBase * $priceFactor;
+        // 2. Điều chỉnh Price Factor dựa trên yếu tố văn hóa/chính trị
+        // Kỹ trị (Technocracy) giúp tối ưu hóa giá cả, giảm lạm phát ảo.
+        $stabilityBonus = ($governanceType === 'TECHNOCRACY') ? 0.2 : 0.0;
+        
+        // Sức mạnh biểu tượng của huyền thoại có thể làm tăng giá trị kỳ vọng (Speculative value)
+        $mythicPremium = array_reduce($activeMyths, fn($carry, $item) => $carry + ($item['symbolic_power'] ?? 0), 0) * 0.05;
+
+        $priceBase = (float) config('worldos.market.food_price_base', 1.0);
+        $priceMin = (float) config('worldos.market.food_price_min', 0.2);
+        $priceMax = (float) config('worldos.market.food_price_max', 5.0);
+        
+        $demandFactor = ($totalConsumption / $supply) + $mythicPremium - $stabilityBonus;
+        $priceFood = $priceBase * max(0.1, $demandFactor);
         $priceFood = max($priceMin, min($priceMax, round($priceFood, 4)));
 
-        $priceEnergy = $this->computeEnergyPrice($stateVector);
+        $priceEnergy = $this->computeEnergyPrice($state, $governanceType);
 
-        $market = $stateVector['economy']['market'] ?? [];
+        $market = $state->get('economy.market', []);
         $previousPrice = (float) (($market['prices'] ?? [])['food'] ?? $priceBase);
-        $volatility = abs($priceFood - $previousPrice);
+        
+        // Volatility tỷ lệ nghịch với Social Cohesion (Sự gắn kết xã hội)
+        $volatilityBase = abs($priceFood - $previousPrice);
+        $volatility = $volatilityBase * (1.1 - $socialCohesion);
 
-        $stateVector['economy'] = $stateVector['economy'] ?? [];
-        $existingMarket = $stateVector['economy']['market'] ?? [];
         $prices = ['food' => $priceFood];
         if ($priceEnergy !== null) {
             $prices['energy'] = $priceEnergy;
         }
-        $stateVector['economy']['market'] = [
+        
+        $universeId = (int) $state->get('universe_id');
+
+        $state->set('economy.market', [
             'prices' => $prices,
             'updated_tick' => $currentTick,
             'volatility' => round($volatility, 4),
-            'trade_route_emitted_at_tick' => (int) ($existingMarket['trade_route_emitted_at_tick'] ?? 0),
-        ];
+            'market_trust' => round($socialCohesion, 4),
+            'trade_route_emitted_at_tick' => (int) ($market['trade_route_emitted_at_tick'] ?? 0),
+        ]);
 
         $crashThreshold = (float) config('worldos.market.crash_price_threshold', 0.4);
         $boomSurplusThreshold = (float) config('worldos.market.boom_surplus_threshold', 50.0);
+        
         if ($previousPrice > $priceMin && $priceFood <= $priceMin + $crashThreshold) {
             Event::dispatch(new SimulationEventOccurred(
-                (int) $universe->id,
+                $universeId,
                 WorldEventType::MARKET_CRASH,
                 $currentTick,
                 ['price_food' => $priceFood, 'previous' => $previousPrice]
             ));
-            Log::info("MarketEngine: MARKET_CRASH Universe {$universe->id} tick {$currentTick}");
+            Log::info("MarketEngine: MARKET_CRASH Universe {$universeId} tick {$currentTick}");
         }
         if ($totalSurplus >= $boomSurplusThreshold) {
             Event::dispatch(new SimulationEventOccurred(
-                (int) $universe->id,
+                $universeId,
                 WorldEventType::ECONOMIC_BOOM,
                 $currentTick,
                 ['total_surplus' => $totalSurplus, 'price_food' => $priceFood]
             ));
-            Log::debug("MarketEngine: ECONOMIC_BOOM Universe {$universe->id} tick {$currentTick}");
+            Log::debug("MarketEngine: ECONOMIC_BOOM Universe {$universeId} tick {$currentTick}");
         }
 
-        $this->maybeEmitTradeRouteEstablished($universe, $stateVector, $civilization, $currentTick);
+        $this->maybeEmitTradeRouteEstablishedWithState($state, $currentTick);
+        Log::debug("MarketEngine: Universe {$universeId} market updated at tick {$currentTick}");
+    }
 
-        $this->universeRepository->update($universe->id, ['state_vector' => $stateVector]);
-        Log::debug("MarketEngine: Universe {$universe->id} market updated at tick {$currentTick}");
+    public function evaluate(Universe $universe, int $currentTick): void
+    {
+        // Deprecated
     }
 
     /**
      * When at least one zone has surplus and another has deficit, emit TRADE_ROUTE_ESTABLISHED once.
      */
-    private function maybeEmitTradeRouteEstablished(Universe $universe, array &$stateVector, ?array $civilization, int $currentTick): void
+    private function maybeEmitTradeRouteEstablishedWithState(\App\Simulation\Runtime\State\WorldState $state, int $currentTick): void
     {
         if (! config('worldos.market.emit_trade_route_event', true)) {
             return;
         }
-        $market = &$stateVector['economy']['market'] ?? null;
-        if ($market === null) {
-            return;
-        }
+
+        $market = $state->get('economy.market', []);
         if ((int) ($market['trade_route_emitted_at_tick'] ?? 0) > 0) {
             return;
         }
-        $settlements = $civilization['settlements'] ?? [];
+
+        $settlements = $state->get('civilization.settlements', []);
         if (count($settlements) < 2) {
             return;
         }
+
         $hasSurplus = false;
         $hasDeficit = false;
         foreach ($settlements as $settlement) {
@@ -124,27 +141,29 @@ class MarketEngine
                 break;
             }
         }
+
         if (! $hasSurplus || ! $hasDeficit) {
             return;
         }
+
+        $universeId = (int) $state->get('universe_id');
         Event::dispatch(new SimulationEventOccurred(
-            (int) $universe->id,
+            $universeId,
             WorldEventType::TRADE_ROUTE_ESTABLISHED,
             $currentTick,
             ['zones_count' => count($settlements)]
         ));
-        Log::info("MarketEngine: TRADE_ROUTE_ESTABLISHED Universe {$universe->id} tick {$currentTick}");
+        Log::info("MarketEngine: TRADE_ROUTE_ESTABLISHED Universe {$universeId} tick {$currentTick}");
         $market['trade_route_emitted_at_tick'] = $currentTick;
+        $state->set('economy.market', $market);
     }
 
     /**
-     * Energy price from cosmic_energy_pool scarcity (Laravel meta layer).
-     * scarcity = 1 - (pool / pool_max); price = base * (1 + scarcity) clamped to [min, max].
-     * Returns null when no cosmic_energy_pool or pool_max <= 0.
+     * Energy price from cosmic_energy_pool scarcity.
      */
-    private function computeEnergyPrice(array $stateVector): ?float
+    private function computeEnergyPrice(\App\Simulation\Runtime\State\WorldState $state): ?float
     {
-        $poolData = $stateVector['cosmic_energy_pool'] ?? null;
+        $poolData = $state->get('cosmic_energy_pool', null);
         if (! is_array($poolData)) {
             return null;
         }

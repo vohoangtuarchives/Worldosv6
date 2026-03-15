@@ -14,27 +14,22 @@ use Illuminate\Support\Facades\Log;
  */
 class PlanetaryClimateEngine
 {
-    public function __construct(
-        protected UniverseRepositoryInterface $universeRepository
-    ) {}
+    public function __construct() {}
 
-    /**
-     * Update temperature and rainfall per zone. Call after sync, before Phase Transition.
-     */
-    public function evaluate(Universe $universe, int $currentTick): void
+    public function runWithState(\App\Simulation\Runtime\State\WorldState $state, int $currentTick): void
     {
         $interval = (int) config('worldos.planetary_climate.tick_interval', 500);
         if ($interval <= 0 || $currentTick % $interval !== 0) {
             return;
         }
 
-        $stateVector = $this->getStateVector($universe);
-        $zones = &$stateVector['zones'];
+        $zones = $state->get('zones');
         if (!is_array($zones) || empty($zones)) {
             return;
         }
 
-        $seed = (int) ($universe->seed ?? 0) + (int) $universe->id * 31;
+        $universeId = (int) $state->get('universe_id', 0);
+        $seed = (int) ($state->get('seed', 0)) + $universeId * 31;
         $seasonalTicks = max(1, (int) config('worldos.planetary_climate.seasonal_cycle_ticks', 1000));
         $baseTemp = (float) config('worldos.planetary_climate.base_temperature', 0.5);
         $latTempAmp = (float) config('worldos.planetary_climate.latitude_temperature_amplitude', 0.25);
@@ -49,9 +44,9 @@ class PlanetaryClimateEngine
 
         $zonesModified = false;
         foreach ($zones as $zoneIndex => &$zone) {
-            $state = &$zone['state'];
-            if (!is_array($state)) {
-                $state = [];
+            $zoneState = &$zone['state'];
+            if (!is_array($zoneState)) {
+                $zoneState = [];
             }
 
             $latitude = $zoneCount > 1
@@ -62,8 +57,8 @@ class PlanetaryClimateEngine
             $temperature = $baseTemp
                 - $latTempAmp * $latNorm
                 + $seasonTempAmp * $seasonalFactor;
-            if (isset($state['elevation']) && is_numeric($state['elevation'])) {
-                $temperature -= (float) $state['elevation'] * 0.15;
+            if (isset($zoneState['elevation']) && is_numeric($zoneState['elevation'])) {
+                $temperature -= (float) $zoneState['elevation'] * 0.15;
             }
             $temperature = max(0.0, min(1.0, $temperature));
 
@@ -76,31 +71,23 @@ class PlanetaryClimateEngine
                 : 0.0;
             $iceCoverage = max(0.0, min(1.0, (float) $iceCoverage));
 
-            $state['temperature'] = round($temperature, 4);
-            $state['rainfall'] = round($rainfall, 4);
-            $state['ice_coverage'] = round($iceCoverage, 4);
-            $state['season_phase'] = round($seasonPhase, 4);
-            $state['climate_tick'] = $currentTick;
+            $zoneState['temperature'] = round($temperature, 4);
+            $zoneState['rainfall'] = round($rainfall, 4);
+            $zoneState['ice_coverage'] = round($iceCoverage, 4);
+            $zoneState['season_phase'] = round($seasonPhase, 4);
+            $zoneState['climate_tick'] = $currentTick;
             $zonesModified = true;
         }
-        unset($zone, $state);
+        unset($zone, $zoneState);
 
         if ($zonesModified) {
-            $stateVector['zones'] = $zones;
-            $this->universeRepository->update($universe->id, ['state_vector' => $stateVector]);
-            Log::debug("PlanetaryClimateEngine: Universe {$universe->id} climate updated at tick {$currentTick}", [
-                'zones' => $zoneCount,
-                'season_phase' => $seasonPhase,
-            ]);
+            $state->set('zones', $zones);
+            Log::debug("PlanetaryClimateEngine: Universe {$universeId} climate updated at tick {$currentTick}");
         }
     }
 
-    private function getStateVector(Universe $universe): array
+    public function evaluate(Universe $universe, int $currentTick): void
     {
-        $sv = $universe->state_vector;
-        if (is_string($sv)) {
-            $sv = json_decode($sv, true) ?? [];
-        }
-        return is_array($sv) ? $sv : [];
+        // Deprecated
     }
 }

@@ -49,6 +49,8 @@ pub fn run_advance(
                 attractor_gravity: g.attractor_gravity,
                 complexity_bonus: g.complexity_bonus,
             }),
+            behavior_graph: None,
+            sharding_config: None,
         }
     } else {
         WorldConfig {
@@ -57,6 +59,8 @@ pub fn run_advance(
             world_seed: None,
             origin: "generic".to_string(),
             genome: None,
+            behavior_graph: None,
+            sharding_config: None,
         }
     };
 
@@ -123,6 +127,8 @@ pub fn run_observe(
         axiom: None,
         world_seed: None,
         genome: None,
+        behavior_graph: None,
+        sharding_config: None,
     };
     let macro_idx = state.build_macro_index();
     let _events = tick_with_cascade(&mut state, &world, 4, Some(&macro_idx));

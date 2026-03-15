@@ -23,6 +23,11 @@ class DivineMiracleAction
      */
     public function execute(Demiurge $demiurge, Universe $universe, string $type): void
     {
+        // Deprecated or Bridge if needed
+    }
+
+    public function executeWithState(Demiurge $demiurge, \App\Simulation\Runtime\State\WorldState $state, string $type, int $tick): void
+    {
         $cost = $this->getMiracleCost($type);
 
         if ($demiurge->essence_pool < $cost) {
@@ -31,7 +36,41 @@ class DivineMiracleAction
         }
 
         $demiurge->decrement('essence_pool', $cost);
-        $this->manifest($demiurge, $universe, $type);
+        $this->manifestToState($demiurge, $state, $type, $tick);
+    }
+
+    protected function manifestToState(Demiurge $demiurge, \App\Simulation\Runtime\State\WorldState $state, string $type, int $tick): void
+    {
+        Log::warning("MIRACLE: Demiurge [{$demiurge->name}] has manifested [{$type}] in Universe #{$state->get('universe_id')} via Manifold!");
+
+        $sciImpact = 0.0;
+        $entropyImpact = 0.0;
+
+        switch ($type) {
+            case 'absolute_order':
+                $sciImpact = 0.5;
+                $entropyImpact = -0.5;
+                break;
+            case 'void_eruption':
+                $sciImpact = -0.3;
+                $entropyImpact = 0.6;
+                break;
+            case 'legendary_ascension':
+                $sciImpact = 0.2;
+                $entropyImpact = -0.1;
+                break;
+        }
+
+        // Apply impacts to the manifold fields
+        $state->set('entropy', max(0, min(2, (float)$state->get('entropy', 0.5) + $entropyImpact)));
+        $state->set('structural_coherence', max(0, min(1, (float)$state->get('structural_coherence', 0.5) + $sciImpact)));
+
+        // Phase 47: Emit event for DSL/Chronicle to capture
+        $state->set('meta.last_miracle', [
+            'type' => $type,
+            'demiurge' => $demiurge->name,
+            'tick' => $tick
+        ]);
     }
 
     protected function manifest(Demiurge $demiurge, Universe $universe, string $type): void
@@ -60,7 +99,7 @@ class DivineMiracleAction
                 break;
         }
 
-        $this->engineering->executeMacro($universe->world_id, 'macro_edict', $payload);
+        $this->engineering->executeMacro($universe->world_id, 'macro_edict', $payload, $universe);
 
         Chronicle::create([
             'universe_id' => $universe->id,

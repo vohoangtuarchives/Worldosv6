@@ -48,46 +48,46 @@ fn as_str(v: &Value) -> Option<&str> {
     v.as_str()
 }
 
-pub fn eval_expr(state: &Value, expr: &Expr, rng: Option<&mut impl Rng>) -> Value {
+pub fn eval_expr(state: &Value, expr: &Expr, mut rng: Option<&mut impl Rng>) -> Value {
     match expr {
         Expr::ConstFloat(f) => Value::Number(serde_json::Number::from_f64(*f).unwrap_or(serde_json::Number::from(0))),
         Expr::ConstInt(i) => Value::Number(serde_json::Number::from(*i)),
         Expr::ConstStr(s) => Value::String(s.clone()),
         Expr::Path(path) => get_path(state, path).unwrap_or(Value::Null),
         Expr::Add(a, b) => {
-            let x = as_f64(&eval_expr(state, a, rng)).unwrap_or(0.0);
-            let y = as_f64(&eval_expr(state, b, rng)).unwrap_or(0.0);
+            let x = as_f64(&eval_expr(state, a, rng.as_mut().map(|r| &mut **r))).unwrap_or(0.0);
+            let y = as_f64(&eval_expr(state, b, rng.as_mut().map(|r| &mut **r))).unwrap_or(0.0);
             Value::Number(serde_json::Number::from_f64(x + y).unwrap_or(serde_json::Number::from(0)))
         }
         Expr::Sub(a, b) => {
-            let x = as_f64(&eval_expr(state, a, rng)).unwrap_or(0.0);
-            let y = as_f64(&eval_expr(state, b, rng)).unwrap_or(0.0);
+            let x = as_f64(&eval_expr(state, a, rng.as_mut().map(|r| &mut **r))).unwrap_or(0.0);
+            let y = as_f64(&eval_expr(state, b, rng.as_mut().map(|r| &mut **r))).unwrap_or(0.0);
             Value::Number(serde_json::Number::from_f64(x - y).unwrap_or(serde_json::Number::from(0)))
         }
         Expr::Mul(a, b) => {
-            let x = as_f64(&eval_expr(state, a, rng)).unwrap_or(0.0);
-            let y = as_f64(&eval_expr(state, b, rng)).unwrap_or(0.0);
+            let x = as_f64(&eval_expr(state, a, rng.as_mut().map(|r| &mut **r))).unwrap_or(0.0);
+            let y = as_f64(&eval_expr(state, b, rng.as_mut().map(|r| &mut **r))).unwrap_or(0.0);
             Value::Number(serde_json::Number::from_f64(x * y).unwrap_or(serde_json::Number::from(0)))
         }
         Expr::Div(a, b) => {
-            let x = as_f64(&eval_expr(state, a, rng)).unwrap_or(0.0);
-            let y = as_f64(&eval_expr(state, b, rng)).unwrap_or(0.0);
+            let x = as_f64(&eval_expr(state, a, rng.as_mut().map(|r| &mut **r))).unwrap_or(0.0);
+            let y = as_f64(&eval_expr(state, b, rng.as_mut().map(|r| &mut **r))).unwrap_or(0.0);
             let v = if y.abs() < 1e-12 { 0.0 } else { x / y };
             Value::Number(serde_json::Number::from_f64(v).unwrap_or(serde_json::Number::from(0)))
         }
         Expr::FunctionCall { name, args } => {
             let n = name.to_lowercase();
             if n == "sigmoid" && args.len() == 1 {
-                let x = as_f64(&eval_expr(state, &args[0], rng)).unwrap_or(0.0);
+                let x = as_f64(&eval_expr(state, &args[0], rng.as_mut().map(|r| &mut **r))).unwrap_or(0.0);
                 let v = 1.0 / (1.0 + (-x).exp());
                 return Value::Number(serde_json::Number::from_f64(v).unwrap_or(serde_json::Number::from(0)));
             }
             if n == "clamp" && (args.len() == 1 || args.len() == 3) {
-                let x = as_f64(&eval_expr(state, &args[0], rng)).unwrap_or(0.0);
+                let x = as_f64(&eval_expr(state, &args[0], rng.as_mut().map(|r| &mut **r))).unwrap_or(0.0);
                 let (lo, hi) = if args.len() == 3 {
                     (
-                        as_f64(&eval_expr(state, &args[1], rng)).unwrap_or(0.0),
-                        as_f64(&eval_expr(state, &args[2], rng)).unwrap_or(1.0),
+                        as_f64(&eval_expr(state, &args[1], rng.as_mut().map(|r| &mut **r))).unwrap_or(0.0),
+                        as_f64(&eval_expr(state, &args[2], rng.as_mut().map(|r| &mut **r))).unwrap_or(1.0),
                     )
                 } else {
                     (0.0, 1.0)
@@ -96,7 +96,7 @@ pub fn eval_expr(state: &Value, expr: &Expr, rng: Option<&mut impl Rng>) -> Valu
                 return Value::Number(serde_json::Number::from_f64(v).unwrap_or(serde_json::Number::from(0)));
             }
             if n == "random" && args.is_empty() {
-                let v = rng.map(|r| r.gen::<f64>()).unwrap_or(0.5);
+                let v = rng.as_mut().map(|r| r.gen::<f64>()).unwrap_or(0.5);
                 return Value::Number(serde_json::Number::from_f64(v).unwrap_or(serde_json::Number::from(0)));
             }
             Value::Null
@@ -104,15 +104,15 @@ pub fn eval_expr(state: &Value, expr: &Expr, rng: Option<&mut impl Rng>) -> Valu
     }
 }
 
-fn eval_expr_to_f64(state: &Value, expr: &Expr, rng: Option<&mut impl Rng>) -> f64 {
-    as_f64(&eval_expr(state, expr, rng)).unwrap_or(0.0)
+fn eval_expr_to_f64(state: &Value, expr: &Expr, mut rng: Option<&mut impl Rng>) -> f64 {
+    as_f64(&eval_expr(state, expr, rng.as_mut().map(|r| &mut **r))).unwrap_or(0.0)
 }
 
 pub fn eval_condition_expr(state: &Value, cond: &ConditionExpr) -> bool {
     match cond {
         ConditionExpr::Comparison { left, op, right } => {
-            let l = eval_expr(state, left, None);
-            let r = eval_expr(state, right, None);
+            let l = eval_expr(state, left, None::<&mut rand::rngs::StdRng>);
+            let r = eval_expr(state, right, None::<&mut rand::rngs::StdRng>);
             let a = as_f64(&l).unwrap_or(0.0);
             let b = as_f64(&r).unwrap_or(0.0);
             let s_left = as_str(&l);
@@ -170,7 +170,7 @@ impl RuleVm {
         &mut self,
         state: &Value,
         current_tick: u64,
-        rng: Option<&mut impl Rng>,
+        mut rng: Option<&mut impl Rng>,
         changed_paths: Option<&HashSet<String>>,
     ) -> Vec<RuleOutput> {
         let mut out = Vec::new();
@@ -213,8 +213,8 @@ impl RuleVm {
                 continue;
             }
 
-            let chance_val = eval_expr_to_f64(state, &rule.chance, rng).clamp(0.0, 1.0);
-            let fire = match rng {
+            let chance_val = eval_expr_to_f64(state, &rule.chance, rng.as_mut().map(|r| &mut **r)).clamp(0.0, 1.0);
+            let fire = match rng.as_mut() {
                 Some(r) => r.gen::<f64>() < chance_val,
                 None => chance_val >= 1.0,
             };
@@ -230,11 +230,11 @@ impl RuleVm {
                     Action::AdjustStability(delta) => out.push(RuleOutput::AdjustStability { delta: *delta }),
                     Action::AdjustEntropy(delta) => out.push(RuleOutput::AdjustEntropy { delta: *delta }),
                     Action::Add { path, value } => {
-                        let delta = eval_expr_to_f64(state, value, rng);
+                        let delta = eval_expr_to_f64(state, value, rng.as_mut().map(|r| &mut **r));
                         out.push(RuleOutput::AddPath { path: path.clone(), delta });
                     }
                     Action::Set { path, value } => {
-                        let v = eval_expr(state, value, rng);
+                        let v = eval_expr(state, value, rng.as_mut().map(|r| &mut **r));
                         out.push(RuleOutput::SetPath { path: path.clone(), value: v });
                     }
                     Action::SpawnActor { kind } => out.push(RuleOutput::SpawnActor { kind: kind.clone() }),

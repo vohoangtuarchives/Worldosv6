@@ -1,18 +1,14 @@
-"use client";
-
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense } from "react";
+import { CosmologicDashboard } from "@/components/dashboard/CosmologicDashboard";
 
 export default function DashboardPage() {
-  const router = useRouter();
-
-  useEffect(() => {
-    router.replace("/dashboard/micro");
-  }, [router]);
-
   return (
-    <div className="min-h-[40vh] flex items-center justify-center text-muted-foreground">
-      Đang chuyển đến Micro…
-    </div>
+    <Suspense fallback={
+      <div className="flex h-screen w-screen items-center justify-center bg-background">
+        <div className="text-blue-400 font-mono animate-pulse">Initializing WorldOS Dashboard...</div>
+      </div>
+    }>
+      <CosmologicDashboard />
+    </Suspense>
   );
 }

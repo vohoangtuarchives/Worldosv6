@@ -98,7 +98,9 @@ class ActorEntity
         public array $metrics = [],
         public bool $isAlive = true,
         public int $generation = 1,
-        public ?string $biography = null
+        public ?string $biography = null,
+        public bool $isHeroic = false,
+        public ?string $heroicType = null
     ) {}
 
     /**
@@ -132,7 +134,9 @@ class ActorEntity
             metrics: $this->metrics,
             isAlive: $this->isAlive,
             generation: $this->generation,
-            biography: $this->biography
+            biography: $this->biography,
+            isHeroic: $this->isHeroic,
+            heroicType: $this->heroicType
         );
     }
 
@@ -148,5 +152,7 @@ class ActorEntity
         $this->isAlive = $state->isAlive;
         $this->generation = $state->generation;
         $this->biography = $state->biography;
+        $this->isHeroic = $state->isHeroic;
+        $this->heroicType = $state->heroicType;
     }
 }

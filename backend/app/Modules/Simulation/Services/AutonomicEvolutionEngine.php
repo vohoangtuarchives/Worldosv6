@@ -5,6 +5,8 @@ namespace App\Modules\Simulation\Services;
 use App\Contracts\UniverseEvaluatorInterface;
 use App\Contracts\UniverseSimilarityServiceInterface;
 use App\Models\UniverseSnapshot;
+use App\Models\Myth;
+use App\Models\School;
 use App\Services\Simulation\MetricsExtractor;
 use Illuminate\Support\Facades\Log;
 
@@ -65,11 +67,19 @@ class AutonomicEvolutionEngine implements UniverseEvaluatorInterface
             } elseif ($entropy >= $forkMin) {
                 $recommendation = 'fork';
             } elseif ($promoteComplexity > 0 && $complexity >= $promoteComplexity) {
-                $recommendation = 'promote';
-                Log::info("AEE: promote (complexity milestone) Universe " . ($snapshot->universe_id ?? '?') . " at tick {$snapshot->tick}, complexity={$complexity}");
+                if ($this->isQualitativelyReady($snapshot)) {
+                    $recommendation = 'promote';
+                    Log::info("AEE: promote (complexity milestone) Universe " . ($snapshot->universe_id ?? '?') . " at tick {$snapshot->tick}, complexity={$complexity}");
+                } else {
+                    Log::debug("AEE: skipped promote (complexity reached but qualitative depth insufficient) Universe " . ($snapshot->universe_id ?? '?'));
+                }
             } elseif ($promoteCivCount > 0 && ($m['civilization_count'] ?? 0) >= $promoteCivCount) {
-                $recommendation = 'promote';
-                Log::info("AEE: promote (civ count milestone) Universe " . ($snapshot->universe_id ?? '?') . " at tick {$snapshot->tick}");
+                if ($this->isQualitativelyReady($snapshot)) {
+                    $recommendation = 'promote';
+                    Log::info("AEE: promote (civ count milestone) Universe " . ($snapshot->universe_id ?? '?') . " at tick {$snapshot->tick}");
+                } else {
+                    Log::debug("AEE: skipped promote (civ count reached but qualitative depth insufficient) Universe " . ($snapshot->universe_id ?? '?'));
+                }
             } elseif ($novelty < $stagnationThreshold) {
                 $recommendation = 'mutate';
                 Log::info("AEE: mutate (stub) suggested for Universe " . ($snapshot->universe_id ?? '?') . " at tick {$snapshot->tick}, novelty={$novelty}");
@@ -99,6 +109,23 @@ class AutonomicEvolutionEngine implements UniverseEvaluatorInterface
             'mutation_suggestion' => $mutation_suggestion,
             'meta' => $meta,
         ];
+    }
+
+    /**
+     * Check if the universe has enough qualitative depth (Myths, Schools) to promote.
+     */
+    protected function isQualitativelyReady(UniverseSnapshot $snapshot): bool
+    {
+        $universeId = $snapshot->universe_id;
+        if (!$universeId) return false;
+
+        $mythCount = Myth::where('universe_id', $universeId)->count();
+        $schoolCount = School::where('universe_id', $universeId)->count();
+
+        $minMyths = (int) config('worldos.autonomic.promote_min_myths', 2);
+        $minSchools = (int) config('worldos.autonomic.promote_min_schools', 1);
+
+        return $mythCount >= $minMyths || $schoolCount >= $minSchools;
     }
 
     /**

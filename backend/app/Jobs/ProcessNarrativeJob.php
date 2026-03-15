@@ -17,7 +17,7 @@ use App\Services\Narrative\MythologyEngine;
 use App\Services\Narrative\ReligionGenerator;
 use App\Services\Narrative\ReligionSeedDetector;
 use App\Services\Narrative\FuturePredictor;
-use App\Services\Narrative\ProphecyGenerator;
+use App\Services\Narrative\CausalTrajectoryGenerator;
 use App\Services\Narrative\LegendEngine;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -44,7 +44,7 @@ class ProcessNarrativeJob implements ShouldQueue
         $this->onQueue('narrative');
     }
 
-    public function handle(NarrativeEngine $narrativeEngine, EraNarrativeEngine $eraNarrativeEngine, CivilizationChronicleEngine $civilizationChronicleEngine, MythologyEngine $mythologyEngine, ReligionGenerator $religionGenerator, ReligionSeedDetector $religionSeedDetector, ProphecyGenerator $prophecyGenerator, FuturePredictor $futurePredictor, LegendEngine $legendEngine): void
+    public function handle(NarrativeEngine $narrativeEngine, EraNarrativeEngine $eraNarrativeEngine, CivilizationChronicleEngine $civilizationChronicleEngine, MythologyEngine $mythologyEngine, ReligionGenerator $religionGenerator, ReligionSeedDetector $religionSeedDetector, CausalTrajectoryGenerator $causal_trajectoryGenerator, FuturePredictor $futurePredictor, LegendEngine $legendEngine): void
     {
         $job = NarrativeJob::find($this->narrativeJobId);
         if (!$job) {
@@ -66,7 +66,7 @@ class ProcessNarrativeJob implements ShouldQueue
                 'civilization' => $this->runCivilizationEngine($job, $civilizationChronicleEngine),
                 'mythology' => $this->runMythologyEngine($job, $mythologyEngine),
                 'religion' => $this->runReligionEngine($job, $religionGenerator, $religionSeedDetector),
-                'prophecy' => $this->runProphecyEngine($job, $prophecyGenerator, $futurePredictor),
+                'causal_trajectory' => $this->runCausalTrajectoryEngine($job, $causal_trajectoryGenerator, $futurePredictor),
                 'legend' => $this->runLegendEngine($job, $legendEngine),
                 default => Log::warning("ProcessNarrativeJob: Unknown engine {$job->engine}, marking completed."),
             };
@@ -164,7 +164,7 @@ class ProcessNarrativeJob implements ShouldQueue
         $religionGenerator->generateFromMyth($myth);
     }
 
-    private function runProphecyEngine(NarrativeJob $job, ProphecyGenerator $prophecyGenerator, FuturePredictor $futurePredictor): void
+    private function runCausalTrajectoryEngine(NarrativeJob $job, CausalTrajectoryGenerator $causal_trajectoryGenerator, FuturePredictor $futurePredictor): void
     {
         $universe = Universe::find($job->universe_id);
         if (!$universe) {
@@ -179,7 +179,7 @@ class ProcessNarrativeJob implements ShouldQueue
                 ->first();
             $stateSummary = $snapshot ? $futurePredictor->summarizeFromSnapshot($snapshot) : "Tick {$tick}: unknown state.";
         }
-        $prophecyGenerator->generateForUniverse($universe, $tick, $stateSummary);
+        $causal_trajectoryGenerator->generateForUniverse($universe, $tick, $stateSummary);
     }
 
     private function runLegendEngine(NarrativeJob $job, LegendEngine $legendEngine): void

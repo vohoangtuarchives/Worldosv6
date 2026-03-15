@@ -48,7 +48,7 @@ class MythologyEngine
         }
 
         $mythType = $payload['myth_type'] ?? 'legend';
-        if (!in_array($mythType, ['legend', 'religion', 'prophecy'], true)) {
+        if (!in_array($mythType, ['legend', 'religion', 'causal_trajectory'], true)) {
             $mythType = 'legend';
         }
 

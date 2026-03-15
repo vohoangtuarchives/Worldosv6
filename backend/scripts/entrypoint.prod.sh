@@ -5,4 +5,10 @@ if [ -d /var/www/public.from-image ] && [ -z "$(ls -A /var/www/public 2>/dev/nul
   cp -a /var/www/public.from-image/. /var/www/public/
   chown -R www-data:www-data /var/www/public
 fi
+
+# Clear stale caches that might be persisted in volumes
+php artisan config:clear
+php artisan route:clear
+php artisan view:clear
+
 exec "$@"

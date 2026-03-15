@@ -1,0 +1,91 @@
+<?php
+
+namespace App\Simulation\Engines;
+
+use App\Simulation\Runtime\State\WorldState;
+use App\Services\Simulation\RuleVmService;
+use Illuminate\Support\Facades\Log;
+use function resource_path;
+use function file_get_contents;
+use function file_exists;
+
+/**
+ * Phase 51: Historical Scars Engine 📜🩸
+ * 
+ * Chuyển hóa các sử lục (Chronicles) thành các "Vết sẹo" lâu dài trong manifold.
+ */
+class HistoricalScarsEngine
+{
+    public function __construct(
+        protected RuleVmService $ruleVm
+    ) {}
+
+    public function runWithState(WorldState $state, int $tick): void
+    {
+        // 1. Phân tích Chronicles để tạo Scars mới
+        $this->generateScarsFromChronicles($state, $tick);
+
+        // 2. Chạy DSL để cập nhật/phân rã Scars hiện có
+        $this->processScarDynamics($state, $tick);
+    }
+
+    protected function generateScarsFromChronicles(WorldState $state, int $tick): void
+    {
+        $chronicles = $state->getRecentChronicles();
+        if (empty($chronicles)) return;
+
+        $scars = $state->getScars();
+        
+        foreach ($chronicles as $chronicle) {
+            $type = $chronicle->type ?? 'unknown';
+            $magnitude = $this->estimateMagnitude($chronicle);
+            
+            if ($magnitude <= 0) continue;
+
+            $scarKey = strtoupper($type) . '_SCAR';
+            
+            if (isset($scars[$scarKey])) {
+                $scars[$scarKey]['magnitude'] += $magnitude;
+                $scars[$scarKey]['last_updated_at'] = $tick;
+            } else {
+                $scars[$scarKey] = [
+                    'type' => $type,
+                    'magnitude' => $magnitude,
+                    'created_at' => $tick,
+                    'last_updated_at' => $tick,
+                    'metadata' => $chronicle->raw_payload ?? []
+                ];
+            }
+        }
+
+        $state->setScars($scars);
+    }
+
+    protected function processScarDynamics(WorldState $state, int $tick): void
+    {
+        $path = resource_path('worldos_rules/simulation/scars.dsl');
+        if (!file_exists($path)) {
+            Log::warning("HistoricalScarsEngine: scars.dsl not found at {$path}");
+            return;
+        }
+
+        $dsl = file_get_contents($path);
+        $this->ruleVm->evaluateAndApplyWithState($state, $dsl, $tick);
+    }
+
+    protected function estimateMagnitude($chronicle): float
+    {
+        // Logic đơn giản: đánh giá độ quan trọng của sự kiện
+        $type = $chronicle->type ?? '';
+        
+        return match($type) {
+            'war' => 2.0,
+            'plague' => 1.5,
+            'innovation' => 1.0,
+            'famine' => 1.2,
+            'natural_disaster' => 1.8,
+            'causal_correction' => 3.0,
+            default => 0.5
+        };
+    }
+}

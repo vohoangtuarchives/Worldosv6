@@ -3,8 +3,8 @@
 namespace App\Simulation;
 
 use App\Simulation\Contracts\Effect;
-use App\Simulation\Domain\WorldState;
-use App\Simulation\Domain\WorldStateMutable;
+use App\Simulation\Runtime\State\WorldState;
+use App\Simulation\Runtime\State\WorldStateMutable;
 
 /**
  * Applies a list of effects to a mutable copy of WorldState and returns the resulting WorldState.

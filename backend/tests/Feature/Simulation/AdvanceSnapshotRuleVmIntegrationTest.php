@@ -6,7 +6,6 @@ use App\Actions\Simulation\AdvanceSimulationAction;
 use App\Contracts\SimulationEngineClientInterface;
 use App\Events\Simulation\SimulationEventOccurred;
 use App\Models\Multiverse;
-use App\Models\Saga;
 use App\Models\Universe;
 use App\Models\UniverseSnapshot;
 use App\Models\World;
@@ -44,10 +43,8 @@ class AdvanceSnapshotRuleVmIntegrationTest extends TestCase
             'global_tick' => 0,
             'snapshot_interval' => 1,
         ]);
-        $saga = Saga::create(['world_id' => $world->id, 'name' => 'Test Saga', 'status' => 'active']);
         $this->universe = Universe::create([
             'world_id' => $world->id,
-            'saga_id' => $saga->id,
             'multiverse_id' => $mv->id,
             'current_tick' => 0,
             'status' => 'active',

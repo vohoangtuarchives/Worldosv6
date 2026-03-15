@@ -6,41 +6,62 @@ use App\Models\Universe;
 use App\Models\UniverseSnapshot;
 use App\Models\Chronicle;
 use App\Models\SupremeEntity;
+use App\Services\Simulation\RuleVmService;
 use Illuminate\Support\Facades\Log;
+use function resource_path;
+use function file_get_contents;
+use function abs;
+use function max;
 
 class CausalCorrectionEngine
 {
+    public function __construct(
+        protected RuleVmService $ruleVm
+    ) {}
+
     /**
      * Phân tích và thực thi tiến trình tái cân bằng nhân quả để duy trì tính toàn vẹn của vũ trụ.
      */
     public function process(Universe $universe, UniverseSnapshot $snapshot): void
     {
-        $entities = SupremeEntity::where('universe_id', $universe->id)->get();
+        // Bridge to manifold
+    }
+
+    public function runWithState(\App\Simulation\Runtime\State\WorldState $state, int $tick): void
+    {
+        $entities = $state->getSupremeEntities();
+        if (empty($entities)) return;
+
+        $dslFile = resource_path('worldos_rules/simulation/integrity.dsl');
+        $dsl = @file_get_contents($dslFile) ?: '';
 
         foreach ($entities as $entity) {
-            // Nợ nhân quả (Causal Debt) - Tính toán sự sai lệch thực tại do thực thể tối cao gây ra
-            $causalDebt = abs($entity->karma); 
+            // Map entity properties to state temporary keys for DSL evaluation
+            $state->set('temp.supreme_entity', [
+                'id' => $entity->id,
+                'name' => $entity->name,
+                'karma' => (float)$entity->karma,
+                'power_level' => (float)$entity->power_level,
+            ]);
 
-            // Nếu nợ vượt ngưỡng ổn định (100 Φ), thực hiện tái cấu trúc
-            if ($causalDebt > 100) {
-                $this->triggerCorrection($entity, $universe, (int)$snapshot->tick);
-            }
+            // Evaluate integrity rules for this entity
+            $this->ruleVm->evaluateAndApplyWithState($state, $dsl, $tick);
+            
+            // Note: If DSL emits TRIGGER_CAUSAL_CORRECTION, it should be handled via State triggers or Events
+            // For now, we assume direct property drift in DSL is more Manifold-native
         }
     }
 
-    protected function triggerCorrection(SupremeEntity $entity, Universe $universe, int $tick): void
+    protected function triggerCorrection(SupremeEntity $entity, Universe $universe, int $tick, array $metadata): void
     {
-        // Hiệu ứng Tái cân bằng tính toàn vẹn (Integrity Rebalancing)
-        $correctionMagnitude = abs($entity->karma) * 0.5;
+        $correctionMagnitude = (float) ($metadata['magnitude'] ?? 0);
         
-        // Giảm gánh nặng hệ thống bằng cách phân rã bớt quyền năng của thực thể
         $entity->update([
-            'karma' => $entity->karma * 0.1, // Hóa giải phần lớn nợ
+            'karma' => (float) ($metadata['new_karma'] ?? ($entity->karma * 0.1)),
             'power_level' => max(1, $entity->power_level - ($correctionMagnitude * 0.1))
         ]);
 
-        $narrative = "TÁI CÂN BẰNG TÍNH TOÀN VẸN: Thực thể [{$entity->name}] đã tích lũy nợ nhân quả vượt quá hằng số ổn định của vũ trụ. " .
-                     "Một tiến trình tự điều chỉnh thực tại đã phát động, hóa giải nợ và tái lập cấu trúc nhân quả trung tính.";
+        $narrative = $metadata['description'] ?? "TÁI CÂN BẰNG TÍNH TOÀN VẸN: Áp lực nhân quả đã được giải tỏa.";
 
         Chronicle::create([
             'universe_id' => $universe->id,

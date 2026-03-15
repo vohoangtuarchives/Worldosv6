@@ -1,7 +1,6 @@
 "use client";
 
 import { SimulationProvider } from "@/context/SimulationContext";
-import { DashboardShell } from "@/components/dashboard/DashboardShell";
 
 export default function DashboardLayout({
   children,
@@ -10,7 +9,7 @@ export default function DashboardLayout({
 }) {
   return (
     <SimulationProvider>
-      <DashboardShell>{children}</DashboardShell>
+      {children}
     </SimulationProvider>
   );
 }

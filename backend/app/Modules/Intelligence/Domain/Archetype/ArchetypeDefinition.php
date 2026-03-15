@@ -17,7 +17,9 @@ final class ArchetypeDefinition
         public readonly string $name,
         public readonly string $namePrefix,
         callable $scoreFunction,
-        ?callable $condition = null
+        ?callable $condition = null,
+        public readonly array $motivationVector = [],
+        public readonly float $distributionTarget = 0.05
     ) {
         $this->scoreFunction = $scoreFunction;
         $this->condition = $condition;

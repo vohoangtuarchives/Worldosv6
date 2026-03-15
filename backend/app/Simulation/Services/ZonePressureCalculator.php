@@ -2,7 +2,7 @@
 
 namespace App\Simulation\Services;
 
-use App\Simulation\Domain\WorldState;
+use App\Simulation\Runtime\State\WorldState;
 
 /**
  * Computes zone-level pressure deltas from zone state, global state, and neighbor pressures.

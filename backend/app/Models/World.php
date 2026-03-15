@@ -30,8 +30,4 @@ class World extends Model
         return $this->hasMany(Universe::class);
     }
 
-    public function sagas(): HasMany
-    {
-        return $this->hasMany(Saga::class);
     }
-}

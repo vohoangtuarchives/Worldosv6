@@ -128,13 +128,13 @@ class NarrativeScheduler
     }
 
     /**
-     * Schedule prophecy generation (engine=prophecy). Payload: universe_id, tick, state_summary (optional).
+     * Schedule causal_trajectory generation (engine=causal_trajectory). Payload: universe_id, tick, state_summary (optional).
      */
-    public function scheduleProphecy(int $universeId, int $tick, ?string $stateSummary = null): ?NarrativeJob
+    public function scheduleCausalTrajectory(int $universeId, int $tick, ?string $stateSummary = null): ?NarrativeJob
     {
         $job = NarrativeJob::create([
             'universe_id' => $universeId,
-            'engine' => 'prophecy',
+            'engine' => 'causal_trajectory',
             'payload' => ['tick' => $tick, 'state_summary' => $stateSummary],
             'status' => NarrativeJob::STATUS_PENDING,
         ]);

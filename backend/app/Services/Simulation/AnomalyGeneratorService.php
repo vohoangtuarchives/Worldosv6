@@ -3,15 +3,36 @@
 namespace App\Services\Simulation;
 
 use App\Models\Universe;
+use App\Models\BranchEvent;
 use App\Models\Chronicle;
+use App\Services\Simulation\RuleVmService;
+use App\Simulation\Runtime\State\WorldState;
 use Illuminate\Support\Facades\Log;
+use function resource_path;
+use function file_get_contents;
+use function array_merge;
+use function min;
+use function max;
+use function count;
+use function is_array;
+use function round;
+use function array_slice;
 
 /**
  * AnomalyGeneratorService: Triggers unclassifiable anomalies (§V25).
- * Natural disasters (Doc §14): struct disaster (type, zone_id, intensity, tick) in state_vector and events.
  */
 class AnomalyGeneratorService
 {
+    public function __construct(
+        protected RuleVmService $ruleVm
+    ) {}
+
+    public function runWithState(\App\Simulation\Runtime\State\WorldState $state, int $tick): void
+    {
+        $this->ruleVm->evaluateAndApplyWithState($state, 'simulation/anomalies', $tick);
+        Log::debug("AnomalyGeneratorService: Universe {$state->get('universe_id')} anomalies evaluated at tick {$tick}");
+    }
+
     /** Natural disaster types (Doc §14 Disaster struct). */
     public const DISASTER_DROUGHT = 'drought';
     public const DISASTER_FLOOD = 'flood';
@@ -26,102 +47,152 @@ class AnomalyGeneratorService
         self::DISASTER_STORM,
         self::DISASTER_PESTILENCE,
     ];
+
     /**
-     * Spawn a random anomaly inside the state vector.
+     * Evaluate anomaly rules and spawn if triggered.
      */
     public function spawnAnomaly(Universe $universe): void
     {
-        $types = ['biological_hivemind', 'spatial_fracture', 'axiom_duplication'];
-        $type = $types[array_rand($types)];
-        $details = [];
+        $dslFile = resource_path('worldos_rules/simulation/anomalies.dsl');
+        $dsl = @file_get_contents($dslFile) ?: '';
 
+        // Prepare state - include random chance for DSL to use
+        $state = array_merge($universe->state_vector ?? [], [
+            'tick' => (int) $universe->current_tick,
+            'random_chance' => (float) (lcg_value()), // 0..1
+            'has_zones' => isset($universe->state_vector['zones']) && !empty($universe->state_vector['zones']),
+            'instability_gradient' => (float) ($universe->state_vector['instability_gradient'] ?? 0.0),
+        ]);
+
+        $result = $this->ruleVm->evaluateRawState($state, $dsl);
+
+        if (!($result['ok'] ?? false)) {
+            return;
+        }
+
+        $outputs = $result['outputs'] ?? [];
+        foreach ($outputs as $out) {
+            if (($out['type'] ?? '') === 'event' && ($out['event_name'] ?? '') === 'SPAWN_ANOMALY') {
+                $metadata = $out['metadata'] ?? [];
+                $this->executeAnomalySpawn(
+                    $universe, 
+                    $metadata['anomaly_type'] ?? 'unknown',
+                    (float) ($metadata['severity'] ?? 0.5),
+                    $metadata['description'] ?? 'Dị thường không xác định.',
+                    $metadata
+                );
+            }
+        }
+    }
+
+    /**
+     * Internal execution of anomaly effects (Driven by DSL metadata).
+     */
+    protected function executeAnomalySpawn(Universe $universe, string $type, float $severity, string $description, array $metadata = []): void
+    {
+        $details = ['description' => $description];
         $vec = $universe->state_vector ?? [];
+        $prng = \App\Services\Simulation\SimulationPRNG::forUniverse($universe);
 
         switch ($type) {
             case 'biological_hivemind':
-                // For a random zone, set all agents' order to 1.0 (perfect conformity)
-                if (isset($vec['zones']) && !empty($vec['zones'])) {
-                    $zoneIdx = array_rand($vec['zones']);
+                if (isset($vec['zones']) && is_array($vec['zones']) && count($vec['zones']) > 0) {
+                    $zoneIdx = $prng->arrayRand($vec['zones']);
+                    $stressInc = (float) ($metadata['material_stress_inc'] ?? $severity);
+                    $agentOrder = (float) ($metadata['agent_order'] ?? 1.0);
+
+                    $vec['zones'][$zoneIdx]['material_stress'] = min(1.0, ($vec['zones'][$zoneIdx]['material_stress'] ?? 0) + $stressInc);
                     if (isset($vec['zones'][$zoneIdx]['state']['agents'])) {
                         foreach ($vec['zones'][$zoneIdx]['state']['agents'] as &$agent) {
-                            $agent['order'] = 1.0;
-                            // Add a visual tag if trait exists, though simplified here
+                            $agent['order'] = $agentOrder;
                         }
                     }
                     $details['zone_id'] = $zoneIdx;
                 }
                 break;
-
             case 'spatial_fracture':
-                // Add a permanent scar of unprecedented intensity
                 $scars = $vec['scars'] ?? [];
+                $intensity = (float) ($metadata['scar_intensity'] ?? 0.99);
+                $coherenceInc = (float) ($metadata['coherence_inc'] ?? 0.2);
+
                 $scars[] = [
                     'type' => 'spatial_fracture',
                     'tick' => $universe->current_tick,
-                    'description' => "Vết nứt không gian - Thời gian đóng băng.",
-                    'intensity' => 0.99
+                    'description' => $description,
+                    'intensity' => $intensity
                 ];
                 $vec['scars'] = $scars;
-                $universe->structural_coherence = min(1.0, $universe->structural_coherence + 0.2); // Counter-intuitive reaction
-                $content = "DỊ THƯỜNG KHÔNG GIAN: Một vết nứt tĩnh lặng xuất hiện. Ở bên trong nó, thời gian đã chết.";
+                $universe->structural_coherence = min(1.0, $universe->structural_coherence + $coherenceInc);
                 break;
-            
             case 'axiom_duplication':
-                // Duplicate an axiom rule randomly
                 if (isset($vec['axioms'])) {
                     $worldAxioms = $universe->world?->axiom ?? [];
                     if (!empty($worldAxioms)) {
-                        $randomAxiom = $worldAxioms[array_rand($worldAxioms)] ?? 'gravity_shift';
-                        $vec['axioms'][] = $randomAxiom; // Apply an effect twice
-                        $details['duplicated_axiom'] = $randomAxiom;
+                        $duplicate = $prng->randomElement($worldAxioms);
+                        $vec['axioms'][] = $duplicate;
+                        $details['duplicated_axiom'] = $duplicate;
                     }
                 }
                 break;
         }
 
-        if ($type !== "") {
-            $universe->state_vector = $vec;
-            $universe->save();
+        $universe->state_vector = $vec;
+        $universe->save();
 
-            Chronicle::create([
-                'universe_id' => $universe->id,
-                'from_tick' => $universe->current_tick,
-                'to_tick' => $universe->current_tick,
-                'type' => 'chaos_anomaly',
-                'raw_payload' => [
-                    'action' => 'anomaly_spawned',
-                    'anomaly_type' => $type,
-                    'details' => $details ?? []
-                ],
-            ]);
-
-            Log::warning("ANOMALY: [{$type}] spawned in Universe #{$universe->id}.");
-        }
+        Chronicle::create([
+            'universe_id' => $universe->id,
+            'from_tick' => $universe->current_tick,
+            'to_tick' => $universe->current_tick,
+            'type' => 'chaos_anomaly',
+            'raw_payload' => ['anomaly_type' => $type, 'details' => $details],
+        ]);
     }
 
     /**
-     * Spawn a natural disaster (Doc §14): write Disaster struct to state_vector.disasters and Chronicle.
-     *
-     * @param  array{type?: string, zone_id?: int|string, intensity?: float}  $overrides
+     * Evaluate disaster rules and spawn if triggered.
      */
     public function spawnNaturalDisaster(Universe $universe, array $overrides = []): void
     {
-        $type = $overrides['type'] ?? self::DISASTER_TYPES[array_rand(self::DISASTER_TYPES)];
-        $zoneId = $overrides['zone_id'] ?? null;
-        $intensity = (float) ($overrides['intensity'] ?? 0.3 + (mt_rand() / mt_getrand_max()) * 0.6);
+        $dslFile = \resource_path('worldos_rules/simulation/anomalies.dsl');
+        $dsl = @file_get_contents($dslFile) ?: '';
+
+        // For disasters, we usually evaluate per zone or globally. 
+        // Here we'll process the decision logic in DSL.
+        $state = $universe->state_vector ?? [];
+        $state['random_chance'] = lcg_value();
+        $state['random_float_0_6'] = lcg_value() * 0.6;
+
+        $result = $this->ruleVm->evaluateRawState($state, $dsl);
+        $outputs = $result['outputs'] ?? [];
+
+        foreach ($outputs as $out) {
+            if (($out['type'] ?? '') === 'event' && ($out['event_name'] ?? '') === 'NATURAL_DISASTER_TRIGGERED') {
+                $metadata = $out['metadata'] ?? [];
+                $intensity = (float) ($metadata['intensity'] ?? 0.5);
+                $this->executeDisaster($universe, $intensity, $metadata['description'] ?? 'Thiên tai giáng xuống.', $metadata);
+            }
+        }
+    }
+
+    protected function executeDisaster(Universe $universe, float $intensity, string $description, array $metadata = []): void
+    {
+        $prng = \App\Services\Simulation\SimulationPRNG::forUniverse($universe);
+        $type = self::DISASTER_TYPES[$prng->arrayRand(self::DISASTER_TYPES)];
         $tick = $universe->current_tick ?? 0;
+        $limit = (int) ($metadata['disaster_limit'] ?? 20);
 
         $disaster = [
             'type' => $type,
-            'zone_id' => $zoneId,
+            'zone_id' => null, // Simplified
             'intensity' => round($intensity, 2),
             'tick' => $tick,
+            'description' => $description
         ];
 
         $vec = is_array($universe->state_vector) ? $universe->state_vector : [];
         $disasters = $vec['disasters'] ?? [];
         $disasters[] = $disaster;
-        $vec['disasters'] = array_slice($disasters, -20);
+        $vec['disasters'] = array_slice($disasters, -$limit);
         $universe->state_vector = $vec;
         $universe->save();
 
@@ -130,12 +201,7 @@ class AnomalyGeneratorService
             'from_tick' => $tick,
             'to_tick' => $tick,
             'type' => 'natural_disaster',
-            'raw_payload' => [
-                'action' => 'disaster_occurred',
-                'disaster' => $disaster,
-            ],
+            'raw_payload' => ['disaster' => $disaster],
         ]);
-
-        Log::info("Natural disaster [{$type}] in Universe #{$universe->id}", $disaster);
     }
 }

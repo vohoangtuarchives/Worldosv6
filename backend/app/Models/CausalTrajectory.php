@@ -4,28 +4,34 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use App\Models\Universe;
 
 class CausalTrajectory extends Model
 {
-    protected $table = 'prophecies'; // Giữ nguyên tên bảng để tránh migrate lại, nhưng class name phản ánh đúng bản chất
-
     protected $fillable = [
         'universe_id',
-        'target_tick',
-        'phenomenon_description', // Thay cho content
-        'probability',
-        'convergence_type', // Thay cho type
-        'is_fulfilled',
+        'created_tick',
+        'prediction_tick',
+        'text',
+        'confidence',
+        'fulfilled',
+        'source_snapshot_metrics',
     ];
 
     protected $casts = [
-        'probability' => 'float',
-        'is_fulfilled' => 'boolean',
+        'confidence' => 'float',
+        'fulfilled' => 'boolean',
+        'source_snapshot_metrics' => 'array',
     ];
 
     public function universe(): BelongsTo
     {
         return $this->belongsTo(Universe::class);
+    }
+
+    public function actors(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(Actor::class, 'actor_causal_trajectory_beliefs')
+            ->withPivot('belief_strength')
+            ->withTimestamps();
     }
 }

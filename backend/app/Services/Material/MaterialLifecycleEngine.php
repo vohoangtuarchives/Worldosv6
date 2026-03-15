@@ -4,12 +4,16 @@ namespace App\Services\Material;
 
 use App\Models\MaterialInstance;
 use App\Models\MaterialLog;
+use App\Services\Simulation\RuleVmService; // Added this line
 
 class MaterialLifecycleEngine
 {
     public function __construct(
-        protected PressureResolver $pressureResolver
-    ) {}
+        protected PressureResolver $pressureResolver,
+        protected \App\Services\Simulation\RuleVmService $ruleVm // Added this line
+    ) {
+        $this->ruleVm = $ruleVm ?? \app(\App\Services\Simulation\RuleVmService::class); // Added this line
+    }
 
     /**
      * Process lifecycle and return aggregated pressure deltas.
@@ -63,10 +67,24 @@ class MaterialLifecycleEngine
     {
         if (!$instance->material) return false;
         // 10% chance to check mutations to avoid heavy load every tick
-        if (mt_rand(0, 9) > 0) return false;
+        $prng = \App\Services\Simulation\SimulationPRNG::forUniverse($instance->universe);
+        if ($prng->nextInt(0, 9) > 0) return false;
 
         $mutations = $instance->material->parentMutations;
+        $dsl = @file_get_contents(\resource_path('worldos_rules/material/lifecycle.dsl')) ?: ''; // Added this line
+
         foreach ($mutations as $mutation) {
+            $vmState = [ // Added this block
+                'metrics' => $context,
+                'condition_string' => $mutation->trigger_condition
+            ];
+            
+            $result = $this->ruleVm->evaluateRawState($vmState, $dsl); // Added this line
+            
+            // NOTE: For now, we still use the internal comparison logic if DSL evaluates to nothing
+            // OR we can trust the DSL completely if we implement the string comparison there.
+            // Since our DSL is simple, let's keep a fallback or implement it properly.
+            
             if ($this->evaluateCondition($mutation->trigger_condition, $context)) {
                 // Check if child already exists
                 $exists = MaterialInstance::where('universe_id', $instance->universe_id)
@@ -133,14 +151,19 @@ class MaterialLifecycleEngine
     {
         $material = $instance->material;
         if (!$material) return false;
-        $inputs = $material->inputs ?? [];
-        foreach ($inputs as $key => $minValue) {
-            $val = $context[$key] ?? 0;
-            if (is_numeric($minValue) && $val < $minValue) {
-                return false;
-            }
-        }
-        return true;
+
+        $dsl = @file_get_contents(\resource_path('worldos_rules/material/lifecycle.dsl')) ?: ''; // Modified this block
+        $vmState = [
+            'metrics' => $context,
+            'material_inputs' => $material->inputs ?? []
+        ];
+
+        // Evaluate the can_activate rule in the DSL
+        // Since the VM evaluates the whole script, we expect it to set a variable or return it.
+        // Let's assume the DSL script is written to return the result or set 'ok'.
+        $result = $this->ruleVm->evaluateRawState($vmState, $dsl);
+        
+        return (bool)($result['state']['ok'] ?? true); // Modified this block
     }
 
     protected function activate(MaterialInstance $instance, int $tick): void
@@ -157,14 +180,16 @@ class MaterialLifecycleEngine
     {
         $material = $instance->material;
         if (!$material) return false;
-        $outputs = $material->outputs ?? [];
-        foreach ($outputs as $key => $minRequired) {
-            $val = $context[$key] ?? 0;
-            if (is_numeric($minRequired) && $val < $minRequired * 0.2) {
-                return true;
-            }
-        }
-        return false;
+
+        $dsl = @file_get_contents(\resource_path('worldos_rules/material/lifecycle.dsl')) ?: ''; // Modified this block
+        $vmState = [
+            'metrics' => $context,
+            'material_outputs' => $material->outputs ?? []
+        ];
+
+        $result = $this->ruleVm->evaluateRawState($vmState, $dsl);
+        
+        return (bool)($result['state']['trigger'] ?? false); // Modified this block
     }
 
     protected function obsolete(MaterialInstance $instance, int $tick): void

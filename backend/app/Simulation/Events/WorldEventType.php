@@ -59,6 +59,7 @@ final class WorldEventType
     public const IDEOLOGY_BORN = 'ideology_born';
     public const PHILOSOPHY_SCHOOL = 'philosophy_school';
     public const POLITICAL_REVOLUTION = 'political_revolution';
+    public const STABILITY_CRISIS = 'stability_crisis';
     public const CONSTITUTION_WRITTEN = 'constitution_written';
 
     // Simulation / kernel
@@ -88,7 +89,7 @@ final class WorldEventType
             self::ARCHITECTURAL_STYLE_BORN, self::CULTURAL_DRIFT,
             self::TRADE_ROUTE_ESTABLISHED, self::MARKET_CRASH, self::ECONOMIC_BOOM, self::CURRENCY_CREATED,
             self::MIGRATION_WAVE, self::POPULATION_BOOM, self::FAMINE, self::PLAGUE_OUTBREAK, self::CROP_FAILURE,
-            self::IDEOLOGY_BORN, self::PHILOSOPHY_SCHOOL, self::POLITICAL_REVOLUTION, self::CONSTITUTION_WRITTEN,
+            self::IDEOLOGY_BORN, self::PHILOSOPHY_SCHOOL, self::POLITICAL_REVOLUTION, self::STABILITY_CRISIS, self::CONSTITUTION_WRITTEN,
             self::STRUCTURAL_DECAY, self::PHASE_TRANSITION, self::ECOLOGICAL_COLLAPSE,
             self::ACTOR_DIED, self::SPECIES_EXTINCT,
             self::ZONE_PRESSURES_UPDATED, self::PRESSURE_UPDATE, self::WORLD_RULES_MUTATED, self::TOPOLOGY_REWIRED,
@@ -116,7 +117,7 @@ final class WorldEventType
             self::MIGRATION_WAVE => 'population', self::POPULATION_BOOM => 'population',
             self::FAMINE => 'population', self::PLAGUE_OUTBREAK => 'population', self::CROP_FAILURE => 'population',
             self::IDEOLOGY_BORN => 'ideology', self::PHILOSOPHY_SCHOOL => 'ideology',
-            self::POLITICAL_REVOLUTION => 'ideology', self::CONSTITUTION_WRITTEN => 'ideology',
+            self::POLITICAL_REVOLUTION => 'ideology', self::STABILITY_CRISIS => 'ideology', self::CONSTITUTION_WRITTEN => 'ideology',
             self::STRUCTURAL_DECAY => 'simulation', self::PHASE_TRANSITION => 'simulation',
             self::ECOLOGICAL_COLLAPSE => 'simulation', self::ACTOR_DIED => 'simulation',
             self::SPECIES_EXTINCT => 'simulation',

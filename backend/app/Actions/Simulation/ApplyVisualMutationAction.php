@@ -6,7 +6,7 @@ use App\Models\LegendaryAgent;
 use App\Models\Universe;
 use App\Models\VisualBranch;
 use App\Services\AI\VisualDnaEngine;
-use App\Services\Saga\SagaService;
+use App\Services\Orchestrator\ImplicitOrchestratorService;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -17,7 +17,7 @@ class ApplyVisualMutationAction
 {
     public function __construct(
         protected VisualDnaEngine $dnaEngine,
-        protected SagaService $sagaService
+        protected ImplicitOrchestratorService $orchestrator
     ) {}
 
     /**
@@ -50,7 +50,7 @@ class ApplyVisualMutationAction
 
         // Phase 74: Universal Bifurcation (§V13)
         // Fork the entire universe state
-        $childUniverse = $this->sagaService->spawnUniverse(
+        $childUniverse = $this->orchestrator->spawnUniverse(
             $universe->world,
             $universe->id,
             $universe->saga_id

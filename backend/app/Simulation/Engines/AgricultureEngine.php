@@ -6,7 +6,13 @@ use App\Simulation\Concerns\DefaultSimulationEnginePhase;
 use App\Simulation\Contracts\SimulationEngine;
 use App\Simulation\Domain\EngineResult;
 use App\Simulation\Domain\TickContext;
-use App\Simulation\Domain\WorldState;
+use App\Simulation\Runtime\State\WorldState;
+use App\Services\Simulation\RuleVmService;
+use App\Simulation\Events\WorldEvent;
+use App\Simulation\Events\WorldEventType;
+use function resource_path;
+use function file_get_contents;
+use function app;
 
 /**
  * doc §6.3: Agriculture Engine stub. food_production, food_required, famine, tech stages.
@@ -14,6 +20,12 @@ use App\Simulation\Domain\WorldState;
 final class AgricultureEngine implements SimulationEngine
 {
     use DefaultSimulationEnginePhase;
+
+    public function __construct(
+        private ?RuleVmService $ruleVm = null
+    ) {
+        $this->ruleVm = $this->ruleVm ?? \app(RuleVmService::class);
+    }
 
     public function phase(): string
     {
@@ -35,8 +47,68 @@ final class AgricultureEngine implements SimulationEngine
         return 1;
     }
 
+    public function runWithState(\App\Simulation\Runtime\State\WorldState $state, int $tick): array
+    {
+        $dslFile = \resource_path('worldos_rules/biology/biosphere.dsl');
+        $dsl = @file_get_contents($dslFile) ?: '';
+
+        $vec = $state->toArray();
+        
+        $rawState = [
+            'tech_level' => (float) ($vec['tech_level'] ?? 0.1),
+            'land_area' => (float) ($vec['land_area'] ?? 1000),
+            'population' => (float) ($vec['population'] ?? 100),
+            'ecological_stability' => (float) ($vec['ecology']['stability'] ?? 0.8),
+            'random_chance' => lcg_value(),
+            'instability_score' => (float) ($vec['instability_score'] ?? 0.0),
+        ];
+
+        $result = $this->ruleVm->evaluateRawState($rawState, $dsl);
+        
+        if ($result['ok'] ?? false) {
+            // Logic to update state based on result
+            // (Simplified for now to match standardized pattern)
+            $state->set('food_security', $result['state']['food_security'] ?? 0.5);
+            return ['ok' => true];
+        }
+
+        return ['ok' => false];
+    }
+
     public function handle(WorldState $state, TickContext $ctx): EngineResult
     {
-        return EngineResult::empty();
+        $dslFile = \resource_path('worldos_rules/biology/biosphere.dsl');
+        $dsl = @file_get_contents($dslFile) ?: '';
+
+        $vec = $state->getStateVector();
+        
+        $rawState = [
+            'tech_level' => (float) ($vec['tech_level'] ?? 0.1),
+            'land_area' => (float) ($vec['land_area'] ?? 1000),
+            'population' => (float) ($vec['population'] ?? 100),
+            'ecological_stability' => (float) ($vec['ecology']['stability'] ?? 0.8),
+            'random_chance' => lcg_value(),
+            'instability_score' => (float) ($vec['instability_score'] ?? 0.0),
+        ];
+
+        $result = $this->ruleVm->evaluateRawState($rawState, $dsl);
+        
+        $events = [];
+        if ($result['ok'] ?? false) {
+            foreach ($result['outputs'] ?? [] as $out) {
+                if (($out['event_name'] ?? '') === 'FAMINE_OUTBREAK') {
+                    $events[] = WorldEvent::create(
+                        WorldEventType::FAMINE,
+                        $ctx->getUniverseId(),
+                        $ctx->getTick(),
+                        null,
+                        [],
+                        $out['metadata']['intensity'] ?? 0.5
+                    );
+                }
+            }
+        }
+
+        return new EngineResult($events, [], []);
     }
 }

@@ -84,7 +84,8 @@ class DemiurgeAutonomousAction
         $this->engineering->executeMacro(
             $universe->world_id,
             'macro_edict',
-            $payload
+            $payload,
+            $universe
         );
     }
 }

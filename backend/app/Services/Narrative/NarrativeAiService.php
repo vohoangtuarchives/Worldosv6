@@ -224,6 +224,7 @@ TRƯỜNG HẤP DẪN VĂN MINH (Civilization Attractor Fields):
 - Thịnh vượng (Wealth): {$fields['wealth']}
 - Tri thức (Knowledge): {$fields['knowledge']}
 - Ý nghĩa (Meaning): {$fields['meaning']}
+- Cộng hưởng (Resonance): {$fields['resonance']}
 
 $legendaryFocus
 TRẠNG THÁI BẢN THỂ (Ontological State):
@@ -231,6 +232,7 @@ TRẠNG THÁI BẢN THỂ (Ontological State):
 - Mô tả: {$perceived['existence']['description']}
 - Hiệu ứng thực tại: {$perceived['existence']['effect']}
 - Độ ổn định thực tại (Reality Stability): {$perceived['metrics']['reality_stability']}
+- Áp lực định mệnh (Fate Pressure): {$perceived['metrics']['fate_pressure']}
 Ngôn ngữ phản hồi: TIẾNG VIỆT (Tông giọng trang trọng, huyền bí hoặc khoa học viễn tưởng).
 
 Thời kỳ: Tick $fromTick đến $toTick.

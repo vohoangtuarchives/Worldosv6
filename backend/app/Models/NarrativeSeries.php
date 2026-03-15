@@ -11,7 +11,6 @@ class NarrativeSeries extends Model
 {
     protected $fillable = [
         'universe_id',
-        'saga_id',
         'title',
         'slug',
         'genre_key',
@@ -38,11 +37,6 @@ class NarrativeSeries extends Model
     public function universe(): BelongsTo
     {
         return $this->belongsTo(Universe::class);
-    }
-
-    public function saga(): BelongsTo
-    {
-        return $this->belongsTo(Saga::class);
     }
 
     public function chapters(): HasMany

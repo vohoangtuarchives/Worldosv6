@@ -3,7 +3,7 @@
 namespace App\Simulation\Effects;
 
 use App\Simulation\Contracts\Effect;
-use App\Simulation\Domain\WorldStateMutable;
+use App\Simulation\Runtime\State\WorldStateMutable;
 
 /**
  * Applies zone conquest outcome to state: winner zone gains order / lower entropy,

@@ -20,24 +20,25 @@ class CivilizationSettlementEngine
         protected BiologyMetricsService $biologyMetrics
     ) {}
 
-    public function evaluate(Universe $universe, int $currentTick): void
+    public function runWithState(\App\Simulation\Runtime\State\WorldState $state, int $currentTick): void
     {
         $interval = (int) config('worldos.intelligence.civilization_tick_interval', 20);
         if ($interval <= 0 || $currentTick % $interval !== 0) {
             return;
         }
 
-        $stateVector = $this->getStateVector($universe);
-        if (config('worldos.simulation.rust_authoritative', false) && isset($stateVector['civilization'])) {
+        if (config('worldos.simulation.rust_authoritative', false) && $state->get('civilization')) {
             return;
         }
-        $zones = $stateVector['zones'] ?? [];
+
+        $zones = $state->get('zones');
         if (!is_array($zones) || empty($zones)) {
             return;
         }
 
-        $totalPopFromState = $this->getTotalPopulationFromState($stateVector, $zones);
-        $bio = $this->biologyMetrics->forUniverse($universe->id);
+        $totalPopFromState = $this->getTotalPopulationFromState($state->toArray(), $zones);
+        $universeId = (int) $state->get('universe_id', 0);
+        $bio = $this->biologyMetrics->forUniverse($universeId);
         $totalPop = $totalPopFromState > 0 ? $totalPopFromState : $bio['total_alive'];
 
         $zoneCount = count($zones);
@@ -46,13 +47,13 @@ class CivilizationSettlementEngine
         $thresholds = config('worldos.intelligence.civilization_settlement_thresholds', ['camp' => 0, 'village' => 3, 'town' => 6, 'city' => 12]);
         $settlements = [];
         foreach ($zones as $zoneIndex => $zone) {
-            $state = $zone['state'] ?? [];
+            $zoneState = $zone['state'] ?? [];
             $pop = (int) ($popPerZone[$zoneIndex] ?? 0);
-            $food = (float) ($state['food'] ?? $state['resources'] ?? 0.5);
+            $food = (float) ($zoneState['food'] ?? $zoneState['resources'] ?? 0.5);
             $resourceSurplus = max(0, $food - 0.2 * $pop);
             $level = $this->settlementLevel($pop, $thresholds);
             $governance = $this->governanceFromLevel($level);
-            $infra = $state['infrastructure'] ?? [];
+            $infra = $zoneState['infrastructure'] ?? [];
             $settlements[$zoneIndex] = [
                 'level' => $level,
                 'governance' => $governance,
@@ -68,13 +69,19 @@ class CivilizationSettlementEngine
             ];
         }
 
-        $stateVector['civilization'] = [
+        $state->set('civilization', [
             'settlements' => $settlements,
             'total_population' => $totalPop,
             'updated_tick' => $currentTick,
-        ];
-        $this->universeRepository->update($universe->id, ['state_vector' => $stateVector]);
-        Log::debug("CivilizationSettlementEngine: Universe {$universe->id} settlements updated at tick {$currentTick}");
+        ]);
+        
+        Log::debug("CivilizationSettlementEngine: Universe {$universeId} settlements updated at tick {$currentTick}");
+    }
+
+    public function evaluate(Universe $universe, int $currentTick): void
+    {
+        // This method will be deprecated. For now, it's just a placeholder.
+        // The SimulationTickPipeline handles the new runWithState logic.
     }
 
     private function settlementLevel(int $pop, array $thresholds): string

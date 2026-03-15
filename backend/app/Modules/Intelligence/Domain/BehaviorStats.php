@@ -47,6 +47,20 @@ final class BehaviorStats
         ];
     }
 
+    public function multiply(float $factor): self
+    {
+        return new self(
+            battlesWon: (int)round($this->battlesWon * $factor),
+            battlesJoined: (int)round($this->battlesJoined * $factor),
+            researchActions: (int)round($this->researchActions * $factor),
+            tradeActions: (int)round($this->tradeActions * $factor),
+            spiritualActions: (int)round($this->spiritualActions * $factor),
+            crimeActions: (int)round($this->crimeActions * $factor),
+            leadActions: (int)round($this->leadActions * $factor),
+            survivalCycles: (int)round($this->survivalCycles * $factor)
+        );
+    }
+
     /**
      * Compute normalized versions for score functions.
      */

@@ -4,54 +4,81 @@ namespace App\Services\Simulation;
 
 use App\Contracts\Repositories\UniverseRepositoryInterface;
 use App\Models\Universe;
+use App\Services\Simulation\RuleVmService;
 use Illuminate\Support\Facades\Log;
+use function resource_path;
+use function config;
+use function app;
 
 /**
- * Politics Engine (Tier 11).
- * Power (military, economic, influence), legitimacy, governance. Writes to state_vector['civilization']['politics'].
+ * Politics Engine (Tier 11) via DSL.
  */
 class PoliticsEngine
 {
     public function __construct(
-        protected UniverseRepositoryInterface $universeRepository
+        protected UniverseRepositoryInterface $universeRepository,
+        protected RuleVmService $ruleVm
     ) {}
 
-    public function evaluate(Universe $universe, int $currentTick): void
+    public function runWithState(\App\Simulation\Runtime\State\WorldState $state, int $currentTick): void
     {
         $interval = (int) config('worldos.intelligence.politics_tick_interval', 25);
         if ($interval <= 0 || $currentTick % $interval !== 0) {
             return;
         }
 
-        $stateVector = $this->getStateVector($universe);
-        if (config('worldos.simulation.rust_authoritative', false) && isset($stateVector['civilization']['politics'])) {
-            return;
-        }
-        $civilization = $stateVector['civilization'] ?? null;
-        $settlements = $civilization['settlements'] ?? [];
-        if (empty($settlements)) {
-            return;
+        // 1. Thu thập dữ liệu từ Cultural Soul
+        $activeMyths = $state->get('meta.active_myths', []);
+        $meaningSystems = $state->get('meta.meaning_systems', []);
+        $knowledge = (float)$state->get('fields.knowledge', 0.1);
+
+        // 2. Tính toán Social Cohesion (Sự gắn kết xã hội)
+        // Dựa trên mức độ đồng thuận của các meaning systems (coherence) và sức mạnh huyền thoại
+        $totalCoherence = array_reduce($meaningSystems, fn($carry, $item) => $carry + ($item['coherence'] ?? 0), 0);
+        $avgCoherence = count($meaningSystems) > 0 ? $totalCoherence / count($meaningSystems) : 0.5;
+        
+        $mythPower = array_reduce($activeMyths, fn($carry, $item) => $carry + ($item['symbolic_power'] ?? 0), 0);
+        $avgMythPower = count($activeMyths) > 0 ? min(1.0, $mythPower / count($activeMyths)) : 0.1;
+
+        $socialCohesion = min(1.0, ($avgCoherence * 0.6) + ($avgMythPower * 0.4));
+        $state->set('civilization.politics.social_cohesion', round($socialCohesion, 4));
+
+        // 3. Xác định Governance Type (Hình thái chính trị)
+        $governanceType = $this->determineGovernanceType($meaningSystems, $knowledge);
+        $state->set('civilization.politics.governance_type', $governanceType);
+
+        // 4. DSL Layer: Áp dụng quy tắc từ politics.dsl
+        $dslFile = resource_path('worldos_rules/simulation/politics.dsl');
+        if (file_exists($dslFile)) {
+            $dsl = file_get_contents($dslFile);
+            $this->ruleVm->evaluateAndApplyWithState($state, $dsl, $currentTick);
         }
 
-        $totalPop = (int) ($civilization['total_population'] ?? 0);
-        $economy = $civilization['economy'] ?? [];
-        $surplus = (float) ($economy['total_surplus'] ?? 0);
-        $seed = (int) ($universe->seed ?? 0) + $universe->id * 31;
-        $stability = 0.5 + 0.2 * min(1.0, $surplus / max(1, $totalPop)) + 0.1 * ($this->detFloat($seed, $currentTick, 0) - 0.5);
-        $stability = max(0.0, min(1.0, $stability));
-        $militaryPower = 0.2 * $totalPop + 0.3 * $stability;
-        $economicPower = min(1.0, $surplus / 10.0);
-        $legitimacy = 0.4 + 0.3 * $stability + 0.2 * $economicPower;
+        Log::info("PoliticsEngine: Social complexity evaluated.", [
+            'cohesion' => $socialCohesion,
+            'governance' => $governanceType,
+            'tick' => $currentTick
+        ]);
+    }
 
-        $stateVector['civilization']['politics'] = [
-            'military_power' => round($militaryPower, 4),
-            'economic_power' => round($economicPower, 4),
-            'legitimacy' => round(max(0, min(1, $legitimacy)), 4),
-            'stability' => round($stability, 4),
-            'updated_tick' => $currentTick,
-        ];
-        $this->universeRepository->update($universe->id, ['state_vector' => $stateVector]);
-        Log::debug("PoliticsEngine: Universe {$universe->id} politics updated at tick {$currentTick}");
+    private function determineGovernanceType(array $meaningSystems, float $knowledge): string
+    {
+        if (count($meaningSystems) === 0) return 'ANARCHY';
+
+        // Tìm meaning system có ảnh hưởng lớn nhất
+        usort($meaningSystems, fn($a, $b) => ($b['influence'] ?? 0) <=> ($a['influence'] ?? 0));
+        $dominant = $meaningSystems[0];
+
+        if ($knowledge > 0.8) return 'TECHNOCRACY';
+        if ($dominant['type'] === 'RELIGION' && ($dominant['influence'] ?? 0) > 0.6) return 'THEOCRACY';
+        if ($dominant['type'] === 'IDEOLOGY') return 'IDEOLOGICAL_STATE';
+
+        return 'TRADITIONAL_POLITY';
+    }
+
+    public function evaluate(Universe $universe, int $currentTick): void
+    {
+        // Deprecated
     }
 
     private function getStateVector(Universe $universe): array

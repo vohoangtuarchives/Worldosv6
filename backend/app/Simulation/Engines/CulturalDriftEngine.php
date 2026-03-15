@@ -6,12 +6,17 @@ use App\Simulation\Concerns\DefaultSimulationEnginePhase;
 use App\Simulation\Contracts\SimulationEngine;
 use App\Simulation\Domain\EngineResult;
 use App\Simulation\Domain\TickContext;
-use App\Simulation\Domain\WorldState;
+use App\Simulation\Runtime\State\WorldState;
 use App\Simulation\Effects\ZoneCultureUpdateEffect;
 use App\Simulation\Events\WorldEvent;
 use App\Simulation\Events\WorldEventType;
 use App\Simulation\Services\TopologyResolver;
 use App\Simulation\Support\SimulationRandom;
+use function config;
+use function max;
+use function array_values;
+use function count;
+use function is_array;
 
 /**
  * Culture/ideology/myth drift and diffusion between zones (kernel engine).
@@ -32,6 +37,7 @@ final class CulturalDriftEngine implements SimulationEngine
 
     public function __construct(
         private readonly TopologyResolver $topology,
+        protected \App\Services\Simulation\RuleVmService $ruleVm,
     ) {
     }
 
@@ -81,42 +87,13 @@ final class CulturalDriftEngine implements SimulationEngine
             return [];
         }
 
-        $zones = array_values($zones);
-        $count = count($zones);
-        $tick = $state->getTick();
-        $salt = 2;
+        // Pure State: directly mutate via evaluateAndApplyWithState (uses WorldState)
+        $this->ruleVm->evaluateAndApplyWithState($state, 'ideology/propagation', (int) $state->get('tick', 0));
 
-        // Build current culture per zone (from state.culture or zone.culture)
-        $cultures = [];
-        for ($i = 0; $i < $count; $i++) {
-            $zone = $zones[$i];
-            $cultures[$i] = $this->getCulture($zone);
-        }
-
-        // 1) Drift: small random nudge (deterministic from rng)
-        for ($i = 0; $i < $count; $i++) {
-            $rngZone = new SimulationRandom(
-                (int) $state->getUniverseId(),
-                $tick,
-                $salt + $i * 100
-            );
-            foreach (self::DIMENSIONS as $dim) {
-                $nudge = ($rngZone->float(0, 1) - 0.5) * 2 * self::DRIFT_EPSILON;
-                $cultures[$i][$dim] = max(0.0, min(1.0, ($cultures[$i][$dim] ?? 0.5) + $nudge));
-            }
-        }
-
-        // 2) Diffusion from neighbors (dual topology)
-        $newCultures = $cultures;
-        for ($i = 0; $i < $count; $i++) {
-            $neighborIndices = $this->topology->getNeighborIndices($zones, $i);
-            foreach (self::DIMENSIONS as $dim) {
-                $diff = 0.0;
-                foreach ($neighborIndices as $nIdx) {
-                    $diff += (($cultures[$nIdx][$dim] ?? 0.5) - ($cultures[$i][$dim] ?? 0.5)) * self::DIFFUSION_BETA;
-                }
-                $newCultures[$i][$dim] = max(0.0, min(1.0, ($newCultures[$i][$dim] ?? 0.5) + $diff));
-            }
+        $modifiedZones = $state->get('zones', []);
+        $newCultures = [];
+        foreach ($modifiedZones as $idx => $z) {
+            $newCultures[$idx] = $this->getCulture($z);
         }
 
         return [new ZoneCultureUpdateEffect($newCultures)];

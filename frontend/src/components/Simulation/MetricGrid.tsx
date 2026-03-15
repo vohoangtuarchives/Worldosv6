@@ -10,7 +10,7 @@ interface MetricGridProps {
     variant?: "grid" | "horizontal";
 }
 
-const FIVE_D_FIELDS = ["survival", "power", "wealth", "knowledge", "meaning"] as const;
+const ALL_FIELDS = ["survival", "reproduction", "wealth", "power", "knowledge", "meaning", "status", "belonging"] as const;
 
 export function MetricGrid({ snapshot, className, variant = "grid" }: MetricGridProps) {
     const metrics = snapshot?.metrics || {};
@@ -22,6 +22,12 @@ export function MetricGrid({ snapshot, className, variant = "grid" }: MetricGrid
     };
 
     const statCards = [
+        {
+            label: "Systemic Pressure",
+            value: metrics.systemic_pressure != null ? `${(Number(metrics.systemic_pressure) * 100).toFixed(1)}%` : "--",
+            desc: "Áp lực tích lũy (STD of fields)",
+            color: Number(metrics.systemic_pressure) > 0.5 ? "text-orange-500 animate-pulse" : "text-amber-400",
+        },
         {
             label: "Entropy",
             value: snapshot?.entropy != null ? `${(snapshot.entropy * 100).toFixed(1)}%` : "--",
@@ -39,12 +45,6 @@ export function MetricGrid({ snapshot, className, variant = "grid" }: MetricGrid
             value: snapshot?.metrics?.sci != null ? `${(snapshot.metrics.sci * 100).toFixed(1)}%` : (snapshot?.sci != null ? `${(snapshot.sci * 100).toFixed(1)}%` : "--"),
             desc: "Độ phức tạp xã hội",
             color: "text-purple-400",
-        },
-        {
-            label: "Knowledge",
-            value: snapshot?.metrics?.knowledge != null ? `${(snapshot.metrics.knowledge * 100).toFixed(1)}%` : (snapshot?.state_vector?.knowledge != null ? `${(snapshot.state_vector.knowledge * 100).toFixed(1)}%` : "--"),
-            desc: "Tiến bộ công nghệ",
-            color: "text-emerald-400",
         },
         {
             label: "Material stress",
@@ -66,7 +66,7 @@ export function MetricGrid({ snapshot, className, variant = "grid" }: MetricGrid
         },
     ];
 
-    const has5D = FIVE_D_FIELDS.some((f) => typeof fields[f] === "number");
+    const hasFields = ALL_FIELDS.some((f) => typeof fields[f] === "number");
 
     const isHorizontal = variant === "horizontal";
     const containerClass = isHorizontal
@@ -91,17 +91,17 @@ export function MetricGrid({ snapshot, className, variant = "grid" }: MetricGrid
                     </div>
                 ))}
             </div>
-            {has5D && (
+            {hasFields && (
                 <div className="rounded-lg border border-border bg-card/60 p-3">
-                    <h3 className="text-[10px] font-medium text-muted-foreground uppercase mb-2">5D fields (phase space)</h3>
+                    <h3 className="text-[10px] font-medium text-muted-foreground uppercase mb-2">V7 Attractor Fields (8D Phase Space)</h3>
                     <div className="flex flex-wrap gap-2">
-                        {FIVE_D_FIELDS.map((f) => {
-                            const v = typeof fields[f] === "number" ? fields[f] : 0.5;
+                        {ALL_FIELDS.map((f) => {
+                            const v = typeof fields[f] === "number" ? fields[f] : 0.1;
                             return (
                                 <div key={f} className="flex items-center gap-1.5 min-w-[80px]">
                                     <span className="text-[10px] text-muted-foreground capitalize w-14 truncate">{f}</span>
                                     <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
-                                        <div className="h-full bg-primary/70 rounded-full" style={{ width: `${v * 100}%` }} />
+                                        <div className="h-full bg-cyan-500/70 rounded-full" style={{ width: `${v * 100}%` }} />
                                     </div>
                                     <span className="text-[9px] font-mono text-foreground w-6">{(v * 100).toFixed(0)}%</span>
                                 </div>

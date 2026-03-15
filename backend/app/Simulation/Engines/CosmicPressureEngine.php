@@ -6,13 +6,20 @@ use App\Simulation\Concerns\DefaultSimulationEnginePhase;
 use App\Simulation\Contracts\SimulationEngine;
 use App\Simulation\Domain\EngineResult;
 use App\Simulation\Domain\TickContext;
-use App\Simulation\Domain\WorldState;
+use App\Simulation\Runtime\State\WorldState;
 use App\Simulation\Effects\PressureUpdateEffect;
+use App\Simulation\Effects\AxiomUpdateEffect;
 use App\Simulation\Events\WorldEvent;
 use App\Simulation\Events\WorldEventType;
 use App\Simulation\Services\CosmicSignalCollector;
 use App\Simulation\Services\PhasePressureCalculator;
 use App\Simulation\Support\SimulationRandom;
+use App\Services\Simulation\RuleVmService;
+use function resource_path;
+use function file_get_contents;
+use function max;
+use function min;
+use function config;
 
 /**
  * Cosmic Pressure Engine: accumulates pressures from metrics each tick, applies decay,
@@ -39,6 +46,7 @@ final class CosmicPressureEngine implements SimulationEngine
     public function __construct(
         private readonly CosmicSignalCollector $signalCollector,
         private readonly PhasePressureCalculator $phasePressureCalculator,
+        private RuleVmService $ruleVm,
     ) {
     }
 
@@ -54,56 +62,65 @@ final class CosmicPressureEngine implements SimulationEngine
 
     public function tickRate(): int
     {
-        return max(1, (int) (config('worldos.time_scale_factors.cosmic_pressure') ?? 1));
-    }
-
-    public function handle(WorldState $state, TickContext $ctx): EngineResult
-    {
-        $rng = new SimulationRandom($ctx->getSeed(), $ctx->getTick(), 0);
-        $effects = $this->evaluate($state, $rng);
-        $events = [];
-        if ($effects !== []) {
-            $events[] = WorldEvent::create(
-                WorldEventType::PRESSURE_UPDATE,
-                $ctx->getUniverseId(),
-                $ctx->getTick(),
-                null,
-                [],
-                0.2,
-                [],
-                ['source' => 'cosmic_pressure']
-            );
-        }
-        return new EngineResult($events, $effects, []);
+        return max(1, (int) (\config('worldos.time_scale_factors.cosmic_pressure') ?? 1));
     }
 
     /**
-     * @return \App\Simulation\Contracts\Effect[]
+     * Run the engine using the standardized WorldState DTO.
      */
-    private function evaluate(WorldState $state, SimulationRandom $rng): array
+    public function runWithState(\App\Simulation\Runtime\State\WorldState $state): void
     {
-        $pressures = $state->getPressures();
+        // 1. Axiomatic Drifts & Consciousness Warping (Phase 31)
+        // These rules evolve the universal constants (axioms) and meta-metrics
+        $this->evaluateDslFile($state, 'simulation/consciousness.dsl');
+        $this->evaluateDslFile($state, 'physics/axioms.dsl');
 
-        $innovation = $state->getInnovation();
-        $entropy = $state->getEntropy();
-        $order = (float) $state->getStateVectorKey('order', 0);
-        $myth = (float) $state->getStateVectorKey('myth', 0);
-        $violence = (float) $state->getStateVectorKey('violence', 0);
-        $spirituality = (float) $state->getStateVectorKey('spirituality', 0);
+        // 2. Core Physics: Accumulate pressures, handle transitions, and safety clamps
+        $this->evaluateDslFile($state, 'physics/core.dsl');
+    }
 
-        $pressures['innovation'] = min(1.0, ($pressures['innovation'] * self::DECAY) + ($innovation * self::INNOVATION_WEIGHT));
-        $pressures['entropy'] = min(1.0, ($pressures['entropy'] * self::DECAY) + ($entropy * self::ENTROPY_WEIGHT));
-        $pressures['order'] = min(1.0, ($pressures['order'] * self::DECAY) + ($order * self::ORDER_WEIGHT));
-        $pressures['myth'] = min(1.0, ($pressures['myth'] * self::DECAY) + ($myth * self::MYTH_WEIGHT));
-        $pressures['conflict'] = min(1.0, ($pressures['conflict'] * self::DECAY) + ($violence * self::CONFLICT_WEIGHT));
-        $pressures['ascension'] = min(1.0, ($pressures['ascension'] * self::DECAY) + ($spirituality * self::ASCENSION_WEIGHT));
+    /**
+     * Helper to evaluate a specific DSL file using the RuleVmService.
+     */
+    protected function evaluateDslFile(\App\Simulation\Runtime\State\WorldState $state, string $relativePath): void
+    {
+        $path = \resource_path('worldos_rules/' . $relativePath);
+        if (!file_exists($path)) {
+            return;
+        }
 
-        // Phase Pressure Model: ascension_pressure, collapse_pressure from cosmic signals
-        $signals = $this->signalCollector->collect($state);
-        $phase = $this->phasePressureCalculator->calculate($signals);
-        $pressures['ascension_pressure'] = $phase['ascension_pressure'];
-        $pressures['collapse_pressure'] = $phase['collapse_pressure'];
+        $dsl = file_get_contents($path);
+        
+        // We evaluate and apply directly to the shared WorldState.
+        // This leverages the Phase 32 upgrades in RuleVmService.
+        $this->ruleVm->evaluateAndApply($this->stateToUniverseStub($state), $this->stateToSnapshotStub($state), $dsl);
+    }
 
-        return [new PressureUpdateEffect($pressures)];
+    /**
+     * Compatibility bridge: Build a temporary Universe stub from WorldState.
+     */
+    protected function stateToUniverseStub(\App\Simulation\Runtime\State\WorldState $state): \App\Models\Universe
+    {
+        $universe = new \App\Models\Universe();
+        $universe->id = (int) $state->get('universe_id', 0);
+        $universe->state_vector = $state->toArray();
+        return $universe;
+    }
+
+    /**
+     * Compatibility bridge: Build a temporary Snapshot stub from WorldState.
+     */
+    protected function stateToSnapshotStub(\App\Simulation\Runtime\State\WorldState $state): \App\Models\UniverseSnapshot
+    {
+        $snapshot = new \App\Models\UniverseSnapshot();
+        $snapshot->tick = (int) $state->get('tick', 0);
+        $snapshot->state_vector = $state->toArray();
+        return $snapshot;
+    }
+
+    public function handle(\App\Simulation\Runtime\State\WorldState $state, \App\Simulation\Domain\TickContext $ctx): EngineResult
+    {
+        // Legacy support if needed, but we should move towards orchestrated Stages
+        return EngineResult::empty();
     }
 }

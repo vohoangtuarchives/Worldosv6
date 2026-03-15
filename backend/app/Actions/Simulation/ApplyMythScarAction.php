@@ -9,49 +9,55 @@ use App\Models\UniverseSnapshot;
 class ApplyMythScarAction
 {
     public function __construct(
-        protected \App\Contracts\GraphProviderInterface $graphProvider
+        protected \App\Contracts\GraphProviderInterface $graphProvider,
+        protected \App\Services\Simulation\RuleVmService $ruleVm
     ) {}
+
     /**
-     * Tự động sinh một Vết Sẹo (Myth Scar) cho một quy mô lãnh thổ nhất định 
-     * dựa vào mức độ hỗn loạn (chaos) hiện tại.
+     * Tự động sinh một Vết Sẹo (Myth Scar) hoặc Di sản (Heritage) dựa trên Rule VM.
      */
     public function execute(Universe $universe, UniverseSnapshot $savedSnapshot, array $decisionData): void
     {
-        $severity = 0.5;
-        $description = "Hệ quả từ sự biến động mạnh mẽ của kỷ nguyên.";
-        $name = "Tàn Tích Biến Động";
-        $zoneId = "Global"; // Hoặc bóc tách từ state_vector nếu có list zones
+        $eventType = $decisionData['event_type'] ?? 'GENERIC';
+        $intensity = (float) ($decisionData['intensity'] ?? 0.5);
+        $causalDebt = (float) ($savedSnapshot->state_vector['causal_integrity_debt'] ?? 0.0);
 
-        // Trích xuất từ meta data suggestion của AI / Rules engine
-        if (isset($decisionData['meta']['mutation_suggestion'])) {
-            $suggestion = $decisionData['meta']['mutation_suggestion'];
-            if (isset($suggestion['add_scar'])) {
-                $name = $suggestion['add_scar'];
-                $description = "Sẹo lịch sử do chấn động tiến hóa: " . $name;
-                $severity = 0.8;
-            }
-        } elseif ($savedSnapshot->stability_index !== null && $savedSnapshot->stability_index < 0.2) {
-            // Sụp đổ/Entropy quá cao thì sinh Di chứng
-            $severity = 1.0 - $savedSnapshot->stability_index;
-            $name = "Ký Ức Đổ Nát";
-            $description = "Dấu vết còn sót lại khi cấu trúc trật tự rơi vào hỗn loạn tột độ.";
-        } else {
-            // Chưa đủ điều kiện sinh sẹo
+        $rawState = [
+            'event_type' => $eventType,
+            'event_intensity' => $intensity,
+            'causal_integrity_debt' => $causalDebt,
+            'field_knowledge_field' => (float) ($savedSnapshot->state_vector['fields']['knowledge_field'] ?? 0.5),
+            'current_scars_count' => MythScar::where('universe_id', $universe->id)->whereNull('resolved_at_tick')->count(),
+        ];
+
+        $dslFile = \resource_path('worldos_rules/legend/chronicles.dsl');
+        $dsl = @file_get_contents($dslFile) ?: '';
+        $result = $this->ruleVm->evaluateRawState($rawState, $dsl);
+
+        if (!($result['ok'] ?? false)) {
             return;
         }
 
+        foreach ($result['outputs'] ?? [] as $output) {
+            if ($output['type'] === 'event' && $output['event_name'] === 'CREATE_WORLD_SCAR') {
+                $this->createMythScar($universe, $output['data']);
+            }
+            // Logic for CREATE_HERITAGE can be added here
+        }
+    }
+
+    private function createMythScar(Universe $universe, array $data): void
+    {
         $scar = MythScar::create([
             'universe_id'      => $universe->id,
-            'zone_id'          => $zoneId,
-            'name'             => $name,
-            'description'      => $description,
-            'severity'         => $severity,
-            'decay_rate'       => 0.01 + (rand(-5, 5) * 0.001),
+            'zone_id'          => 'Global',
+            'name'             => $data['type'] . " Scar",
+            'description'      => "Dấu ấn lịch sử: " . ($data['type'] ?? 'Unknown'),
+            'severity'         => (float) ($data['weight'] ?? 0.5),
+            'decay_rate'       => 0.005,
             'created_at_tick'  => $universe->current_tick,
-            'resolved_at_tick' => null,
         ]);
 
-        // Integrate with GraphDB for topology awareness
         $this->graphProvider->sync($universe->id, [
             'type' => 'MythScar',
             'model' => $scar

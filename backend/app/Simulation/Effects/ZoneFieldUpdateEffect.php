@@ -3,7 +3,7 @@
 namespace App\Simulation\Effects;
 
 use App\Simulation\Contracts\Effect;
-use App\Simulation\Domain\WorldStateMutable;
+use App\Simulation\Runtime\State\WorldStateMutable;
 
 /**
  * Writes updated zone array (with computed pressures in state) back into WorldStateMutable.

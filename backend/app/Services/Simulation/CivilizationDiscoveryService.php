@@ -5,7 +5,7 @@ namespace App\Services\Simulation;
 use App\Contracts\Repositories\UniverseRepositoryInterface;
 use App\Models\Universe;
 use App\Models\UniverseSnapshot;
-use App\Services\Saga\SagaService;
+use App\Services\Orchestrator\ImplicitOrchestratorService;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -21,7 +21,7 @@ final class CivilizationDiscoveryService
 
     public function __construct(
         protected UniverseRepositoryInterface $universeRepository,
-        protected SagaService $sagaService,
+        protected ImplicitOrchestratorService $orchestrator,
     ) {}
 
     public function fitness(
@@ -142,7 +142,7 @@ final class CivilizationDiscoveryService
         $mutateRate = (float) config('worldos.civilization_discovery.ga_mutate_rate', 0.05);
         $merged = $this->mutateStateVector($merged, $mutateRate);
 
-        $child = $this->sagaService->spawnUniverse(
+        $child = $this->orchestrator->spawnUniverse(
             $parentA->world,
             $parentA->id,
             $parentA->saga_id,
@@ -187,7 +187,8 @@ final class CivilizationDiscoveryService
         if ($rate <= 0) {
             return $vec;
         }
-        $r = fn () => (mt_rand() / mt_getrandmax()) * 2 * $rate - $rate;
+        $prng = \App\Services\Simulation\SimulationPRNG::forUniverse($universe);
+        $r = fn () => ($prng->nextFloat()) * 2 * $rate - $rate;
         if (isset($vec['entropy']) && is_numeric($vec['entropy'])) {
             $vec['entropy'] = max(0, min(1, (float) $vec['entropy'] + $r()));
         }

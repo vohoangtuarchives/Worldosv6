@@ -5,10 +5,9 @@ namespace App\Console\Commands;
 use Illuminate\Console\Command;
 use App\Models\Multiverse;
 use App\Models\World;
-use App\Models\Saga;
 use App\Models\Universe;
 use App\Actions\Simulation\AdvanceSimulationAction;
-use App\Services\Saga\SagaService;
+use App\Services\Orchestrator\ImplicitOrchestratorService;
 use App\Services\Narrative\NarrativeAiService;
 
 class RunDemoScenario extends Command
@@ -30,7 +29,7 @@ class RunDemoScenario extends Command
     /**
      * Execute the console command.
      */
-    public function handle(AdvanceSimulationAction $action, SagaService $sagaService, NarrativeAiService $narrative)
+    public function handle(AdvanceSimulationAction $action, ImplicitOrchestratorService $orchestrator, NarrativeAiService $narrative)
     {
         $this->info("--- Starting WorldOS V6 Demo Scenario ---");
 
@@ -55,7 +54,7 @@ class RunDemoScenario extends Command
         ]);
 
         // Initialize Universe
-        $universe = $sagaService->spawnUniverse($world, null, $saga->id);
+        $universe = $orchestrator->spawnUniverse($world, null, $saga->id);
         $this->info("      Created Universe ID: {$universe->id}");
 
         // 2. Stable Era

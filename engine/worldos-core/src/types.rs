@@ -117,13 +117,19 @@ pub struct CivilizationFields {
     #[serde(default)]
     pub survival: f64,
     #[serde(default)]
-    pub power: f64,
+    pub reproduction: f64,
     #[serde(default)]
     pub wealth: f64,
+    #[serde(default)]
+    pub power: f64,
     #[serde(default)]
     pub knowledge: f64,
     #[serde(default)]
     pub meaning: f64,
+    #[serde(default)]
+    pub status: f64,
+    #[serde(default)]
+    pub belonging: f64,
 }
 
 /// Cascade phase per zone: pressure above threshold advances Normal → Famine → Riots → Collapse.
@@ -154,6 +160,8 @@ pub struct MacroAgent {
     pub agent_type: MacroAgentType,
     #[serde(default)]
     pub strength: f64,
+    #[serde(default)]
+    pub leader_id: Option<u64>,
 }
 
 /// Civilization phase: Tribal → Agrarian → Kingdom → Empire → Industrial → Information (§Level-8).
@@ -174,10 +182,13 @@ pub enum CivilizationPhase {
 pub struct ArchetypeProfile {
     pub name: String,
     pub survival: f64,
-    pub power: f64,
+    pub reproduction: f64,
     pub wealth: f64,
+    pub power: f64,
     pub knowledge: f64,
     pub meaning: f64,
+    pub status: f64,
+    pub belonging: f64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -393,6 +404,8 @@ pub struct ActorTable {
     pub memes_mask: Vec<u64>,      // Bitmask for cultural memes
     pub zone_ids: Vec<u32>,        // Zone ID mapping
     pub current_node: Vec<u16>,    // Current node ID in the Behavior Graph
+    pub heroic_type: Vec<u8>,      // V7: 0=None, 1=Scientist, etc.
+    pub lineage_id: Vec<u64>,     // V7: 0=None
 }
 
 impl ActorTable {
@@ -409,6 +422,8 @@ impl ActorTable {
         self.memes_mask.push(0);
         self.zone_ids.push(zone);
         self.current_node.push(0); // 0 = Idle node
+        self.heroic_type.push(0);
+        self.lineage_id.push(0);
     }
 }
 

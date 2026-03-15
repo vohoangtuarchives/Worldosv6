@@ -11,9 +11,9 @@ use App\Models\UniverseSnapshot;
 interface UniverseSimilarityServiceInterface
 {
     /**
-     * Find a sibling universe whose state is similar enough to merge.
-     *
-     * @return array{universe_id: int, similarity: float}|null null if no candidate
+     * Find neighboring universes with similarity above threshold.
+     * 
+     * @return array<array{universe_id: int, similarity: float}>
      */
-    public function getMergeCandidate(UniverseSnapshot $snapshot): ?array;
+    public function getNeighbors(UniverseSnapshot $snapshot, float $threshold = 0.5): array;
 }

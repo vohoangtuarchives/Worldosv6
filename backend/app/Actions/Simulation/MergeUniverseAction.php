@@ -7,14 +7,14 @@ use App\Models\Actor;
 use App\Models\InstitutionalEntity;
 use App\Models\SupremeEntity;
 use App\Models\Chronicle;
-use App\Services\Saga\SagaService;
+use App\Services\Orchestrator\ImplicitOrchestratorService;
 
 /**
  * Merge Universe Action: Synthesizes two universes into a new Prime timeline.
  */
 class MergeUniverseAction
 {
-    public function __construct(protected SagaService $sagaService) {}
+    public function __construct(protected ImplicitOrchestratorService $orchestrator) {}
 
     /**
      * Merge $a and $b into a new child universe.
@@ -29,7 +29,7 @@ class MergeUniverseAction
             'note' => 'Hợp nhất đa vũ trụ (Universe Merger)'
         ];
 
-        $prime = $this->sagaService->spawnUniverse(
+        $prime = $this->orchestrator->spawnUniverse(
             $a->world,
             $a->id, // Use A as primary parent
             $a->saga_id,

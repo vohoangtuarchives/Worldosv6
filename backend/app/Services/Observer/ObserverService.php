@@ -95,9 +95,27 @@ class ObserverService
             foreach ($payload as $k => $v) {
                 $flat[$k] = is_scalar($v) ? (string) $v : json_encode($v);
             }
-            Redis::xAdd($key, '*', $flat, 10000);
+            
+            // Predis compatibility: Laravel's Redis::xAdd with Predis driver 
+            // might have issues with positional arguments for MAXLEN.
+            // Using a more explicit way or ensuring standard positional args.
+            if (config('database.redis.client') === 'predis') {
+                Redis::connection()->executeRaw(['XADD', $key, 'MAXLEN', '~', '10000', '*', ...$this->flattenForRaw($flat)]);
+            } else {
+                Redis::xAdd($key, '*', $flat, 10000);
+            }
         } catch (\Throwable $e) {
             report($e);
         }
+    }
+
+    protected function flattenForRaw(array $data): array
+    {
+        $flattened = [];
+        foreach ($data as $key => $value) {
+            $flattened[] = $key;
+            $flattened[] = $value;
+        }
+        return $flattened;
     }
 }

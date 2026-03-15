@@ -211,6 +211,12 @@ export const api = {
   async graph(id: number) {
     return apiFetch(`/worldos/universes/${id}/graph`);
   },
+  async multiverseMap() {
+    return apiFetch(`/worldos/multiverse/map`) as Promise<{
+      nodes: Array<{ id: number; label: string; status: string; multiverse_id: number; metrics: any; type: string }>;
+      edges: Array<{ from: number; to: number; type: string; label: string; intensity?: number }>;
+    }>;
+  },
   async anomalies(id: number) {
     return apiFetch(`/worldos/universes/${id}/anomalies`);
   },
@@ -429,6 +435,31 @@ export const api = {
         method: "POST",
         body: JSON.stringify({ state: statePayload }),
       });
+    },
+    async samsara(agentId: number) {
+      return apiFetch(`/worldos/lab/samsara/${agentId}`) as Promise<{
+        agent: { id: number; name: string; archetype: string; is_isekai: boolean; is_transcendental: boolean };
+        path: Array<{
+          tick: number;
+          universe_id: number;
+          universe_name: string;
+          type: "isekai_departure" | "isekai_arrival";
+          payload: any;
+          timestamp: string;
+        }>;
+      }>;
+    },
+    async grandNarrative(universeId: number) {
+      return apiFetch(`/worldos/lab/narrative/grand/${universeId}`) as Promise<{
+        age_name: string;
+        summary: string;
+        military: { status: string; intensity: number; description: string };
+        culture: { idea_diversity: number; established_schools: number; leading_institutions: number; spirituality: number; description: string };
+        technology: { material_complexity: number; innovation_potential: number; tech_level: number; description: string };
+        paradoxes: Array<{ type: string; severity: string; description: string }>;
+        metrics: any;
+        timestamp: string;
+      }>;
     }
   },
   /** Redis Streams: read observer events (last_id, multiverse_id?, count?) */
@@ -449,5 +480,16 @@ export const api = {
     const qs = q.toString();
     return `${base}/worldos/observer/stream/sse${qs ? `?${qs}` : ""}`;
   },
+  ruleDebugger: {
+    async graph() {
+      return apiFetch("/worldos/rule-debugger/graph") as Promise<{
+        nodes: Array<{ id: string; label: string; type: "rule" | "field"; file?: string; category?: string }>;
+        edges: Array<{ id: string; source: string; target: string; type: "trigger" | "modify" | "read" }>;
+      }>;
+    },
+    async stats(universeId: number) {
+      return apiFetch(`/worldos/rule-debugger/stats/${universeId}`);
+    }
+  }
 };
 

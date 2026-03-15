@@ -144,6 +144,56 @@ export function buildNarrativeFacts(params: {
       });
     }
 
+    // New metrics: Militarism, Spirituality, Institutional
+    const militarismDelta = asNumber(last.metrics?.militarism) - asNumber(first.metrics?.militarism);
+    const spiritualityDelta = asNumber(last.metrics?.spirituality) - asNumber(first.metrics?.spirituality);
+    const institutionalDelta = asNumber(last.metrics?.institutional) - asNumber(first.metrics?.institutional);
+
+    if (Math.abs(militarismDelta) > 0.05) {
+      facts.push({
+        id: `militarism-${lastId}`,
+        tick: last.tick,
+        title: militarismDelta > 0 ? "Tiếng vang của binh giáp" : "Gươm đao gãy rời",
+        summary: militarismDelta > 0 
+          ? `Mật độ quân sự tăng ${formatPct(militarismDelta)}, đánh dấu sự chuyển mình sang kỷ nguyên chinh phạt.` 
+          : `Xung đột hạ nhiệt ${formatPct(Math.abs(militarismDelta))}, thế giới bước vào giai đoạn hưu chiến hoặc suy tàn sức mạnh.`,
+        kind: "militarism-shift",
+        severity: severityFromDelta(militarismDelta),
+        angle: militarismDelta > 0 ? "Mô tả không khí sục sôi và sự chuẩn bị cho đại chiến." : "Viết về nỗi buồn của những chiến binh giải giáp hoặc sự sụp đổ của một đế chế.",
+        evidence: [{ label: "Chênh lệch quân sự", value: militarismDelta.toFixed(3) }]
+      });
+    }
+
+    if (Math.abs(spiritualityDelta) > 0.05) {
+      facts.push({
+        id: `spirituality-${lastId}`,
+        tick: last.tick,
+        title: spiritualityDelta > 0 ? "Ánh sáng tâm linh trỗi dậy" : "Hy vọng tàn phai",
+        summary: spiritualityDelta > 0
+          ? `Tâm linh tăng ${formatPct(spiritualityDelta)}, những niềm tin mới đang định hình lại linh hồn vũ trụ.`
+          : `Tâm linh suy giảm ${formatPct(Math.abs(spiritualityDelta))}, sự hoài nghi và thực dụng đang chiếm lấy ý thức.`,
+        kind: "spirituality-shift",
+        severity: severityFromDelta(spiritualityDelta),
+        angle: spiritualityDelta > 0 ? "Dùng ngôn ngữ huyền ảo, trừu tượng để mô tả sức mạnh niềm tin." : "Mô tả sự cô độc và tăm tối khi mất đi ánh sáng tinh thần.",
+        evidence: [{ label: "Chênh lệch tâm linh", value: spiritualityDelta.toFixed(3) }]
+      });
+    }
+
+    if (Math.abs(institutionalDelta) > 0.05) {
+      facts.push({
+        id: `institutional-${lastId}`,
+        tick: last.tick,
+        title: institutionalDelta > 0 ? "Trình tự xã hội kiên cố" : "Thể chế lung lay",
+        summary: institutionalDelta > 0
+          ? `Năng lực định chế tăng ${formatPct(institutionalDelta)}, một thực thể chính trị mới đang khẳng định chủ quyền.`
+          : `Thể chế rệu rã ${formatPct(Math.abs(institutionalDelta))}, luật lệ lỏng lẻo dẫn đến sự hỗn mang tự do.`,
+        kind: "institutional-shift",
+        severity: severityFromDelta(institutionalDelta),
+        angle: institutionalDelta > 0 ? "Viết về sự kỷ luật, nghiêm minh và sức mạnh tập thể." : "Mô tả sự hỗn loạn, tranh giành quyền lực khi các quy tắc cũ không còn hiệu lực.",
+        evidence: [{ label: "Chênh lệch định chế", value: institutionalDelta.toFixed(3) }]
+      });
+    }
+
     const civFields = (last.metrics?.civ_fields ?? {}) as Record<string, unknown>;
     const dominantFieldEntry = Object.entries(civFields)
       .filter(([, value]) => typeof value === "number")

@@ -31,6 +31,24 @@ export default function MainLayout({
             </Link>
             <Link
               className="px-3 py-2 rounded-md transition-colors hover:bg-muted text-foreground/60 hover:text-foreground"
+              href="/dashboard/materials"
+            >
+              Vật Liệu
+            </Link>
+            <Link
+              className="px-3 py-2 rounded-md transition-colors hover:bg-muted text-foreground/60 hover:text-foreground"
+              href="/dashboard/heroes"
+            >
+              Anh Hùng
+            </Link>
+            <Link
+              className="px-3 py-2 rounded-md transition-colors hover:bg-muted text-foreground/60 hover:text-foreground"
+              href="/dashboard/evolution"
+            >
+              Huyền Nguyên
+            </Link>
+            <Link
+              className="px-3 py-2 rounded-md transition-colors hover:bg-muted text-foreground/60 hover:text-foreground"
               href="/narrative-studio"
             >
               Narrative Studio

@@ -3,7 +3,7 @@
 namespace App\Simulation\Effects;
 
 use App\Simulation\Contracts\Effect;
-use App\Simulation\Domain\WorldStateMutable;
+use App\Simulation\Runtime\State\WorldStateMutable;
 
 /**
  * Merges updated world_rules into state_vector (Tier 2 mutable rules).

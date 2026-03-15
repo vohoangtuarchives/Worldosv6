@@ -3,7 +3,6 @@
 namespace Tests\Feature\Services\Simulation;
 
 use App\Models\Multiverse;
-use App\Models\Saga;
 use App\Models\SupremeEntity;
 use App\Models\Universe;
 use App\Models\World;
@@ -27,10 +26,10 @@ class GreatPersonLegacyServiceIntegrationTest extends TestCase
             'origin' => 'generic',
             'global_tick' => 0,
         ]);
-        $saga = Saga::create(['world_id' => $world->id, 'name' => 'Test Saga', 'status' => 'active']);
+
         return Universe::create([
             'world_id' => $world->id,
-            'saga_id' => $saga->id,
+
             'multiverse_id' => $mv->id,
             'current_tick' => 0,
             'status' => 'active',

@@ -6,7 +6,7 @@ use App\Simulation\Concerns\DefaultSimulationEnginePhase;
 use App\Simulation\Contracts\SimulationEngine;
 use App\Simulation\Domain\EngineResult;
 use App\Simulation\Domain\TickContext;
-use App\Simulation\Domain\WorldState;
+use App\Simulation\Runtime\State\WorldState;
 
 /**
  * doc §7.2: Migration Engine stub. migration types, flow object.

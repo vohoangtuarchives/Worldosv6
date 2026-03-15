@@ -5,6 +5,8 @@ namespace App\Services\Simulation;
 use App\Models\Universe;
 use App\Models\UniverseSnapshot;
 use Illuminate\Support\Facades\Log;
+use function resource_path;
+use function file_get_contents;
 
 /**
  * TheDreamingService: Manages the subconscious layer of the simulation (§V11).
@@ -12,6 +14,10 @@ use Illuminate\Support\Facades\Log;
  */
 class TheDreamingService
 {
+    public function __construct(
+        protected \App\Services\Simulation\RuleVmService $ruleVm
+    ) {}
+
     /**
      * Generate whispers for a universe based on its latest snapshot.
      */
@@ -20,32 +26,27 @@ class TheDreamingService
         $latest = $universe->snapshots()->orderByDesc('tick')->first();
         if (!$latest) return [];
 
-        $zones = ($latest->state_vector ?? [])['zones'] ?? [];
+        // Load Dreaming DSL
+        $dsl = @file_get_contents(\resource_path('worldos_rules/simulation/dreaming.dsl')) ?: '';
+        
+        // Execute via Rule VM
+        $result = $this->ruleVm->evaluateRaw($universe, $latest, $dsl);
+        
+        if (!($result['ok'] ?? false)) return [];
+
+        $outputs = $result['outputs'] ?? [];
         $whispers = [];
 
-        foreach ($zones as $z) {
-            $state = $z['state'] ?? [];
-            $trauma = $state['trauma'] ?? 0.0;
-            $entropy = $state['entropy'] ?? 0.0;
-            $belief = $state['cultural']['myth_belief'] ?? 0.5;
-
-            // Logic: High trauma + High belief = Nightmare Whispers
-            if ($trauma > 0.7 && $belief > 0.6) {
+        foreach ($outputs as $out) {
+            if (($out['type'] ?? '') === 'event') {
+                $metadata = $out['metadata'] ?? [];
+                $zoneId = $out['scope_id'] ?? null;
+                
                 $whispers[] = [
-                    'zone_id' => $z['id'],
-                    'type' => 'nightmare',
-                    'content' => "Tiếng khóc của sự sụp đổ vọng lại từ tương lai.",
-                    'intensity' => $trauma * $belief
-                ];
-            }
-
-            // Logic: Low entropy + High knowledge = Prophetic Whispers
-            if ($entropy < 0.2 && ($state['embodied_knowledge'] ?? 0.0) > 0.8) {
-                $whispers[] = [
-                    'zone_id' => $z['id'],
-                    'type' => 'prophecy',
-                    'content' => "Ánh sáng của trí tuệ đang dệt nên một trật tự mới.",
-                    'intensity' => (1.0 - $entropy) * ($state['embodied_knowledge'] ?? 0.0)
+                    'zone_id' => $zoneId,
+                    'type' => $metadata['type'] ?? 'unknown',
+                    'content' => $metadata['content'] ?? 'Dòng chảy tiềm thức đang biến đổi.',
+                    'intensity' => (float) ($metadata['intensity'] ?? 0.5)
                 ];
             }
         }
@@ -59,8 +60,13 @@ class TheDreamingService
      */
     public function getOnericDensity(array $zoneState): float
     {
-        $trauma = $zoneState['trauma'] ?? 0.0;
-        $belief = $zoneState['cultural']['myth_belief'] ?? 0.0;
-        return ($trauma * 0.4 + $belief * 0.6);
+        // Load Dreaming DSL
+        $dslFile = \resource_path('worldos_rules/simulation/dreaming.dsl');
+        $dsl = @file_get_contents($dslFile) ?: '';
+        
+        // Evaluate via Rule VM
+        $result = $this->ruleVm->evaluateRawState($zoneState, $dsl);
+        
+        return (float) ($result['state']['oneric_density'] ?? 0.0);
     }
 }

@@ -21,11 +21,13 @@ class AscensionAction
     public function execute(Universe $universe, int $tick): void
     {
         // 1. Institutional Ascension
-        // Threshold: Legitimacy > 0.9, Capacity > 100
+        // Threshold: Legitimacy > 0.98, Capacity > 500, Min Tick > 200
+        if ($tick < 200) return;
+
         $candidates = InstitutionalEntity::where('universe_id', $universe->id)
             ->whereNull('collapsed_at_tick')
-            ->where('legitimacy', '>', 0.9)
-            ->where('org_capacity', '>', 100)
+            ->where('legitimacy', '>', 0.98)
+            ->where('org_capacity', '>', 500)
             ->get();
 
         foreach ($candidates as $inst) {

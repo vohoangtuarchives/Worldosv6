@@ -123,7 +123,7 @@ class IdeaDiffusionEngine
     private function infoTypeFromArtifactType(): array
     {
         return config('worldos.idea_diffusion.info_type_map', [
-            'prophecy' => Idea::INFO_TYPE_RELIGION,
+            'causal_trajectory' => Idea::INFO_TYPE_RELIGION,
             'invention' => Idea::INFO_TYPE_SCIENCE,
             'doctrine' => Idea::INFO_TYPE_PROPAGANDA,
             'myth' => Idea::INFO_TYPE_RUMOR,

@@ -5,7 +5,7 @@ namespace App\Simulation;
 use App\Simulation\Contracts\Effect;
 use App\Simulation\Contracts\WorldEventBusInterface;
 use App\Simulation\Domain\TickContext;
-use App\Simulation\Domain\WorldState;
+use App\Simulation\Runtime\State\WorldState;
 use App\Simulation\Events\WorldEvent;
 
 /**

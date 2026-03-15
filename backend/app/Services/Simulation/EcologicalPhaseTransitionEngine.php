@@ -18,23 +18,19 @@ class EcologicalPhaseTransitionEngine
 {
     private const BIOMES = ['forest', 'grassland', 'desert'];
 
-    public function __construct(
-        protected UniverseRepositoryInterface $universeRepository,
-        protected SimulationEventBus $eventBus
-    ) {}
+    public function __construct() {}
 
     /**
-     * Evaluate zones; advance or start transitions. Call after ecological collapse, same place as other engines.
+     * Evaluate zones; advance or start transitions.
      */
-    public function evaluate(Universe $universe, int $currentTick): void
+    public function runWithState(\App\Simulation\Runtime\State\WorldState $state, int $currentTick): void
     {
         $interval = (int) config('worldos.intelligence.ecological_phase_transition_tick_interval', 100);
         if ($interval <= 0 || $currentTick % $interval !== 0) {
             return;
         }
 
-        $stateVector = $this->getStateVector($universe);
-        $zones = &$stateVector['zones'];
+        $zones = $state->get('zones');
         if (!is_array($zones) || empty($zones)) {
             return;
         }
@@ -42,76 +38,70 @@ class EcologicalPhaseTransitionEngine
         $durationTicks = max(1, (int) config('worldos.intelligence.ecological_phase_transition_duration_ticks', 50));
         $rainfallDesertMax = (float) config('worldos.intelligence.ecological_phase_transition_rainfall_desert_max', 0.35);
         $rainfallForestMin = (float) config('worldos.intelligence.ecological_phase_transition_rainfall_forest_min', 0.65);
-        $seed = (int) ($universe->id ?? 0) * 31 + (int) ($universe->seed ?? 0);
+        
+        $universeId = (int) $state->get('universe_id', 0);
+        $seed = $universeId * 31 + (int) ($state->get('seed', 0));
 
         $zonesModified = false;
         foreach ($zones as $zoneIndex => &$zone) {
-            $state = &$zone['state'];
-            if (!is_array($state)) {
-                $state = [];
+            $zoneState = &$zone['state'];
+            if (!is_array($zoneState)) {
+                $zoneState = [];
             }
 
-            $rainfall = $this->getOrInitRainfall($state, $seed, $currentTick, $zoneIndex);
-            $state['rainfall'] = $rainfall;
-            $temperature = (float) ($state['temperature'] ?? 0.5);
-            $state['temperature'] = $temperature;
+            $rainfall = (float) ($zoneState['rainfall'] ?? 0.5);
+            $temperature = (float) ($zoneState['temperature'] ?? 0.5);
 
-            $currentBiome = $this->normalizeBiome($state['ecosystem_state'] ?? 'grassland');
+            $currentBiome = $this->normalizeBiome($zoneState['ecosystem_state'] ?? 'grassland');
             $targetBiomeFromEnv = $this->rainfallToBiome($rainfall, $rainfallDesertMax, $rainfallForestMin);
 
-            $targetBiome = $state['target_ecosystem_state'] ?? null;
+            $targetBiome = $zoneState['target_ecosystem_state'] ?? null;
             $targetBiome = $targetBiome ? $this->normalizeBiome($targetBiome) : null;
-            $progress = (float) ($state['transition_progress'] ?? 0);
+            $progress = (float) ($zoneState['transition_progress'] ?? 0);
 
             if ($targetBiome !== null && $progress >= 1.0) {
                 $fromState = $currentBiome;
-                $state['ecosystem_state'] = $targetBiome;
-                unset($state['target_ecosystem_state'], $state['transition_progress']);
+                $zoneState['ecosystem_state'] = $targetBiome;
+                unset($zoneState['target_ecosystem_state'], $zoneState['transition_progress']);
                 $zonesModified = true;
-                $this->chroniclePhaseTransition($universe, $currentTick, $fromState, $targetBiome, $zoneIndex);
+                $this->chroniclePhaseTransition($state, $currentTick, $fromState, $targetBiome, $zoneIndex);
                 continue;
             }
 
             if ($targetBiome !== null) {
                 $progress += 1.0 / $durationTicks;
-                $state['transition_progress'] = min(1.0, $progress);
+                $zoneState['transition_progress'] = min(1.0, $progress);
                 $zonesModified = true;
-                if ($state['transition_progress'] >= 1.0) {
+                if ($zoneState['transition_progress'] >= 1.0) {
                     $fromState = $currentBiome;
-                    $state['ecosystem_state'] = $targetBiome;
-                    unset($state['target_ecosystem_state'], $state['transition_progress']);
-                    $this->chroniclePhaseTransition($universe, $currentTick, $fromState, $targetBiome, $zoneIndex);
+                    $zoneState['ecosystem_state'] = $targetBiome;
+                    unset($zoneState['target_ecosystem_state'], $zoneState['transition_progress']);
+                    $this->chroniclePhaseTransition($state, $currentTick, $fromState, $targetBiome, $zoneIndex);
                 }
                 continue;
             }
 
             if ($targetBiomeFromEnv !== $currentBiome) {
-                $state['target_ecosystem_state'] = $targetBiomeFromEnv;
-                $state['transition_progress'] = 0.0;
+                $zoneState['target_ecosystem_state'] = $targetBiomeFromEnv;
+                $zoneState['transition_progress'] = 0.0;
                 $zonesModified = true;
             } else {
-                if (!isset($state['ecosystem_state'])) {
-                    $state['ecosystem_state'] = $currentBiome;
+                if (!isset($zoneState['ecosystem_state'])) {
+                    $zoneState['ecosystem_state'] = $currentBiome;
                     $zonesModified = true;
                 }
             }
         }
-        unset($zone, $state);
+        unset($zone, $zoneState);
 
         if ($zonesModified) {
-            $stateVector['zones'] = $zones;
-            $this->universeRepository->update($universe->id, ['state_vector' => $stateVector]);
+            $state->set('zones', $zones);
         }
     }
 
-    private function getOrInitRainfall(array &$state, int $seed, int $tick, int $zoneIndex): float
+    public function evaluate(Universe $universe, int $currentTick): void
     {
-        if (array_key_exists('rainfall', $state) && is_numeric($state['rainfall'])) {
-            return max(0.0, min(1.0, (float) $state['rainfall']));
-        }
-        $phase = ($tick * 0.002 + $zoneIndex * 0.17 + $seed * 0.0001) % 1.0;
-        $rainfall = 0.5 + 0.35 * sin($phase * 2 * M_PI);
-        return max(0.0, min(1.0, $rainfall));
+        // Deprecated
     }
 
     private function rainfallToBiome(float $rainfall, float $desertMax, float $forestMin): string
@@ -131,8 +121,9 @@ class EcologicalPhaseTransitionEngine
         return in_array($b, self::BIOMES, true) ? $b : 'grassland';
     }
 
-    private function chroniclePhaseTransition(Universe $universe, int $tick, string $fromState, string $toState, int $zoneIndex): void
+    private function chroniclePhaseTransition(\App\Simulation\Runtime\State\WorldState $state, int $tick, string $fromState, string $toState, int $zoneIndex): void
     {
+        $universeId = (int)$state->get('universe_id');
         $content = sprintf(
             'Ecological phase transition at tick %d: zone %d %s → %s.',
             $tick,
@@ -140,35 +131,15 @@ class EcologicalPhaseTransitionEngine
             $fromState,
             $toState
         );
-        Chronicle::create([
-            'universe_id' => $universe->id,
-            'from_tick' => $tick,
-            'to_tick' => $tick,
-            'type' => 'ecological_phase_transition',
-            'content' => $content,
-            'raw_payload' => [
-                'from_state' => $fromState,
-                'to_state' => $toState,
-                'zone_index' => $zoneIndex,
-                'affected_area' => $zoneIndex,
-            ],
-        ]);
-        $this->eventBus->dispatch($universe->id, SimulationEventBus::TYPE_ECOLOGICAL_PHASE_TRANSITION, $tick, [
+        
+        // V10 Chronicling & Eventing
+        Log::info("EcologicalPhaseTransitionEngine: Universe {$universeId} zone {$zoneIndex} {$fromState} → {$toState} at tick {$tick}");
+        
+        event(new \App\Events\Simulation\SimulationEventOccurred($universeId, 'ECOLOGICAL_PHASE_TRANSITION', $tick, [
             'from_state' => $fromState,
             'to_state' => $toState,
             'zone_index' => $zoneIndex,
-            'affected_area' => $zoneIndex,
-        ]);
-        Log::info("EcologicalPhaseTransitionEngine: Universe {$universe->id} zone {$zoneIndex} {$fromState} → {$toState} at tick {$tick}");
-    }
-
-    private function getStateVector(Universe $universe): array
-    {
-        $sv = $universe->state_vector;
-        if (is_string($sv)) {
-            $sv = json_decode($sv, true) ?? [];
-        }
-        return is_array($sv) ? $sv : [];
+        ]));
     }
 
     /**

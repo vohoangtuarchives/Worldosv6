@@ -16,6 +16,9 @@ import {
   SupremeEntityList,
   IntegrityMonitor,
   VoidArchive,
+  AttractorMandala,
+  CognitiveGraph,
+  SocialIntegrityGraph,
 } from "@/components/Simulation";
 import {
   Activity,
@@ -27,19 +30,40 @@ import {
   Users,
   Building2,
   Globe,
-  Library,
   Sparkles,
   ShieldCheck,
   Package,
   Orbit,
+  Eye,
+  Library,
+  Repeat,
+  Brain,
+  Workflow,
+  History,
+  Shield,
+  Atom,
+  Layout,
+  ChevronRight,
+  ArrowRight,
+  FileText,
+  Search,
+  Database,
+  Scroll,
+  type LucideIcon,
 } from "lucide-react";
+import { CivilizationReview } from "./CivilizationReview";
 import { api } from "@/lib/api";
 import { BiologyMetricsPanel } from "./BiologyMetricsPanel";
 import { SocietyMetricsPanel } from "./SocietyMetricsPanel";
 import { HistoryTimelinePanel } from "./HistoryTimelinePanel";
-import { EnvironmentPanel } from "./EnvironmentPanel";
+import { EcologyPanel } from "./EcologyPanel";
 import { NavigatorPanel } from "./NavigatorPanel";
 import { IdeologyPanel } from "./IdeologyPanel";
+import { ApexControlPanel } from "./ApexControlPanel";
+import { MultiverseExplorer } from "../Simulation/MultiverseExplorer";
+import { TopMetricBar } from "./TopMetricBar";
+import { ApexObserverTab } from "./zenith/ApexObserverTab";
+import { AttractorSidebarPanel } from "./AttractorSidebarPanel";
 
 const PERSONAE_SUB_KEYS = ["actors", "factions", "civilizations", "supreme", "integrity", "materials", "attractors"] as const;
 type PersonaeSubKey = (typeof PERSONAE_SUB_KEYS)[number];
@@ -77,13 +101,20 @@ export function CosmologicDashboard({ embedded = false }: { embedded?: boolean }
 
   const [activeTab, setActiveTab] = useState<
     | "topology"
+    | "causality"
+    | "cognitive"
     | "evolution"
     | "chronicles"
     | "actors"
     | "archive"
+    | "apex"
+    | "multiverse"
+    | "narrative"
   >("topology");
   const [personaeSubTab, setPersonaeSubTabState] = useState<PersonaeSubKey>("actors");
   const [showRightPanel, setShowRightPanel] = useState(true);
+  const [noise, setNoise] = useState(0);
+  const [clarity, setClarity] = useState("Canonical");
   const [productToEngines, setProductToEngines] = useState<Record<string, string[]> | null>(null);
 
   const setPersonaeSubTab = useCallback(
@@ -128,10 +159,21 @@ export function CosmologicDashboard({ embedded = false }: { embedded?: boolean }
   }, [activeTab, personaeSubTab, pathname, searchParams, router]);
 
   useEffect(() => {
-    if (activeTab !== "actors") return;
+    if (!universeId) return;
+    api.labDashboard.state(universeId)
+      .then((data: any) => {
+        setNoise(data.noise ?? 0);
+        setClarity(data.clarity ?? "Canonical");
+      })
+      .catch(err => console.error("Failed to fetch noise level", err));
+  }, [universeId, latestSnapshot?.tick]);
+
+  const glitchChance = noise > 0.5 ? (noise - 0.5) * 2 : 0;
+  const isVoid = noise > 0.8;
+  useEffect(() => {
     api
       .worldosEngines()
-      .then((res) => setProductToEngines(res.product_to_engines ?? null))
+      .then((res: any) => setProductToEngines(res.product_to_engines ?? null))
       .catch(() => setProductToEngines(null));
   }, [activeTab]);
 
@@ -204,19 +246,24 @@ export function CosmologicDashboard({ embedded = false }: { embedded?: boolean }
   };
 
   return (
-    <div className={`flex flex-col bg-background text-foreground overflow-hidden font-sans relative rounded-lg border border-border ${embedded ? "min-h-[calc(100vh-8rem)]" : "h-screen"}`}>
-      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+    <div className={`flex flex-col bg-background text-foreground font-sans relative rounded-lg border border-border ${embedded ? "min-h-[calc(100vh-8rem)]" : "min-h-screen"}`}>
+      <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-muted via-background to-background opacity-80" />
         <Starfield />
       </div>
 
-      <header className="flex-none p-4 border-b border-border/50 bg-card/30 backdrop-blur-md z-10 relative">
+      <header className={`flex-none p-4 border-b border-border/50 bg-card/30 backdrop-blur-md z-30 relative transition-all duration-700 ${noise > 0.4 ? "grayscale-[0.4]" : ""}`}>
         <div className="relative z-10 space-y-4">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center justify-between gap-3">
             <h3 className="text-[10px] font-semibold text-blue-400 uppercase tracking-widest flex items-center gap-2 shrink-0">
               <Activity className="w-3 h-3" /> Chỉ số hệ thống
             </h3>
-            <MetricGrid snapshot={latestSnapshot} variant="horizontal" className="flex-1 min-w-0" />
+            {noise > 0.2 && (
+              <div className="flex items-center gap-2 animate-pulse">
+                <span className="text-[10px] font-bold text-red-400/80 uppercase tracking-tighter">Epistemic Drift Detected:</span>
+                <span className="text-[10px] font-mono text-muted-foreground">{clarity}</span>
+              </div>
+            )}
           </div>
           <UniverseHeader
             universe={universe}
@@ -248,218 +295,205 @@ export function CosmologicDashboard({ embedded = false }: { embedded?: boolean }
         )}
       </header>
 
-      <main className="flex-1 flex overflow-hidden z-10 relative min-h-0">
-        <div className="flex-1 flex flex-col min-w-0 bg-card/20 relative backdrop-blur-[2px]">
+      <main className={`flex-1 flex z-10 relative min-h-0 bg-background/20 overflow-visible transition-all duration-1000 ${noise > 0.6 ? "sepia-[0.1]" : ""}`}>
+        <div className="flex-1 flex flex-col min-w-0 bg-card/5 relative backdrop-blur-[1px] overflow-visible">
           <div
-            className="absolute inset-0 z-0 pointer-events-none opacity-[0.03]"
+            className="fixed inset-0 z-0 pointer-events-none opacity-[0.02]"
             style={{
               backgroundImage:
-                "linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px)",
-              backgroundSize: "40px 40px",
+                "linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px)",
+              backgroundSize: "60px 60px",
             }}
           />
 
-          <div className="flex items-center gap-1 p-2 border-b border-border/50 bg-card/40 backdrop-blur-sm z-10 flex-wrap">
-            <TabButton
-              active={activeTab === "topology"}
-              onClick={() => setActiveTab("topology")}
-              icon={<Network className="w-4 h-4" />}
-              label="Topology nhân quả"
-            />
-            <TabButton
-              active={activeTab === "evolution"}
-              onClick={() => setActiveTab("evolution")}
-              icon={<Layers className="w-4 h-4" />}
-              label="Material Evolution"
-            />
-            <TabButton
-              active={activeTab === "chronicles"}
-              onClick={() => setActiveTab("chronicles")}
-              icon={<ScrollText className="w-4 h-4" />}
-              label="Biên Niên Sử"
-            />
-            <TabButton
-              active={activeTab === "actors"}
-              onClick={() => setActiveTab("actors")}
-              icon={<Users className="w-4 h-4" />}
-              label="Thực thể"
-            />
-            <TabButton
-              active={activeTab === "archive"}
-              onClick={() => setActiveTab("archive")}
-              icon={<Library className="w-4 h-4" />}
-              label="Dư Âm"
-            />
+          <div className="z-20 sticky top-0">
+            <TopMetricBar />
+          </div>
+
+          <div className="flex items-center gap-1 p-2 border-b border-border/30 bg-card/20 backdrop-blur-md z-20 flex-wrap sticky top-[64px]">
+            {/* Same TabButtons as before */}
+            <TabButton active={activeTab === "topology"} onClick={() => setActiveTab("topology")} icon={Orbit} label="Đa Vũ Trụ" />
+            <TabButton active={activeTab === "causality"} onClick={() => setActiveTab("causality")} icon={Network} label="Nhân Quả" />
+            <TabButton active={activeTab === "cognitive"} onClick={() => setActiveTab("cognitive")} icon={Brain} label="Ý Thức" />
+            <TabButton active={activeTab === "evolution"} onClick={() => setActiveTab("evolution")} icon={Workflow} label="Bản Nguyên" />
+            <TabButton active={activeTab === "actors"} onClick={() => setActiveTab("actors")} icon={Users} label="Nhân Sự" />
+            <TabButton active={activeTab === "chronicles"} onClick={() => setActiveTab("chronicles")} icon={History} label="Biên Niên Sử" />
+            <TabButton active={activeTab === "narrative"} onClick={() => setActiveTab("narrative")} icon={Scroll} label="Sử Thi" />
+            <TabButton active={activeTab === "apex"} onClick={() => setActiveTab("apex")} icon={Shield} label="Zenith Apex" />
             <div className="ml-auto flex items-center gap-2">
-              <span className="text-xs text-muted-foreground font-mono flex items-center gap-2 px-3 py-1 bg-card/50 rounded-full border border-border">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                Tick:{" "}
-                <span className="text-emerald-400 font-bold">
-                  {latestSnapshot?.tick || 0}
-                </span>
-              </span>
-              <button
-                onClick={() => setShowRightPanel(!showRightPanel)}
-                className={`p-1.5 rounded hover:bg-muted/50 transition-colors ${showRightPanel ? "text-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.3)]" : "text-muted-foreground"}`}
-                title="Bật/tắt bảng chi tiết"
-              >
-                <Info className="w-4 h-4" />
-              </button>
+               <button onClick={() => setShowRightPanel(!showRightPanel)} className={`p-2 rounded-md transition-all ${showRightPanel ? "bg-blue-500/20 text-blue-300" : "text-muted-foreground hover:bg-muted/40"}`}>
+                 <Activity className="w-4 h-4" />
+               </button>
             </div>
           </div>
 
-          <div className="flex-1 relative overflow-hidden z-0 min-h-0">
-            {activeTab === "topology" && universeId && (
-              <div className="absolute inset-0 animate-in fade-in duration-500">
-                <CausalTopologyGraph universeId={universeId} />
-              </div>
-            )}
-            {activeTab === "evolution" && universeId && (
-              <div className="absolute inset-0 animate-in fade-in duration-500">
-                <MaterialEvolutionDAG universeId={universeId} />
-              </div>
-            )}
-            {activeTab === "chronicles" && universeId && (
-              <div className="absolute inset-0 p-4 overflow-auto animate-in fade-in duration-500">
-                <ChronicleTimelineView universeId={universeId} />
-              </div>
-            )}
-            {activeTab === "actors" && universeId && (
-              <div className="absolute inset-0 flex flex-col animate-in fade-in duration-500">
-                <div className="flex-none flex items-center gap-1 p-2 border-b border-border/50 bg-card/30 flex-wrap">
-                  {(
-                    [
-                      { key: "actors" as const, label: "Nhân vật", icon: Users, count: (actors ?? []).length },
-                      { key: "factions" as const, label: "Thể chế", icon: Building2, count: (institutions ?? []).length },
-                      { key: "civilizations" as const, label: "Văn minh", icon: Globe, count: civsCount },
-                      { key: "supreme" as const, label: "Thực thể Tối cao", icon: Sparkles, count: (supremeEntities ?? []).length },
-                      { key: "integrity" as const, label: "Nợ nhân quả", icon: ShieldCheck, count: integrityCount },
-                      { key: "materials" as const, label: "Vật liệu", icon: Package, count: materialsCount },
-                      { key: "attractors" as const, label: "Attractors", icon: Orbit, count: attractorsCount },
-                    ] as const
-                  ).map(({ key, label, icon: Icon, count }) => (
-                    <button
-                      key={key}
-                      onClick={() => setPersonaeSubTab(key)}
-                      className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
-                        personaeSubTab === key
-                          ? "bg-blue-500/20 text-blue-300 border border-blue-500/40"
-                          : "text-muted-foreground hover:text-foreground hover:bg-muted/40 border border-transparent"
-                      }`}
-                    >
-                      <Icon className="w-3.5 h-3.5" />
-                      <span>{label}</span>
-                      <span className="text-[10px] font-mono opacity-80">({count})</span>
-                    </button>
-                  ))}
-                </div>
-                <div className="flex-none px-2 pb-2 border-b border-border/30">
-                  <p className="text-[10px] text-muted-foreground font-mono truncate" title={engineHintText}>
-                    Engine liên quan: {engineHintText}
-                  </p>
-                </div>
-                <div className="flex-1 min-h-0 overflow-auto p-4">
-                  {personaeSubTab === "actors" && <ActorList universeId={universeId} />}
-                  {personaeSubTab === "factions" && <FactionList universeId={universeId} />}
-                  {personaeSubTab === "civilizations" && <CivilizationList universeId={universeId} />}
-                  {personaeSubTab === "supreme" && <SupremeEntityList universeId={universeId} />}
-                  {personaeSubTab === "integrity" && (
-                    <IntegrityMonitor
-                      entities={(supremeEntities || []).map((e: { id: number; name: string; power_level?: number; karma?: number }) => ({
-                        id: e.id,
-                        name: e.name,
-                        power_level: e.power_level ?? 0,
-                        karma: e.karma ?? 0,
-                      }))}
-                    />
+          <div className={`flex-1 relative z-0 min-h-0 overflow-visible transition-all duration-300 ${noise > 0.5 ? "animate-pulse" : ""} ${isVoid ? "blur-[1px] skew-x-1 brightness-[1.1]" : ""}`}>
+            <div className="animate-in fade-in duration-700">
+                {activeTab === "topology" && universeId && (
+                <div className="flex flex-col gap-6 p-6">
+                  <CausalTopologyGraph universeId={universeId as number} />
+                  {latestSnapshot?.state_vector?.fields && (
+                    <div className="p-8 bg-card/20 backdrop-blur-md rounded-3xl border border-white/5 flex justify-center">
+                       <AttractorMandala fields={latestSnapshot.state_vector.fields} size={320} />
+                    </div>
                   )}
-                  {personaeSubTab === "materials" && (
-                    <div className="rounded-lg border border-border/50 bg-card/40 p-6 max-w-md">
-                      <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
-                        <Package className="w-4 h-4 text-muted-foreground" />
-                        Vật liệu (Material instances)
-                      </h3>
-                      <p className="text-sm text-muted-foreground mb-4">
-                        Số lượng: <span className="font-mono font-medium text-foreground">{materialsCount}</span>
-                      </p>
+                </div>
+              )}
+              {activeTab === "causality" && universeId && (
+                <div className="p-6 h-[650px]">
+                  <SocialIntegrityGraph universeId={universeId as number} />
+                </div>
+              )}
+              {activeTab === "cognitive" && universeId && (
+                <div className="p-6"> <CognitiveGraph universeId={universeId} ideas={latestSnapshot?.metrics?.ideas ?? []} schools={latestSnapshot?.metrics?.schools ?? []} /> </div>
+              )}
+              {activeTab === "evolution" && universeId && (
+                <div className="p-6"> <MaterialEvolutionDAG universeId={universeId} /> </div>
+              )}
+              {activeTab === "chronicles" && universeId && (
+                <div className="p-6"> <ChronicleTimelineView universeId={universeId} /> </div>
+              )}
+              {activeTab === "actors" && universeId && (
+                <div className="flex flex-col p-6">
+                  <div className="flex items-center gap-1 mb-4 flex-wrap">
+                    {(
+                      [
+                        { key: "actors" as const, label: "Nhân vật", icon: Users, count: (actors ?? []).length },
+                        { key: "factions" as const, label: "Thể chế", icon: Building2, count: (institutions ?? []).length },
+                        { key: "civilizations" as const, label: "Văn minh", icon: Globe, count: civsCount },
+                        { key: "supreme" as const, label: "Thực thể Tối cao", icon: Sparkles, count: (supremeEntities ?? []).length },
+                        { key: "integrity" as const, label: "Nợ nhân quả", icon: ShieldCheck, count: integrityCount },
+                        { key: "materials" as const, label: "Vật liệu", icon: Package, count: materialsCount },
+                        { key: "attractors" as const, label: "Attractors", icon: Orbit, count: attractorsCount },
+                      ] as const
+                    ).map(({ key, label, icon: Icon, count }) => (
                       <button
-                        type="button"
-                        onClick={() => setActiveTab("evolution")}
-                        className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md bg-blue-500/20 text-blue-300 border border-blue-500/40 hover:bg-blue-500/30 transition-colors"
+                        key={key}
+                        onClick={() => setPersonaeSubTab(key)}
+                        className={`flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                          personaeSubTab === key
+                            ? "bg-blue-500/20 text-blue-300 border border-blue-500/40"
+                            : "text-muted-foreground hover:text-foreground hover:bg-muted/40 border border-transparent"
+                        }`}
                       >
-                        <Layers className="w-4 h-4" />
-                        Xem DAG
+                        <Icon className="w-3.5 h-3.5" />
+                        <span>{label}</span>
+                        <span className="text-[10px] font-mono opacity-80">({count})</span>
                       </button>
-                      <p className="text-xs text-muted-foreground mt-2">Mở tab Material Evolution để xem đồ thị vật liệu.</p>
-                    </div>
-                  )}
-                  {personaeSubTab === "attractors" && (
-                    <div className="rounded-lg border border-border/50 bg-card/40 p-6 max-w-md">
-                      <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
-                        <Orbit className="w-4 h-4 text-muted-foreground" />
-                        Attractors (từ snapshot)
-                      </h3>
-                      <p className="text-sm text-muted-foreground mb-3">
-                        Attractor lộ ra từ dữ liệu snapshot hiện tại. Số lượng: <span className="font-mono font-medium text-foreground">{attractorsCount}</span>
-                      </p>
-                      {activeAttractors.length > 0 ? (
-                        <ul className="text-sm space-y-1 list-disc list-inside text-muted-foreground">
-                          {activeAttractors.map((a, i) => (
-                            <li key={i} className="font-mono text-foreground/90">{a}</li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <p className="text-xs text-muted-foreground italic">Chưa có active attractors trong snapshot này.</p>
-                      )}
-                    </div>
-                  )}
+                    ))}
+                  </div>
+                  <div className="overflow-visible">
+                    {personaeSubTab === "actors" && <ActorList universeId={universeId} />}
+                    {personaeSubTab === "factions" && <FactionList universeId={universeId} />}
+                    {personaeSubTab === "civilizations" && <CivilizationList universeId={universeId} />}
+                    {personaeSubTab === "supreme" && <SupremeEntityList universeId={universeId} />}
+                    {personaeSubTab === "integrity" && (
+                      <IntegrityMonitor
+                        entities={(supremeEntities || []).map((e: { id: number; name: string; power_level?: number; karma?: number }) => ({
+                          id: e.id,
+                          name: e.name,
+                          power_level: e.power_level ?? 0,
+                          karma: e.karma ?? 0,
+                        }))}
+                      />
+                    )}
+                    {personaeSubTab === "materials" && (
+                       <div className="rounded-lg border border-border/50 bg-card/40 p-6 max-w-md">
+                        <h3 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
+                          <Package className="w-4 h-4 text-muted-foreground" />
+                          Vật liệu
+                        </h3>
+                        <p className="text-sm text-muted-foreground mb-4">Số lượng: {materialsCount}</p>
+                        <button onClick={() => setActiveTab("evolution")} className="px-4 py-2 bg-blue-500/20 text-blue-300 border border-blue-500/40 rounded-md text-xs font-bold uppercase transition-all hover:bg-blue-500/30">Xem DAG</button>
+                       </div>
+                    )}
+                    {personaeSubTab === "attractors" && universeId && (
+                      <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                          <div className="p-8 bg-slate-900/40 backdrop-blur-md rounded-3xl border border-white/5 flex flex-col items-center">
+                            <h3 className="text-sm font-bold text-blue-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+                                <Orbit className="w-4 h-4" /> Global Field Topology
+                            </h3>
+                            <AttractorMandala fields={latestSnapshot?.state_vector?.fields ?? {}} size={400} />
+                          </div>
+                          
+                          <div className="space-y-6">
+                            <div className="p-6 rounded-2xl bg-card/30 border border-border/50">
+                              <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
+                                <Activity className="w-4 h-4 text-blue-400" />
+                                Active Attractors & Strange Loops
+                              </h3>
+                              <div className="space-y-3">
+                                {activeAttractors.length > 0 ? (
+                                  activeAttractors.map((attr: string) => (
+                                    <div key={attr} className="p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-between">
+                                      <div className="flex flex-col">
+                                        <span className="text-sm font-bold text-blue-100 capitalize">{attr}</span>
+                                        <span className="text-[10px] text-muted-foreground">The system is converging towards this basin.</span>
+                                      </div>
+                                      <div className="w-3 h-3 rounded-full bg-blue-400 shadow-[0_0_12px_rgba(96,165,250,0.8)] animate-pulse" />
+                                    </div>
+                                  ))
+                                ) : (
+                                  <div className="text-sm text-muted-foreground italic text-center py-6">
+                                    No dominant attractors identified. System in primordial chaos.
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="p-6 rounded-2xl bg-amber-500/5 border border-amber-500/20">
+                                <h3 className="text-sm font-semibold text-amber-400 mb-2 flex items-center gap-2">
+                                    <Shield className="w-4 h-4" /> Stabilizing Forces
+                                </h3>
+                                <p className="text-xs text-muted-foreground leading-relaxed">
+                                    Regime stability is maintained by current Institutional Karma and Historical Scars. 
+                                    { (latestSnapshot?.stability_index ?? 0) < 0.3 && " WARNING: Instability threshold exceeded." }
+                                </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
-            {activeTab === "archive" && universeId && (
-              <div className="absolute inset-0 p-4 overflow-auto animate-in fade-in duration-500">
-                <VoidArchive universeId={universeId} />
-              </div>
-            )}
+              )}
+              {activeTab === "chronicles" && universeId && (
+                <div className="p-6"> <ChronicleTimelineView universeId={universeId} /> </div>
+              )}
+              {activeTab === "narrative" && universeId && (
+                <div className="p-6"> <CivilizationReview universeId={universeId as number} /> </div>
+              )}
+              {activeTab === "archive" && universeId && ( <div className="p-6"> <VoidArchive universeId={universeId} /> </div> )}
+              {activeTab === "apex" && universeId && ( <div className=""> <ApexObserverTab universeId={universeId} /> </div> )}
+              {activeTab === "multiverse" && ( <div className="p-6"> <MultiverseExplorer /> </div> )}
+            </div>
           </div>
         </div>
 
         {showRightPanel && (
-          <aside className="w-80 flex-none border-l border-border/50 bg-card/60 backdrop-blur-xl flex flex-col h-full transition-all duration-300 shadow-[-10px_0_30px_rgba(0,0,0,0.5)] z-20">
-            <div className="flex-none p-4 border-b border-border/50">
-              <div className="mt-4 pt-4 border-t border-border/50 first:mt-0 first:pt-0 first:border-t-0">
-                <NavigatorPanel universeId={universeId ?? null} refreshTrigger={latestSnapshot?.tick ?? universe?.current_tick ?? 0} />
-              </div>
-              <div className="mt-4 pt-4 border-t border-border/50">
-                <IdeologyPanel universeId={universeId ?? null} refreshTrigger={latestSnapshot?.tick ?? universe?.current_tick ?? 0} />
-              </div>
-              <div className="mt-4 pt-4 border-t border-border/50">
-                <BiologyMetricsPanel universeId={universeId ?? null} refreshTrigger={latestSnapshot?.tick ?? universe?.current_tick ?? 0} />
-              </div>
-              <div className="mt-4 pt-4 border-t border-border/50">
-                <SocietyMetricsPanel universeId={universeId ?? null} refreshTrigger={latestSnapshot?.tick ?? universe?.current_tick ?? 0} />
-              </div>
-              <div className="mt-4 pt-4 border-t border-border/50">
-                <EnvironmentPanel universeId={universeId ?? null} refreshTrigger={latestSnapshot?.tick ?? universe?.current_tick ?? 0} />
-              </div>
-              <div className="mt-4 pt-4 border-t border-border/50">
-                <HistoryTimelinePanel universeId={universeId ?? null} refreshTrigger={latestSnapshot?.tick ?? universe?.current_tick ?? 0} />
-              </div>
-            </div>
-
-            <div className="flex-1 overflow-hidden flex flex-col min-h-0">
-              <div className="p-3 bg-card/30 border-b border-border/50 flex items-center justify-between">
-                <h3 className="text-xs font-semibold text-amber-400 uppercase tracking-widest flex items-center gap-2 text-[10px]">
-                  <AlertTriangle className="w-3 h-3" /> Bất thường
-                </h3>
-                <span className="text-[10px] px-1.5 py-0.5 bg-red-500/10 text-red-400 border border-red-500/20 rounded animate-pulse">
-                  Live
-                </span>
-              </div>
-              <div className="flex-1 overflow-auto p-0 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
-                <EventFeed universeId={universeId} />
-              </div>
-            </div>
+          <aside className="w-80 flex-none bg-card/30 backdrop-blur-2xl border-l border-white/5 flex flex-col overflow-visible animate-in slide-in-from-right-2 duration-300 relative">
+             <div className="sticky top-0 p-6 space-y-8 overflow-visible">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-blue-500/20 border border-blue-500/30 rounded-full backdrop-blur-md z-30">
+                  <span className="text-[10px] font-bold text-blue-400 uppercase tracking-widest">Observer HUD</span>
+                </div>
+                
+                <div className="space-y-8">
+                  <AttractorSidebarPanel universeId={universeId ?? null} refreshTrigger={latestSnapshot?.tick ?? universe?.current_tick ?? 0} />
+                  <NavigatorPanel universeId={universeId ?? null} refreshTrigger={latestSnapshot?.tick ?? universe?.current_tick ?? 0} />
+                  <IdeologyPanel universeId={universeId ?? null} refreshTrigger={latestSnapshot?.tick ?? universe?.current_tick ?? 0} />
+                  <BiologyMetricsPanel universeId={universeId ?? null} refreshTrigger={latestSnapshot?.tick ?? universe?.current_tick ?? 0} />
+                  <SocietyMetricsPanel universeId={universeId ?? null} refreshTrigger={latestSnapshot?.tick ?? universe?.current_tick ?? 0} />
+                  <EcologyPanel universeId={universeId ?? null} refreshTrigger={latestSnapshot?.tick ?? universe?.current_tick ?? 0} />
+                  <HistoryTimelinePanel universeId={universeId ?? null} refreshTrigger={latestSnapshot?.tick ?? universe?.current_tick ?? 0} />
+                  <div className="pt-4 border-t border-white/5">
+                    <h3 className="text-[10px] font-bold text-red-400 uppercase tracking-widest flex items-center gap-2 mb-4">
+                      <AlertTriangle className="w-3 h-3" /> Bất thường
+                 </h3>
+                    <EventFeed universeId={universeId} />
+                  </div>
+                </div>
+             </div>
           </aside>
         )}
       </main>
@@ -470,12 +504,12 @@ export function CosmologicDashboard({ embedded = false }: { embedded?: boolean }
 function TabButton({
   active,
   onClick,
-  icon,
+  icon: Icon,
   label,
 }: {
   active: boolean;
   onClick: () => void;
-  icon: React.ReactNode;
+  icon: LucideIcon;
   label: string;
 }) {
   return (
@@ -493,7 +527,7 @@ function TabButton({
         <div className="absolute inset-0 bg-blue-400/5 animate-pulse" />
       )}
       <span className="relative z-10 flex items-center gap-2">
-        {icon}
+        <Icon className="w-4 h-4" />
         <span>{label}</span>
       </span>
       {active && (

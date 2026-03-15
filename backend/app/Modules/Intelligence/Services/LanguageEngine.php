@@ -28,14 +28,14 @@ class LanguageEngine
     /**
      * Run language communication and vocabulary growth. Call after ActorBehaviorEngine (so intent/goal is set).
      */
-    public function evaluate(Universe $universe, int $currentTick): void
+    public function runWithState(\App\Simulation\Runtime\State\WorldState $state, int $currentTick): void
     {
         $interval = (int) config('worldos.intelligence.language_tick_interval', 5);
         if ($interval <= 0 || $currentTick % $interval !== 0) {
             return;
         }
 
-        $actors = $this->actorRepository->findByUniverse($universe->id);
+        $actors = $state->getActorEntities();
         $alive = array_values(array_filter($actors, fn($a) => $a->isAlive));
         if (count($alive) < 2) {
             $this->ensureVocabularyInitialized($alive);
@@ -46,31 +46,36 @@ class LanguageEngine
         $vocabMax = max(8, (int) config('worldos.intelligence.language_vocabulary_max_size', 24));
         $memorySize = max(1, (int) config('worldos.intelligence.language_memory_size', 5));
         $memoryDecay = (float) config('worldos.intelligence.language_memory_decay', 0.05);
-        $seed = (int) ($universe->seed ?? 0) + $universe->id * 31;
-        $saved = 0;
+
+        $seed = (int) ($state->get('seed', 0)) + (int)$state->get('universe_id', 0) * 31;
+        $updated = 0;
 
         foreach ($alive as $actor) {
             $this->ensureVocabularyInitializedForActor($actor, $seed, $currentTick);
             $this->applyMemoryDecay($actor, $memoryDecay);
             $rng = $this->detFloat($seed, $currentTick, $actor->id ?? 0, 0);
             if ($rng < $commProb) {
+                // Simplified receiver selection from pooled alive actors
                 $others = array_values(array_filter($alive, fn($a) => ($a->id ?? 0) !== ($actor->id ?? 0)));
                 if (!empty($others)) {
                     $receiver = $others[(int) ($this->detFloat($seed, $currentTick, $actor->id ?? 0, 1) * count($others)) % count($others)];
                     $symbol = $this->encodeIntent($actor, $seed, $currentTick);
                     $this->decodeAndStore($receiver, $symbol, $actor->id ?? 0, $currentTick, $vocabMax, $memorySize);
-                    $this->actorRepository->save($receiver);
-                    $saved++;
+                    $updated++;
                 }
             }
             $actor->metrics['language_group'] = $this->languageGroupId($actor->metrics['vocabulary'] ?? [], 6);
-            $this->actorRepository->save($actor);
-            $saved++;
+            $updated++;
         }
 
-        if ($saved > 0) {
-            Log::debug("LanguageEngine: Universe {$universe->id} tick {$currentTick}, language updated");
+        if ($updated > 0) {
+            Log::debug("LanguageEngine: Tick {$currentTick}, language updated in manifold");
         }
+    }
+
+    public function evaluate(Universe $universe, int $currentTick): void
+    {
+        // Deprecated: Pipeline handles runWithState
     }
 
     private function ensureVocabularyInitialized(array $alive): void

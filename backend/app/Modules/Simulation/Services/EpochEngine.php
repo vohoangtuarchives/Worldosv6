@@ -6,8 +6,14 @@ use App\Modules\Simulation\Entities\UniverseEntity;
 use App\Models\Universe as UniverseModel;
 use App\Models\UniverseSnapshot;
 use App\Models\Epoch;
+use App\Services\Simulation\RuleVmService;
 use App\Modules\Simulation\Actions\TransitionEpochAction;
+use App\Simulation\Runtime\State\WorldState;
 use Illuminate\Support\Facades\Log;
+use function resource_path;
+use function file_get_contents;
+use function array_intersect_key;
+use function array_flip;
 
 class EpochEngine
 {
@@ -17,6 +23,7 @@ class EpochEngine
     protected int $epochThreshold = 10000;
 
     public function __construct(
+        protected RuleVmService $ruleVm,
         protected TransitionEpochAction $transitionAction
     ) {}
 
@@ -38,14 +45,19 @@ class EpochEngine
         $tick = $snapshot->tick;
         $relativeTick = $tick - $currentEpoch->start_tick;
 
-        // Kiểm tra điều kiện chuyển giao:
-        // 1. Vượt quá ngưỡng tick kỷ nguyên
-        // 2. Entropy quá cao (thực tại rạn nứt)
-        
-        $entropy = $universe->entropy;
-        
-        if ($relativeTick >= $this->epochThreshold || ($entropy > 0.9 && $relativeTick > 2000)) {
-            $this->initiateTransition($universe, $currentEpoch, $snapshot);
+        // Evaluate DSL for Transition Decision
+        $vmState = [
+            'relative_tick' => (int) $relativeTick,
+            'entropy' => (float) $universe->entropy,
+            'innovation' => (float) ($universe->stateVector['innovation'] ?? 0),
+        ];
+
+        $dslFile = \resource_path('worldos_rules/simulation/epochs.dsl');
+        $dsl = @file_get_contents($dslFile) ?: '';
+        $result = $this->ruleVm->evaluateRawState($vmState, $dsl);
+
+        if ($result['state']['should_transition'] ?? false) {
+            $this->initiateTransition($universe, $currentEpoch, $snapshot, $result);
         }
     }
 
@@ -67,12 +79,30 @@ class EpochEngine
         Log::info("First Epoch Initialized for World {$universe->worldId}: {$epoch->name}");
     }
 
-    protected function initiateTransition(UniverseEntity $universe, Epoch $currentEpoch, UniverseSnapshot $snapshot): void
+    protected function initiateTransition(UniverseEntity $universe, Epoch $currentEpoch, UniverseSnapshot $snapshot, array $dslResult): void
     {
         Log::info("Initiating Epoch Transition for World {$universe->worldId} at tick {$snapshot->tick}");
         
-        // Xác định chủ đề của kỷ nguyên tiếp theo dựa trên tình trạng hiện tại
-        $nextTheme = $this->determineNextTheme($universe);
+        $metadata = [];
+        foreach ($dslResult['outputs'] ?? [] as $out) {
+            if (($out['event_name'] ?? '') === 'INITIATE_EPOCH_TRANSITION') {
+                $metadata = $out['metadata'] ?? [];
+                break;
+            }
+        }
+
+        if (empty($metadata)) {
+            // Rollback theme logic from state if event not found? 
+            // In Determine_Next_Epoch_Theme rule, we set metadata.
+            $metadata = $dslResult['state'] ?? [];
+        }
+
+        $nextTheme = [
+            'name' => $metadata['name'] ?? 'Kỷ Nguyên Mới',
+            'theme' => $metadata['theme'] ?? 'unknown',
+            'description' => $metadata['description'] ?? 'Một chương mới của lịch sử đang bắt đầu.',
+            'modifiers' => array_intersect_key($metadata, array_flip(['entropy_rate', 'trauma_multiplier', 'innovation_rate', 'complexity_growth', 'stability_bonus', 'conflict_chance']))
+        ];
         
         $this->transitionAction->execute($universe, $currentEpoch, $snapshot->tick, $nextTheme);
     }

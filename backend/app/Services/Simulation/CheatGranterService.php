@@ -22,7 +22,8 @@ class CheatGranterService
             'The Fourth Wall Breaker (Kẻ Phá Vỡ Tòa Tháp)' => 'Nhận thức được The Master Clock và can thiệp thẳng vào hệ thống.'
         ];
 
-        $cheatName = array_rand($cheats);
+        $prng = \App\Services\Simulation\SimulationPRNG::forUniverse($universe);
+        $cheatName = $prng->arrayRand($cheats);
         
         $tags = $agent->fate_tags ?? [];
         $tags[] = "Cheat: {$cheatName}";

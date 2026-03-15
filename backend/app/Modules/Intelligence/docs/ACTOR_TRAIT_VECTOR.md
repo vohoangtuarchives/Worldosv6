@@ -108,7 +108,7 @@ Mỗi actor có một **trait vector** 18 chiều (giá trị 0–1). Vector nà
 
 ### 2.8 Cognitive aggregate (ActorCognitiveService)
 
-- Tính **destiny_gradient**, **causal_curiosity**, **anomaly_sensitivity** từ **trung bình traits** của actors (ví dụ curiosity index 8, …) và state_vector / metrics → ghi vào `state_vector['cognitive_aggregate']`, kích hoạt meaning_crisis, prophecy, scientific_revolution.
+- Tính **destiny_gradient**, **causal_curiosity**, **anomaly_sensitivity** từ **trung bình traits** của actors (ví dụ curiosity index 8, …) và state_vector / metrics → ghi vào `state_vector['cognitive_aggregate']`, kích hoạt meaning_crisis, causal_trajectory, scientific_revolution.
 
 → **Trait trung bình (đặc biệt 8 – Curiosity)** tương tác với **cognitive layer** và **sự tự tổ chức văn minh** (tôn giáo, khoa học, magic) trong WorldOS.
 

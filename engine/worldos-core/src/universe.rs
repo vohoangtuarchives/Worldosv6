@@ -53,10 +53,13 @@ impl UniverseState {
         for arch in archetypes {
             let dist = (
                 (arch.survival - current.survival).powi(2) +
-                (arch.power - current.power).powi(2) +
+                (arch.reproduction - current.reproduction).powi(2) +
                 (arch.wealth - current.wealth).powi(2) +
+                (arch.power - current.power).powi(2) +
                 (arch.knowledge - current.knowledge).powi(2) +
-                (arch.meaning - current.meaning).powi(2)
+                (arch.meaning - current.meaning).powi(2) +
+                (arch.status - current.status).powi(2) +
+                (arch.belonging - current.belonging).powi(2)
             ).sqrt();
             if dist < best_dist {
                 best_dist = dist;
@@ -77,15 +80,14 @@ impl UniverseState {
 
     fn get_standard_archetypes() -> Vec<ArchetypeProfile> {
         vec![
-            ArchetypeProfile { name: "Hegemon".into(), survival: 0.8, power: 0.9, wealth: 0.4, knowledge: 0.3, meaning: 0.5 },
-            ArchetypeProfile { name: "Merchant Republic".into(), survival: 0.5, power: 0.6, wealth: 0.9, knowledge: 0.7, meaning: 0.4 },
-            ArchetypeProfile { name: "Technocracy".into(), survival: 0.4, power: 0.5, wealth: 0.7, knowledge: 0.9, meaning: 0.3 },
-            ArchetypeProfile { name: "Theocracy".into(), survival: 0.7, power: 0.8, wealth: 0.3, knowledge: 0.4, meaning: 0.9 },
-            ArchetypeProfile { name: "Utopia".into(), survival: 0.8, power: 0.4, wealth: 0.8, knowledge: 0.8, meaning: 0.8 },
-            ArchetypeProfile { name: "Survivalist".into(), survival: 0.9, power: 0.3, wealth: 0.2, knowledge: 0.2, meaning: 0.4 },
+            ArchetypeProfile { name: "Hegemon".into(), survival: 0.8, reproduction: 0.7, wealth: 0.4, power: 0.9, knowledge: 0.3, meaning: 0.5, status: 0.8, belonging: 0.7 },
+            ArchetypeProfile { name: "Merchant Republic".into(), survival: 0.5, reproduction: 0.6, wealth: 0.9, power: 0.6, knowledge: 0.7, meaning: 0.4, status: 0.7, belonging: 0.6 },
+            ArchetypeProfile { name: "Technocracy".into(), survival: 0.4, reproduction: 0.5, wealth: 0.7, power: 0.5, knowledge: 0.9, meaning: 0.3, status: 0.6, belonging: 0.5 },
+            ArchetypeProfile { name: "Theocracy".into(), survival: 0.7, reproduction: 0.8, wealth: 0.3, power: 0.8, knowledge: 0.4, meaning: 0.9, status: 0.7, belonging: 0.8 },
+            ArchetypeProfile { name: "Utopia".into(), survival: 0.8, reproduction: 0.9, wealth: 0.8, power: 0.4, knowledge: 0.8, meaning: 0.8, status: 0.7, belonging: 0.9 },
+            ArchetypeProfile { name: "Survivalist".into(), survival: 0.9, reproduction: 0.8, wealth: 0.2, power: 0.3, knowledge: 0.2, meaning: 0.4, status: 0.5, belonging: 0.6 },
         ]
     }
-
     fn refresh_aggregates(&mut self) {
         let n = self.zones.len() as f64;
         if n <= 0.0 {
@@ -93,47 +95,20 @@ impl UniverseState {
         }
 
         self.global_entropy = self.zones.iter().map(|z| z.state.entropy).sum::<f64>() / n;
-        self.knowledge_core = self
-            .zones
-            .iter()
-            .map(|z| z.state.embodied_knowledge)
-            .sum::<f64>()
-            / n;
-
-        let avg_stress: f64 = self
-            .zones
-            .iter()
-            .map(|z| z.state.material_stress)
-            .sum::<f64>()
-            / n;
+        self.knowledge_core = self.zones.iter().map(|z| z.state.embodied_knowledge).sum::<f64>() / n;
+        
+        let avg_stress: f64 = self.zones.iter().map(|z| z.state.material_stress).sum::<f64>() / n;
         self.sci = (1.0 - (avg_stress * 0.4 + self.global_entropy * 0.2)).clamp(0.0, 1.0);
         self.instability_gradient = (avg_stress - 0.5).max(0.0) * 2.0;
 
-        self.global_fields.survival = self
-            .zones
-            .iter()
-            .map(|z| z.state.civ_fields.survival)
-            .sum::<f64>()
-            / n;
+        self.global_fields.survival = self.zones.iter().map(|z| z.state.civ_fields.survival).sum::<f64>() / n;
+        self.global_fields.reproduction = self.zones.iter().map(|z| z.state.civ_fields.reproduction).sum::<f64>() / n;
+        self.global_fields.wealth = self.zones.iter().map(|z| z.state.civ_fields.wealth).sum::<f64>() / n;
         self.global_fields.power = self.zones.iter().map(|z| z.state.civ_fields.power).sum::<f64>() / n;
-        self.global_fields.wealth = self
-            .zones
-            .iter()
-            .map(|z| z.state.civ_fields.wealth)
-            .sum::<f64>()
-            / n;
-        self.global_fields.knowledge = self
-            .zones
-            .iter()
-            .map(|z| z.state.civ_fields.knowledge)
-            .sum::<f64>()
-            / n;
-        self.global_fields.meaning = self
-            .zones
-            .iter()
-            .map(|z| z.state.civ_fields.meaning)
-            .sum::<f64>()
-            / n;
+        self.global_fields.knowledge = self.zones.iter().map(|z| z.state.civ_fields.knowledge).sum::<f64>() / n;
+        self.global_fields.meaning = self.zones.iter().map(|z| z.state.civ_fields.meaning).sum::<f64>() / n;
+        self.global_fields.status = self.zones.iter().map(|z| z.state.civ_fields.status).sum::<f64>() / n;
+        self.global_fields.belonging = self.zones.iter().map(|z| z.state.civ_fields.belonging).sum::<f64>() / n;
     }
     pub fn new(universe_id: u64) -> Self {
         Self {
@@ -472,10 +447,13 @@ impl UniverseState {
                     c_diff_sum.myth_belief += neighbor.state.cultural.myth_belief - zone.state.cultural.myth_belief;
 
                     civ_diff_sum.survival += neighbor.state.civ_fields.survival - zone.state.civ_fields.survival;
-                    civ_diff_sum.power += neighbor.state.civ_fields.power - zone.state.civ_fields.power;
+                    civ_diff_sum.reproduction += neighbor.state.civ_fields.reproduction - zone.state.civ_fields.reproduction;
                     civ_diff_sum.wealth += neighbor.state.civ_fields.wealth - zone.state.civ_fields.wealth;
+                    civ_diff_sum.power += neighbor.state.civ_fields.power - zone.state.civ_fields.power;
                     civ_diff_sum.knowledge += neighbor.state.civ_fields.knowledge - zone.state.civ_fields.knowledge;
                     civ_diff_sum.meaning += neighbor.state.civ_fields.meaning - zone.state.civ_fields.meaning;
+                    civ_diff_sum.status += neighbor.state.civ_fields.status - zone.state.civ_fields.status;
+                    civ_diff_sum.belonging += neighbor.state.civ_fields.belonging - zone.state.civ_fields.belonging;
                 } else if let Some(&k) = ghost_map.get(&id) {
                     let ghost = &self.ghost_zones[k].state_snapshot.state;
                     s_diff_sum += ghost.entropy - zone.state.entropy;
@@ -489,10 +467,13 @@ impl UniverseState {
                     c_diff_sum.myth_belief += ghost.cultural.myth_belief - zone.state.cultural.myth_belief;
 
                     civ_diff_sum.survival += ghost.civ_fields.survival - zone.state.civ_fields.survival;
-                    civ_diff_sum.power += ghost.civ_fields.power - zone.state.civ_fields.power;
+                    civ_diff_sum.reproduction += ghost.civ_fields.reproduction - zone.state.civ_fields.reproduction;
                     civ_diff_sum.wealth += ghost.civ_fields.wealth - zone.state.civ_fields.wealth;
+                    civ_diff_sum.power += ghost.civ_fields.power - zone.state.civ_fields.power;
                     civ_diff_sum.knowledge += ghost.civ_fields.knowledge - zone.state.civ_fields.knowledge;
                     civ_diff_sum.meaning += ghost.civ_fields.meaning - zone.state.civ_fields.meaning;
+                    civ_diff_sum.status += ghost.civ_fields.status - zone.state.civ_fields.status;
+                    civ_diff_sum.belonging += ghost.civ_fields.belonging - zone.state.civ_fields.belonging;
                 }
             }
 
@@ -508,10 +489,13 @@ impl UniverseState {
             culture_deltas[i].myth_belief = beta_zone * c_diff_sum.myth_belief / n_len;
 
             civ_field_deltas[i].survival = beta_zone * civ_diff_sum.survival / n_len;
-            civ_field_deltas[i].power = beta_zone * civ_diff_sum.power / n_len;
+            civ_field_deltas[i].reproduction = beta_zone * civ_diff_sum.reproduction / n_len;
             civ_field_deltas[i].wealth = beta_zone * civ_diff_sum.wealth / n_len;
+            civ_field_deltas[i].power = beta_zone * civ_diff_sum.power / n_len;
             civ_field_deltas[i].knowledge = beta_zone * civ_diff_sum.knowledge / n_len;
             civ_field_deltas[i].meaning = beta_zone * civ_diff_sum.meaning / n_len;
+            civ_field_deltas[i].status = beta_zone * civ_diff_sum.status / n_len;
+            civ_field_deltas[i].belonging = beta_zone * civ_diff_sum.belonging / n_len;
 
             // Flow deltas (Population & Trade) require local update for both sides if local,
             // or just local side if neighbor is ghost.
@@ -573,11 +557,24 @@ impl UniverseState {
             z.state.cultural.institutional_respect = (z.state.cultural.institutional_respect + culture_deltas[i].institutional_respect).clamp(0.0, 1.0);
             z.state.cultural.myth_belief = (z.state.cultural.myth_belief + culture_deltas[i].myth_belief).clamp(0.0, 1.0);
 
+            // Apply decay (Preservation rate 0.4) before deltas (§Level-9)
+            z.state.civ_fields.survival *= constants::FIELD_PRESERVATION_RATE;
+            z.state.civ_fields.reproduction *= constants::FIELD_PRESERVATION_RATE;
+            z.state.civ_fields.wealth *= constants::FIELD_PRESERVATION_RATE;
+            z.state.civ_fields.power *= constants::FIELD_PRESERVATION_RATE;
+            z.state.civ_fields.knowledge *= constants::FIELD_PRESERVATION_RATE;
+            z.state.civ_fields.meaning *= constants::FIELD_PRESERVATION_RATE;
+            z.state.civ_fields.status *= constants::FIELD_PRESERVATION_RATE;
+            z.state.civ_fields.belonging *= constants::FIELD_PRESERVATION_RATE;
+
             z.state.civ_fields.survival = (z.state.civ_fields.survival + civ_field_deltas[i].survival).clamp(0.0, 1.0);
-            z.state.civ_fields.power = (z.state.civ_fields.power + civ_field_deltas[i].power).clamp(0.0, 1.0);
+            z.state.civ_fields.reproduction = (z.state.civ_fields.reproduction + civ_field_deltas[i].reproduction).clamp(0.0, 1.0);
             z.state.civ_fields.wealth = (z.state.civ_fields.wealth + civ_field_deltas[i].wealth).clamp(0.0, 1.0);
+            z.state.civ_fields.power = (z.state.civ_fields.power + civ_field_deltas[i].power).clamp(0.0, 1.0);
             z.state.civ_fields.knowledge = (z.state.civ_fields.knowledge + civ_field_deltas[i].knowledge).clamp(0.0, 1.0);
             z.state.civ_fields.meaning = (z.state.civ_fields.meaning + civ_field_deltas[i].meaning).clamp(0.0, 1.0);
+            z.state.civ_fields.status = (z.state.civ_fields.status + civ_field_deltas[i].status).clamp(0.0, 1.0);
+            z.state.civ_fields.belonging = (z.state.civ_fields.belonging + civ_field_deltas[i].belonging).clamp(0.0, 1.0);
 
             z.state.population_proxy = (z.state.population_proxy + population_deltas[i]).clamp(0.0, 1.0);
             if z.state.wealth_proxy < 1e-9 {
@@ -586,8 +583,49 @@ impl UniverseState {
             z.state.wealth_proxy = (z.state.wealth_proxy + trade_deltas[i]).clamp(0.0, 1.0);
         }
 
+        // V7: Quantum Overlay — decay superposition per tick
+        self.tick_quantum_overlays();
+
         self.refresh_aggregates();
         self.tick += 1;
+    }
+
+    /// V7 §57: Quantum Overlay tick — decay superposition depth each tick.
+    /// Zones in superposition gradually collapse. Observer presence accelerates collapse.
+    fn tick_quantum_overlays(&mut self) {
+        for z in &mut self.zones {
+            if let Some(ref mut qo) = z.state.quantum_overlay {
+                // Natural decay: superposition reduces each tick
+                let decay = qo.probability_decay;
+                // Observer presence accelerates collapse
+                let observer_boost = qo.observer_presence * 0.05;
+                qo.superposition_depth = (qo.superposition_depth - decay - observer_boost).max(0.0);
+
+                // Observer presence decays over time (Kiến Trúc Sư rời đi)
+                qo.observer_presence = (qo.observer_presence - 0.01).max(0.0);
+
+                // Fully collapsed: remove overlay
+                if qo.superposition_depth < 0.01 {
+                    z.state.quantum_overlay = None;
+                }
+            }
+        }
+    }
+
+    /// V7 §57: Observer Effect — when a zone is observed, increase observer_presence
+    /// and add entropy cost. Called by Laravel via HTTP/gRPC.
+    pub fn observe_zone(&mut self, zone_id: u32, entropy_cost: f64) {
+        if let Some(z) = self.zones.iter_mut().find(|z| z.id == zone_id) {
+            // Observation has a cost: increase zone entropy
+            z.state.entropy = (z.state.entropy + entropy_cost).min(1.0);
+
+            if let Some(ref mut qo) = z.state.quantum_overlay {
+                // Boost observer_presence → accelerating collapse
+                qo.observer_presence = (qo.observer_presence + 0.3).min(1.0);
+            } else {
+                // Zone is already collapsed, just pay entropy cost
+            }
+        }
     }
 
     /// Trigger Micro Mode (Crisis Window): Spawn agents deterministically (§3.2).
@@ -642,12 +680,12 @@ impl UniverseState {
             idx.actors_in_zone(zone_index).iter()
                 .map(|&ma_id| &self.macro_agents[ma_id as usize])
                 .filter(|ma| ma.agent_type == MacroAgentType::Army)
-                .map(|ma| ma.strength)
+                .map(|ma| if ma.leader_id.is_some() { ma.strength * 1.5 } else { ma.strength })
                 .sum()
         } else {
             self.macro_agents.iter()
                 .filter(|a| a.zone_id == zone_id && a.agent_type == MacroAgentType::Army)
-                .map(|a| a.strength)
+                .map(|a| if a.leader_id.is_some() { a.strength * 1.5 } else { a.strength })
                 .sum()
         };
         (base + army_sum * constants::MACRO_ARMY_PRESSURE_COEFF).clamp(0.0, 1.0)

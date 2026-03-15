@@ -4,60 +4,73 @@ namespace App\Services\Simulation;
 
 use App\Contracts\Repositories\UniverseRepositoryInterface;
 use App\Models\Universe;
+use App\Services\Simulation\RuleVmService;
 use Illuminate\Support\Facades\Log;
+use function resource_path;
+use function config;
 
 /**
- * Inequality dynamics (Doc §7).
- * Computes gini-like index and surplus concentration from settlements; writes state_vector.civilization.economy.inequality.
- * Runs after GlobalEconomyEngine so economy.settlements/surplus data exists.
+ * Inequality dynamics (Doc §7) via DSL.
  */
 class InequalityEngine
 {
     public function __construct(
-        protected UniverseRepositoryInterface $universeRepository
+        protected UniverseRepositoryInterface $universeRepository,
+        protected RuleVmService $ruleVm
     ) {}
 
-    public function evaluate(Universe $universe, int $currentTick): void
+    public function runWithState(\App\Simulation\Runtime\State\WorldState $state, int $currentTick): void
     {
         $interval = (int) config('worldos.intelligence.economy_tick_interval', 20);
         if ($interval <= 0 || $currentTick % $interval !== 0) {
             return;
         }
 
-        $stateVector = $this->getStateVector($universe);
-        if (config('worldos.simulation.rust_authoritative', false) && isset($stateVector['civilization']['economy']['inequality'])) {
-            return;
-        }
-
-        $civilization = $stateVector['civilization'] ?? null;
-        $economy = $civilization['economy'] ?? null;
-        $settlements = $civilization['settlements'] ?? [];
+        $settlements = $state->get('civilization.settlements', []);
         if (empty($settlements)) {
             return;
         }
 
         $surpluses = [];
-        $populations = [];
-        foreach ($settlements as $zoneIndex => $s) {
+        $totalPop = 0;
+        foreach ($settlements as $s) {
             $surpluses[] = max(0.0, (float) ($s['resource_surplus'] ?? 0));
-            $populations[] = max(0, (int) ($s['population'] ?? 0));
+            $totalPop += max(0, (int) ($s['population'] ?? 0));
         }
 
         $gini = $this->computeGiniFromShares($surpluses);
         $surplusConcentration = $this->surplusConcentration($surpluses);
-        $totalPop = array_sum($populations);
-        $eliteShare = $totalPop > 0 ? min(1.0, (float) config('worldos.inequality.elite_population_share', 0.1) * (1.0 + (1.0 - $gini))) : 0.0;
+
+        // Call DSL for social impact
+        $dslFile = resource_path('worldos_rules/society/dynamics.dsl');
+        $dsl = @file_get_contents($dslFile) ?: '';
+
+        $rawState = [
+            'gini_index' => $gini,
+            'surplus_concentration' => $surplusConcentration,
+            'total_population' => $totalPop,
+            'legitimacy' => (float) ($state->get('civilization.politics.legitimacy', 0.5)),
+        ];
+
+        $result = $this->ruleVm->evaluateRawState($rawState, $dsl);
+        $finalState = $result['state'] ?? [];
 
         $inequality = [
             'gini_index' => round($gini, 4),
             'surplus_concentration' => round($surplusConcentration, 4),
-            'elite_share_proxy' => round($eliteShare, 4),
+            'elite_share_proxy' => round((float)($finalState['elite_share'] ?? 0.1), 4),
             'updated_tick' => $currentTick,
         ];
 
-        $stateVector['civilization']['economy'] = array_merge($economy ?? [], ['inequality' => $inequality]);
-        $this->universeRepository->update($universe->id, ['state_vector' => $stateVector]);
-        Log::debug("InequalityEngine: Universe {$universe->id} inequality updated at tick {$currentTick}");
+        $state->set('civilization.economy.inequality', $inequality);
+        
+        $universeId = (int) $state->get('universe_id');
+        Log::debug("InequalityEngine: Universe {$universeId} inequality updated via DSL at tick {$currentTick}");
+    }
+
+    public function evaluate(Universe $universe, int $currentTick): void
+    {
+        // Deprecated
     }
 
     /** Gini-like from surplus per zone (0 = equal, 1 = maximally unequal). */

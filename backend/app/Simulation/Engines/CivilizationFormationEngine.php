@@ -7,7 +7,7 @@ use App\Simulation\Concerns\HasProductTypes;
 use App\Simulation\Contracts\SimulationEngine;
 use App\Simulation\Domain\EngineResult;
 use App\Simulation\Domain\TickContext;
-use App\Simulation\Domain\WorldState;
+use App\Simulation\Runtime\State\WorldState;
 
 /**
  * doc §8.1: Civilization Formation Engine stub. cities >= 3, shared language/culture, stages.

@@ -2,14 +2,21 @@
 
 namespace App\Modules\Simulation\Services;
 
+use App\Simulation\Runtime\State\WorldState;
 use App\Modules\Simulation\Entities\UniverseEntity;
 use App\Modules\Simulation\Actions\WavefunctionCollapseAction;
+use App\Services\Simulation\RuleVmService;
 use Illuminate\Support\Facades\Log;
+use function resource_path;
+use function file_exists;
+use function file_get_contents;
 
 class ObservationInterferenceEngine
 {
     public function __construct(
-        protected WavefunctionCollapseAction $wavefunctionCollapseAction
+        protected RuleVmService $ruleVm,
+        protected WavefunctionCollapseAction $wavefunctionCollapseAction,
+        protected \App\Services\Simulation\ObserverSpectrumService $spectrumService
     ) {}
 
     /**
@@ -17,20 +24,41 @@ class ObservationInterferenceEngine
      */
     public function process(UniverseEntity $universe, int $tick, bool $isBeingObserved): void
     {
-        if ($isBeingObserved) {
-            // Thực thi hiệu ứng can thiệp lượng tử
-            $this->wavefunctionCollapseAction->execute($universe, $tick);
-        } else {
-            // Tự động phân rã áp lực quan sát theo thời gian (Entropy Recovery)
-            if ($universe->observationLoad > 0) {
-                $decay = 0.5; // Tốc độ hồi phục thực tại tự nhiên
-                $universe->decayObservationLoad($decay);
+        // Legacy bridge
+    }
+
+    public function runWithState(\App\Simulation\Runtime\State\WorldState $state, int $tick): void
+    {
+        $isObserved = $state->isObserved();
+        
+        // Phase 59: Advanced Observer Spectrum
+        $spectrum = $this->spectrumService->getSpectrum($state);
+        $signature = $this->spectrumService->getInterferenceSignature($spectrum);
+        
+        $state->set('meta.observation_load', $signature['total_load']);
+        $state->set('meta.observer_spectrum', $spectrum);
+
+        // Apply interference impact
+        if ($isObserved || $signature['total_load'] > 1.0) {
+            $currentEntropy = $state->getEntropy();
+            $currentStability = $state->getStabilityIndex();
+
+            $state->setEntropy(max(0.0, $currentEntropy + $signature['entropy_mod']));
+            $state->setStabilityIndex(min(2.0, $currentStability + $signature['stability_mod']));
+
+            // High total load triggers collapse
+            if ($signature['total_load'] > 8.0) {
+                $this->wavefunctionCollapseAction->executeWithState($state, $tick);
             }
         }
 
-        // Cảnh báo Bão hòa Thực tại (Reality Saturation)
-        if ($universe->observationLoad > 10.0) {
-            Log::warning("Universe {$universe->id} is reaching Reality Saturation (Load: {$universe->observationLoad})");
+        // Always evaluate observer DSL
+        $dslFile = resource_path('worldos_rules/simulation/observer.dsl');
+        if (file_exists($dslFile)) {
+            $dsl = file_get_contents($dslFile);
+            $this->ruleVm->evaluateAndApplyWithState($state, $dsl, $tick);
         }
+        
+        Log::debug("ObservationInterferenceEngine: Processed quantum state for Universe {$state->get('universe_id')} at tick {$tick}");
     }
 }

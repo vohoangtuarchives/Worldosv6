@@ -4,7 +4,7 @@ namespace App\Simulation\Contracts;
 
 use App\Simulation\Domain\EngineResult;
 use App\Simulation\Domain\TickContext;
-use App\Simulation\Domain\WorldState;
+use App\Simulation\Runtime\State\WorldState;
 
 interface SimulationEngine
 {

@@ -6,7 +6,7 @@ use App\Simulation\Concerns\DefaultSimulationEnginePhase;
 use App\Simulation\Contracts\SimulationEngine;
 use App\Simulation\Domain\EngineResult;
 use App\Simulation\Domain\TickContext;
-use App\Simulation\Domain\WorldState;
+use App\Simulation\Runtime\State\WorldState;
 use App\Simulation\Effects\ZoneNeighborsUpdateEffect;
 use App\Simulation\Events\WorldEvent;
 use App\Simulation\Events\WorldEventType;

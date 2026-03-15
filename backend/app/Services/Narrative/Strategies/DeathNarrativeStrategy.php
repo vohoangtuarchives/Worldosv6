@@ -18,7 +18,10 @@ class DeathNarrativeStrategy implements NarrativeStrategyInterface
         $name = $samples[0]['agent_name'] ?? 'Vô danh';
         $arch = $samples[0]['archetype'] ?? 'Dân thường';
         $scenarios = ['Heroic', 'Mundane', 'Absurd', 'Gamer', 'Classic Truck-kun'];
-        $scenario = $scenarios[array_rand($scenarios)];
+        // Fallback to crc32 seed if universe not immediately accessible
+        $seed = crc32($entityType . $entity['id'] . $tick);
+        $prng = new \App\Services\Simulation\SimulationPRNG($seed);
+        $scenario = $prng->randomElement($scenarios);
 
         if ($count > 1) {
             return "Sự kiện: Tử thần giáng lâm (Isekai Death) — {$count} nạn nhân.\n"

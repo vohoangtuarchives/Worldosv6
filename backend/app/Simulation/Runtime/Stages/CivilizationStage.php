@@ -13,11 +13,17 @@ use App\Services\Simulation\CivilizationSettlementEngine;
 final class CivilizationStage implements SimulationStageInterface
 {
     public function __construct(
-        protected CivilizationSettlementEngine $civilizationSettlementEngine
+        protected CivilizationSettlementEngine $civilizationSettlementEngine,
+        protected \App\Simulation\Runtime\State\StateManager $stateManager
     ) {}
 
     public function run(Universe $universe, int $tick, ?UniverseSnapshot $savedSnapshot = null, array $context = []): void
     {
-        $this->civilizationSettlementEngine->evaluate($universe, $tick);
+        $state = $this->stateManager->get();
+        if (!$state) {
+            return;
+        }
+
+        $this->civilizationSettlementEngine->runWithState($state, $tick);
     }
 }

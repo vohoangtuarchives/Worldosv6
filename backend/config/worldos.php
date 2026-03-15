@@ -287,6 +287,7 @@ return [
         'law_evolution' => (int) env('WORLDOS_TIME_SCALE_LAW_EVOLUTION', 20),
         'cultural_drift' => (int) env('WORLDOS_TIME_SCALE_CULTURAL_DRIFT', 3),
         'adaptive_topology' => (int) env('WORLDOS_TIME_SCALE_ADAPTIVE_TOPOLOGY', 50),
+        'multiverse_osmosis' => (int) env('WORLDOS_TIME_SCALE_MULTIVERSE_OSMOSIS', 1),
     ],
 
     /*
@@ -694,6 +695,7 @@ return [
             \App\Simulation\Engines\ArtCultureEngine::class,
             \App\Simulation\Engines\PsychologyEngine::class,
             \App\Simulation\Engines\CausalityEngine::class,
+            \App\Simulation\Engines\MultiverseOsmosisEngine::class,
         ],
     ],
 

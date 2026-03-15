@@ -6,6 +6,20 @@ use App\Models\Universe;
 use App\Models\InstitutionalEntity as InstitutionalModel;
 use App\Models\Actor;
 use App\Models\Chronicle;
+use function resource_path;
+use function config;
+use function event;
+use function app;
+use function file_get_contents;
+use function array_merge;
+use function str_replace;
+use function strtoupper;
+use function count;
+use function rand;
+use function usort;
+use function array_column;
+use function array_slice;
+use function shuffle;
 use App\Models\BranchEvent;
 use App\Simulation\Support\SimulationRandom;
 use Illuminate\Support\Facades\DB;
@@ -21,55 +35,74 @@ class GreatFilterEngine
     const CRISIS_VOID_BREACH = 'void_breach';
     const CRISIS_RESOURCE_WAR = 'total_resource_war';
 
+    public function __construct(
+        protected \App\Services\Simulation\RuleVmService $ruleVm
+    ) {}
+
     /**
      * Process global state to detect and handle Great Filter events.
      * When $rng is provided, randomness is deterministic (replayable).
      */
     public function process(Universe $universe, int $tick, array $stateVector, ?SimulationRandom $rng = null): array
     {
-        $crises = [];
+        $snapshot = $universe->snapshots()->where('tick', $tick)->first();
+        if (!$snapshot) return [];
 
-        // 1. Singularity Paradox: Innovation > 0.9 AND Trust < 0.3, or cosmic pressure
-        $innovation = $stateVector['innovation'] ?? 0;
-        $trust = $this->calculateAverageTrust($universe);
-        $innovationPressure = (float) ($stateVector['pressures']['innovation'] ?? 0);
-        if (($innovation > 0.9 && $trust < 0.3) || $innovationPressure > 0.85) {
-            $crises[] = $this->triggerCrisis($universe, $tick, self::CRISIS_SINGULARITY, $rng);
-        }
-
-        // 2. Institutional Rigidity: Tradition > 0.8 AND Average Capacity < 5.0
-        $tradition = $stateVector['tradition'] ?? 0;
+        // Load Great Filter DSL
+        $dsl = @file_get_contents(\resource_path('worldos_rules/simulation/great_filter.dsl')) ?: '';
+        
+        // Prepare extra state for DSL (avg_capacity, trust)
         $avgCapacity = InstitutionalModel::where('universe_id', $universe->id)
             ->whereNull('collapsed_at_tick')
             ->avg('org_capacity') ?? 10.0;
-        if ($tradition > 0.8 && $avgCapacity < 5.0) {
-            $crises[] = $this->triggerCrisis($universe, $tick, self::CRISIS_STAGNATION, $rng);
-        }
+        
+        $trust = $this->calculateAverageTrust($universe);
+        
+        // Cần truyền thêm các biến này vào Rule VM. 
+        // Hiện tại RuleVmService chưa hỗ trợ custom extra state dễ dàng, 
+        // ta có thể tạm thời đính kèm vào state vector của snapshot trong bộ nhớ.
+        $snapshot->state_vector = array_merge($snapshot->state_vector ?? [], [
+            'civilization' => [
+                'politics' => [
+                    'avg_capacity' => $avgCapacity,
+                    'trust' => $trust
+                ]
+            ]
+        ]);
 
-        // 3. Void Breach: Entropy > 0.95 or cosmic entropy pressure
-        $entropy = $stateVector['entropy'] ?? 0;
-        $entropyPressure = (float) ($stateVector['pressures']['entropy'] ?? 0);
-        if ($entropy > 0.95 || $entropyPressure > 0.9) {
-            $crises[] = $this->triggerCrisis($universe, $tick, self::CRISIS_VOID_BREACH, $rng);
+        $result = $this->ruleVm->evaluateRaw($universe, $snapshot, $dsl);
+        
+        if (!($result['ok'] ?? false)) return [];
+
+        $outputs = $result['outputs'] ?? [];
+        $crises = [];
+
+        foreach ($outputs as $out) {
+            if ($out['type'] === 'event') {
+                $type = match($out['event_name']) {
+                    'CRISIS_SINGULARITY_TRIGGERED' => self::CRISIS_SINGULARITY,
+                    'CRISIS_STAGNATION_TRIGGERED' => self::CRISIS_STAGNATION,
+                    'CRISIS_VOID_BREACH_TRIGGERED' => self::CRISIS_VOID_BREACH,
+                    default => null
+                };
+                
+                if ($type) {
+                    $crises[] = $this->triggerCrisis($universe, $tick, $type, $rng, $out['metadata'] ?? []);
+                }
+            }
         }
 
         return $crises;
     }
 
-    protected function triggerCrisis(Universe $universe, int $tick, string $type, ?SimulationRandom $rng = null): array
+    protected function triggerCrisis(Universe $universe, int $tick, string $type, ?SimulationRandom $rng = null, array $metadata = []): array
     {
-        // Prevent immediate re-triggering (cooldown or status check)
         $vec = $universe->state_vector ?? [];
         if (isset($vec['active_crises'][$type])) {
             return ['type' => $type, 'status' => 'active'];
         }
 
-        $content = match($type) {
-            self::CRISIS_SINGULARITY => "NGHỊCH LÝ ĐIỂM KỲ DỊ: Công nghệ đột phá vượt xa tầm kiểm soát của đạo đức và niềm tin xã hội. Cấu trúc thực tại bắt đầu rạn nứt.",
-            self::CRISIS_STAGNATION => "SỰ ĐÌNH TRỆ ĐẠI HỆ THỐNG: Truyền thống hủ lậu và bộ máy cồng kềnh đã bóp nghẹt mọi mầm mống đổi mới. Nền văn minh đang tự thối rữa từ bên trong.",
-            self::CRISIS_VOID_BREACH => "CÁNH CỬA HƯ VÔ: Entropy đạt mức cực hạn. Ranh giới giữa hiện hữu và hư vô đang tan biến. Hư âm vang lên từ vực thẳm.",
-            default => "BỘ LỌC VĨ ĐẠI: Một thử thách vĩ mô đang đe dọa sự tồn vong của toàn bộ vũ trụ.",
-        };
+        $content = $metadata['description'] ?? "BỘ LỌC VĨ ĐẠI: Một thử thách vĩ mô đang đe dọa sự tồn vong của toàn bộ vũ trụ.";
 
         Chronicle::create([
             'universe_id' => $universe->id,
@@ -83,21 +116,21 @@ class GreatFilterEngine
         ]);
 
         // Broadcast as Anomaly
-        event(new \App\Events\Simulation\AnomalyDetected($universe, [
+        \event(new \App\Events\Simulation\AnomalyDetected($universe, [
             'title' => "BỘ LỌC VĨ ĐẠI: " . strtoupper(str_replace('_', ' ', $type)),
             'description' => $content,
             'severity' => 'CRITICAL'
         ]));
 
         // Apply immediate effects
-        $this->applyCrisisEffects($universe, $type, $tick, $rng);
+        $this->applyCrisisEffects($universe, $type, $tick, $rng, $metadata);
 
         // Record in state_vector
         $vec = $universe->fresh()->state_vector; // Get fresh state
         $activeCrises = $vec['active_crises'] ?? [];
         $activeCrises[$type] = [
             'started_at' => $tick,
-            'intensity' => 1.0
+            'intensity' => (float) ($metadata['intensity'] ?? 1.0)
         ];
         $vec['active_crises'] = $activeCrises;
         $universe->update(['state_vector' => $vec]);
@@ -105,46 +138,50 @@ class GreatFilterEngine
         return ['type' => $type, 'status' => 'triggered'];
     }
 
-    protected function applyCrisisEffects(Universe $universe, string $type, int $tick, ?SimulationRandom $rng = null): void
+    protected function applyCrisisEffects(Universe $universe, string $type, int $tick, ?SimulationRandom $rng = null, array $metadata = []): void
     {
         switch ($type) {
             case self::CRISIS_SINGULARITY:
-                // Kill 30% of actors randomly (digital soul fragmentation)
+                $killPct = (float) ($metadata['actor_kill_pct'] ?? 0.3);
+                $capPenalty = (float) ($metadata['capacity_penalty'] ?? 0.2);
+                
                 $count = Actor::where('universe_id', $universe->id)->where('is_alive', true)->count();
                 Actor::where('universe_id', $universe->id)
                     ->where('is_alive', true)
                     ->inRandomOrder()
-                    ->limit((int)($count * 0.3))
+                    ->limit((int)($count * $killPct))
                     ->update(['is_alive' => false]);
                 
-                // Damage civilization capacity due to technological chaos
                 InstitutionalModel::where('universe_id', $universe->id)
                     ->where('entity_type', 'CIVILIZATION')
                     ->whereNull('collapsed_at_tick')
                     ->update([
-                        'org_capacity' => DB::raw('GREATEST(0.1, org_capacity - 0.2)'),
+                        'org_capacity' => DB::raw("GREATEST(0.1, org_capacity - {$capPenalty})"),
                         'legitimacy' => DB::raw('GREATEST(0.0, legitimacy - 0.15)')
                     ]);
                 break;
 
             case self::CRISIS_STAGNATION:
-                // Drastic reduction in institutional memory/capacity
+                $capMult = (float) ($metadata['capacity_multiplier'] ?? 0.4);
+                $memMult = (float) ($metadata['memory_multiplier'] ?? 0.6);
+                
                 InstitutionalModel::where('universe_id', $universe->id)
                     ->whereNull('collapsed_at_tick')
                     ->update([
-                        'org_capacity' => DB::raw('org_capacity * 0.4'),
-                        'institutional_memory' => DB::raw('institutional_memory * 0.6'),
+                        'org_capacity' => DB::raw("org_capacity * {$capMult}"),
+                        'institutional_memory' => DB::raw("institutional_memory * {$memMult}"),
                         'legitimacy' => DB::raw('GREATEST(0.0, legitimacy - 0.3)')
                     ]);
                 break;
 
             case self::CRISIS_VOID_BREACH:
-                // Increase trauma across all zones and cause mass civilization fragmentation
+                $traumaBoost = (float) ($metadata['trauma_boost'] ?? 0.6);
+                $fragChance = (float) ($metadata['fragmentation_chance'] ?? 0.5);
+                
                 $vec = $universe->state_vector;
-                $vec['trauma'] = ($vec['trauma'] ?? 0) + 0.6;
+                $vec['trauma'] = ($vec['trauma'] ?? 0) + $traumaBoost;
                 $universe->update(['state_vector' => $vec]);
 
-                // Fragment civilizations: 50% chance to lose random zones from influence_map
                 $civs = InstitutionalModel::where('universe_id', $universe->id)
                     ->where('entity_type', 'CIVILIZATION')
                     ->whereNull('collapsed_at_tick')
@@ -152,7 +189,7 @@ class GreatFilterEngine
 
                 foreach ($civs as $civ) {
                     $map = $civ->influence_map ?? [];
-                    if (count($map) > 1) {
+                    if (count($map) > 1 && (rand(0, 100) / 100 < $fragChance)) {
                         $pct = $rng ? $rng->int(20, 40) : rand(20, 40);
                         $removeCount = (int)(count($map) * $pct / 100);
                         if ($rng) {
@@ -186,7 +223,7 @@ class GreatFilterEngine
 
         $totalTrust = 0.0;
         foreach ($actors as $actor) {
-            // Trust is index 7 of 17D vector
+            // Trust is mapped to Pragmatism (index 7 of 17D vector)
             $totalTrust += (float) ($actor->traits[7] ?? 0.5);
         }
 

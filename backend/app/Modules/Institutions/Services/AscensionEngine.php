@@ -2,137 +2,84 @@
 
 namespace App\Modules\Institutions\Services;
 
-use App\Models\Universe;
-use App\Models\UniverseSnapshot;
-use App\Models\Chronicle;
-use App\Models\BranchEvent;
-use App\Models\MaterialInstance;
-use App\Simulation\Support\SimulationRandom;
-use Illuminate\Support\Facades\DB;
+use App\Simulation\Runtime\Domain\UniverseState;
+use App\Simulation\Runtime\Events\AscensionEvent;
+use App\Simulation\Runtime\Events\EschatonEvent;
+use App\Services\Simulation\RuleVmService;
+use function resource_path;
 
+/**
+ * Ascension Engine V2: Pure logic for cosmic-level phase transitions via DSL.
+ */
 class AscensionEngine
 {
+    public function __construct(
+        protected RuleVmService $ruleVm
+    ) {}
+
     /**
-     * Evaluate cosmic-level events (Ascension or Eschaton) based on the latest snapshot.
+     * Evaluate cosmic-level events based on current universe state.
+     * 
+     * @return \App\Simulation\Runtime\Contracts\SimulationEvent[]
      */
-    public function evaluate(Universe $universe, UniverseSnapshot $snapshot): void
+    public function evaluate(UniverseState $state): array
     {
-        $metrics = $snapshot->metrics ?? [];
-        $stateVector = $snapshot->state_vector ?? [];
-        $entropy = (float) ($snapshot->entropy ?? 0);
-        
-        // Extract order and energy_level from metrics or state_vector
-        $order = (float) ($metrics['order'] ?? 0);
-        $energyLevel = (float) ($metrics['energy_level'] ?? 0);
+        $events = [];
+        $dslFile = resource_path('worldos_rules/physics/core.dsl');
+        $dsl = @file_get_contents($dslFile) ?: '';
 
-        // 1. Eschaton (Tịch Diệt) - collapse_pressure (phase) or entropy/entropy pressure
-        $collapsePressure = (float) ($stateVector['pressures']['collapse_pressure'] ?? 0);
-        $entropyPressure = (float) ($stateVector['pressures']['entropy'] ?? 0);
-        if ($entropy >= 0.99 || $entropyPressure > 0.95 || $collapsePressure > 0.95) {
-            $this->triggerEschaton($universe, $snapshot);
-            return;
-        }
+        // Prepare context for transitions
+        // We calculate probability in PHP if needed, but DSL can do it too.
+        // Let's pass random variables for DSL evaluation.
+        $rawState = [
+            'entropy' => (float) $state->entropy,
+            'order' => (float) $state->order,
+            'energyLevel' => (float) $state->energyLevel,
+            'collapse_pressure' => (float) ($state->pressures['collapse_pressure'] ?? 0),
+            'ascension_pressure' => (float) ($state->pressures['ascension_pressure'] ?? ($state->order * $state->energyLevel)),
+            'random_chance' => lcg_value(),
+            'ascension_probability' => $this->calculateAscensionProbability(
+                (float) ($state->pressures['ascension_pressure'] ?? ($state->order * $state->energyLevel))
+            ),
+        ];
 
-        // 2. Ascension (Phi Thăng) - ascension_pressure (phase) or order+energy/ascension pressure
-        $ascensionPressure = (float) ($stateVector['pressures']['ascension_pressure'] ?? $stateVector['pressures']['ascension'] ?? 0);
-        if (($order >= 0.95 && $energyLevel >= 0.95) || $ascensionPressure > 0.9) {
-            $this->triggerAscension($universe, $snapshot);
-            return;
-        }
-    }
+        $result = $this->ruleVm->evaluateRawState($rawState, $dsl);
+        $outputs = $result['outputs'] ?? [];
 
-    protected function triggerEschaton(Universe $universe, UniverseSnapshot $snapshot): void
-    {
-        $oldEpoch = $universe->epoch ?? 1;
-        $newEpoch = $oldEpoch + 1;
+        foreach ($outputs as $out) {
+            if (($out['type'] ?? '') === 'event') {
+                $eventName = $out['event_name'] ?? '';
+                
+                if ($eventName === 'ESCHATON') {
+                    $events[] = new EschatonEvent(
+                        oldEpoch: (int) $state->epoch,
+                        newEpoch: (int) $state->epoch + 1,
+                        tick: (int) $state->tick,
+                        cause: $out['params']['cause'] ?? 'unknown'
+                    );
+                }
 
-        // Reset Universe metrics to primordial state
-        $universe->update([
-            'epoch' => $newEpoch,
-            'level' => 1, // Reset level on death
-            'status' => 'restarting',
-        ]);
-
-        // Lore
-        $content = "Tiếng chuông lụi tàn điểm. Kỷ nguyên {$oldEpoch} sụp đổ trong biển Entropy hỗn loạn. Chư thần ngã xuống, vạn vật tan biến vào hư vô... Một mầm sống mới đang nảy nở từ đống tro tàn của Epoch {$newEpoch}.";
-        
-        Chronicle::create([
-            'universe_id' => $universe->id,
-            'from_tick' => $snapshot->tick,
-            'to_tick' => $snapshot->tick,
-            'type' => 'eschaton',
-            'raw_payload' => [
-                'action' => 'legacy_event',
-                'description' => $content
-            ],
-        ]);
-
-        BranchEvent::create([
-            'universe_id' => $universe->id,
-            'from_tick' => $snapshot->tick,
-            'event_type' => 'eschaton_reset',
-            'payload' => [
-                'old_epoch' => $oldEpoch,
-                'new_epoch' => $newEpoch,
-                'cause' => 'Entropy Saturation',
-            ],
-        ]);
-
-        // Material survivability: each instance rolls vs ontology-based rate; survivors persist into new epoch
-        $survivabilityRates = config('worldos.eschaton_survivability', []);
-        $defaultRate = (float) ($survivabilityRates['default'] ?? 0.1);
-        $rng = new SimulationRandom((int) ($universe->seed ?? 0), (int) $snapshot->tick, 1);
-        $instances = MaterialInstance::where('universe_id', $universe->id)->with('material')->get();
-        foreach ($instances as $instance) {
-            $ontology = $instance->material?->ontology ?? 'default';
-            $rate = (float) ($survivabilityRates[$ontology] ?? $defaultRate);
-            if ($rate <= 0 || $rng->float(0, 1) >= $rate) {
-                $instance->delete();
+                if ($eventName === 'ASCENSION') {
+                    $events[] = new AscensionEvent(
+                        oldLevel: (int) $state->level,
+                        newLevel: (int) $state->level + 1,
+                        tick: (int) $state->tick
+                    );
+                }
             }
         }
 
-        // Update snapshot metrics to reflect the reset for the next tick
-        $metrics = $snapshot->metrics ?? [];
-        $metrics['order'] = 0.05;
-        $metrics['entropy'] = 0.5; // Primordial chaos
-        $metrics['energy_level'] = 0.1;
-        $snapshot->update(['metrics' => $metrics, 'entropy' => 0.5]);
+        return $events;
     }
 
-    protected function triggerAscension(Universe $universe, UniverseSnapshot $snapshot): void
+    /**
+     * Sigmoid-based probability curve for natural transition feel.
+     * Still kept here as a helper for easier DSL parameter feeding.
+     */
+    protected function calculateAscensionProbability(float $pressure): float
     {
-        $oldLevel = $universe->level ?? 1;
-        $newLevel = $oldLevel + 1;
-
-        $universe->update([
-            'level' => $newLevel,
-        ]);
-
-        // Lore
-        $content = "Trời đất rung chuyển, rào cản thứ nguyên nứt vỡ. Thế giới tắm trong kim quang rực rỡ khi vượt qua ngưỡng giới hạn của Cấp độ {$oldLevel}. Toàn bộ vũ trụ đã Phi Thăng lên Tầng Thứ {$newLevel}!";
-
-        Chronicle::create([
-            'universe_id' => $universe->id,
-            'from_tick' => $snapshot->tick,
-            'to_tick' => $snapshot->tick,
-            'type' => 'ascension',
-            'raw_payload' => [
-                'action' => 'legacy_event',
-                'description' => $content
-            ],
-        ]);
-
-        BranchEvent::create([
-            'universe_id' => $universe->id,
-            'from_tick' => $snapshot->tick,
-            'event_type' => 'universal_ascension',
-            'payload' => [
-                'old_level' => $oldLevel,
-                'new_level' => $newLevel,
-            ],
-        ]);
-
-        // Reward: Boost supreme entities power
-        $universe->supremeEntities()->update(['power_level' => DB::raw('LEAST(1.0, power_level + 0.1)')]);
+        $k = 15;
+        $x0 = 0.97;
+        return 1 / (1 + exp(-$k * ($pressure - $x0)));
     }
 }

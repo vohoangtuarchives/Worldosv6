@@ -15,13 +15,16 @@ final class PoliticsStage implements SimulationStageInterface
 {
     public function __construct(
         protected PoliticsEngine $politicsEngine,
-        protected LegitimacyEliteService $legitimacyEliteService
+        protected LegitimacyEliteService $legitimacyEliteService,
+        protected \App\Simulation\Runtime\State\StateManager $stateManager
     ) {}
 
     public function run(Universe $universe, int $tick, ?UniverseSnapshot $savedSnapshot = null, array $context = []): void
     {
-        $this->politicsEngine->evaluate($universe, $tick);
-        $universe->refresh();
-        $this->legitimacyEliteService->evaluate($universe, $tick);
+        $state = $this->stateManager->get();
+        if (!$state) return;
+
+        $this->politicsEngine->runWithState($state, $tick);
+        $this->legitimacyEliteService->runWithState($state, $tick);
     }
 }

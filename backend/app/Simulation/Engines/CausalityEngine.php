@@ -6,7 +6,12 @@ use App\Simulation\Concerns\DefaultSimulationEnginePhase;
 use App\Simulation\Contracts\SimulationEngine;
 use App\Simulation\Domain\EngineResult;
 use App\Simulation\Domain\TickContext;
-use App\Simulation\Domain\WorldState;
+use App\Simulation\Runtime\State\WorldState;
+use App\Services\Simulation\RuleVmService;
+use App\Simulation\Effects\WorldRulesUpdateEffect;
+use function resource_path;
+use function file_get_contents;
+use function app;
 
 /**
  * doc §12.1: Causality Engine — causal graph (Event A → Event B → Event C).
@@ -16,6 +21,12 @@ use App\Simulation\Domain\WorldState;
 final class CausalityEngine implements SimulationEngine
 {
     use DefaultSimulationEnginePhase;
+
+    public function __construct(
+        private ?RuleVmService $ruleVm = null
+    ) {
+        $this->ruleVm = $this->ruleVm ?? \app(RuleVmService::class);
+    }
 
     public function phase(): string
     {
@@ -39,6 +50,29 @@ final class CausalityEngine implements SimulationEngine
 
     public function handle(WorldState $state, TickContext $ctx): EngineResult
     {
-        return EngineResult::empty();
+        $dslFile = \resource_path('worldos_rules/simulation/integrity.dsl');
+        $dsl = @file_get_contents($dslFile) ?: '';
+
+        $vec = $state->getStateVector();
+        
+        $rawState = [
+            'causal_debt' => (float) ($vec['meta']['causal_debt'] ?? 0.0),
+            'causal_integrity' => (float) ($vec['meta']['causal_integrity'] ?? 1.0),
+            'entropy' => (float) ($state->getEntropy() ?? 0.5),
+        ];
+
+        $result = $this->ruleVm->evaluateRawState($rawState, $dsl);
+        
+        $effects = [];
+        if ($result['ok'] ?? false) {
+            $fs = $result['state'] ?? [];
+            if (isset($fs['causal_integrity'])) {
+                $effects[] = new WorldRulesUpdateEffect([
+                    'meta.causal_integrity' => (float)$fs['causal_integrity']
+                ]);
+            }
+        }
+
+        return new EngineResult([], $effects, []);
     }
 }

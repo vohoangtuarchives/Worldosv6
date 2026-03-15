@@ -6,7 +6,7 @@ use App\Models\Universe;
 use Illuminate\Support\Facades\Log;
 
 /**
- * ResonanceAuditorService: Replaces the manual 'Architect's Gaze' (§V20).
+ * ResonanceAuditorService: Replaces the manual 'Observation Interference' (§V20).
  * The multiverse audits itself to maintain stability autonomously.
  */
 class ResonanceAuditorService
@@ -16,21 +16,25 @@ class ResonanceAuditorService
      */
     public function audit(Universe $universe): void
     {
-        $coherence = $universe->structural_coherence;
+        // Deprecated
+    }
+
+    public function runWithState(\App\Simulation\Runtime\State\WorldState $state, int $currentTick): void
+    {
+        $coherence = (float) $state->get('structural_coherence', 0.5);
         
         // High coherence creates a "Positive Feedback Loop" (Resonance)
-        // Bonus scales with coherence; if coherence > 0.7, resonance starts.
         $resonance = ($coherence > 0.7) ? ($coherence - 0.7) * 0.5 : 0.0;
         
         // Prevent total decay if the universe is healthy
         $baseResonance = ($coherence > 0.5) ? 0.02 : 0.0;
 
-        $totalBonus = $resonance + $baseResonance;
+        $totalBonus = round($resonance + $baseResonance, 4);
 
-        $universe->update(['observer_bonus' => $totalBonus]);
+        $state->set('meta.resonance', $totalBonus);
         
         if ($totalBonus > 0.05) {
-            Log::info("RESONANCE: Universe #{$universe->id} has achieved self-stabilization (+{$totalBonus} SCI).");
+            Log::info("RESONANCE: Universe {$state->get('universe_id')} has achieved self-stabilization (+{$totalBonus} SCI) at tick {$currentTick}");
         }
     }
 }

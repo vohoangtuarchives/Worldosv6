@@ -7,55 +7,76 @@ use App\Modules\Intelligence\Domain\Phase\PhaseDetector;
 
 class MacroStateEvolution
 {
-    /**
-     * Áp dụng MacroPressure lên Universe.
-     * Logistic damping, NO clamp.
-     */
+    public function __construct(
+        protected PhaseDetector $phaseDetector
+    ) {}
+
     public function evolve(
         Universe $universe,
-        array $archetypeRatios, // Từ ReplicatorDistributionUpdater
+        array $archetypeRatios, // Tỷ lệ archetypes hiện tại
         float $polarizationIndex,
-        float $rngNoise = 0.0 
+        float $rngNoise = 0.0,
+        float $culturalMomentum = 0.0
     ): Universe {
-        $warriorRatio = $archetypeRatios['Chiến Binh'] ?? ($archetypeRatios['Warlord'] ?? 0.0);
-        $scholarRatio = $archetypeRatios['Học Giả'] ?? ($archetypeRatios['Kỹ Sư'] ?? 0.0);
-        $merchantRatio = $archetypeRatios['Thương Nhân'] ?? 0.0;
-        $warlordRatio = $archetypeRatios['Warlord'] ?? 0.0;
-        $leaderRatio = $archetypeRatios['Lãnh Đạo'] ?? 0.0;
+        // 1. Khởi tạo MacroPressure từ tỷ lệ archetypes
+        $pressure = \App\Modules\Intelligence\Domain\Macro\MacroPressure::fromRatios($archetypeRatios, $polarizationIndex);
 
-        // TÍNH MACRO PRESSURE (PHI TUYẾN)
-        $warPressure = pow($warriorRatio, 1.5);
-        $knowledgePressure = $scholarRatio * 0.8;
-        $tradePressure = $merchantRatio * 0.7;
-        $chaosPressure = $polarizationIndex * $warlordRatio;
-        $leadPressure = $leaderRatio * 0.9;
+        // 2. Tính toán các thay đổi (deltas)
+        $currentEntropy = (float)($universe->entropy ?? 0.5);
+        $currentTechLevel = (float)($universe->level ?? 1);
+        
+        $deltas = $pressure->computeDeltas($currentEntropy, $currentTechLevel);
 
-        // ENTROPY EVOLUTION
-        $entropy = $universe->entropy ?? 0.5;
-        $entropy += $warPressure * 0.02;
-        $entropy += $chaosPressure * 0.05;
-        $entropy -= $entropy * (1 - $entropy) * 0.05; // self-damping
-        $entropy += $rngNoise * 0.01;
+        // 3. Áp dụng deltas vào Universe
+        $entropy = $currentEntropy + $deltas['entropy_delta'] + ($rngNoise * 0.01);
+        $techDelta = $deltas['tech_delta'];
 
-        // TECH LEVEL EVOLUTION
-        $techLevel = $universe->level ?? 1; // Or custom tech_level field metric
-        $techLevel += $knowledgePressure * max(0, 1 - ($techLevel / 10)); // logistic cap
+        // Phase 27: Hysteresis (Path Dependence)
+        $flags = $universe->state_vector['historical_flags'] ?? [];
+        if (!empty($flags['industrialized']) && $techDelta < 0) {
+            // Khó quay lại thời tiền công nghiệp một khi đã đạt được (Damping regression)
+            $techDelta *= 0.2; 
+        }
 
-        // STABILITY (STRUCTURAL COHERENCE) EVOLUTION
-        $stability = $universe->structural_coherence ?? 0.5;
-        $stability += $leadPressure * 0.01;
-        $stability -= $warPressure * 0.015;
-        $stability += $tradePressure * 0.005;
-        // Damping for stability? Yes, towards 0.5 default if no active pressure
+        $techLevel = $currentTechLevel + $techDelta;
+        
+        // Hysteresis Floor: Tech level can't drop below 3 if industrialized
+        if (!empty($flags['industrialized'])) {
+            $techLevel = max(3.0, $techLevel);
+        }
+
+        $stability = (float)($universe->structural_coherence ?? 0.5);
+        $stability += $deltas['stability_delta'];
+        
+        // Damping stability towards 0.5 default if no active pressure
         $stability += (0.5 - $stability) * 0.02;
 
-        // Tránh giá trị âm hoặc cực trị gây lỗi hệ thống sau này (Soft limit is OK here)
+        // Soft limit
         $universe->entropy = max(0.0, min(1.0, $entropy));
         $universe->structural_coherence = max(0.0, min(1.0, $stability));
-        $universe->level = (int) round(max(1, $techLevel)); // Cast to int or assume level is tech
+        $universe->level = (int) round(max(1, $techLevel));
         
-        // Save macro flags
-        $this->updateHistoricalFlags($universe);
+        // 4. Cập nhật Phase và Flags
+        $phaseScore = $this->phaseDetector->detect($universe->entropy, $polarizationIndex, $universe->level, $culturalMomentum, $flags);
+        
+        // Store phase score in state_vector or metrics if needed
+        $stateVector = $universe->state_vector ?? [];
+        $stateVector['phase_score'] = [
+            'primitive' => $phaseScore->primitive,
+            'feudal' => $phaseScore->feudal,
+            'industrial' => $phaseScore->industrial,
+            'information' => $phaseScore->information,
+            'fragmented' => $phaseScore->fragmented,
+        ];
+        $universe->state_vector = $stateVector;
+
+        // Phase 33: Globalized damping
+        if (!empty($flags['globalized'])) {
+            // Globalization dampening polarization
+            $polarizationIndex *= 0.5; 
+        }
+
+        $this->updateHistoricalFlags($universe, $phaseScore);
 
         return $universe;
     }
@@ -63,7 +84,7 @@ class MacroStateEvolution
     /**
      * Concept III: Historical Flags
      */
-    private function updateHistoricalFlags(Universe $universe): void
+    private function updateHistoricalFlags(Universe $universe, \App\Modules\Intelligence\Domain\Phase\PhaseScore $phaseScore): void
     {
         $stateVector = $universe->state_vector ?? [];
         if (!isset($stateVector['historical_flags'])) {
@@ -75,6 +96,14 @@ class MacroStateEvolution
 
         if ($techLevel >= 3) {
             $flags['industrialized'] = true;
+        }
+        
+        if ($techLevel >= 7 || $phaseScore->information > 0.5) {
+            $flags['information_age'] = true;
+        }
+
+        if ($phaseScore->information > 0.6 && ($universe->structural_coherence ?? 0.5) > 0.5) {
+            $flags['globalized'] = true;
         }
         
         $flags['peak_tech_level'] = max($flags['peak_tech_level'] ?? 1, $techLevel);

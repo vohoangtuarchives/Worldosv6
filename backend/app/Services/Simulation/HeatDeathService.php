@@ -4,7 +4,7 @@ namespace App\Services\Simulation;
 
 use App\Models\Demiurge;
 use App\Models\Universe;
-use App\Services\Saga\SagaService;
+use App\Services\Orchestrator\ImplicitOrchestratorService;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Log;
 class HeatDeathService
 {
     public function __construct(
-        protected SagaService $sagaService
+        protected ImplicitOrchestratorService $orchestrator
     ) {}
 
     /**
@@ -43,7 +43,7 @@ class HeatDeathService
         // Pick a World to spawn a new Universe in (for simplicity, the first one)
         $world = \App\Models\World::first();
         if ($world) {
-            $universe = $this->sagaService->spawnUniverse($world, null, null);
+            $universe = $this->orchestrator->spawnUniverse($world, null, null);
             Log::info("BIG BANG: New Universe #{$universe->id} created to absorb excess divine energy.");
         }
     }

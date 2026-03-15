@@ -13,6 +13,7 @@ use App\Modules\Intelligence\Services\ActorTransitionSystem;
 use App\Modules\Intelligence\Services\ReplicatorDistributionUpdater;
 use App\Modules\Intelligence\Services\MacroStateEvolution;
 use App\Modules\Intelligence\Services\SocietyAnalyzer;
+use App\Services\Simulation\SimulationPRNG;
 use Illuminate\Support\Facades\Log;
 
 class RunMicroCycleAction
@@ -78,8 +79,9 @@ class RunMicroCycleAction
 
         // Step 5: Factions Detection (Phase 7 Emergent Factions)
         $fragmentedScore = $phaseScore->fragmented;
-        $factionsToSpawn = $this->societyAnalyzer->detectEmergentFactions($newRatios, $fragmentedScore);
-        $this->societyAnalyzer->storeFactions($universe, $factionsToSpawn, $tick);
+        $microRng = new SimulationPRNG($seed + $tick); 
+        $factionsToSpawn = $this->societyAnalyzer->detectEmergentFactions($newRatios, $fragmentedScore, $microRng);
+        $this->societyAnalyzer->storeFactions($universe, $factionsToSpawn, $tick, $microRng);
 
         // Step 6: Macro State Evolution
         $macroRng = new SimulationRng($seed, $tick, 999999);

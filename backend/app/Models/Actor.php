@@ -27,6 +27,8 @@ class Actor extends Model
         'capabilities',
         'hero_stage',
         'vitality',
+        'is_heroic',
+        'heroic_type',
     ];
 
     protected $casts = [
@@ -37,6 +39,7 @@ class Actor extends Model
         'is_alive' => 'boolean',
         'birth_tick' => 'integer',
         'death_tick' => 'integer',
+        'is_heroic' => 'boolean',
     ];
 
     public function universe(): BelongsTo
@@ -73,10 +76,10 @@ class Actor extends Model
             ->withTimestamps();
     }
 
-    /** Prophecies this actor believes in. */
-    public function prophecyBeliefs(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    /** CausalTrajectories this actor believes in. */
+    public function causal_trajectoryBeliefs(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
     {
-        return $this->belongsToMany(Prophecy::class, 'actor_prophecy_beliefs')
+        return $this->belongsToMany(CausalTrajectory::class, 'actor_causal_trajectory_beliefs')
             ->withPivot('belief_strength')
             ->withTimestamps();
     }

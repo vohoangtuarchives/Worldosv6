@@ -45,7 +45,8 @@ class EpistemicService
         foreach ($data as $key => $value) {
             if (is_numeric($value)) {
                 // Apply Gaussian-like noise: distorted = value + (noise * random_offset)
-                $offset = (mt_rand() / mt_getrandmax() * 2 - 1) * $noise;
+                $prng = \App\Services\Simulation\SimulationPRNG::forUniverse($universe);
+                $offset = ($prng->nextFloat() * 2 - 1) * $noise;
                 $distorted[$key] = max(0.0, min(1.0, (float)$value + $offset));
             } elseif (is_array($value)) {
                 $distorted[$key] = $this->distort($value, $noise);

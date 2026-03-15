@@ -4,7 +4,7 @@ namespace App\Simulation\Support;
 
 use App\Models\Universe;
 use App\Models\UniverseSnapshot;
-use App\Simulation\Domain\WorldState;
+use App\Simulation\Runtime\State\WorldState;
 
 /**
  * Builds immutable WorldState from Universe and UniverseSnapshot (or latest snapshot).

@@ -2,7 +2,7 @@
 
 namespace App\Simulation\Contracts;
 
-use App\Simulation\Domain\WorldStateMutable;
+use App\Simulation\Runtime\State\WorldStateMutable;
 
 interface Effect
 {

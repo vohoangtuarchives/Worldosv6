@@ -74,6 +74,23 @@ class EvolutionPressureService
     }
 
     /**
+     * Helper to load universe and compute pressure from ID.
+     */
+    public function fromUniverseId(int $universeId): array
+    {
+        $universe = Universe::find($universeId);
+        if (!$universe) {
+            return [
+                'food_pressure' => 0.5,
+                'predator_pressure' => 0.0,
+                'climate_pressure' => 0.0,
+                'competition_pressure' => 0.5,
+            ];
+        }
+        return $this->fromUniverse($universe);
+    }
+
+    /**
      * Fitness score 0.2–1.0 from actor genome (traits, physic) and pressure.
      * Higher metabolism under food pressure -> lower fitness; resilience/cooperation under competition -> higher fitness.
      */

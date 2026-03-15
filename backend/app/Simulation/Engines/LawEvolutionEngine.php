@@ -6,28 +6,34 @@ use App\Simulation\Concerns\DefaultSimulationEnginePhase;
 use App\Simulation\Contracts\SimulationEngine;
 use App\Simulation\Domain\EngineResult;
 use App\Simulation\Domain\TickContext;
-use App\Simulation\Domain\WorldState;
+use App\Simulation\Runtime\State\WorldState;
 use App\Simulation\Effects\WorldRulesUpdateEffect;
 use App\Simulation\Events\WorldEvent;
 use App\Simulation\Events\WorldEventType;
-use App\Simulation\Support\SimulationRandom;
+use App\Services\Simulation\RuleVmService;
+use Illuminate\Support\Facades\Log;
+use function resource_path;
+use function app;
+use function config;
 
 /**
- * Evolves world_rules (Tier 2 mutable rules) under pressure with inertia.
- * With low probability, nudges a rule value; high inertia reduces mutation chance.
+ * Evolves world_rules (Tier 2 mutable rules) via DSL logic.
  */
-final class LawEvolutionEngine implements SimulationEngine
+class LawEvolutionEngine implements SimulationEngine
 {
     use DefaultSimulationEnginePhase;
+
+    public function __construct(
+        protected ?RuleVmService $ruleVm = null
+    ) {
+        $this->ruleVm = $ruleVm ?? app(RuleVmService::class);
+    }
 
     public function phase(): string
     {
         return 'politics';
     }
 
-    private const MUTATION_CHANCE_BASE = 0.02;
-    private const NUDGE_MAGNITUDE = 0.03;
-    /** Keys that can be mutated (numeric drift) */
     private const MUTABLE_KEYS = ['entropy_tendency', 'order_tendency', 'innovation_tendency'];
 
     public function name(): string
@@ -42,51 +48,24 @@ final class LawEvolutionEngine implements SimulationEngine
 
     public function tickRate(): int
     {
-        return max(1, (int) (config('worldos.time_scale_factors.law_evolution') ?? 20));
+        return max(1, (int) (\config('worldos.time_scale_factors.law_evolution') ?? 20));
     }
 
     public function handle(WorldState $state, TickContext $ctx): EngineResult
     {
-        $rng = new SimulationRandom($ctx->getSeed(), $ctx->getTick(), 0);
-        $effects = $this->evaluate($state, $rng);
-        $events = [];
-        if ($effects !== []) {
-            $events[] = WorldEvent::create(
-                WorldEventType::WORLD_RULES_MUTATED,
-                $ctx->getUniverseId(),
-                $ctx->getTick(),
-                null,
-                [],
-                0.25,
-                [],
-                ['trigger' => 'law_evolution']
-            );
-        }
-        return new EngineResult($events, $effects, []);
+        return new EngineResult([], [], []); // Deprecated in favor of runWithState
     }
 
-    /**
-     * @return \App\Simulation\Contracts\Effect[]
-     */
-    private function evaluate(WorldState $state, SimulationRandom $rng): array
+    public function runWithState(\App\Simulation\Runtime\State\WorldState $state, int $tick): void
     {
-        $vec = $state->getStateVector();
-        $rules = $vec['world_rules'] ?? [];
-        if (!is_array($rules)) {
-            $rules = [];
-        }
+        $dslFile = \resource_path('worldos_rules/innovation/leadership.dsl');
+        if (!file_exists($dslFile)) return;
 
-        $inertia = (float) ($rules['_inertia'] ?? 0.85);
-        $roll = $rng->float(0, 1);
-        if ($roll >= (self::MUTATION_CHANCE_BASE * (1.0 - $inertia))) {
-            return [];
-        }
+        $dsl = file_get_contents($dslFile);
+        
+        // Evaluate leadership/rule mutations
+        $this->ruleVm->evaluateAndApplyWithState($state, $dsl, $tick);
 
-        $key = self::MUTABLE_KEYS[$rng->int(0, count(self::MUTABLE_KEYS) - 1)];
-        $current = (float) ($rules[$key] ?? 0.5);
-        $nudge = ($rng->float(0, 1) > 0.5 ? 1 : -1) * self::NUDGE_MAGNITUDE;
-        $newVal = max(0.0, min(1.0, $current + $nudge));
-
-        return [new WorldRulesUpdateEffect([$key => $newVal])];
+        Log::info("LawEvolutionEngine: World rules evolved via DSL for Universe {$state->get('universe_id')} at tick {$tick}");
     }
 }

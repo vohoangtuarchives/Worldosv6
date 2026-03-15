@@ -24,7 +24,7 @@ class OmegaPointEngine
         $innovation = (float)(($snapshot->state_vector ?? [])['innovation'] ?? 0);
 
         // Điều kiện Apotheosis: Trật tự cao, Năng lượng dồi dào và Đổi mới đạt cực hạn
-        if ($order > 0.9 && $energy > 0.8 && $innovation > 0.95) {
+        if ($order > 0.95 && $energy > 0.8 && $innovation > 0.99) {
             $this->triggerApotheosis($universe, $snapshot);
         }
     }

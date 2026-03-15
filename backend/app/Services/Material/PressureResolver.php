@@ -10,7 +10,13 @@ use App\Models\MaterialInstance;
  */
 class PressureResolver
 {
-    protected float $k = 0.01;
+    protected float $k_base = 0.003;
+
+    public function __construct(
+        protected \App\Services\Simulation\RuleVmService $ruleVm
+    ) {
+        $this->ruleVm = $ruleVm ?? \app(\App\Services\Simulation\RuleVmService::class);
+    }
 
     public function apply(MaterialInstance $instance, array $context): array
     {
@@ -55,26 +61,19 @@ class PressureResolver
         }, $scars);
 
         $deltas = [];
-        foreach ($coefficients as $vectorKey => $coef) {
-            $val = $this->k * $output * (is_numeric($coef) ? $coef : 0) * $resonanceFactor;
+        $dsl = @file_get_contents(\resource_path('worldos_rules/material/lifecycle.dsl')) ?: '';
+        
+        $vmState = [
+            'k' => $this->k_base,
+            'output' => $output,
+            'resonance' => $resonanceFactor,
+            'coefficients' => $coefficients,
+            'scars' => $scarTypes,
+            'edicts' => $activeEdicts
+        ];
 
-            // Apply specific scar effects
-            if ($vectorKey === 'order' && in_array('civil_war_scar', $scarTypes)) {
-                $val *= 0.5; // Order is harder to build after civil war
-            }
-            if ($vectorKey === 'entropy' && in_array('nuclear_fallout', $scarTypes)) {
-                $val *= 1.5; // Entropy increases faster
-            }
-
-            // Apply Supreme Edicts
-            foreach ($activeEdicts as $edict) {
-                if ($edict['target'] === $vectorKey) {
-                    $val *= (float) $edict['multiplier'];
-                }
-            }
-
-            $deltas[$vectorKey] = $val;
-        }
+        $result = $this->ruleVm->evaluateRawState($vmState, $dsl);
+        $deltas = $result['state']['deltas'] ?? [];
 
         return $deltas;
     }

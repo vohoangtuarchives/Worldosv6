@@ -5,7 +5,7 @@ use App\Repositories\UniverseSnapshotRepository;
 use App\Services\Simulation\UniverseRuntimeService; // keep for now just in case
 use App\Actions\Simulation\AdvanceSimulationAction;
 use App\Actions\Simulation\DecideUniverseAction;
-use App\Services\Saga\SagaService;
+use App\Services\Orchestrator\ImplicitOrchestratorService;
 use Illuminate\Support\Facades\Route;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use App\Contracts\UniverseEvaluatorInterface;
@@ -127,7 +127,7 @@ Route::middleware('auth:sanctum')->prefix('worldos')->group(function () {
         ]);
     })->name('worldos.worlds.ip');
 
-    Route::post('worlds', function (SagaService $sagaService) {
+    Route::post('worlds', function (ImplicitOrchestratorService $orchestrator) {
         $name = request()->input('name');
         $description = request()->input('description', '');
         $axioms = request()->input('axioms', []);
@@ -155,7 +155,7 @@ Route::middleware('auth:sanctum')->prefix('worldos')->group(function () {
         ]);
 
         // Auto-spawn Universe (Saga created implicitly by service if needed)
-        $universe = $sagaService->spawnUniverse($world);
+        $universe = $orchestrator->spawnUniverse($world);
         
         return response()->json([
             'ok' => true, 
@@ -177,21 +177,49 @@ Route::middleware('auth:sanctum')->prefix('worldos')->group(function () {
     Route::get('engines', [WorldosEnginesController::class, 'index'])->name('worldos.engines');
     Route::get('engines/status', [WorldosEnginesController::class, 'status'])->name('worldos.engines.status');
     Route::get('metrics', [WorldosEnginesController::class, 'metrics'])->name('worldos.metrics');
+    Route::get('universes/{id}/zenith', [\App\Http\Controllers\Api\ZenithController::class, 'show'])->name('worldos.universes.zenith');
+    Route::get('lab/samsara/{agentId}', [\App\Http\Controllers\Api\SamsaraController::class, 'show'])->name('worldos.lab.samsara');
+    Route::get('lab/narrative/grand/{universeId}', [\App\Http\Controllers\Api\GrandNarrativeController::class, 'show'])->name('worldos.lab.narrative.grand');
+
+    // Phase 72: Apex Observer (Advanced Commands)
+    Route::post('universes/{id}/apex/command', [\App\Http\Controllers\Api\ApexController::class, 'command'])->name('worldos.universes.apex');
+
+    // Phase 77: Demiurge Vision (Apex Observer V10 — Full Reality Access) 👁️✨
+    Route::prefix('apex/v10')->group(function () {
+        Route::get('universes/{universeId}/wavefunction', [\App\Http\Controllers\Simulation\ApexObserverController::class, 'projectWavefunction'])
+            ->name('apex.wavefunction');
+        Route::get('universes/{universeId}/informational-mass', [\App\Http\Controllers\Simulation\ApexObserverController::class, 'getInformationalMass'])
+            ->name('apex.informational-mass');
+        Route::get('mutation-chronicle', [\App\Http\Controllers\Simulation\ApexObserverController::class, 'getMutationChronicle'])
+            ->name('apex.mutation-chronicle');
+        Route::get('meaning-seeds', [\App\Http\Controllers\Simulation\ApexObserverController::class, 'getMeaningSeeds'])
+            ->name('apex.meaning-seeds');
+        
+        // V8-10 Representatives
+        Route::get('universes/{universeId}/topology', [\App\Http\Controllers\Simulation\ApexObserverController::class, 'getTopology'])
+            ->name('apex.v10.topology');
+        Route::get('universes/{universeId}/consciousness', [\App\Http\Controllers\Simulation\ApexObserverController::class, 'getConsciousnessField'])
+            ->name('apex.v10.consciousness');
+        Route::get('universes/{universeId}/ascension-filters', [\App\Http\Controllers\Simulation\ApexObserverController::class, 'getAscensionStatus'])
+            ->name('apex.v10.ascension');
+    });
+
+    // Rule Debugger (Phase 33)
+    Route::get('rule-debugger/graph', [\App\Http\Controllers\Api\RuleDebuggerController::class, 'getGraph'])->name('worldos.rule-debugger.graph');
+    Route::get('rule-debugger/stats/{universeId}', [\App\Http\Controllers\Api\RuleDebuggerController::class, 'getExecutionStats'])->name('worldos.rule-debugger.stats');
 
     // POST worldos/sagas removed (Implicit Orchestration)
 
     Route::get('universes', function () {
-        $query = Universe::with(['world:id,name,slug,current_genre,base_genre', 'saga:id,name']);
+        $query = Universe::with(['world:id,name,slug,current_genre,base_genre']);
         if (request()->has('world_id')) {
             $query->where('world_id', (int) request('world_id'));
-        } elseif (request()->has('saga_id')) {
-            $query->where('saga_id', (int) request('saga_id'));
         }
         return response()->json($query->get());
     })->name('worldos.universes.index');
 
     Route::get('universes/{id}', function (string $id) {
-        $universe = Universe::with(['world:id,name,slug,axiom,origin,current_genre,base_genre,is_autonomic', 'saga:id,name'])->findOrFail((int) $id);
+        $universe = Universe::with(['world:id,name,slug,axiom,origin,current_genre,base_genre,is_autonomic'])->findOrFail((int) $id);
         $universe->update(['last_observed_at' => now()]);
         return response()->json(['data' => $universe]);
     })->name('worldos.universes.show');
@@ -552,7 +580,7 @@ Route::middleware('auth:sanctum')->prefix('worldos')->group(function () {
         $result = $action->execute($snapshot);
         return response()->json($result);
     })->name('worldos.universes.decide');
-    Route::post('universes/{id}/fork', function (string $id, SagaService $sagaService) {
+    Route::post('universes/{id}/fork', function (string $id, ImplicitOrchestratorService $orchestrator) {
         $tick = (int) request()->input('tick', 0);
         $universe = \App\Models\Universe::findOrFail((int) $id);
         \App\Models\BranchEvent::create([
@@ -561,7 +589,7 @@ Route::middleware('auth:sanctum')->prefix('worldos')->group(function () {
             'event_type' => 'fork',
             'payload' => ['manual' => true],
         ]);
-        $child = $sagaService->spawnUniverse($universe->world, $universe->id, $universe->saga_id);
+        $child = $orchestrator->spawnUniverse($universe->world, $universe->id, $universe->saga_id);
         return response()->json(['ok' => true, 'child_universe_id' => $child->id]);
     })->name('worldos.universes.fork');
 
@@ -589,7 +617,7 @@ Route::middleware('auth:sanctum')->prefix('worldos')->group(function () {
         return response()->json(['ok' => true]);
     })->name('worldos.universes.inject');
 
-    Route::post('demo/seed', function (SagaService $sagaService) {
+    Route::post('demo/seed', function (ImplicitOrchestratorService $orchestrator) {
         $multiverse = \App\Models\Multiverse::firstOrCreate(
             ['slug' => 'default'],
             ['name' => 'Default Multiverse', 'config' => ['description' => 'WorldOS V6 demo']]
@@ -608,7 +636,7 @@ Route::middleware('auth:sanctum')->prefix('worldos')->group(function () {
             ]
         );
         // Auto-spawn Universe (Saga created implicitly)
-        $universe = $sagaService->spawnUniverse($world);
+        $universe = $orchestrator->spawnUniverse($world);
 
         return response()->json([
             'ok' => true,

@@ -2,32 +2,31 @@
 
 namespace App\Modules\Simulation\Services;
 
+use App\Services\Simulation\RuleVmService;
+use function resource_path;
+use function file_get_contents;
+use function array_merge;
+use function abs;
+use function max;
+use function min;
+
 class PressureCalculator
 {
+    public function __construct(
+        protected RuleVmService $ruleVm
+    ) {}
+
     /**
      * Calculate Material Stress for a given state (zone or universe).
-     * Formula: MaterialStress ∝ (entropy level) + (base_mass depletion ratio) + (structured fragility)
-     * as per WORLDOS_V6 spec.
      */
     public function calculateMaterialStress(array $state): float
     {
-        $entropy = max(0.0, (float) ($state['entropy'] ?? 0));
-        $baseMass = max(0.0, (float) ($state['base_mass'] ?? 1000));
-        $structuredMass = max(0.0, (float) ($state['structured_mass'] ?? 0));
+        $dslFile = resource_path('worldos_rules/simulation/pressures.dsl');
+        $dsl = @file_get_contents($dslFile) ?: '';
 
-        // base_mass depletion ratio = (1 - structured_mass / base_mass)
-        // if base mass is invalid/non-positive, treat as maximal depletion.
-        $depletionRatio = $baseMass > 0
-            ? $this->normalizeRatio(1 - ($structuredMass / $baseMass))
-            : 1.0;
+        $result = $this->ruleVm->evaluateRawState($state, $dsl);
 
-        // structured fragility - increased by entropy (spec §4.1)
-        $fragility = $this->normalizeRatio($entropy * 1.5);
-
-        // Normalized result in [0, 1] to prevent invalid negative stress from malformed state vectors.
-        $stress = ($entropy * 0.4) + ($depletionRatio * 0.3) + ($fragility * 0.3);
-
-        return $this->normalizeRatio($stress);
+        return (float) ($result['state']['material_stress'] ?? 0.0);
     }
 
     /**
@@ -37,25 +36,22 @@ class PressureCalculator
      */
     public function calculateSecessionPressure(array $zoneState, array $globalState): float
     {
-        $a = 0.4; // Weight for cultural distance (Dz)
-        $b = 0.4; // Weight for material stress (Sz)
-        $c = 0.2; // Weight for institutional trust
+        $dslFile = resource_path('worldos_rules/simulation/pressures.dsl');
+        $dsl = @file_get_contents($dslFile) ?: '';
 
-        $cultureDist = $this->calculateCultureDistance(
-            $zoneState['culture'] ?? [],
-            $globalState['culture'] ?? []
-        );
+        // We need both zone and global state. We'll merge them for evaluation or pass as context.
+        // For simplicity, we'll assume the engine handles cultural distance if we pass global culture.
+        $evalState = array_merge($zoneState, [
+            'global_culture' => $globalState['culture'] ?? []
+        ]);
 
-        $stress = $this->calculateMaterialStress($zoneState);
-        $trust = $this->normalizeRatio((float) ($zoneState['institutional_trust'] ?? 0.5));
+        $result = $this->ruleVm->evaluateRawState($evalState, $dsl);
 
-        $pz = ($a * $cultureDist) + ($b * $stress) - ($c * $trust);
-
-        return $this->normalizeRatio($pz);
+        return (float) ($result['state']['secession_pressure'] ?? 0.0);
     }
 
     /**
-     * Manhattan distance for cultural vectors.
+     * Manhattan distance for cultural vectors (Legacy/Internal helper if still needed).
      */
     protected function calculateCultureDistance(array $zCulture, array $gCulture): float
     {
@@ -79,32 +75,19 @@ class PressureCalculator
 
     /**
      * Calculate global cosmic metrics: Order and Energy Level.
-     * Order = 1 - entropy
-     * Energy Level = base_mass utilization + innovation boost; fallback from order/stability khi state không có structured_mass/innovation.
      */
     public function calculateCosmicMetrics(array $state): array
     {
-        $entropy = (float) ($state['entropy'] ?? 0);
-        $order = $this->normalizeRatio(1 - $entropy);
+        $dslFile = resource_path('worldos_rules/simulation/pressures.dsl');
+        $dsl = @file_get_contents($dslFile) ?: '';
 
-        $baseMass = max(0.0, (float) ($state['base_mass'] ?? 1000));
-        $structuredMass = max(0.0, (float) ($state['structured_mass'] ?? 0));
-        $innovation = $this->normalizeRatio((float) ($state['innovation'] ?? 0));
-
-        // Energy Level: derived from structure and innovation
-        $structureRatio = $baseMass > 0 ? $this->normalizeRatio($structuredMass / $baseMass) : 0.0;
-        $energyLevel = ($structureRatio * 0.7) + ($innovation * 0.3);
-
-        // Fallback: engine thường không trả structured_mass/innovation → energy_level = 0. Suy từ order + stability để có giá trị hiển thị.
-        if ($energyLevel <= 0) {
-            $stability = $this->normalizeRatio((float) ($state['stability_index'] ?? 0.5));
-            $energyLevel = ($order * 0.5) + ($stability * 0.5);
-        }
+        $result = $this->ruleVm->evaluateRawState($state, $dsl);
+        $finalState = $result['state'] ?? [];
 
         return [
-            'order' => $order,
-            'energy_level' => $this->normalizeRatio($energyLevel),
-            'entropy' => $entropy,
+            'order' => (float) ($finalState['order'] ?? 1.0),
+            'energy_level' => (float) ($finalState['energy_level'] ?? 0.5),
+            'entropy' => (float) ($state['entropy'] ?? 0.0),
         ];
     }
 

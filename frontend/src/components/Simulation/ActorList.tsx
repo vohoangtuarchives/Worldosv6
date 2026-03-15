@@ -3,8 +3,8 @@
 import React, { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import {
-    Users, Shield, Zap, Star, Eye, ChevronRight, User,
-    Search, Filter, Skull, HeartPulse, BrainCircuit, Sparkles, Clock
+    Users, Shield, Zap, Star, Eye, ChevronRight, User, Repeat, Orbit,
+    Search, Filter, Skull, HeartPulse, BrainCircuit, Sparkles, Clock, MessageSquare, History as HistoryIcon
 } from "lucide-react";
 import {
     Radar, RadarChart, PolarGrid, PolarAngleAxis,
@@ -12,6 +12,8 @@ import {
 } from 'recharts';
 import { useSimulation } from "@/context/SimulationContext";
 import { api } from "@/lib/api";
+import { SamsaraPath } from "./SamsaraPath";
+import { AttractorMandala } from "./AttractorMandala";
 import type { ActorEvent } from "@/types/simulation";
 
 interface Actor {
@@ -21,7 +23,7 @@ interface Actor {
     traits: number[];
     biography: string;
     is_alive: boolean;
-    metrics?: { influence?: number; energy?: number; contribution?: number };
+    metrics?: { influence?: number; energy?: number; contribution?: number; reasoning?: string };
     generation?: number;
     universe_id?: number;
     lineage_id?: string | null;
@@ -30,19 +32,52 @@ interface Actor {
     death_tick?: number | null;
     life_stage?: string | null;
     trait_scan_status?: string | null;
+    /** V7: Dynasty and Heroic info */
+    dynasty?: string | null;
+    heroic_type?: string | null;
+    heroic_class?: string | null;
+    lineage_name?: string | null;
     vitality?: { health?: number; age?: number; fatigue?: number; morale?: number } | null;
-    created_at?: string;
     updated_at?: string;
     /** When set, this actor is a Great Person (vĩ nhân) linked to SupremeEntity. */
     supreme_entity?: { id: number; name?: string; entity_type?: string; domain?: string } | null;
+    is_transmigrated?: boolean | number;
+    is_isekai?: boolean | number;
 }
 
 const TRAIT_DIMENSIONS = [
-    "Dom", "Amb", "Coe", // Power
-    "Loy", "Emp", "Sol", "Con", // Social
-    "Pra", "Cur", "Dog", "Rsk", // Cognitive
-    "Fer", "Ven", "Hop", "Grf", "Pri", "Shm" // Emotional
-].slice(0, 17);
+    "Thống trị",    // 0
+    "Tham vọng",     // 1
+    "Ép buộc",      // 2
+    "Trung thành",     // 3
+    "Thấu cảm",      // 4
+    "Đoàn kết",    // 5
+    "Tuân thủ",   // 6
+    "Thực dụng",    // 7
+    "Tò mò",     // 8
+    "Giáo điều",     // 9
+    "Mạo hiểm", // 10
+    "Sợ hãi",         // 11
+    "Hận thù",     // 12
+    "Hy vọng",          // 13
+    "Đau thương",         // 14
+    "Kiêu hãnh",         // 15
+    "Hổ thẹn",         // 16
+    "Tuổi thọ"      // 17
+];
+
+function getTypeLabel(entityType: string): string {
+    const key = (entityType || "").toUpperCase().replace(/^GREAT_PERSON_/, "");
+    const labels: Record<string, string> = {
+        PROPHET: "Thánh Nhân",
+        GENERAL: "Đại Tướng Quân",
+        SCIENTIST: "Học Giả Vĩ Đại",
+        RULER: "Minh Quân",
+        MERCHANT: "Đại Phú Hộ",
+        ARTIST: "Đại Nghệ Sĩ",
+    };
+    return labels[key] ?? entityType;
+}
 
 /** Cognition proxy from cognitive block (Pra, Cur, Dog, Rsk — indices 7–10). */
 function cognitionLabel(traits: number[]): string {
@@ -94,6 +129,27 @@ function ActorRadarChart({ traits }: { traits: number[] }) {
             </ResponsiveContainer>
         </div>
     );
+}
+
+function deriveMotivations(traits: number[]) {
+    if (!traits || traits.length < 17) {
+        return {
+            survival: 0.5, reproduction: 0.5, wealth: 0.5, power: 0.5,
+            knowledge: 0.5, meaning: 0.5, status: 0.5, belonging: 0.5
+        };
+    }
+    const get = (idx: number) => traits[idx] ?? 0.5;
+    
+    return {
+        survival: get(17), // Vitality/Longevity as proxy
+        reproduction: get(17) * 0.8 + get(4) * 0.2, // Vitality + Empathy
+        wealth: get(7) * 0.7 + get(1) * 0.3, // Pragmatism + Ambition
+        power: get(0) * 0.6 + get(2) * 0.4, // Dominance + Coercion
+        knowledge: get(8), // Curiosity
+        meaning: get(13) * 0.7 + (1 - get(9)) * 0.3, // Hope + (1 - Dogmatism)
+        status: get(15) * 0.8 + get(0) * 0.2, // Pride + Dominance
+        belonging: get(5) * 0.4 + get(6) * 0.3 + get(3) * 0.3, // Solidarity + Conformity + Loyalty
+    };
 }
 
 function ActorBiography({ text }: { text: string }) {
@@ -162,6 +218,7 @@ export function ActorList({ universeId: _unused }: { universeId?: number | null 
     const [actorEvents, setActorEvents] = useState<ActorEvent[]>([]);
     const [searchQuery, setSearchQuery] = useState("");
     const [filterStatus, setFilterStatus] = useState<"all" | "alive" | "dead">("all");
+    const [showSamsaraId, setShowSamsaraId] = useState<number | null>(null);
 
     const loading = contextLoading && actors.length === 0;
 
@@ -296,20 +353,32 @@ export function ActorList({ universeId: _unused }: { universeId?: number | null 
                             </div>
 
                             <div className="flex-1 min-w-0">
-                                <div className="flex justify-between items-baseline gap-1">
-                                    <div className={`text-sm font-medium truncate ${selectedActorId === actor.id ? "text-cyan-100" : "text-slate-300 group-hover:text-slate-200"}`}>
-                                        {actor.name}
+                                    <div className="flex justify-between items-baseline gap-1">
+                                        <div className={`text-sm font-medium truncate ${selectedActorId === actor.id ? "text-cyan-100" : "text-slate-300 group-hover:text-slate-200"}`}>
+                                            {actor.name}
+                                        </div>
+                                        <div className="flex items-center gap-1 shrink-0">
+                                            {(actor.is_transmigrated || actor.is_isekai) && (
+                                                <button 
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setShowSamsaraId(actor.id);
+                                                    }}
+                                                    className="inline-flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 rounded bg-fuchsia-500/20 text-fuchsia-400 border border-fuchsia-500/30 font-medium uppercase tracking-wider hover:bg-fuchsia-500/30 transition-all shadow-[0_0_5px_rgba(217,70,239,0.2)]" title="Xem luân hồi (Samsara Path)"
+                                                >
+                                                    <Repeat className="w-2.5 h-2.5" />
+                                                    Xuyên Không
+                                                </button>
+                                            )}
+                                            {actor.supreme_entity && (
+                                                <span className="inline-flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 font-medium uppercase tracking-wider" title="Vĩ nhân">
+                                                    <Sparkles className="w-2.5 h-2.5" />
+                                                    Vĩ nhân
+                                                </span>
+                                            )}
+                                            {!actor.is_alive && <span className="text-[9px] text-red-500/60 font-mono">†</span>}
+                                        </div>
                                     </div>
-                                    <div className="flex items-center gap-1 shrink-0">
-                                        {actor.supreme_entity && (
-                                            <span className="inline-flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 font-medium uppercase tracking-wider" title="Vĩ nhân">
-                                                <Sparkles className="w-2.5 h-2.5" />
-                                                Vĩ nhân
-                                            </span>
-                                        )}
-                                        {!actor.is_alive && <span className="text-[9px] text-red-500/60 font-mono">†</span>}
-                                    </div>
-                                </div>
                                 <div className="flex justify-between items-center mt-0.5">
                                     <div className="text-[10px] text-slate-500 uppercase tracking-wider truncate max-w-[100px]">
                                         {actor.archetype}
@@ -319,6 +388,11 @@ export function ActorList({ universeId: _unused }: { universeId?: number | null 
                                         <span>{(actor.metrics?.influence ?? 0).toFixed(1)}</span>
                                     </div>
                                 </div>
+                                {actor.dynasty && (
+                                    <div className="text-[9px] text-amber-500/80 font-medium uppercase mt-0.5 tracking-tighter">
+                                        Dynasty: {actor.dynasty}
+                                    </div>
+                                )}
                             </div>
 
                             {selectedActorId === actor.id && (
@@ -368,6 +442,15 @@ export function ActorList({ universeId: _unused }: { universeId?: number | null 
                                         <span className="px-2 py-0.5 bg-cyan-500/10 text-cyan-300 text-xs font-medium uppercase tracking-wider rounded border border-cyan-500/20">
                                             {selectedActor.archetype}
                                         </span>
+                                        {(selectedActor.is_transmigrated || selectedActor.is_isekai) && (
+                                            <button 
+                                                onClick={() => setShowSamsaraId(selectedActor.id)}
+                                                className="px-2 py-0.5 bg-fuchsia-500/10 text-fuchsia-300 text-xs font-medium uppercase tracking-wider rounded border border-fuchsia-500/20 shadow-[0_0_8px_rgba(217,70,239,0.3)] hover:bg-fuchsia-500/20 transition-all flex items-center gap-1"
+                                            >
+                                                <Repeat className="w-3 h-3" />
+                                                Quỹ đạo Luân hồi
+                                            </button>
+                                        )}
                                         {selectedActor.supreme_entity && (
                                             <Link
                                                 href="/dashboard/heroes"
@@ -382,6 +465,16 @@ export function ActorList({ universeId: _unused }: { universeId?: number | null 
                                             <span className="text-yellow-100">{(selectedActor.metrics?.influence ?? 0).toFixed(1)}</span>
                                             <span className="opacity-50">Influence</span>
                                         </div>
+                                        {selectedActor.heroic_type && (
+                                            <span className="px-2 py-0.5 bg-purple-500/10 text-purple-300 text-[10px] font-bold uppercase tracking-widest rounded border border-purple-500/20">
+                                                {getTypeLabel(selectedActor.heroic_type)}
+                                            </span>
+                                        )}
+                                        {selectedActor.dynasty && (
+                                            <span className="px-2 py-0.5 bg-amber-500/10 text-amber-300 text-[10px] font-bold uppercase tracking-widest rounded border border-amber-500/20">
+                                                House {selectedActor.dynasty}
+                                            </span>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -402,6 +495,19 @@ export function ActorList({ universeId: _unused }: { universeId?: number | null 
                                             <ActorBiography text={selectedActor.biography} />
                                         </div>
                                     </div>
+
+                                    {selectedActor.metrics?.reasoning && (
+                                        <div className="space-y-3">
+                                            <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-300 uppercase tracking-widest">
+                                                <MessageSquare className="w-4 h-4 text-emerald-400" />
+                                                Độc thoại nội tâm (Reasoning)
+                                            </h3>
+                                            <div className="p-5 rounded-xl bg-emerald-950/10 border border-emerald-500/20 shadow-inner relative overflow-hidden italic text-emerald-100/90 leading-relaxed">
+                                                <div className="absolute top-0 left-0 w-1 h-full bg-emerald-500/40" />
+                                                "{selectedActor.metrics.reasoning}"
+                                            </div>
+                                        </div>
+                                    )}
 
                                     {actorEvents.length > 0 && (
                                         <div className="space-y-3">
@@ -545,6 +651,24 @@ export function ActorList({ universeId: _unused }: { universeId?: number | null 
                                             {selectedActor.metrics.contribution != null && <div>Đóng góp: {Number(selectedActor.metrics.contribution).toFixed(1)}</div>}
                                         </div>
                                     )}
+
+                                    <div className="mt-8 pt-6 border-t border-slate-800/50">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-300 uppercase tracking-widest">
+                                                <Orbit className="w-4 h-4 text-blue-400" />
+                                                Động lực 8 Trụ cột
+                                            </h3>
+                                        </div>
+                                        <div className="p-6 bg-slate-900/40 rounded-2xl border border-slate-800 flex justify-center scale-90 -mt-2">
+                                            <AttractorMandala 
+                                                fields={deriveMotivations(selectedActor.traits ?? [])} 
+                                                size={300} 
+                                            />
+                                        </div>
+                                        <p className="text-[10px] text-slate-500 mt-4 italic text-center leading-relaxed">
+                                            Phản ánh sự cộng hưởng giữa Bản thể (Traits), Văn hóa (Memes) và Môi trường (Fields).
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -558,6 +682,37 @@ export function ActorList({ universeId: _unused }: { universeId?: number | null 
                     </div>
                 )}
             </div>
+
+            {/* Samsara Path Modal */}
+            {showSamsaraId && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div className="w-full max-w-2xl max-h-[90vh] bg-[#0c1425] border border-blue-500/30 rounded-2xl shadow-[0_0_50px_rgba(30,58,138,0.5)] flex flex-col overflow-hidden animate-in zoom-in-95 duration-300">
+                        <div className="flex items-center justify-between p-4 border-b border-blue-500/20 bg-blue-500/5">
+                            <div className="flex items-center gap-2">
+                                <HistoryIcon className="w-4 h-4 text-blue-400" />
+                                <h2 className="text-sm font-bold text-blue-100 uppercase tracking-widest">Samsara Trajectory (Quỹ đạo Luân hồi)</h2>
+                            </div>
+                            <button 
+                                onClick={() => setShowSamsaraId(null)}
+                                className="p-1 hover:bg-white/10 rounded-md text-muted-foreground hover:text-white transition-colors"
+                            >
+                                <ChevronRight className="w-5 h-5 rotate-45" />
+                            </button>
+                        </div>
+                        <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
+                            <SamsaraPath agentId={showSamsaraId} />
+                        </div>
+                        <div className="p-4 border-t border-white/5 bg-slate-950/40 text-center">
+                            <button 
+                                onClick={() => setShowSamsaraId(null)}
+                                className="px-6 py-2 bg-blue-500 text-white rounded-lg text-xs font-bold uppercase tracking-widest hover:bg-blue-600 transition-colors shadow-lg shadow-blue-500/20"
+                            >
+                                Đóng (Close)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

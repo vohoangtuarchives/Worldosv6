@@ -3,85 +3,92 @@
 namespace App\Services\Simulation;
 
 use App\Simulation\Support\SimulationRandom;
+use App\Services\Simulation\RuleVmService;
+use function config;
+use function array_sum;
+use function round;
+use function array_keys;
+use function array_key_last;
+use function in_array;
 
 /**
  * ActorDecisionEngine — Phase 2.
  * Input: traits, capabilities, environment (entropy, stability, war_pressure, optional belief), age, culture.
  * Output: action_distribution [action_type => probability]. Roll yields one action.
- * Belief (from narrative loop): has_religion, has_prophecy_belief, legend_level — adjust weights.
+ * Belief (from narrative loop): has_religion, has_causal_trajectory_belief, legend_level — adjust weights.
  */
 class ActorDecisionEngine
 {
+    public function __construct(
+        protected RuleVmService $ruleVm
+    ) {}
+
     /** Trait indices: Dom=0, Amb=1, Cur=8, Rsk=10, Pra=7, Dog=9, Coe=2, Emp=4. */
     public function getActionDistribution(
-        array $traits,
-        array $capabilities,
-        array $environment,
-        int $currentTick,
-        int $birthTick
+        \App\Modules\Intelligence\Entities\ActorEntity $actor,
+        \App\Simulation\Runtime\State\WorldState $state,
+        int $currentTick
     ): array {
         $actions = config('worldos.actor_decision.action_types', [
             'write', 'teach', 'explore', 'war', 'meditate', 'create_religion', 'build', 'govern', 'trade', 'rest',
         ]);
-        $scores = array_fill_keys($actions, 0.1); // base weight so no zero
 
-        $intellect = (float) ($capabilities['intellect'] ?? 0.5);
-        $charisma = (float) ($capabilities['charisma'] ?? 0.5);
-        $creativity = (float) ($capabilities['creativity'] ?? 0.5);
-        $cur = (float) ($traits[8] ?? 0.5);
-        $dom = (float) ($traits[0] ?? 0.5);
-        $pra = (float) ($traits[7] ?? 0.5);
-        $rsk = (float) ($traits[10] ?? 0.5);
-        $emp = (float) ($traits[4] ?? 0.5);
+        // 1. Prepare State for Rule VM from Manifold
+        $metrics = $actor->metrics ?? [];
+        $traits = $actor->traits ?? [];
+        $historicalPhase = $state->get('timeline.historical_phase', 'NORMAL');
+        $resonanceField = (float) $state->get('resonance_field', 0.0);
+        $fields = $state->getFields();
 
-        $entropy = (float) ($environment['entropy'] ?? 0.5);
-        $stability = (float) ($environment['stability_index'] ?? 0.5);
-        $warPressure = (float) ($environment['war_pressure'] ?? 0);
+        $vmState = [
+            'traits'           => $traits,
+            'intellect'        => (float) ($metrics['intellect'] ?? 0.5),
+            'charisma'        => (float) ($metrics['charisma'] ?? 0.5),
+            'creativity'       => (float) ($metrics['creativity'] ?? 0.5),
+            'authority'        => (float) ($metrics['authority'] ?? 0.5),
+            'causal_integrity' => (float) ($state->get('causal_integrity', 1.0)),
+            'entropy'          => (float) ($state->get('entropy', 0.5)),
+            'stability'        => (float) ($state->get('stability_index', 0.5)),
+            'resonance_field'  => $resonanceField,
+            'historical_phase' => $historicalPhase,
+            
+            // Belief flags
+            'has_religion'     => !empty($metrics['religion_id']),
+            'has_causal_trajectory_belief' => !empty($metrics['has_trajectory']),
+            'legend_level'     => (int) ($metrics['legend_level'] ?? 0),
+            
+            'energy'           => (float) ($metrics['energy'] ?? 100.0),
+            'maxEnergy'        => (float) ($metrics['max_energy'] ?? 200.0),
+            'starving'         => !empty($metrics['starving']),
+            
+            // Field resonances (Phase 29/43 integration)
+            'field_knowledge'  => (float) ($fields['knowledge_field'] ?? 0.0),
+            'field_meaning'    => (float) ($fields['meaning_field'] ?? 0.0),
+            'field_power'      => (float) ($fields['power_field'] ?? 0.0),
+            'field_status'     => (float) ($fields['status_field'] ?? 0.0),
+            'field_belonging'  => (float) ($fields['belonging_field'] ?? 0.0),
+            'field_reproduction'=> (float) ($fields['reproduction_field'] ?? 0.0),
+        ];
 
-        // Belief from narrative loop (religion, prophecy, legend)
-        $belief = $environment['belief'] ?? [];
-        $hasReligion = !empty($belief['has_religion']);
-        $hasProphecyBelief = !empty($belief['has_prophecy_belief']);
-        $legendLevel = (int) ($belief['legend_level'] ?? 0);
+        // 2. Evaluate Cognitive Model via Pure State DSL
+        $state->set('actor_decision_input', $vmState);
+        $this->ruleVm->evaluateAndApplyWithState($state, 'intel/cognitive_models', $currentTick);
 
-        // write: high curiosity + intellect + creativity
-        $scores['write'] += $cur * 0.4 + $intellect * 0.3 + $creativity * 0.4;
-        // teach: high empathy + intellect
-        $scores['teach'] += $emp * 0.4 + $intellect * 0.4;
-        // explore: high curiosity + risk (reduce if actor believes prophecy — more cautious)
-        $scores['explore'] += $cur * 0.4 + $rsk * 0.4;
-        if ($hasProphecyBelief) {
-            $scores['explore'] -= 0.15;
-        }
-        // war: high dominance + war_pressure; if has religion, slight boost
-        $scores['war'] += $dom * 0.3 + $warPressure * 0.5;
-        if ($hasReligion) {
-            $scores['war'] += 0.1;
-        }
-        // meditate: low war_pressure, high pragmatism; boost if has religion
-        $scores['meditate'] += (1.0 - $warPressure) * 0.3 + $pra * 0.3;
-        if ($hasReligion) {
-            $scores['meditate'] += 0.2;
-        }
-        // create_religion: high creativity + low stability; boost if already has religion
-        $scores['create_religion'] += $creativity * 0.3 + (1.0 - $stability) * 0.2;
-        if ($hasReligion) {
-            $scores['create_religion'] += 0.25;
-        }
-        // build: high pragmatism
-        $scores['build'] += $pra * 0.4;
-        // govern: high charisma + authority; boost from legend_level (heroes govern)
-        $scores['govern'] += $charisma * 0.3 + (float) ($capabilities['authority'] ?? 0.5) * 0.3;
-        if ($legendLevel >= 2) {
-            $scores['govern'] += 0.1 * min(3, $legendLevel);
-        }
-        // trade: medium risk + stability; slightly reduce if believes prophecy (defensive)
-        $scores['trade'] += $rsk * 0.2 + $stability * 0.2;
-        if ($hasProphecyBelief) {
-            $scores['trade'] -= 0.05;
-        }
-        // rest: default sink
-        $scores['rest'] += 0.2;
+        // 3. Extract Scores from WorldState
+        $finalState = $state->get('actor_decision_output', []);
+
+        // 3. Extract Scores for Narrative Actions
+        $scores = [];
+        $scores['write']   = (float) ($finalState['score_write'] ?? 0.1);
+        $scores['teach']   = (float) ($finalState['score_teach'] ?? 0.1);
+        $scores['explore'] = (float) ($finalState['score_explore'] ?? 0.1);
+        $scores['war']     = (float) ($finalState['score_war'] ?? 0.1);
+        $scores['meditate']= (float) ($finalState['score_meditate'] ?? 0.1);
+        $scores['create_religion'] = (float) ($finalState['score_create_religion'] ?? 0.1);
+        $scores['build']   = (float) ($finalState['score_build'] ?? 0.1);
+        $scores['govern']  = (float) ($finalState['score_govern'] ?? 0.1);
+        $scores['trade']   = (float) ($finalState['score_trade'] ?? 0.1);
+        $scores['rest']    = 0.2; // default sink
 
         $total = (float) array_sum($scores);
         if ($total <= 0) {

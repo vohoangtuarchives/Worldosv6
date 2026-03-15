@@ -17,59 +17,76 @@ class GlobalEconomyEngine
         protected UniverseRepositoryInterface $universeRepository
     ) {}
 
-    public function evaluate(Universe $universe, int $currentTick): void
+    public function runWithState(\App\Simulation\Runtime\State\WorldState $state, int $currentTick): void
     {
         $interval = (int) config('worldos.intelligence.economy_tick_interval', 20);
         if ($interval <= 0 || $currentTick % $interval !== 0) {
             return;
         }
 
-        $stateVector = $this->getStateVector($universe);
-        if (config('worldos.simulation.rust_authoritative', false) && isset($stateVector['civilization']['economy'])) {
-            return;
-        }
-        $civilization = $stateVector['civilization'] ?? null;
-        $settlements = $civilization['settlements'] ?? [];
+        $settlements = $state->get('civilization.settlements', []);
         if (empty($settlements)) {
             return;
         }
 
-        $zones = &$stateVector['zones'];
+        $zones = $state->get('zones', []);
         if (!is_array($zones)) {
             return;
         }
+
+        // 1. Thu thập dữ liệu từ Manifold (Causal Soul & Politics)
+        $knowledge = (float)$state->get('fields.knowledge', 0.1);
+        $complexity = (float)$state->get('fields.complexity', 0.1);
+        $socialCohesion = (float)$state->get('civilization.politics.social_cohesion', 0.5);
+
+        // 2. Hệ số sản xuất dựa trên Tri thức và Độ phức tạp
+        $productionMultiplier = 1.0 + ($knowledge * 1.5) + ($complexity * 0.5);
 
         $totalSurplus = 0.0;
         $totalConsumption = 0.0;
         $zoneSurpluses = [];
         $numZones = count($settlements);
+        
         foreach ($settlements as $zoneIndex => $settlement) {
             $pop = (int) ($settlement['population'] ?? 0);
-            $surplus = (float) ($settlement['resource_surplus'] ?? 0);
+            
+            // Tính toán sản lượng gốc điều chỉnh theo Multiplier
+            $baseSurplus = (float) ($settlement['resource_surplus'] ?? 0);
+            $surplus = $baseSurplus * $productionMultiplier;
+            
             $consumption = $pop * 0.3;
             $totalSurplus += $surplus;
             $totalConsumption += $consumption;
             $zoneSurpluses[(int) $zoneIndex] = $surplus;
+            
             if (isset($zones[$zoneIndex]['state']) && is_array($zones[$zoneIndex]['state'])) {
                 $zones[$zoneIndex]['state']['economy_consumption'] = round($consumption, 2);
                 $zones[$zoneIndex]['state']['economy_surplus'] = round($surplus, 2);
+                $zones[$zoneIndex]['state']['production_multiplier'] = round($productionMultiplier, 2);
             }
         }
 
-        // Doc §16: trade_flow (route_capacity × supply × demand proxy), hub_score per zone
-        $tradeFlow = $this->computeTradeFlow($totalSurplus, $totalConsumption, $zoneSurpluses, $numZones);
+        // 3. Trade Flow dựa trên Social Cohesion (Sự gắn kết xã hội)
+        $tradeFlow = $this->computeTradeFlow($totalSurplus, $totalConsumption, $zoneSurpluses, $numZones, $socialCohesion);
         $hubScores = $this->computeHubScores($zoneSurpluses, $totalSurplus, $numZones);
 
-        $stateVector['civilization']['economy'] = [
+        $state->set('civilization.economy', array_merge($state->get('civilization.economy', []), [
             'total_surplus' => round($totalSurplus, 2),
             'total_consumption' => round($totalConsumption, 2),
             'trade_flow' => round($tradeFlow, 4),
+            'trade_efficiency' => round($socialCohesion, 4),
             'hub_scores' => $hubScores,
             'updated_tick' => $currentTick,
-        ];
-        $stateVector['zones'] = $zones;
-        $this->universeRepository->update($universe->id, ['state_vector' => $stateVector]);
-        Log::debug("GlobalEconomyEngine: Universe {$universe->id} economy updated at tick {$currentTick}");
+        ]));
+        $state->set('zones', $zones);
+        
+        $universeId = (int) $state->get('universe_id');
+        Log::debug("GlobalEconomyEngine: Universe {$universeId} economy updated at tick {$currentTick}");
+    }
+
+    public function evaluate(Universe $universe, int $currentTick): void
+    {
+        // Deprecated
     }
 
     /** Doc §16: trade flow ≈ route_capacity × supply × demand (aggregate proxy). */

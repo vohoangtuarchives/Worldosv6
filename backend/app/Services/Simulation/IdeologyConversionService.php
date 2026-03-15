@@ -3,6 +3,15 @@
 namespace App\Services\Simulation;
 
 use App\Models\Universe;
+use function resource_path;
+use function file_get_contents;
+use function abs;
+use function min;
+use function max;
+use function round;
+use function is_array;
+use function json_decode;
+use function is_string;
 
 /**
  * Doc §10: Conversion probability (ideology A → B) from legitimacy and coherence.
@@ -12,33 +21,51 @@ final class IdeologyConversionService
 {
     private const IDEOLOGY_KEYS = ['tradition', 'innovation', 'trust', 'violence', 'respect', 'myth'];
 
+    public function __construct(
+        protected \App\Services\Simulation\RuleVmService $ruleVm
+    ) {}
+
+    use \App\Simulation\Concerns\HasProductTypes; // Just placeholder if needed or just functions
+
     /**
      * Compute probability per tick that population/institutions shift toward target ideology.
      * Higher legitimacy_aggregate and cultural_coherence increase conversion rate.
      */
     public function conversionProbability(Universe $universe, array $fromIdeology, array $toIdeology): float
     {
-        $state = $this->getStateVector($universe);
-        $legitimacy = (float) ($state['civilization']['politics']['legitimacy_aggregate'] ?? $state['civilization']['politics']['legitimacy'] ?? 0.5);
-        $coherence = (float) ($state['cultural_coherence'] ?? 0.4);
+        $snapshot = $universe->snapshots()->orderByDesc('tick')->first();
+        if (!$snapshot) return 0.01;
 
+        // Load Ideology DSL
+        $dsl = @file_get_contents(resource_path('worldos_rules/ideology/conversion.dsl')) ?: '';
+        
+        // Execute via Rule VM
+        $result = $this->ruleVm->evaluateRaw($universe, $snapshot, $dsl);
+        
+        if (!($result['ok'] ?? false)) return 0.01;
+
+        $state = $result['state'] ?? [];
+        $rate = (float) ($state['ideology']['conversion_rate'] ?? 0.01);
+        
+        // Tuy nhiên, logic distanceFactor trong PHP gốc khá phức tạp (loop qua IDEOLOGY_KEYS)
+        // Ta giữ lại một phần logic PHP cho distanceFactor nếu DSL không tính được
+        $distance = $this->calculateDistance($fromIdeology, $toIdeology);
+        $distanceFactor = min(1.0, $distance * 2);
+
+        return round(max(0.0, min(0.1, $rate * $distanceFactor)), 6);
+    }
+
+    private function calculateDistance(array $from, array $to): float
+    {
         $distance = 0.0;
         $n = 0;
         foreach (self::IDEOLOGY_KEYS as $k) {
-            $a = (float) ($fromIdeology[$k] ?? 0.5);
-            $b = (float) ($toIdeology[$k] ?? 0.5);
+            $a = (float) ($from[$k] ?? 0.5);
+            $b = (float) ($to[$k] ?? 0.5);
             $distance += abs($b - $a);
             $n++;
         }
-        $distance = $n > 0 ? $distance / $n : 0;
-
-        $baseRate = (float) config('worldos.ideology_evolution.conversion_base_rate', 0.01);
-        $legitimacyFactor = 0.5 + 0.5 * $legitimacy;
-        $coherenceFactor = 0.5 + 0.5 * $coherence;
-        $distanceFactor = min(1.0, $distance * 2);
-
-        $rate = $baseRate * $legitimacyFactor * $coherenceFactor * $distanceFactor;
-        return round(max(0.0, min(0.1, $rate)), 6);
+        return $n > 0 ? $distance / $n : 0;
     }
 
     /**

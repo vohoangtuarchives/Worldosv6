@@ -23,7 +23,7 @@ class OmegaEngine
         }
 
         // 2. Apotheosis (Đỉnh cao văn minh, SCI và Tech tối đa)
-        if ($sci > 0.92 && $tech > 0.9) {
+        if ($sci > 0.98 && $tech > 0.96) {
             $this->triggerApotheosis($universe);
         }
     }

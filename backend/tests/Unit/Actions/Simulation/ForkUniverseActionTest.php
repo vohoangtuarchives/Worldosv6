@@ -8,7 +8,7 @@ use App\Contracts\Repositories\UniverseRepositoryInterface;
 use App\Models\BranchEvent;
 use App\Models\Universe;
 use App\Models\World;
-use App\Services\Saga\SagaService;
+use App\Services\Orchestrator\ImplicitOrchestratorService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 use Mockery\MockInterface;
@@ -20,7 +20,7 @@ class ForkUniverseActionTest extends TestCase
     private ForkUniverseAction $action;
     private MockInterface $universeRepoMock;
     private MockInterface $branchRepoMock;
-    private MockInterface $sagaServiceMock;
+    private MockInterface $orchestratorMock;
 
     protected function setUp(): void
     {
@@ -28,8 +28,8 @@ class ForkUniverseActionTest extends TestCase
 
         $this->universeRepoMock = $this->mock(UniverseRepositoryInterface::class);
         $this->branchRepoMock = $this->mock(BranchEventRepositoryInterface::class);
-        $this->sagaServiceMock = $this->mock(SagaService::class);
-        $this->action = new ForkUniverseAction($this->universeRepoMock, $this->branchRepoMock, $this->sagaServiceMock);
+        $this->orchestratorMock = $this->mock(ImplicitOrchestratorService::class);
+        $this->action = new ForkUniverseAction($this->universeRepoMock, $this->branchRepoMock, $this->orchestratorMock);
     }
 
     private function createWorldAndUniverse(int $tick = 10): Universe
@@ -62,7 +62,7 @@ class ForkUniverseActionTest extends TestCase
             ],
         ];
 
-        $this->sagaServiceMock
+        $this->orchestratorMock
             ->shouldReceive('spawnUniverse')
             ->once()
             ->with($universe->world, $universe->id, $universe->saga_id, \Mockery::type('array'));
@@ -95,7 +95,7 @@ class ForkUniverseActionTest extends TestCase
 
         $this->branchRepoMock->shouldReceive('existsFork')->with($universe->id, 10)->andReturn(true);
 
-        $this->sagaServiceMock->shouldNotReceive('spawnUniverse');
+        $this->orchestratorMock->shouldNotReceive('spawnUniverse');
         $this->universeRepoMock->shouldNotReceive('update');
 
         $this->action->execute($universe, 10, ['meta' => []]);
@@ -113,7 +113,7 @@ class ForkUniverseActionTest extends TestCase
 
         $this->branchRepoMock->shouldReceive('existsFork')->with($universe->id, 20)->andReturn(false);
         $this->branchRepoMock->shouldReceive('hasForkAsParent')->with($universe->id)->andReturn(false);
-        $this->sagaServiceMock->shouldReceive('spawnUniverse')->once();
+        $this->orchestratorMock->shouldReceive('spawnUniverse')->once();
         $this->universeRepoMock->shouldReceive('update')->once()->andReturn(true);
 
         $this->action->execute($universe, 20, ['meta' => []]);

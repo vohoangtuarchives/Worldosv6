@@ -33,22 +33,41 @@ class ActorEloquentRepository implements ActorRepositoryInterface
 
     public function save(ActorEntity $entity): void
     {
-        $data = [
-            'universe_id' => $entity->universeId,
-            'name' => $entity->name,
-            'archetype' => $entity->archetype,
-            'traits' => $entity->traits,
-            'metrics' => $entity->metrics,
-            'is_alive' => $entity->isAlive,
-            'generation' => $entity->generation,
-            'biography' => $entity->biography,
-        ];
+        $this->saveBatch([$entity]);
+    }
 
-        if ($entity->id) {
-            ActorModel::where('id', $entity->id)->update($data);
-        } else {
-            ActorModel::create($data);
+    public function saveBatch(array $entities): void
+    {
+        if (empty($entities)) {
+            return;
         }
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($entities) {
+            foreach ($entities as $entity) {
+                $data = [
+                    'universe_id' => $entity->universeId,
+                    'name' => $entity->name,
+                    'archetype' => $entity->archetype,
+                    'traits' => $entity->traits,
+                    'metrics' => $entity->metrics,
+                    'is_alive' => $entity->isAlive,
+                    'generation' => $entity->generation,
+                    'biography' => $entity->biography,
+                    'is_heroic' => $entity->isHeroic,
+                    'heroic_type' => $entity->heroicType,
+                ];
+
+                if ($entity->id) {
+                    // JSON encoding for array fields as we are using raw update/query builder for performance
+                    $data['traits'] = json_encode($data['traits']);
+                    $data['metrics'] = json_encode($data['metrics']);
+                    
+                    ActorModel::where('id', $entity->id)->update($data);
+                } else {
+                    ActorModel::create($data);
+                }
+            }
+        });
     }
 
     public function delete(int $id): void
@@ -74,7 +93,9 @@ class ActorEloquentRepository implements ActorRepositoryInterface
             metrics: $model->metrics ?? [],
             isAlive: (bool) $model->is_alive,
             generation: (int) $model->generation,
-            biography: $model->biography
+            biography: $model->biography,
+            isHeroic: (bool) ($model->is_heroic ?? false),
+            heroicType: $model->heroic_type ?? null
         );
     }
 }

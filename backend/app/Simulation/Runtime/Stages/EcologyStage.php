@@ -19,14 +19,24 @@ final class EcologyStage implements SimulationStageInterface
         protected EcologicalCollapseEngine $ecologicalCollapseEngine,
         protected PlanetaryClimateEngine $planetaryClimateEngine,
         protected EcologicalPhaseTransitionEngine $ecologicalPhaseTransitionEngine,
-        protected GeologicalEngine $geologicalEngine
+        protected GeologicalEngine $geologicalEngine,
+        protected \App\Simulation\Runtime\State\StateManager $stateManager
     ) {}
 
     public function run(Universe $universe, int $tick, ?UniverseSnapshot $savedSnapshot = null, array $context = []): void
     {
-        $this->ecologicalCollapseEngine->evaluate($universe, $tick);
-        $this->planetaryClimateEngine->evaluate($universe, $tick);
-        $this->ecologicalPhaseTransitionEngine->evaluate($universe, $tick);
-        $this->geologicalEngine->evaluate($universe, $tick);
+        $state = $this->stateManager->get();
+        if (!$state) {
+            return;
+        }
+
+        // 1. Collapse & Crisis
+        $this->ecologicalCollapseEngine->runWithState($state, $tick);
+
+        // 2. Environment (Planetary Climate)
+        $this->planetaryClimateEngine->runWithState($state, $tick);
+
+        // 3. Phase Transition (Forest, Grassland, Desert)
+        $this->ecologicalPhaseTransitionEngine->runWithState($state, $tick);
     }
 }

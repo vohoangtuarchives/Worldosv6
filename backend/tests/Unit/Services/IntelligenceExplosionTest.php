@@ -23,7 +23,7 @@ class IntelligenceExplosionTest extends TestCase
             return [
                 'ok' => true,
                 'snapshot' => [
-                    'sci' => 0.1 + ($counter * 0.05),
+                    'sci' => 0.5 + ($counter * 1.5),
                     'entropy' => 0.5,
                 ]
             ];

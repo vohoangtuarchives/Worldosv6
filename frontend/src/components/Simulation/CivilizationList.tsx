@@ -107,7 +107,7 @@ export function CivilizationList({ universeId }: { universeId: number }) {
                                             <div
                                                 key={key}
                                                 className="h-1 rounded-sm bg-slate-800 overflow-hidden"
-                                                title={`${key}: ${(val * 100).toFixed(1)}%`}
+                                                title={`${getCultureLabel(key)}: ${(val * 100).toFixed(1)}%`}
                                             >
                                                 <div
                                                     className={`h-full ${getCultureColor(key)}`}
@@ -124,6 +124,17 @@ export function CivilizationList({ universeId }: { universeId: number }) {
             </CardContent>
         </Card>
     );
+}
+
+function getCultureLabel(key: string): string {
+    const labels: Record<string, string> = {
+        tradition_rigidity: 'Truyền thống / Cứng nhắc',
+        innovation_openness: 'Cải tiến / Cởi mở',
+        collective_trust: 'Lòng tin / Tập thể',
+        violence_tolerance: 'Bạo lực / Chấp nhận',
+        institutional_respect: 'Tôn trọng / Thể chế',
+    };
+    return labels[key] || key;
 }
 
 function getCultureColor(key: string): string {

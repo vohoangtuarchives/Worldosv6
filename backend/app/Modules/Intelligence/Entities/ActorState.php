@@ -17,7 +17,9 @@ class ActorState
         public readonly array $metrics = [],
         public readonly bool $isAlive = true,
         public readonly int $generation = 1,
-        public readonly ?string $biography = null
+        public readonly ?string $biography = null,
+        public readonly bool $isHeroic = false,
+        public readonly ?string $heroicType = null
     ) {}
 
     /**
@@ -34,7 +36,9 @@ class ActorState
             metrics: array_key_exists('metrics', $changes) ? $changes['metrics'] : $this->metrics,
             isAlive: array_key_exists('isAlive', $changes) ? $changes['isAlive'] : $this->isAlive,
             generation: array_key_exists('generation', $changes) ? $changes['generation'] : $this->generation,
-            biography: array_key_exists('biography', $changes) ? $changes['biography'] : $this->biography
+            biography: array_key_exists('biography', $changes) ? $changes['biography'] : $this->biography,
+            isHeroic: array_key_exists('isHeroic', $changes) ? $changes['isHeroic'] : $this->isHeroic,
+            heroicType: array_key_exists('heroicType', $changes) ? $changes['heroicType'] : $this->heroicType
         );
     }
 }
