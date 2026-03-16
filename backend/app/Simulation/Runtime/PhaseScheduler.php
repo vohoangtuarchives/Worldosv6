@@ -31,7 +31,7 @@ final class PhaseScheduler implements TickSchedulerInterface
             // Phase: life
             'population', 'ecology', 'agriculture', 'disease',
             // Phase: mind
-            'actor', 'intel', 'decision',
+            'vector_actor', 'actor', 'intel', 'decision',
             // Phase: social (Cycles)
             'civilization', 'economy', 'politics', 'culture', 'field',
             // Phase: meta (Historical)
@@ -44,7 +44,7 @@ final class PhaseScheduler implements TickSchedulerInterface
         return match ($stageKey) {
             'rule', 'environment', 'physics', 'cosmic' => 'environment',
             'population', 'ecology', 'agriculture', 'disease' => 'life',
-            'actor', 'intel', 'decision' => 'mind',
+            'vector_actor', 'actor', 'intel', 'decision' => 'mind',
             'civilization', 'economy', 'politics', 'culture', 'field' => 'social',
             'war', 'crisis', 'event', 'meta', 'history', 'narrative' => 'meta',
             default => 'meta' // Safety fallback

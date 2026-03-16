@@ -2,8 +2,9 @@
 
 namespace App\Simulation\Engines;
 
-use App\Simulation\Runtime\State\WorldState;
+use App\Simulation\Runtime\Causality\CausalLink;
 use App\Contracts\CausalityGraphServiceInterface;
+use App\Simulation\Runtime\State\WorldState;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -17,6 +18,28 @@ class CausalHistoryEngine
     public function __construct(
         protected CausalityGraphServiceInterface $causalityGraph
     ) {}
+
+    /**
+     * Record a direct semantic causal link from a system.
+     */
+    public function recordLink(CausalLink $link, int $tick): void
+    {
+        // We bridge the semantic link to the low-level CausalityGraph
+        // This makes the link permanent and queryable by AI/History UI.
+        $this->causalityGraph->recordRelation(
+            $link->sourceType . ':' . $link->sourceId,
+            $link->relation,
+            $link->targetType . ':' . $link->targetId,
+            $tick,
+            $link->metadata
+        );
+
+        Log::debug("CausalHistoryEngine: Recorded semantic link", [
+            'src' => $link->sourceType . ':' . $link->sourceId,
+            'rel' => $link->relation,
+            'tgt' => $link->targetType . ':' . $link->targetId,
+        ]);
+    }
 
     public function runWithState(WorldState $state, int $tick): void
     {

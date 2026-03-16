@@ -14,6 +14,12 @@ class WorldState
 
     /** @var \App\Modules\Institutions\Entities\InstitutionalEntity[] */
     protected array $institutionalEntities = [];
+    
+    /** @var \App\Modules\World\Entities\ResourceEntity[] */
+    protected array $resourceEntities = [];
+
+    /** @var \App\Modules\Intelligence\Entities\IdeaEntity[] */
+    protected array $ideaEntities = [];
 
     /** @var \App\Models\Chronicle[] */
     protected array $recentChronicles = [];
@@ -65,6 +71,98 @@ class WorldState
     public function getFields(): array { return $this->data['fields'] ?? []; }
     public function setFields(array $val): void { $this->data['fields'] = $val; }
 
+    /**
+     * Step 3: Field & Layer Harmonization (§Field Simulation Architecture)
+     * Maps existing CFT fields to the 4 Layers of Reality.
+     */
+    public function getPhysicalLayer(): array
+    {
+        $fields = $this->getFields();
+        return [
+            'state' => [
+                'ecosystem' => $this->getEcosystem(),
+                'planetary' => $this->getPlanetary(),
+                'cosmic' => $this->getCosmic(),
+                'resources' => $this->getResourceEntities(),
+            ],
+            'pressures' => [
+                'survival_pressure' => (float)($fields['survival'] ?? 0.0),
+                'resource_scarcity' => (float)($fields['wealth'] ? (1 - $fields['wealth']) : 0.5),
+                'natural_entropy' => (float)($fields['entropy'] ?? 0.0),
+                'physical_fear' => (float)($fields['fear'] ?? 0.0),
+            ]
+        ];
+    }
+
+    public function getLifeLayer(): array
+    {
+        $fields = $this->getFields();
+        return [
+            'state' => [
+                'actors' => $this->getActorEntities(),
+                'zones' => $this->getZones(),
+            ],
+            'pressures' => [
+                'metabolic_stress' => (float)($fields['survival'] ?? 0.0),
+                'environmental_instability' => (float)($this->get('stability_index', 1.0)),
+            ]
+        ];
+    }
+
+    public function getSocialLayer(): array
+    {
+        $fields = $this->getFields();
+        return [
+            'state' => [
+                'institutions' => $this->getInstitutionalEntities(),
+                'civilizations' => $this->get('civilizations', []),
+                'resources' => $this->getResourceEntities(), // Required by PowerSystem
+                'actors' => $this->getActorEntities(), // Required by AllianceSystem
+            ],
+            'pressures' => [
+                'war_pressure' => (float)($fields['power'] ?? 0.0),
+                'authority_intensity' => (float)($fields['authority'] ?? 0.0),
+                'social_order' => (float)($fields['order'] ?? 1.0),
+            ]
+        ];
+    }
+
+    public function getNarrativeLayer(): array
+    {
+        $fields = $this->getFields();
+        return [
+            'state' => [
+                'ideas' => $this->getIdeaEntities(),
+                'myths' => $this->get('meta.active_myths', []),
+                'chronicles' => $this->getRecentChronicles(),
+            ],
+            'pressures' => [
+                'collective_meaning' => (float)($fields['meaning'] ?? 0.5),
+                'knowledge_diffusion' => (float)($fields['knowledge'] ?? 0.0),
+            ]
+        ];
+    }
+
+    public function getMythicLayer(): array
+    {
+        $fields = $this->getFields();
+        return [
+            'state' => [
+                'hyperspace' => $this->getHyperspaceVector(),
+                'nested_realities' => $this->getNestedRealities(),
+                'supreme_entities' => $this->getSupremeEntities(),
+                'resources' => $this->getResourceEntities(), // Required by ConflictSystem
+                'entropy' => $this->getEntropy(),
+                'stability_index' => $this->getStabilityIndex(),
+                'ideas' => $this->getIdeaEntities(), // Required by MythCreationSystem
+            ],
+            'pressures' => [
+                'field_resonance' => (float)($fields['resonance'] ?? 0.0),
+                'mandate_strength' => (float)($this->get('meta.mandate_of_heaven', 0.5)),
+            ]
+        ];
+    }
+
     public function getZones(): array { return $this->data['zones'] ?? []; }
     public function setZones(array $val): void { $this->data['zones'] = $val; }
 
@@ -86,6 +184,18 @@ class WorldState
     
     /** @param \App\Modules\Institutions\Entities\InstitutionalEntity[] $entities */
     public function setInstitutionalEntities(array $entities): void { $this->institutionalEntities = $entities; }
+
+    /** @return \App\Modules\World\Entities\ResourceEntity[] */
+    public function getResourceEntities(): array { return $this->resourceEntities; }
+
+    /** @param \App\Modules\World\Entities\ResourceEntity[] $entities */
+    public function setResourceEntities(array $entities): void { $this->resourceEntities = $entities; }
+
+    /** @return \App\Modules\Intelligence\Entities\IdeaEntity[] */
+    public function getIdeaEntities(): array { return $this->ideaEntities; }
+
+    /** @param \App\Modules\Intelligence\Entities\IdeaEntity[] $entities */
+    public function setIdeaEntities(array $entities): void { $this->ideaEntities = $entities; }
 
     /** @return \App\Models\Chronicle[] */
     public function getRecentChronicles(): array { return $this->recentChronicles; }

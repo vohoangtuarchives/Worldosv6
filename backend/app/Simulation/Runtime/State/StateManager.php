@@ -4,6 +4,8 @@ namespace App\Simulation\Runtime\State;
 
 use App\Models\Universe;
 use App\Models\UniverseSnapshot;
+use App\Modules\World\Entities\ResourceEntity;
+use App\Modules\Intelligence\Entities\IdeaEntity;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -54,6 +56,13 @@ class StateManager
         $institutions = $this->institutionalRepository->findActiveByUniverse($universe->id);
         $this->currentState->setInstitutionalEntities($institutions);
 
+        // Phase 80: Load Resources and Ideas from state_vector (§World-Kernel)
+        $resources = array_map(fn($r) => ResourceEntity::fromArray($r), $data['resources'] ?? []);
+        $this->currentState->setResourceEntities($resources);
+
+        $ideas = array_map(fn($i) => IdeaEntity::fromArray($i), $data['ideas'] ?? []);
+        $this->currentState->setIdeaEntities($ideas);
+
         // Phase 47: Load historical weight (recent chronicles)
         $chronicles = \App\Models\Chronicle::where('universe_id', $universe->id)
             ->orderByDesc('to_tick')
@@ -99,6 +108,10 @@ class StateManager
         $data = $this->currentState->toArray();
         unset($data['_snapshot_metrics']); 
         unset($data['ecosystem_metrics']); // Keep state_vector clean of derived metrics
+
+        // Phase 80: Persist Resources and Ideas back to state_vector (§World-Kernel)
+        $data['resources'] = array_map(fn($r) => $r->toArray(), $this->currentState->getResourceEntities());
+        $data['ideas'] = array_map(fn($i) => $i->toArray(), $this->currentState->getIdeaEntities());
 
         // Phase 70: Apply Holographic Compression (Delta-Encoding)
         // Dựa trên originalData đã load từ đầu tick

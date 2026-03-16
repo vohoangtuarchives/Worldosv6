@@ -32,7 +32,8 @@ final class SimulationTickPipeline
         protected \App\Simulation\Engines\CivilizationPhaseTransitionEngine $phaseEngine,
         protected \App\Simulation\Engines\SingularityStabilityEngine $stabilityEngine,
         protected \App\Simulation\Engines\AscensionEngine $ascensionEngine,
-        protected \App\Services\Simulation\ZenithMetricsService $metricsService
+        protected \App\Services\Simulation\ZenithMetricsService $metricsService,
+        protected \App\Simulation\Runtime\WorldKernel $kernel
     ) {}
 
     /**
@@ -43,60 +44,10 @@ final class SimulationTickPipeline
         // Phase 37: Load Universal State
         $state = $this->stateManager->load($universe, $savedSnapshot);
 
-        foreach ($this->scheduler->stageOrder() as $key) {
-            $stage = $this->stages[$key] ?? null;
-            if (!$stage instanceof SimulationStageInterface) {
-                continue;
-            }
-            if (!$this->scheduler->shouldRun($key, $tick)) {
-                continue;
-            }
-
-            // Phase 70: Event-Driven Gating (Performance Optimization)
-            if (!$this->performanceScheduler->shouldExecute($key, $state)) {
-                continue;
-            }
-
-            try {
-                $tracing = Config::get('worldos.observability.tracing_enabled', false);
-                if ($tracing) {
-                    $start = microtime(true);
-                    SimulationTracer::span("stage.{$key}", function () use ($stage, $universe, $tick, $savedSnapshot, $context) {
-                        $stage->run($universe, $tick, $savedSnapshot, $context);
-                    });
-                    $durationMs = (microtime(true) - $start) * 1000;
-                    Cache::put("worldos.engine_execution_ms.{$universe->id}.{$key}", round($durationMs, 2), now()->addHours(1));
-                } else {
-                    $stage->run($universe, $tick, $savedSnapshot, $context);
-                }
-                $universe->refresh();
-            } catch (\Throwable $e) {
-                Log::error("SimulationTickPipeline: stage failed", [
-                    'stage' => $key,
-                    'universe_id' => $universe->id,
-                    'tick' => $tick,
-                    'message' => $e->getMessage(),
-                ]);
-                throw $e;
-            }
-        }
-
-        // Phase 71: Advanced Civilization Dynamics (V10)
-        $this->infoEngine->run($state, $tick);
-        $this->powerEngine->run($state, $tick);
-        $this->cultureEngine->run($state, $tick);
-        $this->mythEngine->run($state, $tick);
-        $this->meaningEngine->run($state, $tick);
-        $this->knowledgeEngine->run($state, $tick);
-        $this->phaseEngine->run($state, $tick);
-
-
-
-        // Phase 72: Singularity Stability & Final Balancing
-        $this->stabilityEngine->run($state, $tick);
-
-        // Final Phase: Autopoietic Ascension (THE ZENITH)
-        $this->ascensionEngine->run($state, $tick);
+        // Phase 80: High-Fidelity Orchestration (§World-Kernel Architecture)
+        // Laravel backend acts as the Orchestrator for all 5 Phases (Environment -> Life -> Mind -> Social -> Meta)
+        // All heavy lifting (Mass Actors, DSL, Physics) is dispatched to Rust/DSL via Systems in the Kernel.
+        $this->kernel->execute($state, $tick);
 
         // Phase 72: Collect Zenith Meta-Metrics
         $metrics = $this->metricsService->getZenithReport($state);

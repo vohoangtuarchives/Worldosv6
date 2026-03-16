@@ -1,7 +1,10 @@
 "use client";
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef } from 'react';
 import { motion } from 'framer-motion';
+import { Canvas, useFrame } from '@react-three/fiber';
+import { Sphere, MeshDistortMaterial } from '@react-three/drei';
+import * as THREE from 'three';
 
 interface TerminalHorizonGaugeProps {
   infoDensity?: number; // 0 to 1
@@ -19,6 +22,30 @@ export const TerminalHorizonGauge: React.FC<TerminalHorizonGaugeProps> = ({
   const circumference = 2 * Math.PI * horizonRadius;
   const strokeDashoffset = circumference - (singularityProgress * circumference);
 
+  const SingularityCore = () => {
+      const meshRef = useRef<THREE.Mesh>(null);
+      useFrame((state) => {
+          if (meshRef.current) {
+              const pulse = Math.sin(state.clock.elapsedTime * 2) * 0.1;
+              meshRef.current.scale.setScalar(1 + pulse * singularityProgress);
+              meshRef.current.rotation.y += 0.01 + (singularityProgress * 0.05);
+          }
+      });
+
+      return (
+          <Sphere ref={meshRef} args={[1.5, 64, 64]}>
+              <MeshDistortMaterial 
+                 color="#000000"
+                 emissive="#3b82f6"
+                 emissiveIntensity={singularityProgress * 5}
+                 distort={0.4 + (entropy * 0.3)}
+                 speed={2 + (entropy * 5)}
+                 roughness={0.2}
+              />
+          </Sphere>
+      );
+  };
+
   return (
     <div className="relative flex flex-col items-center justify-center p-6 bg-card/30 backdrop-blur-xl border border-white/5 rounded-3xl shadow-[0_0_50px_rgba(30,58,138,0.2)] overflow-hidden group">
       {/* Background Pulsing Glow */}
@@ -26,7 +53,17 @@ export const TerminalHorizonGauge: React.FC<TerminalHorizonGaugeProps> = ({
       
       {/* Central Circular Gauge */}
       <div className="relative w-48 h-48 flex items-center justify-center">
-        <svg className="w-full h-full transform -rotate-90">
+        
+        {/* 3D Singularity Canvas overlay */}
+        <div className="absolute inset-0 z-0">
+            <Canvas camera={{ position: [0, 0, 4] }}>
+                <ambientLight intensity={0.2} />
+                <pointLight position={[10, 10, 10]} intensity={2} color="#8b5cf6" />
+                <SingularityCore />
+            </Canvas>
+        </div>
+
+        <svg className="w-full h-full transform -rotate-90 relative z-10 pointer-events-none">
           {/* Base Circle */}
           <circle
             cx="96"
@@ -70,15 +107,15 @@ export const TerminalHorizonGauge: React.FC<TerminalHorizonGaugeProps> = ({
         </svg>
 
         {/* Center Content */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-center z-20 pointer-events-none">
           <motion.span 
-            className="text-3xl font-bold font-mono tracking-tighter text-white"
+            className="text-3xl font-bold font-mono tracking-tighter text-white drop-shadow-[0_0_8px_rgba(0,0,0,0.8)]"
             animate={{ scale: [1, 1.05, 1], opacity: [0.8, 1, 0.8] }}
             transition={{ duration: 3, repeat: Infinity }}
           >
             {(singularityProgress * 100).toFixed(1)}%
           </motion.span>
-          <span className="text-[10px] uppercase tracking-[0.2em] text-blue-400 font-medium">
+          <span className="text-[10px] uppercase tracking-[0.2em] text-blue-400 font-bold drop-shadow-[0_0_5px_rgba(0,0,0,0.8)] mt-1">
             Terminal Horizon
           </span>
         </div>

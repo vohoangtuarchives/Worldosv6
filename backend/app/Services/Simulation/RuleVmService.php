@@ -20,8 +20,9 @@ use Illuminate\Support\Facades\Log;
 class RuleVmService
 {
     public function __construct(
-        protected SimulationEngineClientInterface $engine,
-        protected \App\Simulation\Runtime\State\StateManager $stateManager
+        protected SimulationEngineClientInterface $engine, // Legacy gRPC fallback
+        protected \App\Simulation\Runtime\State\StateManager $stateManager,
+        protected \App\Services\Simulation\FfiRuleEngine $ffiEngine
     ) {}
 
     /**
@@ -38,6 +39,17 @@ class RuleVmService
      */
     public function evaluateRawState(array $state, string $rulesDsl): array
     {
+        // Try Rust FFI directly first for massive performance gains (V10)
+        try {
+            $ffiResult = $this->ffiEngine->evaluateDsl($rulesDsl, json_encode($state), time());
+            if ($ffiResult !== null && !isset($ffiResult['error'])) {
+                return ['ok' => true, 'outputs' => $ffiResult];
+            }
+        } catch (\Throwable $e) {
+            Log::warning("RuleVmService FfiRuleEngine failed in evaluateRawState, falling back to gRPC", ['error' => $e->getMessage()]);
+        }
+        
+        // Fallback to gRPC/Legacy Engine
         return $this->engine->evaluateRules($state, $rulesDsl);
     }
 
@@ -152,16 +164,21 @@ class RuleVmService
         // 2. Build state and merge context
         $rawState = array_merge($this->buildRawStateFromManifold($state, $tick), $context);
         
-        // Tối ưu hiệu năng bằng Causal Cache
+        // Tối ưu hiệu năng bằng Causal Cache -> FFI
         $cacheService = app(\App\Services\Simulation\CausalCacheService::class);
         $result = $cacheService->remember($rawState, $dsl, function() use ($rawState, $dsl) {
+            // Priority to Rust FFI Engine
+            $ffiResult = $this->ffiEngine->evaluateDsl($dsl, json_encode($rawState), time());
+            if ($ffiResult !== null && !isset($ffiResult['error'])) {
+                return ['ok' => true, 'outputs' => $ffiResult];
+            }
             return $this->engine->evaluateRules($rawState, $dsl);
         });
 
         if (! ($result['ok'] ?? false)) {
             Log::warning('Rule VM evaluateAndApplyWithState failed', [
                 'universe_id' => $state->get('universe_id'),
-                'dsl_source' => $dslOrPath,
+                'dsl_source' => substr($dslOrPath, 0, 50),
                 'error' => $result['error_message'] ?? 'unknown',
             ]);
             return;
@@ -219,7 +236,9 @@ class RuleVmService
 
         // Build a temporary raw state for the Rust Engine (which doesn't know about our DTO)
         $rawState = $this->buildStateForVm($universe, $snapshot);
-        $result = $this->engine->evaluateRules($rawState, $rulesDsl ?? '');
+        
+        // Use Rust FFI Evaluate Pipeline via evaluateRawState
+        $result = $this->evaluateRawState($rawState, $rulesDsl ?? '');
 
         if (! ($result['ok'] ?? false)) {
             Log::warning('Rule VM evaluate failed', [

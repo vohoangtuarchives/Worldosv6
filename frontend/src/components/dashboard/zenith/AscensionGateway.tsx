@@ -1,8 +1,11 @@
 "use client";
 
-import React from 'react';
+import React, { useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Lock, Unlock, Award, Zap } from 'lucide-react';
+import { Canvas, useFrame } from '@react-three/fiber';
+import { Float, OrbitControls, Sphere, MeshDistortMaterial, Icosahedron } from '@react-three/drei';
+import * as THREE from 'three';
 
 interface FilterThreshold {
   id: string;
@@ -14,6 +17,44 @@ interface FilterThreshold {
 interface AscensionGatewayProps {
   thresholds?: FilterThreshold[];
 }
+
+const GatewayCore = () => {
+  const meshRef = useRef<THREE.Mesh>(null);
+  
+  useFrame((state, delta) => {
+    if (meshRef.current) {
+      meshRef.current.rotation.x += delta * 0.2;
+      meshRef.current.rotation.y += delta * 0.3;
+    }
+  });
+
+  return (
+    <Float speed={2} rotationIntensity={0.5} floatIntensity={1}>
+      <Icosahedron ref={meshRef} args={[1.5, 2]}>
+        <MeshDistortMaterial
+          color="#3b82f6"
+          emissive="#2563eb"
+          emissiveIntensity={0.5}
+          wireframe
+          transparent
+          opacity={0.8}
+          distort={0.3}
+          speed={2}
+        />
+      </Icosahedron>
+      {/* Internal energy core */}
+      <Sphere args={[0.8, 32, 32]}>
+         <meshStandardMaterial 
+           color="#f59e0b" 
+           emissive="#d97706"
+           emissiveIntensity={1}
+           transparent
+           opacity={0.6}
+         />
+      </Sphere>
+    </Float>
+  );
+};
 
 export const AscensionGateway: React.FC<AscensionGatewayProps> = ({ thresholds }) => {
   const defaultThresholds: FilterThreshold[] = [
@@ -29,7 +70,7 @@ export const AscensionGateway: React.FC<AscensionGatewayProps> = ({ thresholds }
 
   return (
     <div className="p-6 bg-card/40 backdrop-blur-xl border border-white/10 rounded-3xl h-full flex flex-col">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-start justify-between mb-6">
         <div>
           <h3 className="text-lg font-bold text-white flex items-center gap-2">
             <Zap className="w-5 h-5 text-amber-500" />
@@ -37,8 +78,20 @@ export const AscensionGateway: React.FC<AscensionGatewayProps> = ({ thresholds }
           </h3>
           <p className="text-xs text-muted-foreground">Monitoring 12 Great Filter Thresholds</p>
         </div>
-        <div className="px-3 py-1 rounded-full bg-blue-500/20 border border-blue-500/30 text-[10px] font-bold text-blue-400 uppercase tracking-widest">
-          Transcendence Level: 0.72
+        <div className="flex flex-col items-end gap-2">
+            <div className="px-3 py-1 rounded-full bg-blue-500/20 border border-blue-500/30 text-[10px] font-bold text-blue-400 uppercase tracking-widest">
+              Transcendence Level: 0.72
+            </div>
+            
+            {/* 3D Core Visualization */}
+            <div className="w-24 h-24 mt-2">
+              <Canvas camera={{ position: [0, 0, 4], fov: 45 }}>
+                <ambientLight intensity={0.5} />
+                <pointLight position={[10, 10, 10]} intensity={1} />
+                <GatewayCore />
+                <OrbitControls enableZoom={false} enablePan={false} autoRotate autoRotateSpeed={0.5} />
+              </Canvas>
+            </div>
         </div>
       </div>
 

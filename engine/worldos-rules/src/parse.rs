@@ -245,21 +245,21 @@ fn parse_condition(line: &str) -> Result<Condition, ParseError> {
 fn parse_action(line: &str) -> Result<Action, ParseError> {
     let lower = line.to_lowercase();
     if lower.starts_with("emit_event") {
-        let name = line[10..].trim().to_string();
+        let name = line[10..].trim().to_string(); // "emit_event" = 10
         return Ok(Action::EmitEvent(name));
     }
     if lower.starts_with("adjust_stability") {
-        let rest = line[15..].trim();
+        let rest = line[16..].trim(); // "adjust_stability" = 16
         let delta: f64 = rest.parse().map_err(|_| ParseError::InvalidNumber(rest.to_string()))?;
         return Ok(Action::AdjustStability(delta));
     }
     if lower.starts_with("adjust_entropy") {
-        let rest = line[13..].trim();
+        let rest = line[14..].trim(); // "adjust_entropy" = 14
         let delta: f64 = rest.parse().map_err(|_| ParseError::InvalidNumber(rest.to_string()))?;
         return Ok(Action::AdjustEntropy(delta));
     }
     if lower.starts_with("add") {
-        let rest = line[3..].trim();
+        let rest = line[3..].trim(); // "add" = 3
         let parts: Vec<&str> = rest.splitn(2, char::is_whitespace).map(|s| s.trim()).filter(|s| !s.is_empty()).collect();
         if parts.len() < 2 {
             return Err(ParseError::InvalidAction(line.to_string()));
@@ -269,7 +269,7 @@ fn parse_action(line: &str) -> Result<Action, ParseError> {
         return Ok(Action::Add { path, value });
     }
     if lower.starts_with("set") {
-        let rest = line[3..].trim();
+        let rest = line[3..].trim(); // "set" = 3
         let parts: Vec<&str> = rest.splitn(2, char::is_whitespace).map(|s| s.trim()).filter(|s| !s.is_empty()).collect();
         if parts.len() < 2 {
             return Err(ParseError::InvalidAction(line.to_string()));
@@ -279,7 +279,7 @@ fn parse_action(line: &str) -> Result<Action, ParseError> {
         return Ok(Action::Set { path, value });
     }
     if lower.starts_with("spawn_actor") {
-        let kind = line[11..].trim().to_string();
+        let kind = line[11..].trim().to_string(); // "spawn_actor" = 11
         return Ok(Action::SpawnActor { kind });
     }
     Err(ParseError::InvalidAction(line.to_string()))

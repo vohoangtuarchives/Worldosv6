@@ -23,6 +23,7 @@ class UniverseHistoryGenerator
 
     public function __construct(
         protected NarrativeGenerator $generator,
+        protected ChronicleSynthesisEngine $synthesisEngine,
         protected ?NarrativeCache $cache = null
     ) {
         if ($this->cache === null && app()->bound(NarrativeCache::class)) {
@@ -47,8 +48,9 @@ class UniverseHistoryGenerator
             return null;
         }
 
-        $prompt = "You are the AI Historian. Below are STRICT FACTS from the simulation (chronicles, eras, civilizations, religions, legends). "
-            . "Write a coherent, readable 'Complete History of Universe #{$universe->id}' in 2-4 paragraphs. Do not contradict the facts.\n\n"
+        $prompt = "You are the AI Historian. Below are STRICT FACTS from the simulation (chronicles, eras, civilizations, religions, legends, causal links). "
+            . "Write a coherent, readable 'Complete History of Universe #{$universe->id}' in 3-5 paragraphs. "
+            . "Explain the 'Why' behind major shifts using the provided Causal Context. Do not contradict the facts.\n\n"
             . $context;
 
         if (strlen($prompt) > self::MAX_CONTEXT_CHARS) {
@@ -79,6 +81,12 @@ class UniverseHistoryGenerator
     protected function buildContext(int $universeId, int $fromTick, int $toTick): string
     {
         $parts = [];
+
+        // Phase 5: Reality OS Causal Traces
+        $causalLinks = $this->synthesisEngine->synthesize($universeId, $fromTick, $toTick);
+        if (!empty($causalLinks)) {
+            $parts[] = "CAUSAL CONTEXT (REALITY OS TRACES):\n" . implode("\n", $causalLinks);
+        }
 
         $chronicles = Chronicle::where('universe_id', $universeId)
             ->whereNotNull('content')

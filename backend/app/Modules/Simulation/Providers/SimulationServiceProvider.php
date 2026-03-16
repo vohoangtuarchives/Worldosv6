@@ -137,6 +137,203 @@ class SimulationServiceProvider extends ServiceProvider
         $this->app->singleton(\App\Services\Simulation\RuleMutationService::class);
         $this->app->singleton(\App\Services\Simulation\StructuralHashService::class);
         $this->app->singleton(\App\Services\Simulation\HolographicCompressionService::class);
+
+        // Phase 80: World Kernel & Primitive Systems (§World-Kernel Architecture)
+        $this->app->singleton(\App\Simulation\Runtime\WorldKernel::class, function ($app) {
+            $kernel = new \App\Simulation\Runtime\WorldKernel($app->make(\App\Simulation\Runtime\State\StateManager::class));
+            
+            // Phase 1: Environment
+            $kernel->registerSystem(
+                \App\Simulation\Runtime\WorldKernel::PHASE_ENVIRONMENT,
+                \App\Simulation\Runtime\WorldKernel::RULE_EXTRACTION,
+                $app->make(\App\Simulation\Runtime\Systems\ResourceSystem::class)
+            );
+
+            // Phase 2: Life
+            $kernel->registerSystem(
+                \App\Simulation\Runtime\WorldKernel::PHASE_LIFE,
+                \App\Simulation\Runtime\WorldKernel::RULE_METABOLISM,
+                $app->make(\App\Simulation\Runtime\Systems\SurvivalSystem::class)
+            );
+
+            // Phase 3: Mind
+            $kernel->registerSystem(
+                \App\Simulation\Runtime\WorldKernel::PHASE_MIND,
+                \App\Simulation\Runtime\WorldKernel::RULE_DIFFUSION,
+                $app->make(\App\Simulation\Runtime\Systems\PropagationSystem::class)
+            );
+
+            // Phase 4: Social
+            $kernel->registerSystem(
+                \App\Simulation\Runtime\WorldKernel::PHASE_SOCIAL,
+                \App\Simulation\Runtime\WorldKernel::RULE_COHESION,
+                $app->make(\App\Simulation\Runtime\Systems\PowerSystem::class)
+            );
+            $kernel->registerSystem(
+                \App\Simulation\Runtime\WorldKernel::PHASE_SOCIAL,
+                \App\Simulation\Runtime\WorldKernel::RULE_COHESION,
+                $app->make(\App\Simulation\Runtime\Systems\AllianceSystem::class)
+            );
+
+            // Phase 5: Meta
+            $kernel->registerSystem(
+                \App\Simulation\Runtime\WorldKernel::PHASE_META,
+                \App\Simulation\Runtime\WorldKernel::RULE_CONFLICT,
+                $app->make(\App\Simulation\Runtime\Systems\ConflictSystem::class)
+            );
+            $kernel->registerSystem(
+                \App\Simulation\Runtime\WorldKernel::PHASE_META,
+                \App\Simulation\Runtime\WorldKernel::RULE_NARRATIVE,
+                $app->make(\App\Simulation\Runtime\Systems\MythCreationSystem::class)
+            );
+
+            // Phase 3: Mind (V10 Engines)
+            $kernel->registerSystem(
+                \App\Simulation\Runtime\WorldKernel::PHASE_MIND,
+                \App\Simulation\Runtime\WorldKernel::RULE_DIFFUSION,
+                new \App\Simulation\Runtime\Systems\EngineSystemAdapter($app->make(\App\Simulation\Engines\InformationPropagationEngine::class))
+            );
+            $kernel->registerSystem(
+                \App\Simulation\Runtime\WorldKernel::PHASE_MIND,
+                \App\Simulation\Runtime\WorldKernel::RULE_INNOVATION,
+                new \App\Simulation\Runtime\Systems\EngineSystemAdapter($app->make(\App\Simulation\Engines\MeaningEngine::class))
+            );
+            $kernel->registerSystem(
+                \App\Simulation\Runtime\WorldKernel::PHASE_MIND,
+                \App\Simulation\Runtime\WorldKernel::RULE_INNOVATION,
+                new \App\Simulation\Runtime\Systems\EngineSystemAdapter($app->make(\App\Simulation\Engines\KnowledgeEvolutionEngine::class))
+            );
+
+            // Phase 4: Social (V10 Engines)
+            $kernel->registerSystem(
+                \App\Simulation\Runtime\WorldKernel::PHASE_SOCIAL,
+                \App\Simulation\Runtime\WorldKernel::RULE_COHESION,
+                new \App\Simulation\Runtime\Systems\EngineSystemAdapter($app->make(\App\Simulation\Engines\PowerStructureEngine::class))
+            );
+            $kernel->registerSystem(
+                \App\Simulation\Runtime\WorldKernel::PHASE_SOCIAL,
+                \App\Simulation\Runtime\WorldKernel::RULE_ATTRACTION,
+                new \App\Simulation\Runtime\Systems\EngineSystemAdapter($app->make(\App\Simulation\Engines\CulturalAttractorEngine::class))
+            );
+            $kernel->registerSystem(
+                \App\Simulation\Runtime\WorldKernel::PHASE_SOCIAL,
+                \App\Simulation\Runtime\WorldKernel::RULE_CYCLE,
+                new \App\Simulation\Runtime\Systems\EngineSystemAdapter($app->make(\App\Simulation\Engines\CivilizationPhaseTransitionEngine::class))
+            );
+
+            // Phase 5: Meta (V10 Engines)
+            $kernel->registerSystem(
+                \App\Simulation\Runtime\WorldKernel::PHASE_META,
+                \App\Simulation\Runtime\WorldKernel::RULE_NARRATIVE,
+                new \App\Simulation\Runtime\Systems\EngineSystemAdapter($app->make(\App\Simulation\Engines\MythogenesisEngine::class))
+            );
+            $kernel->registerSystem(
+                \App\Simulation\Runtime\WorldKernel::PHASE_META,
+                \App\Simulation\Runtime\WorldKernel::RULE_ENTROPY,
+                new \App\Simulation\Runtime\Systems\EngineSystemAdapter($app->make(\App\Simulation\Engines\SingularityStabilityEngine::class))
+            );
+            $kernel->registerSystem(
+                \App\Simulation\Runtime\WorldKernel::PHASE_META,
+                \App\Simulation\Runtime\WorldKernel::RULE_ASCENSION,
+                new \App\Simulation\Runtime\Systems\EngineSystemAdapter($app->make(\App\Simulation\Engines\AscensionEngine::class))
+            );
+
+            // Phase 1: Environment (Stages)
+            $kernel->registerSystem(
+                \App\Simulation\Runtime\WorldKernel::PHASE_ENVIRONMENT,
+                \App\Simulation\Runtime\WorldKernel::RULE_METABOLISM,
+                new \App\Simulation\Runtime\Systems\StageSystemAdapter($app->make(\App\Simulation\Runtime\Stages\RuleStage::class))
+            );
+            $kernel->registerSystem(
+                \App\Simulation\Runtime\WorldKernel::PHASE_ENVIRONMENT,
+                \App\Simulation\Runtime\WorldKernel::RULE_METABOLISM,
+                new \App\Simulation\Runtime\Systems\StageSystemAdapter($app->make(\App\Simulation\Runtime\Stages\EnvironmentStage::class))
+            );
+            $kernel->registerSystem(
+                \App\Simulation\Runtime\WorldKernel::PHASE_ENVIRONMENT,
+                \App\Simulation\Runtime\WorldKernel::RULE_METABOLISM,
+                new \App\Simulation\Runtime\Systems\StageSystemAdapter($app->make(\App\Simulation\Runtime\Stages\PhysicsStage::class))
+            );
+
+            // Phase 2: Life (Stages)
+            $kernel->registerSystem(
+                \App\Simulation\Runtime\WorldKernel::PHASE_LIFE,
+                \App\Simulation\Runtime\WorldKernel::RULE_PROPAGATION,
+                new \App\Simulation\Runtime\Systems\StageSystemAdapter($app->make(\App\Simulation\Runtime\Stages\PopulationStage::class))
+            );
+            $kernel->registerSystem(
+                \App\Simulation\Runtime\WorldKernel::PHASE_LIFE,
+                \App\Simulation\Runtime\WorldKernel::RULE_METABOLISM,
+                new \App\Simulation\Runtime\Systems\StageSystemAdapter($app->make(\App\Simulation\Runtime\Stages\EcologyStage::class))
+            );
+
+            // Phase 3: Mind (FFI Vectorized Results + Behavioral Stages)
+            $kernel->registerSystem(
+                \App\Simulation\Runtime\WorldKernel::PHASE_MIND,
+                \App\Simulation\Runtime\WorldKernel::RULE_METABOLISM,
+                new \App\Simulation\Runtime\Systems\StageSystemAdapter($app->make(\App\Simulation\Runtime\Stages\VectorizedActorStage::class))
+            );
+            $kernel->registerSystem(
+                \App\Simulation\Runtime\WorldKernel::PHASE_MIND,
+                \App\Simulation\Runtime\WorldKernel::RULE_INNOVATION,
+                new \App\Simulation\Runtime\Systems\StageSystemAdapter($app->make(\App\Simulation\Runtime\Stages\ActorStage::class))
+            );
+
+            // Phase 4: Social (Structural Stages)
+            $kernel->registerSystem(
+                \App\Simulation\Runtime\WorldKernel::PHASE_SOCIAL,
+                \App\Simulation\Runtime\WorldKernel::RULE_COHESION,
+                new \App\Simulation\Runtime\Systems\StageSystemAdapter($app->make(\App\Simulation\Runtime\Stages\CivilizationStage::class))
+            );
+            $kernel->registerSystem(
+                \App\Simulation\Runtime\WorldKernel::PHASE_SOCIAL,
+                \App\Simulation\Runtime\WorldKernel::RULE_ATTRACTION,
+                new \App\Simulation\Runtime\Systems\StageSystemAdapter($app->make(\App\Simulation\Runtime\Stages\CivilizationFieldStage::class))
+            );
+            $kernel->registerSystem(
+                \App\Simulation\Runtime\WorldKernel::PHASE_SOCIAL,
+                \App\Simulation\Runtime\WorldKernel::RULE_EXTRACTION,
+                new \App\Simulation\Runtime\Systems\StageSystemAdapter($app->make(\App\Simulation\Runtime\Stages\EconomyStage::class))
+            );
+            $kernel->registerSystem(
+                \App\Simulation\Runtime\WorldKernel::PHASE_SOCIAL,
+                \App\Simulation\Runtime\WorldKernel::RULE_COHESION,
+                new \App\Simulation\Runtime\Systems\StageSystemAdapter($app->make(\App\Simulation\Runtime\Stages\PoliticsStage::class))
+            );
+            $kernel->registerSystem(
+                \App\Simulation\Runtime\WorldKernel::PHASE_SOCIAL,
+                \App\Simulation\Runtime\WorldKernel::RULE_DIFFUSION,
+                new \App\Simulation\Runtime\Systems\StageSystemAdapter($app->make(\App\Simulation\Runtime\Stages\CultureStage::class))
+            );
+
+            // Phase 5: Meta (War & Cosmic)
+            $kernel->registerSystem(
+                \App\Simulation\Runtime\WorldKernel::PHASE_META,
+                \App\Simulation\Runtime\WorldKernel::RULE_CONFLICT,
+                new \App\Simulation\Runtime\Systems\StageSystemAdapter($app->make(\App\Simulation\Runtime\Stages\WarStage::class))
+            );
+            $kernel->registerSystem(
+                \App\Simulation\Runtime\WorldKernel::PHASE_META,
+                \App\Simulation\Runtime\WorldKernel::RULE_METABOLISM,
+                new \App\Simulation\Runtime\Systems\StageSystemAdapter($app->make(\App\Simulation\Runtime\Stages\MetaCosmicStage::class))
+            );
+
+            $kernel->registerSystem(
+                \App\Simulation\Runtime\WorldKernel::PHASE_META,
+                \App\Simulation\Runtime\WorldKernel::RULE_CORRECTION,
+                new \App\Simulation\Runtime\Systems\EngineSystemAdapter($app->make(\App\Simulation\Engines\CausalHistoryEngine::class))
+            );
+
+            return $kernel;
+        });
+
+        $this->app->singleton(\App\Simulation\Runtime\Systems\SurvivalSystem::class);
+        $this->app->singleton(\App\Simulation\Runtime\Systems\ResourceSystem::class);
+        $this->app->singleton(\App\Simulation\Runtime\Systems\PowerSystem::class);
+        $this->app->singleton(\App\Simulation\Runtime\Systems\AllianceSystem::class);
+        $this->app->singleton(\App\Simulation\Runtime\Systems\ConflictSystem::class);
+        $this->app->singleton(\App\Simulation\Runtime\Systems\PropagationSystem::class);
+        $this->app->singleton(\App\Simulation\Runtime\Systems\MythCreationSystem::class);
         
         // Advanced V10 Engines
         $this->app->singleton(\App\Simulation\Engines\InformationPropagationEngine::class);
@@ -172,6 +369,9 @@ class SimulationServiceProvider extends ServiceProvider
                 $app->make(\App\Simulation\Contracts\WorldEventBusInterface::class)
             );
         });
+        
+        // Note: SimulationKernel above is Legacy/Rule-based. 
+        // WorldKernel (Phase 80) is the new System-driven core.
 
         // Simulation Runtime: Tick Scheduler + Pipeline + Orchestrator (refactor from AdvanceSimulationAction)
         $this->app->singleton(\App\Services\Simulation\SimulationClock::class);
@@ -189,6 +389,7 @@ class SimulationServiceProvider extends ServiceProvider
                 'ecology'      => \App\Simulation\Runtime\Stages\EcologyStage::class,
                 
                 // Phase: mind
+                'vector_actor' => \App\Simulation\Runtime\Stages\VectorizedActorStage::class,
                 'actor'        => \App\Simulation\Runtime\Stages\ActorStage::class,
                 
                 // Phase: social
@@ -224,7 +425,8 @@ class SimulationServiceProvider extends ServiceProvider
                 $app->make(\App\Simulation\Engines\CivilizationPhaseTransitionEngine::class),
                 $app->make(\App\Simulation\Engines\SingularityStabilityEngine::class),
                 $app->make(\App\Simulation\Engines\AscensionEngine::class),
-                $app->make(\App\Services\Simulation\ZenithMetricsService::class)
+                $app->make(\App\Services\Simulation\ZenithMetricsService::class),
+                $app->make(\App\Simulation\Runtime\WorldKernel::class)
             );
         });
         $this->app->singleton(\App\Simulation\Runtime\SimulationTickOrchestrator::class);

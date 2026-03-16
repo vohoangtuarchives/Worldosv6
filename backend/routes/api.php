@@ -202,6 +202,10 @@ Route::middleware('auth:sanctum')->prefix('worldos')->group(function () {
             ->name('apex.v10.consciousness');
         Route::get('universes/{universeId}/ascension-filters', [\App\Http\Controllers\Simulation\ApexObserverController::class, 'getAscensionStatus'])
             ->name('apex.v10.ascension');
+        
+        // Phase 4: Emergence - Real-time Causal Query API
+        Route::get('causality/recent', [\App\Http\Controllers\Api\Simulation\CausalQueryController::class, 'getRecentLinks'])
+            ->name('apex.v10.causality.recent');
     });
 
     // Rule Debugger (Phase 33)
@@ -470,7 +474,10 @@ Route::middleware('auth:sanctum')->prefix('worldos')->group(function () {
         if ($universe) {
             $eco = $ecosystemService->forUniverse($universe);
             $data['instability_score'] = $eco['instability_score'];
-            $sv = is_string($universe->state_vector) ? json_decode($universe->state_vector, true) : ($universe->state_vector ?? []);
+            $sv = $universe->state_vector;
+            if (is_string($sv)) {
+                $sv = json_decode($sv, true) ?: [];
+            }
             $collapse = is_array($sv) ? ($sv['ecological_collapse'] ?? []) : [];
             $data['ecological_collapse_active'] = !empty($collapse['active']);
             $data['ecological_collapse_until_tick'] = $collapse['until_tick'] ?? null;
@@ -504,6 +511,21 @@ Route::middleware('auth:sanctum')->prefix('worldos')->group(function () {
         ]);
     })->name('worldos.universes.history-timeline');
 
+    Route::get('universes/{id}/causal-links', function (
+        string $id,
+        \App\Services\Narrative\ChronicleSynthesisEngine $synthesisEngine
+    ) {
+        $fromTick = (int) request()->query('from_tick', 0);
+        $toTick = (int) request()->query('to_tick', 1000000);
+        
+        $links = $synthesisEngine->synthesize((int) $id, $fromTick, $toTick);
+        
+        return response()->json([
+            'universe_id' => (int) $id,
+            'links' => $links,
+        ]);
+    })->name('worldos.universes.causal-links');
+
     Route::get('universes/{id}/society-metrics', function (
         string $id,
         \App\Contracts\Repositories\UniverseRepositoryInterface $universeRepo
@@ -512,8 +534,11 @@ Route::middleware('auth:sanctum')->prefix('worldos')->group(function () {
         if (!$universe) {
             return response()->json(['error' => 'Universe not found'], 404);
         }
-        $sv = is_string($universe->state_vector) ? json_decode($universe->state_vector, true) : ($universe->state_vector ?? []);
-        $civ = $sv['civilization'] ?? [];
+        $sv = $universe->state_vector;
+        if (is_string($sv)) {
+            $sv = json_decode($sv, true) ?: [];
+        }
+        $civ = is_array($sv) ? ($sv['civilization'] ?? []) : [];
         return response()->json([
             'current_tick' => $universe->current_tick ?? 0,
             'settlements' => $civ['settlements'] ?? [],
@@ -532,8 +557,11 @@ Route::middleware('auth:sanctum')->prefix('worldos')->group(function () {
         if (!$universe) {
             return response()->json(['error' => 'Universe not found'], 404);
         }
-        $sv = is_string($universe->state_vector) ? json_decode($universe->state_vector, true) : ($universe->state_vector ?? []);
-        $zones = $sv['zones'] ?? [];
+        $sv = $universe->state_vector;
+        if (is_string($sv)) {
+            $sv = json_decode($sv, true) ?: [];
+        }
+        $zones = is_array($sv) ? ($sv['zones'] ?? []) : [];
         $out = ['current_tick' => $universe->current_tick ?? 0, 'zones' => []];
         foreach ($zones as $idx => $zone) {
             $state = $zone['state'] ?? $zone;

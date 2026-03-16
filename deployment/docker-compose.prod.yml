@@ -108,6 +108,7 @@ services:
       WORLDOS_EVENT_BUS_DRIVER: ${WORLDOS_EVENT_BUS_DRIVER:-redis_stream}
       WORLDOS_EVENT_STREAM_KAFKA_ENABLED: ${WORLDOS_EVENT_STREAM_KAFKA_ENABLED:-false}
       WORLDOS_EVENT_STREAM_REST_PROXY_URL: ${WORLDOS_EVENT_STREAM_REST_PROXY_URL:-http://redpanda:8082}
+      WORLDOS_CAUSALITY_DRIVER: redis
     volumes:
       - backend_storage:/var/www/storage
       - backend_bootstrap_cache:/var/www/bootstrap/cache

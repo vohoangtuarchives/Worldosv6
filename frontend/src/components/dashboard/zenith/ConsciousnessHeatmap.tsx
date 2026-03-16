@@ -1,8 +1,11 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Brain, Waves, Sparkles } from 'lucide-react';
+import { Canvas, useFrame } from '@react-three/fiber';
+import { OrbitControls, Instances, Instance } from '@react-three/drei';
+import * as THREE from 'three';
 
 interface HeatmapCell {
   zone_id: number;
@@ -11,6 +14,44 @@ interface HeatmapCell {
   intensity: number;
   phase: 'APOTHEOSIS' | 'AWAKENING' | 'DORMANT';
 }
+
+const Heatmap3D: React.FC<{ data: HeatmapCell[] }> = ({ data }) => {
+  const groupRef = useRef<THREE.Group>(null);
+
+  // Animate whole grid subtly
+  useFrame((state) => {
+    if (groupRef.current) {
+        groupRef.current.position.y = Math.sin(state.clock.elapsedTime * 0.5) * 0.1;
+        groupRef.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.2) * 0.05;
+    }
+  });
+
+  return (
+    <group ref={groupRef}>
+        <Instances limit={25} range={25}>
+            <boxGeometry args={[0.8, 1, 0.8]} />
+            <meshStandardMaterial />
+            {data.map((cell, i) => {
+                const isApotheosis = cell.phase === 'APOTHEOSIS';
+                const color = isApotheosis ? '#c084fc' : '#9333ea'; // lighter purple for apotheosis
+                const heightScale = Math.max(0.1, cell.intensity * 2.5); // height based on intensity
+                // Center the 5x5 grid (x and y ideally from 0 to 4)
+                const gridX = (cell.x || i % 5) - 2; 
+                const gridZ = (cell.y || Math.floor(i / 5)) - 2;
+
+                return (
+                    <Instance 
+                        key={cell.zone_id}
+                        position={[gridX, heightScale / 2, gridZ]} // adjust y to rest on floor
+                        scale={[1, heightScale, 1]}
+                        color={color}
+                    />
+                );
+            })}
+        </Instances>
+    </group>
+  );
+};
 
 export const ConsciousnessHeatmap: React.FC<{ universeId: number }> = ({ universeId }) => {
   const [data, setData] = useState<{ heatmap: HeatmapCell[]; resonance: number } | null>(null);
@@ -52,47 +93,19 @@ export const ConsciousnessHeatmap: React.FC<{ universeId: number }> = ({ univers
         </div>
       </div>
 
-      <div className="flex-1 grid grid-cols-5 gap-2 relative">
-        {data?.heatmap.map((cell) => (
-          <motion.div
-            key={cell.zone_id}
-            className="aspect-square rounded-lg border border-white/5 relative group flex items-center justify-center"
-            style={{
-              backgroundColor: `rgba(168, 85, 247, ${cell.intensity * 0.6})`,
-              boxShadow: cell.intensity > 0.7 ? `0 0 15px rgba(168, 85, 247, ${cell.intensity * 0.4})` : 'none'
-            }}
-            whileHover={{ scale: 1.1, zIndex: 10 }}
-          >
-            {cell.phase === 'APOTHEOSIS' && (
-                <div className="absolute inset-0 bg-white/10 animate-pulse rounded-lg" />
-            )}
-            <span className="text-[8px] text-white/20 font-mono group-hover:text-white/60 transition-colors">
-              Z{cell.zone_id}
-            </span>
-          </motion.div>
-        ))}
-
-        {/* Dynamic Blobs for V10 feel */}
-        <div className="absolute inset-0 pointer-events-none opacity-20 filter blur-3xl">
-           <motion.div 
-            className="absolute top-1/4 left-1/4 w-32 h-32 bg-purple-600 rounded-full"
-            animate={{ 
-                x: [0, 50, -30, 0],
-                y: [0, -40, 60, 0],
-                scale: [1, 1.2, 0.8, 1]
-            }}
-            transition={{ duration: 10, repeat: Infinity }}
-           />
-           <motion.div 
-            className="absolute bottom-1/4 right-1/4 w-40 h-40 bg-blue-600 rounded-full"
-            animate={{ 
-                x: [0, -60, 40, 0],
-                y: [0, 50, -30, 0],
-                scale: [1, 1.1, 0.9, 1]
-            }}
-            transition={{ duration: 15, repeat: Infinity }}
-           />
-        </div>
+      <div className="flex-1 relative w-full h-[60%] min-h-[250px] rounded-2xl overflow-hidden border border-purple-500/20 bg-black/40">
+         <Canvas camera={{ position: [5, 5, 5], fov: 40 }}>
+            <ambientLight intensity={0.4} />
+            <pointLight position={[10, 10, 10]} intensity={1.5} color="#c084fc" />
+            <pointLight position={[-10, 5, -10]} intensity={0.5} color="#3b82f6" />
+            {data?.heatmap && <Heatmap3D data={data.heatmap} />}
+            <OrbitControls enableZoom={false} maxPolarAngle={Math.PI / 2.2} autoRotate autoRotateSpeed={0.5} />
+         </Canvas>
+  
+         <div className="absolute top-2 left-2 text-[10px] text-white/40 font-mono flex items-center gap-2 bg-black/50 px-2 py-1 rounded">
+             <Brain className="w-3 h-3 text-purple-400" />
+             Topological Projection Active
+         </div>
       </div>
 
       <div className="mt-6 flex items-center justify-between text-[10px] font-mono">

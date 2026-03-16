@@ -22,6 +22,7 @@ class HistorianAgentService
         protected HistoricalFactEngine $historicalFactEngine,
         protected NarrativeMemoryGraphService $memoryGraph,
         protected ActorStoryEngine $actorStoryEngine,
+        protected ChronicleSynthesisEngine $synthesisEngine,
         protected ?LlmNarrativeClientInterface $llmClient = null,
     ) {
         if ($this->llmClient === null && app()->bound(LlmNarrativeClientInterface::class)) {
@@ -65,7 +66,9 @@ class HistorianAgentService
             }
         }
 
-        $prompt = $this->buildPrompt($universe, $facts, $timeline, $fromTick, $toTick, $theme, $outputType, $actorContext);
+        $causalFacts = $this->synthesisEngine->synthesize($universe->id, $fromTick, $toTick);
+
+        $prompt = $this->buildPrompt($universe, $facts, $timeline, $causalFacts, $fromTick, $toTick, $theme, $outputType, $actorContext);
 
         $content = $this->llmClient?->generate($prompt);
         if ($content === null || trim($content) === '') {
@@ -90,6 +93,7 @@ class HistorianAgentService
         Universe $universe,
         $facts,
         array $timeline,
+        array $causalFacts,
         int $fromTick,
         int $toTick,
         string $theme,
@@ -114,6 +118,10 @@ class HistorianAgentService
             substr($e['content'] ?? json_encode($e['payload'] ?? []), 0, 200)
         ), $timelinePreview));
 
+        $causalText = empty($causalFacts)
+            ? "No direct causal links detected."
+            : implode("\n", $causalFacts);
+
         $instruction = $outputType === 'philosophy_treatise'
             ? 'Viết một đoạn triết luận ngắn (philosophy treatise) dựa trên các sự kiện và metrics trên.'
             : 'Viết một bản tóm tắt lịch sử (history volume / essay) dựa trên các fact và timeline trên. Ngôn ngữ: Tiếng Việt.';
@@ -126,12 +134,17 @@ Khoảng tick: {$fromTick} – {$toTick}
 Chủ đề: {$theme}
 {$actorContext}
 
+## Causal Context (Reality OS Traces)
+Dưới đây là các liên kết nhân quả thực tế đã xảy ra trong giả lập:
+{$causalText}
+
 ## Historical facts (Layer 2)
 {$factLines}
 
 ## Timeline (chronicles)
 {$timelineText}
 
+Hãy ưu tiên giải thích các sự kiện dựa trên "Causal Context" được cung cấp ở trên để đảm bảo tính logic.
 Chỉ dựa vào dữ liệu trên, không bịa thêm. Output ngắn gọn, có cấu trúc.
 EOT;
     }

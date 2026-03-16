@@ -288,6 +288,16 @@ export const api = {
       by_type: Record<string, { from_tick: number; to_tick: number; type: string; content: string | null; payload: Record<string, unknown> }[]>;
     }>;
   },
+  async causalLinks(id: number, fromTick?: number, toTick?: number) {
+    const q = new URLSearchParams();
+    if (fromTick != null) q.set("from_tick", String(fromTick));
+    if (toTick != null) q.set("to_tick", String(toTick));
+    const qs = q.toString();
+    return apiFetch(`/worldos/universes/${id}/causal-links${qs ? `?${qs}` : ""}`) as Promise<{
+      universe_id: number;
+      links: string[];
+    }>;
+  },
   async societyMetrics(id: number) {
     return apiFetch(`/worldos/universes/${id}/society-metrics`) as Promise<{
       current_tick: number;

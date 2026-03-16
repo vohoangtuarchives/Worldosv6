@@ -15,7 +15,10 @@ class FfiActorEngine
             throw new RuntimeException('FFI extension is not loaded');
         }
 
-        $libraryPath = $libraryPath ?? base_path('ffi_lib/libworldos_ffi.so');
+        if ($libraryPath === null) {
+            $ext = PHP_OS_FAMILY === 'Windows' ? 'dll' : 'so';
+            $libraryPath = base_path("ffi_lib/worldos_ffi.{$ext}");
+        }
 
         // Only load if the file exists (good for local dev checks)
         if (file_exists($libraryPath)) {
@@ -27,9 +30,11 @@ class FfiActorEngine
                     float* hunger,
                     float* energy,
                     float* fear,
+                    float* trauma,
                     uint8_t* heroic_types,
                     uint64_t* lineage_ids,
                     uint64_t* memes,
+                    const uint64_t* seeds,
                     uint32_t* mut_actions_out
                 );
 
@@ -56,13 +61,15 @@ class FfiActorEngine
         array $hunger,
         array $energy,
         array $fear,
+        array $trauma, // New: Persistence
         array $heroicTypes,
         array $lineageIds,
-        array $memes
+        array $memes,
+        int $tick // New: For deterministic seed generation
     ): array {
         if ($this->ffi === null) {
             // Mock mode when DLL/SO is missing
-            return array_fill(0, count($ids), 0);
+            return array_fill(0, count($ids), ['action_id' => 0, 'new_hunger' => 0.5, 'new_energy' => 0.5, 'new_trauma' => 0.0]);
         }
 
         $count = count($ids);
@@ -76,24 +83,29 @@ class FfiActorEngine
         $cHunger = $this->ffi->new("float[$count]");
         $cEnergy = $this->ffi->new("float[$count]");
         $cFear = $this->ffi->new("float[$count]");
+        $cTrauma = $this->ffi->new("float[$count]");
         $cHeroicTypes = $this->ffi->new("uint8_t[$count]");
         $cLineageIds = $this->ffi->new("uint64_t[$count]");
         $cMemes = $this->ffi->new("uint64_t[$count]");
+        $cSeeds = $this->ffi->new("uint64_t[$count]");
         $cActionsOut = $this->ffi->new("uint32_t[$count]");
 
-        // Pack data
+        // Pack data and generate deterministic seeds (§Level-10 Determinism)
         for ($i = 0; $i < $count; $i++) {
             $cIds[$i] = $ids[$i];
             $cZoneIds[$i] = $zoneIds[$i];
             $cHunger[$i] = $hunger[$i];
             $cEnergy[$i] = $energy[$i];
             $cFear[$i] = $fear[$i];
+            $cTrauma[$i] = $trauma[$i] ?? 0.0;
             $cHeroicTypes[$i] = $heroicTypes[$i];
             $cLineageIds[$i] = $lineageIds[$i];
             $cMemes[$i] = $memes[$i];
+            // Deterministic seed: mix of global tick and unique actor ID
+            $cSeeds[$i] = ($tick * 13) + ($ids[$i] * 7); 
         }
 
-        // Call Rust FFI bridging function
+        // Call Rust FFI bridging function (Rayon Optimized)
         $result = $this->ffi->process_actors_soa(
             $count,
             $cIds,
@@ -101,9 +113,11 @@ class FfiActorEngine
             $cHunger,
             $cEnergy,
             $cFear,
+            $cTrauma,
             $cHeroicTypes,
             $cLineageIds,
             $cMemes,
+            $cSeeds,
             $cActionsOut
         );
 
@@ -111,13 +125,14 @@ class FfiActorEngine
             throw new RuntimeException("Rust FFI process_actors_soa returned error code: $result");
         }
 
-        // Unpack output (actions out and potentially updated traits like hunger/energy)
+        // Unpack output
         $outputActions = [];
         for ($i = 0; $i < $count; $i++) {
             $outputActions[] = [
                 'action_id' => $cActionsOut[$i],
                 'new_hunger' => $cHunger[$i],
                 'new_energy' => $cEnergy[$i],
+                'new_trauma' => $cTrauma[$i],
             ];
         }
 

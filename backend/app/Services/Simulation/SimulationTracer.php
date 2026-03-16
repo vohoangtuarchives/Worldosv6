@@ -3,7 +3,6 @@
 namespace App\Services\Simulation;
 
 use Illuminate\Support\Facades\Log;
-use Keepsuit\LaravelOpenTelemetry\Facades\Tracer;
 use Closure;
 
 /**
@@ -26,11 +25,12 @@ final class SimulationTracer
             return $callback();
         }
 
-        if (class_exists(Tracer::class)) {
+        if (class_exists('Keepsuit\LaravelOpenTelemetry\Facades\Tracer')) {
+            $tracer = app('Keepsuit\LaravelOpenTelemetry\Facades\Tracer');
             $closure = $callback instanceof Closure ? $callback : Closure::fromCallable($callback);
             
             // The measure method executes the closure inside an active span scope
-            return Tracer::newSpan($name)->measure($closure);
+            return $tracer->newSpan($name)->measure($closure);
         }
 
         // Fallback if package is not installed but tracing is enabled
