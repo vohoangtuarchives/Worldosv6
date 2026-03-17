@@ -17,6 +17,7 @@ final class WorldEvent
         public readonly float $impactScore = 0.0,
         public readonly array $causes = [],
         public readonly array $payload = [],
+        public readonly ?int $parentId = null,
     ) {
     }
 
@@ -29,6 +30,7 @@ final class WorldEvent
         float $impactScore = 0.0,
         array $causes = [],
         array $payload = [],
+        ?int $parentId = null,
     ): self {
         return new self(
             id: \Illuminate\Support\Str::uuid()->toString(),
@@ -40,6 +42,7 @@ final class WorldEvent
             impactScore: $impactScore,
             causes: $causes,
             payload: $payload,
+            parentId: $parentId,
         );
     }
 
@@ -55,6 +58,7 @@ final class WorldEvent
             'impact_score' => $this->impactScore,
             'causes' => $this->causes,
             'payload' => $this->payload,
+            'parent_id' => $this->parentId,
         ];
     }
 }

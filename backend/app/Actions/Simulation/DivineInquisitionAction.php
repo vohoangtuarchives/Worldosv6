@@ -6,7 +6,7 @@ use App\Models\Demiurge;
 use App\Models\LegendaryAgent;
 use App\Models\Universe;
 use App\Models\Chronicle;
-use App\Services\Simulation\CelestialAntibodyEngine;
+use App\Simulation\Engines\Biological\CelestialAntibodyEngine;
 use Illuminate\Support\Facades\Log;
 
 /**

@@ -10,8 +10,8 @@ use App\Actions\Simulation\ForkUniverseAction;
 use App\Actions\Simulation\TimelineMergeAction;
 use App\Repositories\UniverseRepository;
 use App\Services\Orchestrator\ImplicitOrchestratorService;
-use App\Services\Simulation\AttractorEngine;
-use App\Services\Simulation\DynamicAttractorEngine;
+use App\Simulation\Engines\Meta\AttractorEngine;
+use App\Simulation\Engines\Meta\DynamicAttractorEngine;
 use App\Services\Simulation\EventTriggerProcessor;
 use App\Modules\Simulation\Contracts\UniverseRepositoryInterface;
 use App\Modules\Simulation\Services\VoidExplorationEngine;
@@ -59,10 +59,10 @@ class EvaluateSimulationResult
         protected \App\Services\Simulation\GreatPersonLegacyService $greatPersonLegacyService,
         protected TimelineMergeAction $timelineMergeAction,
         protected \App\Services\Simulation\MacroAgentSpawnService $macroAgentSpawnService,
-        protected \App\Services\Simulation\CapabilityEngine $capabilityEngine,
-        protected \App\Services\Simulation\ActorDecisionEngine $actorDecisionEngine,
-        protected \App\Services\Simulation\ArtifactCreationEngine $artifactCreationEngine,
-        protected \App\Services\Simulation\IdeaDiffusionEngine $ideaDiffusionEngine,
+        protected \App\Simulation\Engines\Meta\CapabilityEngine $capabilityEngine,
+        protected \App\Simulation\Engines\Meta\ActorDecisionEngine $actorDecisionEngine,
+        protected \App\Simulation\Engines\Meta\ArtifactCreationEngine $artifactCreationEngine,
+        protected \App\Simulation\Engines\Social\IdeaDiffusionEngine $ideaDiffusionEngine,
         protected \App\Services\Simulation\InstitutionDecayService $institutionDecayService,
         protected \App\Modules\Simulation\Services\EventNormalizer $eventNormalizer,
         protected \App\Services\Narrative\HistoricalFactEngine $historicalFactEngine,
@@ -503,6 +503,7 @@ class EvaluateSimulationResult
 
         $chronicle = \App\Models\Chronicle::create([
             'universe_id' => $universe->id,
+            'parent_id' => $fact?->parent_id,
             'world_event_id' => $worldEventId,
             'from_tick' => $snapshot->tick,
             'to_tick' => $snapshot->tick,

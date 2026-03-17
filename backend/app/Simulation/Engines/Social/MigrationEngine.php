@@ -1,0 +1,42 @@
+<?php
+
+namespace App\Simulation\Engines\Social;
+
+use App\Simulation\Concerns\DefaultSimulationEnginePhase;
+use App\Simulation\Contracts\SimulationEngine;
+use App\Simulation\Domain\EngineResult;
+use App\Simulation\Domain\TickContext;
+use App\Simulation\Runtime\State\WorldState;
+
+/**
+ * doc §7.2: Migration Engine stub. migration types, flow object.
+ */
+final class MigrationEngine implements SimulationEngine
+{
+    use DefaultSimulationEnginePhase;
+
+    public function phase(): string
+    {
+        return 'ecology';
+    }
+
+    public function name(): string
+    {
+        return 'migration';
+    }
+
+    public function priority(): int
+    {
+        return 13;
+    }
+
+    public function tickRate(): int
+    {
+        return 1;
+    }
+
+    public function handle(WorldState $state, TickContext $ctx): EngineResult
+    {
+        return EngineResult::empty();
+    }
+}

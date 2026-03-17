@@ -3,6 +3,8 @@
 namespace App\Simulation\Runtime\Systems;
 
 use App\Simulation\Runtime\Contracts\WorldSystemInterface;
+use App\Simulation\Runtime\Causality\ImpactReport;
+use App\Simulation\Runtime\WorldKernel;
 
 class SurvivalSystem implements WorldSystemInterface
 {

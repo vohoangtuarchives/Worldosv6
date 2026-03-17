@@ -35,4 +35,19 @@ interface SimulationEngine
      * Evaluate current state and return result (events, state changes, metrics). Must not mutate DB or snapshot.
      */
     public function handle(WorldState $state, TickContext $ctx): EngineResult;
+
+    /**
+     * Phase 4: Parallel Execution Flag.
+     * If true, this engine may be run concurrently with other parallel-safe engines in the same phase group.
+     * Requirements: must NOT mutate shared in-process state (no static writes, no DB writes during handle).
+     * Returns false by default for safety — opt in by overriding to true.
+     */
+    public function isParallelSafe(): bool;
+
+    /**
+     * Phase 6: Priority Category for Auto-Scaling.
+     * Expected returns: 'CRITICAL', 'STOCHASTIC', or 'COSMETIC'.
+     * CRITICAL engines always run. STOCHASTIC and COSMETIC are dropped under heavy load.
+     */
+    public function priorityCategory(): string;
 }

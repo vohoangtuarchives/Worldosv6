@@ -50,7 +50,7 @@ class LegitimacyEliteService
         $actors = $state->getActorEntities();
         $aliveCount = 0;
         foreach ($actors as $actor) {
-            if ($actor->is_alive) $aliveCount++;
+            if ($actor->isAlive) $aliveCount++;
         }
 
         $eliteRatio = $aliveCount > 0 ? min(1.0, $eliteCount / $aliveCount) : 0.0;

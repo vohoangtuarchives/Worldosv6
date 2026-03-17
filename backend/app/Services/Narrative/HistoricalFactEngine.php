@@ -46,6 +46,7 @@ class HistoricalFactEngine
             'metrics_before' => $payload['metrics_before'] ?? null,
             'metrics_after' => $metrics,
             'facts' => $facts,
+            'parent_id' => $event->parentId,
         ]);
     }
 

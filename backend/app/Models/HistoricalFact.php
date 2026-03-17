@@ -22,6 +22,7 @@ class HistoricalFact extends Model
         'metrics_before',
         'metrics_after',
         'facts',
+        'parent_id',
     ];
 
     protected $casts = [

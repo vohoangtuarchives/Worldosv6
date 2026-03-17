@@ -92,47 +92,56 @@ class SimulationServiceProvider extends ServiceProvider
         $this->app->singleton(\App\Simulation\Services\TopologyResolver::class);
         $this->app->singleton(\App\Simulation\Services\CosmicSignalCollector::class);
         $this->app->singleton(\App\Simulation\Services\PhasePressureCalculator::class);
-        $this->app->singleton(\App\Simulation\Engines\PotentialFieldEngine::class);
-        $this->app->singleton(\App\Simulation\Engines\CosmicPressureEngine::class);
-        $this->app->singleton(\App\Simulation\Engines\ZoneConflictEngine::class);
-        $this->app->singleton(\App\Simulation\Engines\StructuralDecayEngine::class);
-        $this->app->singleton(\App\Simulation\Engines\LawEvolutionEngine::class);
-        $this->app->singleton(\App\Simulation\Engines\CulturalDriftEngine::class);
-        $this->app->singleton(\App\Simulation\Engines\AdaptiveTopologyEngine::class);
-        $this->app->singleton(\App\Simulation\Engines\CausalityEngine::class);
-        $this->app->singleton(\App\Simulation\Engines\ClimateEngine::class);
-        $this->app->singleton(\App\Simulation\Engines\AgricultureEngine::class);
-        $this->app->singleton(\App\Simulation\Engines\PopulationEngine::class);
-        $this->app->singleton(\App\Simulation\Engines\MigrationEngine::class);
-        $this->app->singleton(\App\Simulation\Engines\DiseaseEngine::class);
-        $this->app->singleton(\App\Simulation\Engines\CivilizationFormationEngine::class);
-        $this->app->singleton(\App\Simulation\Engines\CitySimulationEngine::class);
-        $this->app->singleton(\App\Simulation\Engines\GovernanceEngine::class);
-        $this->app->singleton(\App\Simulation\Engines\TradeEngine::class);
-        $this->app->singleton(\App\Simulation\Engines\KnowledgePropagationEngine::class);
-        $this->app->singleton(\App\Simulation\Engines\TechEvolutionEngine::class);
-        $this->app->singleton(\App\Simulation\Engines\ReligionEngine::class);
-        $this->app->singleton(\App\Simulation\Engines\ArtCultureEngine::class);
-        $this->app->singleton(\App\Simulation\Engines\PsychologyEngine::class);
-        $this->app->singleton(\App\Simulation\Engines\MultiverseOsmosisEngine::class);
-        $this->app->singleton(\App\Simulation\Engines\MetaAttractorEngine::class);
-        $this->app->singleton(\App\Simulation\Engines\CivilizationPhysicsEngine::class);
-        $this->app->singleton(\App\Simulation\Engines\CausalHistoryEngine::class);
-        $this->app->singleton(\App\Simulation\Engines\OmegaConvergenceEngine::class);
-        $this->app->singleton(\App\Simulation\Engines\CausalBridgeEngine::class);
-        $this->app->singleton(\App\Simulation\Engines\PostApotheosisEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\Physics\PotentialFieldEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\Physics\CosmicPressureEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\Social\ZoneConflictEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\Physics\StructuralDecayEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\Meta\LawEvolutionEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\Social\CulturalDriftEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\Physics\AdaptiveTopologyEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\Meta\CausalityEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\Physics\ClimateEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\Social\AgricultureEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\Social\PopulationEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\Social\MigrationEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\Social\DiseaseEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\Social\CivilizationFormationEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\Social\CitySimulationEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\Social\GovernanceEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\Social\TradeEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\Social\KnowledgePropagationEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\Social\TechEvolutionEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\Social\ReligionEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\Social\ArtCultureEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\Social\PsychologyEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\Social\GlobalEconomyEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\Social\MarketEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\Social\InequalityEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\Social\PoliticsEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\Social\LegitimacyEliteEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\Social\WarEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\Social\EcologicalCollapseEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\Social\EcologicalPhaseTransitionEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\Physics\GeologicalEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\Meta\MultiverseOsmosisEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\Meta\MetaAttractorEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\Social\CivilizationPhysicsEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\Meta\CausalHistoryEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\Meta\OmegaConvergenceEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\Meta\CausalBridgeEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\Meta\PostApotheosisEngine::class);
         $this->app->singleton(\App\Services\Simulation\ObserverSpectrumService::class);
-        $this->app->singleton(\App\Simulation\Engines\ResonanceBleedingEngine::class);
-        $this->app->singleton(\App\Simulation\Engines\DynamicLawEngine::class);
-        $this->app->singleton(\App\Simulation\Engines\RealityAnchorEngine::class);
-        $this->app->singleton(\App\Simulation\Engines\DeepTimeMemoryEngine::class);
-        $this->app->singleton(\App\Simulation\Engines\HigherDimensionalEngine::class);
-        $this->app->singleton(\App\Simulation\Engines\InfiniteRecursionEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\Meta\ResonanceBleedingEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\Meta\DynamicLawEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\Physics\RealityAnchorEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\Meta\DeepTimeMemoryEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\Meta\HigherDimensionalEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\Meta\InfiniteRecursionEngine::class);
         $this->app->singleton(\App\Simulation\Runtime\EventDrivenScheduler::class);
-        $this->app->singleton(\App\Simulation\Engines\IdealismEngine::class);
-        $this->app->singleton(\App\Simulation\Engines\SingularityEngine::class);
-        $this->app->singleton(\App\Simulation\Engines\AutopoieticEvolutionEngine::class);
-        $this->app->singleton(\App\Simulation\Engines\InformationDensityEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\Meta\IdealismEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\Meta\SingularityEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\Biological\AutopoieticEvolutionEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\Meta\InformationDensityEngine::class);
         $this->app->singleton(\App\Services\Simulation\CausalCacheService::class);
         $this->app->singleton(\App\Services\Simulation\RuleMutationService::class);
         $this->app->singleton(\App\Services\Simulation\StructuralHashService::class);
@@ -191,51 +200,51 @@ class SimulationServiceProvider extends ServiceProvider
             $kernel->registerSystem(
                 \App\Simulation\Runtime\WorldKernel::PHASE_MIND,
                 \App\Simulation\Runtime\WorldKernel::RULE_DIFFUSION,
-                new \App\Simulation\Runtime\Systems\EngineSystemAdapter($app->make(\App\Simulation\Engines\InformationPropagationEngine::class))
+                new \App\Simulation\Runtime\Systems\EngineSystemAdapter($app->make(\App\Simulation\Engines\Meta\InformationPropagationEngine::class))
             );
             $kernel->registerSystem(
                 \App\Simulation\Runtime\WorldKernel::PHASE_MIND,
                 \App\Simulation\Runtime\WorldKernel::RULE_INNOVATION,
-                new \App\Simulation\Runtime\Systems\EngineSystemAdapter($app->make(\App\Simulation\Engines\MeaningEngine::class))
+                new \App\Simulation\Runtime\Systems\EngineSystemAdapter($app->make(\App\Simulation\Engines\Meta\MeaningEngine::class))
             );
             $kernel->registerSystem(
                 \App\Simulation\Runtime\WorldKernel::PHASE_MIND,
                 \App\Simulation\Runtime\WorldKernel::RULE_INNOVATION,
-                new \App\Simulation\Runtime\Systems\EngineSystemAdapter($app->make(\App\Simulation\Engines\KnowledgeEvolutionEngine::class))
+                new \App\Simulation\Runtime\Systems\EngineSystemAdapter($app->make(\App\Simulation\Engines\Meta\KnowledgeEvolutionEngine::class))
             );
 
             // Phase 4: Social (V10 Engines)
             $kernel->registerSystem(
                 \App\Simulation\Runtime\WorldKernel::PHASE_SOCIAL,
                 \App\Simulation\Runtime\WorldKernel::RULE_COHESION,
-                new \App\Simulation\Runtime\Systems\EngineSystemAdapter($app->make(\App\Simulation\Engines\PowerStructureEngine::class))
+                new \App\Simulation\Runtime\Systems\EngineSystemAdapter($app->make(\App\Simulation\Engines\Meta\PowerStructureEngine::class))
             );
             $kernel->registerSystem(
                 \App\Simulation\Runtime\WorldKernel::PHASE_SOCIAL,
                 \App\Simulation\Runtime\WorldKernel::RULE_ATTRACTION,
-                new \App\Simulation\Runtime\Systems\EngineSystemAdapter($app->make(\App\Simulation\Engines\CulturalAttractorEngine::class))
+                new \App\Simulation\Runtime\Systems\EngineSystemAdapter($app->make(\App\Simulation\Engines\Social\CulturalAttractorEngine::class))
             );
             $kernel->registerSystem(
                 \App\Simulation\Runtime\WorldKernel::PHASE_SOCIAL,
                 \App\Simulation\Runtime\WorldKernel::RULE_CYCLE,
-                new \App\Simulation\Runtime\Systems\EngineSystemAdapter($app->make(\App\Simulation\Engines\CivilizationPhaseTransitionEngine::class))
+                new \App\Simulation\Runtime\Systems\EngineSystemAdapter($app->make(\App\Simulation\Engines\Meta\CivilizationPhaseTransitionEngine::class))
             );
 
             // Phase 5: Meta (V10 Engines)
             $kernel->registerSystem(
                 \App\Simulation\Runtime\WorldKernel::PHASE_META,
                 \App\Simulation\Runtime\WorldKernel::RULE_NARRATIVE,
-                new \App\Simulation\Runtime\Systems\EngineSystemAdapter($app->make(\App\Simulation\Engines\MythogenesisEngine::class))
+                new \App\Simulation\Runtime\Systems\EngineSystemAdapter($app->make(\App\Simulation\Engines\Meta\MythogenesisEngine::class))
             );
             $kernel->registerSystem(
                 \App\Simulation\Runtime\WorldKernel::PHASE_META,
                 \App\Simulation\Runtime\WorldKernel::RULE_ENTROPY,
-                new \App\Simulation\Runtime\Systems\EngineSystemAdapter($app->make(\App\Simulation\Engines\SingularityStabilityEngine::class))
+                new \App\Simulation\Runtime\Systems\EngineSystemAdapter($app->make(\App\Simulation\Engines\Meta\SingularityStabilityEngine::class))
             );
             $kernel->registerSystem(
                 \App\Simulation\Runtime\WorldKernel::PHASE_META,
                 \App\Simulation\Runtime\WorldKernel::RULE_ASCENSION,
-                new \App\Simulation\Runtime\Systems\EngineSystemAdapter($app->make(\App\Simulation\Engines\AscensionEngine::class))
+                new \App\Simulation\Runtime\Systems\EngineSystemAdapter($app->make(\App\Simulation\Engines\Meta\AscensionEngine::class))
             );
 
             // Phase 1: Environment (Stages)
@@ -297,8 +306,28 @@ class SimulationServiceProvider extends ServiceProvider
             );
             $kernel->registerSystem(
                 \App\Simulation\Runtime\WorldKernel::PHASE_SOCIAL,
+                \App\Simulation\Runtime\WorldKernel::RULE_EXTRACTION,
+                new \App\Simulation\Runtime\Systems\EngineSystemAdapter($app->make(\App\Simulation\Engines\Social\FinanceEngine::class))
+            );
+            $kernel->registerSystem(
+                \App\Simulation\Runtime\WorldKernel::PHASE_SOCIAL,
+                \App\Simulation\Runtime\WorldKernel::RULE_EXTRACTION,
+                new \App\Simulation\Runtime\Systems\EngineSystemAdapter($app->make(\App\Simulation\Engines\Social\ProductionChainEngine::class))
+            );
+            $kernel->registerSystem(
+                \App\Simulation\Runtime\WorldKernel::PHASE_SOCIAL,
                 \App\Simulation\Runtime\WorldKernel::RULE_COHESION,
                 new \App\Simulation\Runtime\Systems\StageSystemAdapter($app->make(\App\Simulation\Runtime\Stages\PoliticsStage::class))
+            );
+            $kernel->registerSystem(
+                \App\Simulation\Runtime\WorldKernel::PHASE_SOCIAL,
+                \App\Simulation\Runtime\WorldKernel::RULE_COHESION,
+                new \App\Simulation\Runtime\Systems\EngineSystemAdapter($app->make(\App\Simulation\Engines\Social\DiplomacyEngine::class))
+            );
+            $kernel->registerSystem(
+                \App\Simulation\Runtime\WorldKernel::PHASE_SOCIAL,
+                \App\Simulation\Runtime\WorldKernel::RULE_DIFFUSION,
+                new \App\Simulation\Runtime\Systems\EngineSystemAdapter($app->make(\App\Simulation\Engines\Social\CultureEngine::class))
             );
             $kernel->registerSystem(
                 \App\Simulation\Runtime\WorldKernel::PHASE_SOCIAL,
@@ -321,7 +350,7 @@ class SimulationServiceProvider extends ServiceProvider
             $kernel->registerSystem(
                 \App\Simulation\Runtime\WorldKernel::PHASE_META,
                 \App\Simulation\Runtime\WorldKernel::RULE_CORRECTION,
-                new \App\Simulation\Runtime\Systems\EngineSystemAdapter($app->make(\App\Simulation\Engines\CausalHistoryEngine::class))
+                new \App\Simulation\Runtime\Systems\EngineSystemAdapter($app->make(\App\Simulation\Engines\Meta\CausalHistoryEngine::class))
             );
 
             return $kernel;
@@ -336,18 +365,18 @@ class SimulationServiceProvider extends ServiceProvider
         $this->app->singleton(\App\Simulation\Runtime\Systems\MythCreationSystem::class);
         
         // Advanced V10 Engines
-        $this->app->singleton(\App\Simulation\Engines\InformationPropagationEngine::class);
-        $this->app->singleton(\App\Simulation\Engines\PowerStructureEngine::class);
-        $this->app->singleton(\App\Simulation\Engines\CulturalAttractorEngine::class);
-        $this->app->singleton(\App\Simulation\Engines\MythogenesisEngine::class);
-        $this->app->singleton(\App\Simulation\Engines\MeaningEngine::class);
-        $this->app->singleton(\App\Simulation\Engines\KnowledgeEvolutionEngine::class);
-        $this->app->singleton(\App\Simulation\Engines\CivilizationPhaseTransitionEngine::class);
-        $this->app->singleton(\App\Simulation\Engines\SingularityStabilityEngine::class);
-        $this->app->singleton(\App\Simulation\Engines\AscensionEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\Meta\InformationPropagationEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\Meta\PowerStructureEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\Social\CulturalAttractorEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\Meta\MythogenesisEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\Meta\MeaningEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\Meta\KnowledgeEvolutionEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\Meta\CivilizationPhaseTransitionEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\Meta\SingularityStabilityEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\Meta\AscensionEngine::class);
         $this->app->singleton(\App\Services\Simulation\ZenithMetricsService::class);
         $this->app->singleton(\App\Services\Simulation\ReasoningService::class);
-        $this->app->singleton(\App\Services\Simulation\CivilizationCollapseEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\Social\CivilizationCollapseEngine::class);
         $this->app->tag(config('worldos.engine_registry.engines', []), 'simulation_engine');
         $this->app->singleton(\App\Simulation\EngineRegistry::class, function ($app) {
             $registry = new \App\Simulation\EngineRegistry();
@@ -366,10 +395,16 @@ class SimulationServiceProvider extends ServiceProvider
             return new \App\Simulation\SimulationKernel(
                 $app->make(\App\Simulation\EffectResolver::class),
                 $app->make(\App\Simulation\EngineRegistry::class),
-                $app->make(\App\Simulation\Contracts\WorldEventBusInterface::class)
+                $app->make(\App\Simulation\Contracts\WorldEventBusInterface::class),
+                $app->make(\App\Simulation\Services\TickMetricsService::class)
             );
         });
-        
+        $this->app->singleton(\App\Simulation\Services\SimulationReplayService::class, function ($app) {
+            return new \App\Simulation\Services\SimulationReplayService(
+                $app->make(\App\Simulation\SimulationKernel::class),
+            );
+        });
+
         // Note: SimulationKernel above is Legacy/Rule-based. 
         // WorldKernel (Phase 80) is the new System-driven core.
 
@@ -414,17 +449,17 @@ class SimulationServiceProvider extends ServiceProvider
                 $stages,
                 $app->make(\App\Simulation\Runtime\State\StateManager::class),
                 $app->make(\App\Simulation\Runtime\EventDrivenScheduler::class),
-                $app->make(\App\Simulation\Engines\AutopoieticEvolutionEngine::class),
+                $app->make(\App\Simulation\Engines\Biological\AutopoieticEvolutionEngine::class),
                 $app->make(\App\Services\Simulation\RuleMutationService::class),
-                $app->make(\App\Simulation\Engines\InformationPropagationEngine::class),
-                $app->make(\App\Simulation\Engines\PowerStructureEngine::class),
-                $app->make(\App\Simulation\Engines\CulturalAttractorEngine::class),
-                $app->make(\App\Simulation\Engines\MythogenesisEngine::class),
-                $app->make(\App\Simulation\Engines\MeaningEngine::class),
-                $app->make(\App\Simulation\Engines\KnowledgeEvolutionEngine::class),
-                $app->make(\App\Simulation\Engines\CivilizationPhaseTransitionEngine::class),
-                $app->make(\App\Simulation\Engines\SingularityStabilityEngine::class),
-                $app->make(\App\Simulation\Engines\AscensionEngine::class),
+                $app->make(\App\Simulation\Engines\Meta\InformationPropagationEngine::class),
+                $app->make(\App\Simulation\Engines\Meta\PowerStructureEngine::class),
+                $app->make(\App\Simulation\Engines\Social\CulturalAttractorEngine::class),
+                $app->make(\App\Simulation\Engines\Meta\MythogenesisEngine::class),
+                $app->make(\App\Simulation\Engines\Meta\MeaningEngine::class),
+                $app->make(\App\Simulation\Engines\Meta\KnowledgeEvolutionEngine::class),
+                $app->make(\App\Simulation\Engines\Meta\CivilizationPhaseTransitionEngine::class),
+                $app->make(\App\Simulation\Engines\Meta\SingularityStabilityEngine::class),
+                $app->make(\App\Simulation\Engines\Meta\AscensionEngine::class),
                 $app->make(\App\Services\Simulation\ZenithMetricsService::class),
                 $app->make(\App\Simulation\Runtime\WorldKernel::class)
             );

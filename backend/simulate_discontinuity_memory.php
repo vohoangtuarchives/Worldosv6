@@ -35,6 +35,7 @@ $universe->state_vector = [
     'historical_scars' => []
 ];
 
+// Use deterministic PRNG seeded from universe (tick=0)
 $prng = SimulationPRNG::forUniverse($universe);
 $gpEngine = new GreatPersonEngine($prng);
 $catEngine = new CatalystEngine($prng);
@@ -67,16 +68,17 @@ $mockActorRepo = new MockActorRepository();
 $macroEngine = new MacroAgentEngine($mockActorRepo);
 $dynastyEngine = new \App\Modules\Intelligence\Services\DynastyEngine($mockActorRepo);
 
-// 3. Setup Actors
+// 3. Setup Actors — all PRNG-seeded for determinism
 $actors = [];
 for ($i = 0; $i < 40; $i++) {
-    $curiosity = 0.3 + (rand(0, 40) / 100);
-    $dominance = 0.3 + (rand(0, 40) / 100);
-    $hope = 0.3 + (rand(0, 40) / 100);
+    $curiosity = 0.3 + ($prng->nextInt(0, 40) / 100);
+    $dominance  = 0.3 + ($prng->nextInt(0, 40) / 100);
+    $hope       = 0.3 + ($prng->nextInt(0, 40) / 100);
+    $resilience = 0.6;
     
-    if ($i === 0) $curiosity = 0.98; // Scientist
+    if ($i === 0) { $curiosity = 0.98; }        // Scientist
     if ($i === 1) { $dominance = 0.95; $resilience = 0.9; } // General
-    if ($i === 2) $hope = 0.99; // Prophet
+    if ($i === 2) { $hope = 0.99; }              // Prophet
 
     $actors[] = new ActorEntity(
         id: $i + 1,
@@ -84,18 +86,18 @@ for ($i = 0; $i < 40; $i++) {
         name: "Founder " . ($i + 1),
         archetype: 'gatherer',
         traits: [
-            'Curiosity' => $curiosity,
-            'Dominance' => $dominance ?? (0.3 + (rand(0, 40) / 100)),
-            'Ambition' => 0.3 + (rand(0, 40) / 100),
-            'Pragmatism' => 0.4 + (rand(0, 40) / 100),
-            'Resilience' => $resilience ?? 0.6,
-            'Longevity' => 0.9, 
-            'Hope' => $hope
+            'Curiosity'   => $curiosity,
+            'Dominance'   => $dominance,
+            'Ambition'    => 0.3 + ($prng->nextInt(0, 40) / 100),
+            'Pragmatism'  => 0.4 + ($prng->nextInt(0, 40) / 100),
+            'Resilience'  => $resilience,
+            'Longevity'   => 0.9, 
+            'Hope'        => $hope
         ],
         metrics: [
-            'energy' => 150, 
-            'max_energy' => 200, 
-            'physic' => [0.5, 0.5, 0.5, 0.5, 0.5],
+            'energy'         => 150, 
+            'max_energy'     => 200, 
+            'physic'         => [0.5, 0.5, 0.5, 0.5, 0.5],
             'behavior_stats' => ['battles' => 0, 'research' => 0, 'trade' => 0, 'spiritual' => 0]
         ],
         isAlive: true,
@@ -118,9 +120,15 @@ $founder3->isHeroic = true; $founder3->heroicType = 'PROPHET';
 
 $mockActorRepo->actors = $actors;
 
+// Determine dynamic dynasty transition tick from seed (repeatable, not hardcoded)
+$dynastyTransitionTick = $prng->nextInt(400, 700);
+
 $maxTicks = 1000;
 for ($tick = 1; $tick <= $maxTicks; $tick++) {
+    // Update PRNG seed to be tick-aware (tick-based seeding for per-tick determinism)
     $universe->current_tick = $tick;
+    $tickPrng = SimulationPRNG::forUniverse($universe);
+    
     $stateVector = $universe->state_vector;
     $fields = &$stateVector['fields'];
     $cohesion = 0.5; // Simplified
@@ -146,12 +154,12 @@ for ($tick = 1; $tick <= $maxTicks; $tick++) {
     foreach ($actors as $actor) {
         if ($actor->isAlive && $actor->isHeroic) {
             $fieldKey = match($actor->heroicType) {
-                'SCIENTIST' => 'knowledge',
+                'SCIENTIST'        => 'knowledge',
                 'GENERAL', 'RULER' => 'power',
-                'MERCHANT' => 'wealth',
-                'PROPHET' => 'meaning',
-                'ARTIST' => 'status',
-                default => 'survival'
+                'MERCHANT'         => 'wealth',
+                'PROPHET'          => 'meaning',
+                'ARTIST'           => 'status',
+                default            => 'survival'
             };
             $fields[$fieldKey] = min(1.0, ($fields[$fieldKey] ?? 0) + 0.15); // HYPER-AGGRESSIVE aura
         }
@@ -174,7 +182,7 @@ for ($tick = 1; $tick <= $maxTicks; $tick++) {
 
     // [PHASE 50] Idea Diffusion
     $ideaEngine->step($universe);
-    $stateVector = $universe->state_vector; // Refresh locally
+    $stateVector = $universe->state_vector;
 
     // [PHASE 49] Geopolitical Competition
     $polityEngine->step($universe);
@@ -183,8 +191,8 @@ for ($tick = 1; $tick <= $maxTicks; $tick++) {
     $macroEngine->step($universe);
     
     // [PHASE 52] Dynasty / Legacy Logic
-    // We mock the death -> heir spawn here for the demonstration
-    if ($tick === 518) { // Founder 2 dies
+    // Dynasty transition at a PRNG-derived tick (not hardcoded) — still fully reproducible
+    if ($tick === $dynastyTransitionTick) {
         $founder2 = $mockActorRepo->findById(2);
         if ($founder2) {
             $founder2->isAlive = false;
@@ -203,17 +211,17 @@ for ($tick = 1; $tick <= $maxTicks; $tick++) {
     $activeCats = $catEngine->evaluateCatalysts($universe, $fields, $universe->entropy);
     $catEngine->applyAmplification($fields, $activeCats);
 
-    // C. Legacy Check (Probabilistic death for simulation)
+    // C. Legacy Check — deterministic death chance via tick-PRNG
     foreach ($actors as &$actor) {
-        if ($actor->isAlive && rand(0, 1000) < 5) { // 0.5% death chance per tick
+        if ($actor->isAlive && $tickPrng->nextFloat() < 0.005) { // 0.5% death chance/tick (deterministic)
             $actor->isAlive = false;
             if ($actor->isHeroic) {
                 // Phase 47.3: Spawn Institution
                 $instEngine->spawnFromHero($universe, $actor->toState());
-                $stateVector = $universe->state_vector; // Refresh locally
+                $stateVector = $universe->state_vector;
 
                 $legacySystem->imprintLegacy($universe, $actor->toState());
-                $stateVector = $universe->state_vector; // Refresh locally
+                $stateVector = $universe->state_vector;
                 echo "[TICK $tick] DEATH & LEGACY: {$actor->name} passed away, leaving a foundation.\n";
             }
         }
@@ -224,23 +232,23 @@ for ($tick = 1; $tick <= $maxTicks; $tick++) {
 
     // E. Evolution (Simplified growth)
     $fields['knowledge'] = min(1.0, $fields['knowledge'] + 0.0001);
-    $fields['wealth'] = min(1.0, $fields['wealth'] + 0.0001);
+    $fields['wealth']    = min(1.0, $fields['wealth'] + 0.0001);
 
     $universe->state_vector = $stateVector;
 
     if ($tick % 100 === 0) {
         $aliveHeroes = array_filter($actors, fn($a) => $a->isAlive && $a->isHeroic);
-        $heroCount = count($aliveHeroes);
-        $catCount = count($universe->state_vector['active_catalysts']);
-        $instCount = count(array_filter($stateVector['institutions'], fn($i) => $i['state'] !== 'COLLAPSE'));
+        $heroCount   = count($aliveHeroes);
+        $catCount    = count($universe->state_vector['active_catalysts']);
+        $instCount   = count(array_filter($stateVector['institutions'], fn($i) => $i['state'] !== 'COLLAPSE'));
         $polityCount = count($stateVector['polities'] ?? []);
-        $ideaCount = count($stateVector['ideas'] ?? []);
+        $ideaCount   = count($stateVector['ideas'] ?? []);
         $schoolCount = count($stateVector['schools'] ?? []);
-        $army = $stateVector['macro_agents'][0] ?? null;
-        $leader = $army['leader_name'] ?? 'None';
+        $army        = $stateVector['macro_agents'][0] ?? null;
+        $leader      = $army['leader_name'] ?? 'None';
         
-        $heir = $mockActorRepo->findById(200);
-        $scars = $heir ? count($heir->metrics['historical_scars'] ?? []) : 0;
+        $heir    = $mockActorRepo->findById(200);
+        $scars   = $heir ? count($heir->metrics['historical_scars'] ?? []) : 0;
         $lineage = $heir ? "Alexander II (Scars: $scars)" : "None";
 
         $phase = $fields['knowledge'] > 0.6 ? 'Industrial' : 'Primitive';

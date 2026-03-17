@@ -4,7 +4,7 @@ namespace Tests\Unit\Simulation;
 
 use App\Simulation\Domain\EngineResult;
 use App\Simulation\Domain\TickContext;
-use App\Simulation\Domain\WorldState;
+use App\Simulation\Runtime\State\WorldState;
 use App\Simulation\EffectResolver;
 use App\Simulation\EngineRegistry;
 use App\Simulation\NullWorldEventBus;
@@ -15,7 +15,12 @@ class SimulationKernelTest extends TestCase
 {
     public function test_run_tick_returns_world_state(): void
     {
-        $state = new WorldState(1, 10, ['entropy' => 0.5], ['entropy' => 0.5, 'zones' => []]);
+        $state = new \App\Simulation\Runtime\State\WorldState([
+            'universe_id' => 1,
+            'tick' => 10,
+            'entropy' => 0.5,
+            'zones' => []
+        ]);
         $ctx = new TickContext(1, 10, 42);
 
         $registry = new EngineRegistry();
@@ -25,7 +30,7 @@ class SimulationKernelTest extends TestCase
             public function priority(): int { return 0; }
             public function phase(): string { return 'default'; }
             public function tickRate(): int { return 1; }
-            public function handle(WorldState $state, TickContext $ctx): EngineResult { return EngineResult::empty(); }
+            public function handle(\App\Simulation\Runtime\State\WorldState $state, TickContext $ctx): EngineResult { return EngineResult::empty(); }
         });
 
         $kernel = new SimulationKernel(new EffectResolver(), $registry, new NullWorldEventBus());
@@ -39,7 +44,11 @@ class SimulationKernelTest extends TestCase
 
     public function test_run_tick_respects_tick_rate(): void
     {
-        $state = new WorldState(1, 5, [], ['zones' => []]);
+        $state = new \App\Simulation\Runtime\State\WorldState([
+            'universe_id' => 1,
+            'tick' => 5,
+            'zones' => []
+        ]);
         $ctx = new TickContext(1, 5, 0);
 
         $registry = new EngineRegistry();
@@ -52,7 +61,7 @@ class SimulationKernelTest extends TestCase
             public function priority(): int { return 1; }
             public function phase(): string { return 'default'; }
             public function tickRate(): int { return 2; }
-            public function handle(WorldState $state, TickContext $ctx): EngineResult {
+            public function handle(\App\Simulation\Runtime\State\WorldState $state, TickContext $ctx): EngineResult {
                 $this->ran->value = ($state->getTick() % 2 === 0);
                 return EngineResult::empty();
             }
@@ -62,7 +71,11 @@ class SimulationKernelTest extends TestCase
         $kernel->runTick($state, $ctx);
         $this->assertFalse($ran->value, 'Engine with tickRate 2 should not run when tick=5');
 
-        $state2 = new WorldState(1, 6, [], ['zones' => []]);
+        $state2 = new \App\Simulation\Runtime\State\WorldState([
+            'universe_id' => 1,
+            'tick' => 6,
+            'zones' => []
+        ]);
         $ctx2 = new TickContext(1, 6, 0);
         $kernel->runTick($state2, $ctx2);
         $this->assertTrue($ran->value, 'Engine with tickRate 2 should run when tick=6');

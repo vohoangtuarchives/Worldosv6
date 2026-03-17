@@ -144,7 +144,7 @@ class ProcessActorEnergyAction
                 if (!isset($zone['state'])) $zone['state'] = [];
                 $foodKey = array_key_exists('food', $zone['state']) ? 'food' : 'resources';
                 $current = (float) ($zone['state'][$foodKey] ?? 0);
-                $biomeFactor = \App\Services\Simulation\EcologicalPhaseTransitionEngine::resourceRegenFactorForZone($zone['state']);
+                $biomeFactor = \App\Simulation\Engines\Biological\EcologicalPhaseTransitionEngine::resourceRegenFactorForZone($zone['state']);
                 $zone['state'][$foodKey] = $current + $resourceRegenRate * $ticks * $biomeFactor;
             }
         }

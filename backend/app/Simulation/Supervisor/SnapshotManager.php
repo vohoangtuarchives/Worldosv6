@@ -39,7 +39,8 @@ final class SnapshotManager
                     (int) $saved->tick,
                     (int) ($universe->seed ?? 0)
                 );
-                $newState = $this->simulationKernel->runTick($state, $ctx);
+                $result = $this->simulationKernel->runTick($state, $ctx);
+                $newState = $result->state;
                 $saved = $this->snapshots->save($universe, [
                     'tick' => $newState->getTick(),
                     'state_vector' => $newState->getStateVector(),

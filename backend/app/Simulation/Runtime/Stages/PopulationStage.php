@@ -5,9 +5,10 @@ namespace App\Simulation\Runtime\Stages;
 use App\Models\Universe;
 use App\Models\UniverseSnapshot;
 use App\Simulation\Runtime\Contracts\SimulationStageInterface;
-use App\Simulation\Engines\PopulationEngine;
-use App\Simulation\Engines\AgricultureEngine;
-use App\Simulation\Engines\DiseaseEngine;
+use App\Simulation\Engines\Social\PopulationEngine;
+use App\Simulation\Engines\Social\AgricultureEngine;
+use App\Simulation\Engines\Social\DiseaseEngine;
+use App\Simulation\Domain\TickContext;
 
 /**
  * PopulationStage – handles biological life cycles.
@@ -23,14 +24,14 @@ final class PopulationStage implements SimulationStageInterface
 
     public function run(Universe $universe, int $tick, ?UniverseSnapshot $savedSnapshot = null, array $context = []): void
     {
-        if ($savedSnapshot) {
-            $state = $this->stateManager->get();
-            if (!$state) return;
+        $state = $this->stateManager->get();
+        if (!$state) return;
 
-            // 1. Bio-layer computation (standardized state)
-            $this->populationEngine->runWithState($state, $tick);
-            $this->agricultureEngine->runWithState($state, $tick);
-            $this->diseaseEngine->runWithState($state, $tick);
-        }
+        $ctx = new TickContext((int) ($universe->id ?? 0), $tick, (int) ($universe->multiverse_id ?? 0));
+
+        // 1. Bio-layer computation (standardized state)
+        $this->populationEngine->handle($state, $ctx);
+        $this->agricultureEngine->handle($state, $ctx);
+        $this->diseaseEngine->handle($state, $ctx);
     }
 }

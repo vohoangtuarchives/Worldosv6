@@ -1,0 +1,72 @@
+<?php
+
+namespace App\Simulation\Engines\Meta;
+
+use App\Simulation\Concerns\DefaultSimulationEnginePhase;
+use App\Simulation\Contracts\SimulationEngine;
+use App\Simulation\Domain\EngineResult;
+use App\Simulation\Domain\TickContext;
+use App\Simulation\Runtime\State\WorldState;
+use App\Simulation\Effects\WorldRulesUpdateEffect;
+use App\Simulation\Events\WorldEvent;
+use App\Simulation\Events\WorldEventType;
+use App\Services\Simulation\RuleVmService;
+use Illuminate\Support\Facades\Log;
+use function resource_path;
+use function app;
+use function config;
+
+/**
+ * Evolves world_rules (Tier 2 mutable rules) via DSL logic.
+ */
+class LawEvolutionEngine implements SimulationEngine
+{
+    use DefaultSimulationEnginePhase;
+
+    public function __construct(
+        protected ?RuleVmService $ruleVm = null
+    ) {
+        $this->ruleVm = $ruleVm ?? app(RuleVmService::class);
+    }
+
+    public function phase(): string
+    {
+        return 'meta';
+    }
+
+    private const MUTABLE_KEYS = ['entropy_tendency', 'order_tendency', 'innovation_tendency'];
+
+    public function name(): string
+    {
+        return 'law_evolution';
+    }
+
+    public function priority(): int
+    {
+        return 6;
+    }
+
+    public function tickRate(): int
+    {
+        return max(1, (int) (\config('worldos.time_scale_factors.law_evolution') ?? 20));
+    }
+
+    public function handle(WorldState $state, TickContext $ctx): EngineResult
+    {
+        $dslFile = \resource_path('worldos_rules/innovation/leadership.dsl');
+        if (!file_exists($dslFile)) {
+            return new EngineResult([], [], []);
+        }
+
+        $dsl = file_get_contents($dslFile);
+        
+        // Evaluate leadership/rule mutations
+        // Note: RuleVmService currently modifies state directly. 
+        // We wrap it here to stay compatible with the existing DSL executor.
+        $this->ruleVm->evaluateAndApplyWithState($state, $dsl, $ctx->getTick());
+
+        Log::info("LawEvolutionEngine: World rules evolved via DSL for Universe {$state->get('universe_id')} at tick {$ctx->getTick()}");
+
+        return new EngineResult([], [], []);
+    }
+}

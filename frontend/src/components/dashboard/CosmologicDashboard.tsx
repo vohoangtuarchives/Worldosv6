@@ -19,6 +19,9 @@ import {
   AttractorMandala,
   CognitiveGraph,
   SocialIntegrityGraph,
+  DiplomacyPanel,
+  CulturePanel,
+  FinancePanel
 } from "@/components/Simulation";
 import {
   Activity,
@@ -49,6 +52,7 @@ import {
   Search,
   Database,
   Scroll,
+  Handshake,
   type LucideIcon,
 } from "lucide-react";
 import { CivilizationReview } from "./CivilizationReview";
@@ -64,8 +68,9 @@ import { MultiverseExplorer } from "../Simulation/MultiverseExplorer";
 import { TopMetricBar } from "./TopMetricBar";
 import { ApexObserverTab } from "./zenith/ApexObserverTab";
 import { AttractorSidebarPanel } from "./AttractorSidebarPanel";
+import { ConvergenceMapPanel } from "@/components/features/cosmos/ConvergenceMapPanel";
 
-const PERSONAE_SUB_KEYS = ["actors", "factions", "civilizations", "supreme", "integrity", "materials", "attractors"] as const;
+const PERSONAE_SUB_KEYS = ["actors", "factions", "civilizations", "supreme", "integrity", "materials", "diplomacy", "culture", "finance", "attractors"] as const;
 type PersonaeSubKey = (typeof PERSONAE_SUB_KEYS)[number];
 
 /** Engine / nguồn liên quan tới từng loại thực thể (theo backend/docs/ENGINE_PRODUCTS.md). */
@@ -76,6 +81,9 @@ const PERSONAE_ENGINE_HINT: Record<PersonaeSubKey, string> = {
   supreme: "AscensionEngine, GreatPersonEngine",
   integrity: "SupremeEntity.karma (cùng nguồn Thực thể Tối cao)",
   materials: "ScenarioEngine, Material DAG, evolution pipeline",
+  diplomacy: "DiplomacyEngine, Faction Tension, active_treaties in State Vector",
+  culture: "CultureEngine, ArtifactVault, TabooList, Civ Culture State",
+  finance: "FinanceEngine, ProductionChainEngine, Global Economy Loop",
   attractors: "DynamicAttractorEngine, CivilizationCollapseEngine, snapshot active_attractors",
 };
 
@@ -132,6 +140,20 @@ export function CosmologicDashboard({ embedded = false }: { embedded?: boolean }
   const materialsCount = (materials ?? []).length;
   const activeAttractors = (latestSnapshot as { active_attractors?: string[] } | null)?.active_attractors ?? [];
   const attractorsCount = activeAttractors.length;
+  
+  const diplomacyData = (latestSnapshot as any)?.state_vector?.civilization?.diplomacy ?? { active_treaties: {} };
+  let activeTreatiesCount = 0;
+  Object.keys(diplomacyData.active_treaties).forEach((src) => {
+    Object.keys(diplomacyData.active_treaties[src] || {}).forEach((tgt) => {
+      if (parseInt(src) < parseInt(tgt)) activeTreatiesCount++;
+    });
+  });
+
+  const cultureData = (latestSnapshot as any)?.state_vector?.civilization?.culture?.civ_cultures ?? {};
+  let artifactsCount = 0;
+  Object.keys(cultureData).forEach((civId) => {
+    artifactsCount += cultureData[civId]?.artifacts?.length || 0;
+  });
 
   useEffect(() => {
     if (!universeId && universes.length > 0) {
@@ -364,6 +386,9 @@ export function CosmologicDashboard({ embedded = false }: { embedded?: boolean }
                         { key: "supreme" as const, label: "Thực thể Tối cao", icon: Sparkles, count: (supremeEntities ?? []).length },
                         { key: "integrity" as const, label: "Nợ nhân quả", icon: ShieldCheck, count: integrityCount },
                         { key: "materials" as const, label: "Vật liệu", icon: Package, count: materialsCount },
+                        { key: "diplomacy" as const, label: "Ngoại Giao", icon: Handshake, count: activeTreatiesCount },
+                        { key: "culture" as const, label: "Văn Hóa", icon: Library, count: artifactsCount },
+                        { key: "finance" as const, label: "Kinh Tế", icon: Activity, count: 0 },
                         { key: "attractors" as const, label: "Attractors", icon: Orbit, count: attractorsCount },
                       ] as const
                     ).map(({ key, label, icon: Icon, count }) => (
@@ -407,6 +432,9 @@ export function CosmologicDashboard({ embedded = false }: { embedded?: boolean }
                         <button onClick={() => setActiveTab("evolution")} className="px-4 py-2 bg-blue-500/20 text-blue-300 border border-blue-500/40 rounded-md text-xs font-bold uppercase transition-all hover:bg-blue-500/30">Xem DAG</button>
                        </div>
                     )}
+                    {personaeSubTab === "diplomacy" && <DiplomacyPanel universeId={universeId} />}
+                    {personaeSubTab === "culture" && <CulturePanel universeId={universeId} />}
+                    {personaeSubTab === "finance" && <FinancePanel universeId={universeId} />}
                     {personaeSubTab === "attractors" && universeId && (
                       <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -466,7 +494,12 @@ export function CosmologicDashboard({ embedded = false }: { embedded?: boolean }
               )}
               {activeTab === "archive" && universeId && ( <div className="p-6"> <VoidArchive universeId={universeId} /> </div> )}
               {activeTab === "apex" && universeId && ( <div className=""> <ApexObserverTab universeId={universeId} /> </div> )}
-              {activeTab === "multiverse" && ( <div className="p-6"> <MultiverseExplorer /> </div> )}
+              {activeTab === "multiverse" && (
+                <div className="p-6 space-y-6">
+                  <MultiverseExplorer />
+                  {universeId && <ConvergenceMapPanel universeId={universeId} />}
+                </div>
+              )}
             </div>
           </div>
         </div>

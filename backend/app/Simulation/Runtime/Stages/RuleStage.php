@@ -21,27 +21,27 @@ final class RuleStage implements SimulationStageInterface
 {
     public function __construct(
         protected RuleVmService $ruleVmService,
-        protected \App\Services\Simulation\HistoricalCycleEngine $historicalCycleEngine,
+        protected \App\Simulation\Engines\Meta\HistoricalCycleEngine $historicalCycleEngine,
         protected \App\Modules\Intelligence\Services\InnovationEngine $innovationEngine,
-        protected \App\Simulation\Engines\LawEvolutionEngine $lawEngine,
+        protected \App\Simulation\Engines\Meta\LawEvolutionEngine $lawEngine,
         protected \App\Modules\Simulation\Services\CausalCorrectionEngine $causalEngine,
         protected \App\Modules\Simulation\Services\ObservationInterferenceEngine $observationEngine,
-        protected \App\Simulation\Engines\HistoricalScarsEngine $scarsEngine,
-        protected \App\Simulation\Engines\MetaAttractorEngine $metaAttractorEngine,
-        protected \App\Simulation\Engines\CivilizationPhysicsEngine $physicsEngine,
-        protected \App\Simulation\Engines\CausalHistoryEngine $causalHistoryEngine,
-        protected \App\Simulation\Engines\ResonanceBleedingEngine $resonanceEngine,
-        protected \App\Simulation\Engines\DynamicLawEngine $dynamicLawEngine,
-        protected \App\Simulation\Engines\RealityAnchorEngine $anchorEngine,
-        protected \App\Simulation\Engines\DeepTimeMemoryEngine $memoryEngine,
-        protected \App\Simulation\Engines\CausalBridgeEngine $bridgeEngine,
-        protected \App\Simulation\Engines\HigherDimensionalEngine $higherDimEngine,
-        protected \App\Simulation\Engines\InfiniteRecursionEngine $recursionEngine,
-        protected \App\Simulation\Engines\IdealismEngine $idealismEngine,
-        protected \App\Simulation\Engines\SingularityEngine $singularityEngine,
-        protected \App\Simulation\Engines\InformationDensityEngine $infoDensityEngine,
-        protected \App\Simulation\Engines\PostApotheosisEngine $postApotheosisEngine,
-        protected \App\Simulation\Engines\OmegaConvergenceEngine $omegaEngine,
+        protected \App\Simulation\Engines\Meta\HistoricalScarsEngine $scarsEngine,
+        protected \App\Simulation\Engines\Meta\MetaAttractorEngine $metaAttractorEngine,
+        protected \App\Simulation\Engines\Social\CivilizationPhysicsEngine $physicsEngine,
+        protected \App\Simulation\Engines\Meta\CausalHistoryEngine $causalHistoryEngine,
+        protected \App\Simulation\Engines\Meta\ResonanceBleedingEngine $resonanceEngine,
+        protected \App\Simulation\Engines\Meta\DynamicLawEngine $dynamicLawEngine,
+        protected \App\Simulation\Engines\Physics\RealityAnchorEngine $anchorEngine,
+        protected \App\Simulation\Engines\Meta\DeepTimeMemoryEngine $memoryEngine,
+        protected \App\Simulation\Engines\Meta\CausalBridgeEngine $bridgeEngine,
+        protected \App\Simulation\Engines\Meta\HigherDimensionalEngine $higherDimEngine,
+        protected \App\Simulation\Engines\Meta\InfiniteRecursionEngine $recursionEngine,
+        protected \App\Simulation\Engines\Meta\IdealismEngine $idealismEngine,
+        protected \App\Simulation\Engines\Meta\SingularityEngine $singularityEngine,
+        protected \App\Simulation\Engines\Meta\InformationDensityEngine $infoDensityEngine,
+        protected \App\Simulation\Engines\Meta\PostApotheosisEngine $postApotheosisEngine,
+        protected \App\Simulation\Engines\Meta\OmegaConvergenceEngine $omegaEngine,
         protected StateManager $stateManager
     ) {}
 
@@ -58,13 +58,15 @@ final class RuleStage implements SimulationStageInterface
         // 2. Process Meta-History Cycles (Phase 42)
         $state = $this->stateManager->get();
         if ($state) {
+            $ctx = new \App\Simulation\Domain\TickContext((int) ($universe->id ?? 0), $tick, (int) ($universe->seed ?? 0));
+
             $this->historicalCycleEngine->runWithState($state, $tick);
 
             // Phase 48: Innovation & Stagnation
             $this->innovationEngine->runWithState($state, $tick);
 
             // Phase 48: Law Evolution (Leadership)
-            $this->lawEngine->runWithState($state, $tick);
+            $this->lawEngine->handle($state, $ctx);
 
             // Phase 48: Causal Integrity (Overlords Rebalancing)
             $this->causalEngine->runWithState($state, $tick);
@@ -73,105 +75,105 @@ final class RuleStage implements SimulationStageInterface
             $this->observationEngine->runWithState($state, $tick);
 
             // Phase 51: Causal Scars & Historical Momentum
-            $this->scarsEngine->runWithState($state, $tick);
+            $this->scarsEngine->handle($state, $ctx);
 
             // Phase 54: Civilization Field Physics (V8)
-            $this->physicsEngine->runWithState($state, $tick);
+            $this->physicsEngine->handle($state, $ctx);
 
             // Phase 55: Meta-Attractor Graph Engine (V8 Core)
-            $this->metaAttractorEngine->runWithState($state, $tick);
+            $this->metaAttractorEngine->handle($state, $ctx);
             $metaAttractorsDsl = resource_path('worldos_rules/simulation/meta_attractors.dsl');
             if (file_exists($metaAttractorsDsl)) {
                 $this->ruleVmService->evaluateAndApplyWithState($state, file_get_contents($metaAttractorsDsl), $tick);
             }
 
             // Phase 55: Causal History & Reasoning Engine (V8 Core)
-            $this->causalHistoryEngine->runWithState($state, $tick);
+            $this->causalHistoryEngine->handle($state, $ctx);
 
             // Phase 61: Deep Time Memory (Epochal Scars)
-            $this->memoryEngine->runWithState($state, $tick);
+            $this->memoryEngine->handle($state, $ctx);
 
             // Phase 58: Heroic Reality Anchors
-            $this->anchorEngine->runWithState($state, $tick);
+            $this->anchorEngine->handle($state, $ctx);
             $anchorsDsl = resource_path('worldos_rules/simulation/anchors.dsl');
             if (file_exists($anchorsDsl)) {
                 $this->ruleVmService->evaluateAndApplyWithState($state, file_get_contents($anchorsDsl), $tick);
             }
 
-            // Phase 55: Meta-Attractor Graph Engine (V8 Core)
-            $this->metaAttractorEngine->runWithState($state, $tick);
+            // Phase 55: Meta-Attractor Graph Engine (V8 Core) - Duplicate call preserved for logic parity
+            $this->metaAttractorEngine->handle($state, $ctx);
             $metaAttractorsDsl = resource_path('worldos_rules/simulation/meta_attractors.dsl');
             if (file_exists($metaAttractorsDsl)) {
                 $this->ruleVmService->evaluateAndApplyWithState($state, file_get_contents($metaAttractorsDsl), $tick);
             }
 
-            // Phase 55: Civilization Field Physics Engine (V8 Core)
-            $this->physicsEngine->runWithState($state, $tick);
+            // Phase 55: Civilization Field Physics Engine (V8 Core) - Duplicate call preserved for logic parity
+            $this->physicsEngine->handle($state, $ctx);
             $fieldPhysicsDsl = resource_path('worldos_rules/simulation/field_physics.dsl');
             if (file_exists($fieldPhysicsDsl)) {
                 $this->ruleVmService->evaluateAndApplyWithState($state, file_get_contents($fieldPhysicsDsl), $tick);
             }
 
             // Phase 57: Dynamic Metaphysical Axioms
-            $this->dynamicLawEngine->runWithState($state, $tick);
+            $this->dynamicLawEngine->handle($state, $ctx);
 
             // Phase 56: Multi-Dimensional Superposition (Reality Bleeding)
-            $this->resonanceEngine->runWithState($state, $tick);
+            $this->resonanceEngine->handle($state, $ctx);
             $superpositionDsl = resource_path('worldos_rules/multiverse/superposition.dsl');
             if (file_exists($superpositionDsl)) {
                 $this->ruleVmService->evaluateAndApplyWithState($state, file_get_contents($superpositionDsl), $tick);
             }
 
             // Phase 62: Multiverse Causal Bridges (Traversing Realities)
-            $this->bridgeEngine->runWithState($state, $tick);
+            $this->bridgeEngine->handle($state, $ctx);
             $bridgesDsl = resource_path('worldos_rules/multiverse/bridges.dsl');
             if (file_exists($bridgesDsl)) {
                 $this->ruleVmService->evaluateAndApplyWithState($state, file_get_contents($bridgesDsl), $tick);
             }
 
             // Phase 63: Civilizational Meta-Observation (Post-Apotheosis)
-            $this->postApotheosisEngine->runWithState($state, $tick);
+            $this->postApotheosisEngine->handle($state, $ctx);
             $ascendanceDsl = resource_path('worldos_rules/simulation/ascendance.dsl');
             if (file_exists($ascendanceDsl)) {
                 $this->ruleVmService->evaluateAndApplyWithState($state, file_get_contents($ascendanceDsl), $tick);
             }
 
             // Phase 64: The Omega Point Convergence (Final Convergence)
-            $this->omegaEngine->runWithState($state, $tick);
+            $this->omegaEngine->handle($state, $ctx);
             $omegaDsl = resource_path('worldos_rules/multiverse/omega.dsl');
             if (file_exists($omegaDsl)) {
                 $this->ruleVmService->evaluateAndApplyWithState($state, file_get_contents($omegaDsl), $tick);
             }
             // Phase 65: Dimensional Ascension (Hyper-reality)
-            $this->higherDimEngine->runWithState($state, $tick);
+            $this->higherDimEngine->handle($state, $ctx);
             $hyperspaceDsl = resource_path('worldos_rules/simulation/hyperspace.dsl');
             if (file_exists($hyperspaceDsl)) {
                 $this->ruleVmService->evaluateAndApplyWithState($state, file_get_contents($hyperspaceDsl), $tick);
             }
 
             // Phase 66: Infinite Recursion (The Self-Simulation Paradox)
-            $this->recursionEngine->runWithState($state, $tick);
+            $this->recursionEngine->handle($state, $ctx);
             $recursionDsl = resource_path('worldos_rules/simulation/recursion.dsl');
             if (file_exists($recursionDsl)) {
                 $this->ruleVmService->evaluateAndApplyWithState($state, file_get_contents($recursionDsl), $tick);
             }
 
             // Phase 67: Idealism Engine (Subjective Physics)
-            $this->idealismEngine->runWithState($state, $tick);
+            $this->idealismEngine->handle($state, $ctx);
             $idealismDsl = resource_path('worldos_rules/simulation/idealism.dsl');
             if (file_exists($idealismDsl)) {
                 $this->ruleVmService->evaluateAndApplyWithState($state, file_get_contents($idealismDsl), $tick);
             }
 
             // Phase 68: Singularity Engine (The Origin Point)
-            $this->singularityEngine->runWithState($state, $tick);
+            $this->singularityEngine->handle($state, $ctx);
             $singularityDsl = resource_path('worldos_rules/simulation/singularity.dsl');
             if (file_exists($singularityDsl)) {
                 $this->ruleVmService->evaluateAndApplyWithState($state, file_get_contents($singularityDsl), $tick);
             }
 
             // Phase 69: Terminal Horizon (Information Saturation)
-            $this->infoDensityEngine->runWithState($state, $tick);
+            $this->infoDensityEngine->handle($state, $ctx);
             $horizonDsl = resource_path('worldos_rules/simulation/horizon.dsl');
             if (file_exists($horizonDsl)) {
                 $this->ruleVmService->evaluateAndApplyWithState($state, file_get_contents($horizonDsl), $tick);

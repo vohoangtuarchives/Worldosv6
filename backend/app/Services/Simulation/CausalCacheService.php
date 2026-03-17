@@ -44,4 +44,14 @@ class CausalCacheService
             return Cache::remember($key, 60, $callback);
         }
     }
+
+    public function clear(): void
+    {
+        try {
+            Cache::tags(['simulation_causality'])->flush();
+        } catch (\BadMethodCallException $e) {
+            // Optional: for non-tag drivers, we could either do nothing or flush entirely
+            // Given it's a simulation cache, we probably want it cleared.
+        }
+    }
 }

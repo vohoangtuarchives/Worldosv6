@@ -155,3 +155,43 @@ export interface WorldSimulationStatusResponse {
     counts?: { active: number; halted: number; restarting: number };
     tick_pipeline_engines?: Array<{ priority: number; name: string }>;
 }
+
+// ─────────────────────────────────────────────────────────────
+// Phase 8: Audit Trail & Deterministic Replay
+// ─────────────────────────────────────────────────────────────
+
+/** Granular record of a single simulation tick — saved by SimulationKernel per tick. */
+export interface TickManifest {
+    id?: number;
+    universe_id: number;
+    tick: number;
+    seed: number;
+    elapsed_ms: number | null;
+    engines_ran: string[] | null;
+    engines_skipped: string[] | null;
+    effects: Array<{ type: string; data?: Record<string, unknown> }> | null;
+    events: Array<{ type: string; [key: string]: unknown }> | null;
+    effects_count?: number;
+    events_count?: number;
+    created_at?: string;
+}
+
+/** Result of a deterministic replay attempt. */
+export interface ReplayResult {
+    ok: boolean;
+    error?: string;
+    is_deterministic?: boolean;
+    divergences?: Array<{
+        field: string;
+        original: unknown;
+        replay: unknown;
+        note?: string;
+    }>;
+    replay_events?: string[];
+    manifest_events?: string[];
+    replay_effect_count?: number;
+    manifest_effect_count?: number;
+    original_tick?: number;
+    original_seed?: number;
+}
+

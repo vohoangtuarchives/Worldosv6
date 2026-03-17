@@ -19,6 +19,7 @@ final class DatabaseWorldEventBusBackend implements WorldEventBusBackendInterfac
             'id' => $event->id,
             'universe_id' => $event->universeId,
             'tick' => $event->tick,
+            'parent_id' => $event->parentId,
             'type' => $event->type,
             'payload' => json_encode($event->payload),
             'created_at' => now(),

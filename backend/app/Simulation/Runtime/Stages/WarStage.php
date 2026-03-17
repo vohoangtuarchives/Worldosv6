@@ -5,7 +5,8 @@ namespace App\Simulation\Runtime\Stages;
 use App\Models\Universe;
 use App\Models\UniverseSnapshot;
 use App\Simulation\Runtime\Contracts\SimulationStageInterface;
-use App\Services\Simulation\WarEngine;
+use App\Simulation\Engines\Social\WarEngine;
+use App\Simulation\Domain\TickContext;
 
 /**
  * War stage (Tier 12). Interval typically 50 ticks.
@@ -22,6 +23,8 @@ final class WarStage implements SimulationStageInterface
         $state = $this->stateManager->get();
         if (!$state) return;
 
-        $this->warEngine->runWithState($state, $tick);
+        $ctx = new TickContext((int) ($universe->id ?? 0), $tick, (int) ($universe->multiverse_id ?? 0));
+
+        $this->warEngine->handle($state, $ctx);
     }
 }

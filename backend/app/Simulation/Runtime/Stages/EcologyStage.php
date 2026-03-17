@@ -5,10 +5,11 @@ namespace App\Simulation\Runtime\Stages;
 use App\Models\Universe;
 use App\Models\UniverseSnapshot;
 use App\Simulation\Runtime\Contracts\SimulationStageInterface;
-use App\Services\Simulation\EcologicalCollapseEngine;
-use App\Services\Simulation\PlanetaryClimateEngine;
-use App\Services\Simulation\EcologicalPhaseTransitionEngine;
-use App\Services\Simulation\GeologicalEngine;
+use App\Simulation\Engines\Social\EcologicalCollapseEngine;
+use App\Simulation\Engines\Physics\ClimateEngine;
+use App\Simulation\Engines\Social\EcologicalPhaseTransitionEngine;
+use App\Simulation\Engines\Physics\GeologicalEngine;
+use App\Simulation\Domain\TickContext;
 
 /**
  * Ecology stage: collapse, climate, phase transition, geology.
@@ -17,7 +18,7 @@ final class EcologyStage implements SimulationStageInterface
 {
     public function __construct(
         protected EcologicalCollapseEngine $ecologicalCollapseEngine,
-        protected PlanetaryClimateEngine $planetaryClimateEngine,
+        protected ClimateEngine $planetaryClimateEngine,
         protected EcologicalPhaseTransitionEngine $ecologicalPhaseTransitionEngine,
         protected GeologicalEngine $geologicalEngine,
         protected \App\Simulation\Runtime\State\StateManager $stateManager
@@ -30,13 +31,18 @@ final class EcologyStage implements SimulationStageInterface
             return;
         }
 
+        $ctx = new TickContext((int) ($universe->id ?? 0), $tick, (int) ($universe->multiverse_id ?? 0));
+
         // 1. Collapse & Crisis
-        $this->ecologicalCollapseEngine->runWithState($state, $tick);
+        $this->ecologicalCollapseEngine->handle($state, $ctx);
 
         // 2. Environment (Planetary Climate)
-        $this->planetaryClimateEngine->runWithState($state, $tick);
+        $this->planetaryClimateEngine->handle($state, $ctx);
 
         // 3. Phase Transition (Forest, Grassland, Desert)
-        $this->ecologicalPhaseTransitionEngine->runWithState($state, $tick);
+        $this->ecologicalPhaseTransitionEngine->handle($state, $ctx);
+
+        // 4. Geological (Very slow)
+        $this->geologicalEngine->handle($state, $ctx);
     }
 }

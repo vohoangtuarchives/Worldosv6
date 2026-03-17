@@ -13,4 +13,21 @@ trait DefaultSimulationEnginePhase
     {
         return 'default';
     }
+
+    /**
+     * Phase 4: Default to sequential execution for safety.
+     * Override to return true only in truly stateless, read-only engines.
+     */
+    public function isParallelSafe(): bool
+    {
+        return false;
+    }
+
+    /**
+     * Phase 6: Default priority category. Assumes STOCHASTIC unless explicitly set to CRITICAL or COSMETIC.
+     */
+    public function priorityCategory(): string
+    {
+        return 'STOCHASTIC';
+    }
 }

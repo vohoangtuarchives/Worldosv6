@@ -180,6 +180,18 @@ Route::middleware('auth:sanctum')->prefix('worldos')->group(function () {
     Route::get('universes/{id}/zenith', [\App\Http\Controllers\Api\ZenithController::class, 'show'])->name('worldos.universes.zenith');
     Route::get('lab/samsara/{agentId}', [\App\Http\Controllers\Api\SamsaraController::class, 'show'])->name('worldos.lab.samsara');
     Route::get('lab/narrative/grand/{universeId}', [\App\Http\Controllers\Api\GrandNarrativeController::class, 'show'])->name('worldos.lab.narrative.grand');
+    Route::get('universes/{id}/kernel-health', [\App\Http\Controllers\Api\Simulation\KernelHealthController::class, 'show'])->name('worldos.universes.kernel-health');
+
+    // Phase 8: Audit Trail & Deterministic Replay
+    Route::get('universes/{id}/audit', [\App\Http\Controllers\Api\Simulation\AuditController::class, 'index'])->name('worldos.universes.audit.index');
+    Route::get('universes/{id}/audit/{tick}', [\App\Http\Controllers\Api\Simulation\AuditController::class, 'show'])->name('worldos.universes.audit.show');
+    Route::post('universes/{id}/audit/{tick}/replay', [\App\Http\Controllers\Api\Simulation\AuditController::class, 'replay'])->name('worldos.universes.audit.replay');
+
+    // Phase 9: Multiverse Convergence
+    Route::get('universes/{id}/bridges', [\App\Http\Controllers\Api\Simulation\UniverseBridgeController::class, 'index'])->name('worldos.universes.bridges.index');
+    Route::post('universes/{id}/bridges', [\App\Http\Controllers\Api\Simulation\UniverseBridgeController::class, 'store'])->name('worldos.universes.bridges.store');
+    Route::delete('universes/{id}/bridges/{bridgeId}', [\App\Http\Controllers\Api\Simulation\UniverseBridgeController::class, 'destroy'])->name('worldos.universes.bridges.destroy');
+    Route::get('universes/{id}/convergence-map', [\App\Http\Controllers\Api\Simulation\UniverseBridgeController::class, 'convergenceMap'])->name('worldos.universes.convergence-map');
 
     // Phase 72: Apex Observer (Advanced Commands)
     Route::post('universes/{id}/apex/command', [\App\Http\Controllers\Api\ApexController::class, 'command'])->name('worldos.universes.apex');
@@ -396,6 +408,9 @@ Route::middleware('auth:sanctum')->prefix('worldos')->group(function () {
         
         return response()->json(['data' => $trajectories]);
     })->name('worldos.universes.causal-trajectories');
+
+    Route::get('universes/{id}/causality/export', [\App\Http\Controllers\Api\Worldos\CausalityController::class, 'exportGraph'])
+        ->name('worldos.universes.causality.export');
 
     Route::get('scenarios', function (\App\Modules\Simulation\Services\ScenarioEngine $engine) {
         return response()->json($engine->getScenarioList());

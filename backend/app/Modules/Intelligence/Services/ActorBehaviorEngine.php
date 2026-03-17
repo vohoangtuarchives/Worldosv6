@@ -50,7 +50,7 @@ class ActorBehaviorEngine
         protected ActorRepositoryInterface $actorRepository,
         protected UniverseRepositoryInterface $universeRepository,
         protected \App\Services\Narrative\TraitMapper $traitMapper,
-        protected \App\Services\Simulation\ActorDecisionEngine $decisionEngine,
+        protected \App\Simulation\Engines\Meta\ActorDecisionEngine $decisionEngine,
         protected RuleVmService $ruleVm
     ) {}
 

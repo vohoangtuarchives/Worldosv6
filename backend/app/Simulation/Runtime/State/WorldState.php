@@ -87,7 +87,7 @@ class WorldState
             ],
             'pressures' => [
                 'survival_pressure' => (float)($fields['survival'] ?? 0.0),
-                'resource_scarcity' => (float)($fields['wealth'] ? (1 - $fields['wealth']) : 0.5),
+                'resource_scarcity' => (float)(isset($fields['wealth']) ? (1 - $fields['wealth']) : 0.5),
                 'natural_entropy' => (float)($fields['entropy'] ?? 0.0),
                 'physical_fear' => (float)($fields['fear'] ?? 0.0),
             ]
@@ -209,6 +209,9 @@ class WorldState
     /** @param \App\Models\SupremeEntity[] $entities */
     public function setSupremeEntities(array $entities): void { $this->supremeEntities = $entities; }
 
+    public function getTick(): int { return (int)$this->get('tick', 0); }
+    public function getUniverseId(): int { return (int)$this->get('universe_id', 0); }
+    
     public function isObserved(): bool { return $this->isObserved; }
     public function setIsObserved(bool $val): void { $this->isObserved = $val; }
 
@@ -228,6 +231,48 @@ class WorldState
 
     public function getStabilityIndex(): float { return (float)$this->get('stability_index', 1.0); }
     public function setStabilityIndex(float $val): void { $this->set('stability_index', $val); }
+
+    /**
+     * Phase 4: Create an immutable snapshot copy of the current state for rollback purposes.
+     * Use before a risky resolution step so state can be restored on failure.
+     */
+    public function snapshot(): self
+    {
+        $copy = new self(
+            data: $this->data,
+            neighboring_realities: $this->neighboring_realities,
+            legacy_data: $this->legacy_data,
+            hyperspace_vector: $this->hyperspace_vector,
+            nested_realities: $this->nested_realities
+        );
+        $copy->actorEntities        = $this->actorEntities;
+        $copy->institutionalEntities = $this->institutionalEntities;
+        $copy->resourceEntities     = $this->resourceEntities;
+        $copy->ideaEntities         = $this->ideaEntities;
+        $copy->recentChronicles     = $this->recentChronicles;
+        $copy->supremeEntities      = $this->supremeEntities;
+        $copy->isObserved           = $this->isObserved;
+        return $copy;
+    }
+
+    /**
+     * Phase 4: Restore internal state from a previously taken snapshot.
+     */
+    public function restoreFrom(self $snapshot): void
+    {
+        $this->data                   = $snapshot->data;
+        $this->neighboring_realities  = $snapshot->neighboring_realities;
+        $this->legacy_data            = $snapshot->legacy_data;
+        $this->hyperspace_vector      = $snapshot->hyperspace_vector;
+        $this->nested_realities       = $snapshot->nested_realities;
+        $this->actorEntities          = $snapshot->actorEntities;
+        $this->institutionalEntities  = $snapshot->institutionalEntities;
+        $this->resourceEntities       = $snapshot->resourceEntities;
+        $this->ideaEntities           = $snapshot->ideaEntities;
+        $this->recentChronicles       = $snapshot->recentChronicles;
+        $this->supremeEntities        = $snapshot->supremeEntities;
+        $this->isObserved             = $snapshot->isObserved;
+    }
 
     public function getScars(): array { return (array)$this->get('scars', []); }
     public function setScars(array $scars): void { $this->set('scars', $scars); }
@@ -322,5 +367,47 @@ class WorldState
             'data' => $stateData,
             'leakage_factor' => 0.01
         ];
+    }
+
+    // --- COMPATIBILITY ALIASES (Doc §5 legacy support) ---
+    public function getStateVector(): array { return $this->data; }
+    public function getMetrics(): array { return (array)$this->get('metrics', []); }
+    public function getStateVectorKey(string $key, mixed $default = null): mixed { return $this->get($key, $default); }
+    public function getMetric(string $key, mixed $default = null): mixed { return $this->get("metrics.{$key}", $default); }
+
+    public static function getZonePressures(array $zone): array
+    {
+        $state = $zone['state'] ?? [];
+        return [
+            'war_pressure' => (float) ($state['war_pressure'] ?? 0),
+            'economic_pressure' => (float) ($state['economic_pressure'] ?? 0),
+            'religious_pressure' => (float) ($state['religious_pressure'] ?? 0),
+            'migration_pressure' => (float) ($state['migration_pressure'] ?? 0),
+            'innovation_pressure' => (float) ($state['innovation_pressure'] ?? 0),
+        ];
+    }
+
+    public static function defaultZonePressureKeys(): array
+    {
+        return [
+            'war_pressure' => 0.0,
+            'economic_pressure' => 0.0,
+            'religious_pressure' => 0.0,
+            'migration_pressure' => 0.0,
+            'innovation_pressure' => 0.0,
+        ];
+    }
+
+    public static function defaultZonePopulationKeys(): array
+    {
+        return [
+            'population_proxy' => 0.5,
+        ];
+    }
+
+    public static function getZonePopulationProxy(array $zone): float
+    {
+        $state = $zone['state'] ?? [];
+        return (float) ($state['population_proxy'] ?? 0.5);
     }
 }

@@ -157,6 +157,15 @@ class KafkaEventStreamConsumeCommand extends Command
                     'updated_at' => now(),
                 ]);
                 $written++;
+                
+                // Dispatch event broadcast realtime qua Websocket
+                event(new \App\Events\Simulation\SimulationEventStreamReceived(
+                    $universeId,
+                    $tick,
+                    $type,
+                    $payload,
+                    now()->utc()->toIso8601String()
+                ));
             } catch (\Throwable $e) {
                 $this->warn("Insert failed for record: " . $e->getMessage());
             }

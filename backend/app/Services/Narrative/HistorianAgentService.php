@@ -6,7 +6,7 @@ use App\Models\Chronicle;
 use App\Models\HistoricalFact;
 use App\Models\Universe;
 use App\Contracts\LlmNarrativeClientInterface;
-use App\Services\Simulation\HistoryEngine;
+use App\Simulation\Engines\Meta\HistoryEngine;
 use Illuminate\Support\Facades\Log;
 
 /**

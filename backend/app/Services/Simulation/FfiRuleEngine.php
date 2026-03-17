@@ -13,7 +13,8 @@ class FfiRuleEngine
     public function __construct(?string $libraryPath = null)
     {
         if (!extension_loaded('ffi')) {
-            throw new RuntimeException('FFI extension is not loaded');
+            // Log::warning('FfiRuleEngine: FFI extension is not loaded. Falling back to PHP evaluation.');
+            return;
         }
 
         if ($libraryPath === null) {

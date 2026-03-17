@@ -13,10 +13,11 @@ use App\Services\Simulation\AnomalyGeneratorService;
 class PulseWorldAction
 {
     public function __construct(
-        protected UniverseRuntimeService $runtime,
+        protected \App\Services\Simulation\UniverseRuntimeService $runtime,
         protected \App\Modules\Simulation\Services\WorldRegulatorEngine $autonomicEngine,
-        protected TemporalSyncService $temporalSync,
-        protected AnomalyGeneratorService $anomalyGenerator
+        protected \App\Services\Simulation\TemporalSyncService $temporalSync,
+        protected \App\Services\Simulation\AnomalyGeneratorService $anomalyGenerator,
+        protected \App\Simulation\Domain\Services\UniverseRebirthDomainService $rebirthService
     ) {}
 
     /**
@@ -75,69 +76,7 @@ class PulseWorldAction
             ->get();
 
         foreach ($restartingUniverses as $universe) {
-            $this->rebirthUniverse($universe);
+            $this->rebirthService->rebirthUniverse($universe);
         }
-    }
-
-    /**
-     * Rebirth: Create primordial state and activate the universe for the new epoch.
-     */
-    protected function rebirthUniverse(Universe $universe): void
-    {
-        $epoch = $universe->epoch ?? 1;
-        $tick = $universe->current_tick ?? 0;
-
-        // 1. Create primordial snapshot — tabula rasa state
-        $primordialState = [
-            'entropy'       => 0.5,
-            'stability'     => 0.3,
-            'knowledge'     => 0.01,
-            'technology'    => 0.01,
-            'institution'   => 0.01,
-            'economy'       => 0.1,
-            'militarism'    => 0.1,
-            'population'    => 0.2,
-            'inequality'    => 0.1,
-            'culture'       => 0.05,
-            'spirituality'  => 0.1,
-            'environment'   => 0.9,
-            'ai_dependency' => 0.0,
-        ];
-
-        UniverseSnapshot::updateOrCreate(
-            ['universe_id' => $universe->id, 'tick' => $tick],
-            [
-                'state_vector'    => $primordialState,
-                'entropy'         => 0.5,
-                'stability_index' => 0.3,
-                'metrics'         => [
-                    'order'        => 0.05,
-                    'energy_level' => 0.1,
-                    'entropy'      => 0.5,
-                    'epoch'        => $epoch,
-                    'rebirth'      => true,
-                ],
-            ]
-        );
-
-        // 2. Reset universe state vector
-        $universe->update([
-            'status'       => 'active',
-            'state_vector' => $primordialState,
-        ]);
-
-        // 3. Chronicle: record the rebirth
-        Chronicle::create([
-            'universe_id' => $universe->id,
-            'from_tick'   => $tick,
-            'to_tick'     => $tick,
-            'type'        => 'primordial_rebirth',
-            'raw_payload' => [
-                'action'      => 'legacy_event',
-                'description' => "Từ tro tàn của kỷ nguyên cũ, hỗn nguyên lại khai mở. Epoch {$epoch} bắt đầu trong sự im lặng của vạn vật sơ khai.",
-            ],
-        ]);
-
-        \Log::info("PRIMORDIAL REBIRTH: Universe #{$universe->id} reborn into Epoch {$epoch} at tick {$tick}.");
     }
 }

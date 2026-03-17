@@ -7,7 +7,7 @@ use App\Models\Universe;
 use App\Models\BranchEvent;
 use App\Repositories\UniverseSnapshotRepository;
 use App\Services\Simulation\CultureDiffusionService;
-use App\Services\Simulation\DecisionEngine;
+use App\Simulation\Engines\Meta\DecisionEngine;
 use App\Services\Simulation\InstitutionalEngine;
 
 class UniverseRuntimeService

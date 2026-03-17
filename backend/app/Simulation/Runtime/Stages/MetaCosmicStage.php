@@ -23,14 +23,14 @@ use App\Services\AI\EtherealOmenService;
 use App\Services\Simulation\HeatDeathService;
 use App\Actions\Simulation\AutonomousAxiomMutationAction;
 use App\Actions\Simulation\AgentSovereigntyAction;
-use App\Services\Simulation\CelestialAntibodyEngine;
-use App\Services\Simulation\ChaosEngine;
-use App\Services\Simulation\TransmigrationEngine;
-use App\Simulation\Engines\InformationDensityEngine;
-use App\Simulation\Engines\AutopoieticEvolutionEngine;
+use App\Simulation\Engines\Biological\CelestialAntibodyEngine;
+use App\Simulation\Engines\Meta\ChaosEngine;
+use App\Simulation\Engines\Meta\TransmigrationEngine;
+use App\Simulation\Engines\Meta\InformationDensityEngine;
+use App\Simulation\Engines\Biological\AutopoieticEvolutionEngine;
 use App\Services\Narrative\NarrativeChapterEngine;
 use App\Services\Narrative\MeaningLoopService;
-use App\Simulation\Engines\MultiverseEconomyEngine;
+use App\Simulation\Engines\Meta\MultiverseEconomyEngine;
 
 /**
  * Meta / Cosmic layer: resonance, sovereignty, archetype, alignments, demiurges,
@@ -65,7 +65,7 @@ final class MetaCosmicStage implements SimulationStageInterface
         protected \App\Modules\Intelligence\Services\UniverseFitnessEvaluator $universeFitnessEvaluator,
         protected \App\Modules\Intelligence\Services\UniverseMutationAction $universeMutationAction,
         protected \App\Modules\Intelligence\Actions\UniverseForkAction $universeForkAction,
-        protected \App\Services\Simulation\CivilizationCollapseEngine $civilizationCollapseEngine,
+        protected \App\Simulation\Engines\Social\CivilizationCollapseEngine $civilizationCollapseEngine,
         protected \App\Modules\Intelligence\Services\GenomeTransitionService $genomeTransitionService,
         protected \App\Modules\Intelligence\Services\GenomeAdaptationService $genomeAdaptationService,
         protected \App\Modules\Intelligence\Services\InformationLayerService $informationLayerService,
@@ -103,16 +103,18 @@ final class MetaCosmicStage implements SimulationStageInterface
         // 2. Anomalies & Disasters via Manifold
         $this->anomalyGenerator->runWithState($state, $tick);
 
+        $ctx = new \App\Simulation\Domain\TickContext((int) ($universe->id ?? 0), $tick, (int) ($universe->seed ?? 0));
+
         // 2.1 Information Density & Terminal Horizon
-        $this->informationDensityEngine->runWithState($state, $tick);
+        $this->informationDensityEngine->handle($state, $ctx);
 
         // 2.2 Autopoietic Evolution (Self-Modifying Logic)
-        $this->autopoieticEngine->runWithState($state, $tick);
+        $this->autopoieticEngine->handle($state, $ctx);
 
         // 2.3 V10+ Vector loop closures
         $this->meaningLoopService->runWithState($state, $tick);
         $this->narrativeChapterEngine->runWithState($state, $tick);
-        $this->multiverseEconomyEngine->runWithState($state, $tick);
+        $this->multiverseEconomyEngine->handle($state, $ctx);
 
         // 3. Top-level Cosmic DSL (Heat Death, Sovereignty, Omens)
         $cosmicDslFile = resource_path('worldos_rules/simulation/cosmic.dsl');

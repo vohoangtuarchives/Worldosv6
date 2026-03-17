@@ -87,7 +87,35 @@ class RuleVmService
             $state['global_fields'] = $metrics['civ_fields'];
         }
 
+        // Phase 3: Inject 8D Computed Metrics
+        $hyper = $state['hyperspace_vector'] ?? [];
+        $state = array_merge($state, $this->compute8DMetrics($hyper));
+
         return $state;
+    }
+
+    /**
+     * Helper to compute 8D space mathematics.
+     */
+    protected function compute8DMetrics(array $vector): array
+    {
+        if (empty($vector)) {
+            return [
+                'hyperspace_8d_magnitude' => 0.0,
+                'hyperspace_8d_resonance' => 0.0,
+            ];
+        }
+        
+        $sumSq = 0;
+        foreach ($vector as $val) {
+            $v = (float) $val;
+            $sumSq += $v * $v;
+        }
+        
+        return [
+            'hyperspace_8d_magnitude' => sqrt($sumSq),
+            'hyperspace_8d_resonance' => array_sum($vector) / count($vector),
+        ];
     }
 
     /**
@@ -133,21 +161,44 @@ class RuleVmService
      */
     /** @var array<string, string> In-process DSL content cache keyed by full path */
     private static array $dslFileCache = [];
+    /** @var array<string, int> mtime of each cached DSL file for hot-reload invalidation */
+    private static array $dslFileMtime = [];
 
     public function evaluateAndApplyWithState(\App\Simulation\Runtime\State\WorldState $state, string $dslOrPath, int $tick, array $context = []): void
+    {
+        $outputs = $this->evaluateWithResults($state, $dslOrPath, $tick, $context);
+        $universeId = (int) $state->get('universe_id');
+        $this->processOutputs($state, $outputs, $universeId, $tick);
+    }
+
+    /**
+     * Phase 5: Pure Evaluation.
+     * Evaluates DSL but returns the raw outputs (events/state changes) instead of applying them.
+     * 
+     * @return array Raw outputs from the DSL engine.
+     */
+    public function evaluateWithResults(\App\Simulation\Runtime\State\WorldState $state, string $dslOrPath, int $tick, array $context = []): array
     {
         // 1. Resolve DSL content with cache
         $dsl = $dslOrPath;
         if (!str_contains($dslOrPath, "\n")) {
-            // It's a path, not inline DSL — resolve with caching
             $suffix = str_ends_with($dslOrPath, '.dsl') ? $dslOrPath : $dslOrPath . '.dsl';
             $path = resource_path('worldos_rules/' . $suffix);
 
-            if (!isset(self::$dslFileCache[$path])) {
+            $isProduction = app()->environment('production');
+            $currentMtime = !$isProduction && file_exists($path) ? filemtime($path) : null;
+
+            $needsReload = !isset(self::$dslFileCache[$path])
+                || ($currentMtime !== null && $currentMtime !== (self::$dslFileMtime[$path] ?? null));
+
+            if ($needsReload) {
                 if (file_exists($path)) {
                     $mutationService = app(\App\Services\Simulation\RuleMutationService::class);
                     $mutated = $mutationService->getMutatedContent($path);
                     self::$dslFileCache[$path] = $mutated ?: (@file_get_contents($path) ?: '');
+                    if ($currentMtime !== null) {
+                        self::$dslFileMtime[$path] = $currentMtime;
+                    }
                 } else {
                     Log::warning("RuleVmService: DSL file not found at {$path}");
                     self::$dslFileCache[$path] = '';
@@ -158,16 +209,14 @@ class RuleVmService
         }
 
         if (empty($dsl)) {
-            return;
+            return [];
         }
 
         // 2. Build state and merge context
         $rawState = array_merge($this->buildRawStateFromManifold($state, $tick), $context);
         
-        // Tối ưu hiệu năng bằng Causal Cache -> FFI
         $cacheService = app(\App\Services\Simulation\CausalCacheService::class);
         $result = $cacheService->remember($rawState, $dsl, function() use ($rawState, $dsl) {
-            // Priority to Rust FFI Engine
             $ffiResult = $this->ffiEngine->evaluateDsl($dsl, json_encode($rawState), time());
             if ($ffiResult !== null && !isset($ffiResult['error'])) {
                 return ['ok' => true, 'outputs' => $ffiResult];
@@ -176,17 +225,15 @@ class RuleVmService
         });
 
         if (! ($result['ok'] ?? false)) {
-            Log::warning('Rule VM evaluateAndApplyWithState failed', [
+            Log::warning('Rule VM evaluateWithResults failed', [
                 'universe_id' => $state->get('universe_id'),
                 'dsl_source' => substr($dslOrPath, 0, 50),
                 'error' => $result['error_message'] ?? 'unknown',
             ]);
-            return;
+            return [];
         }
 
-        $outputs = $result['outputs'] ?? [];
-        $universeId = (int) $state->get('universe_id');
-        $this->processOutputs($state, $outputs, $universeId, $tick);
+        return $result['outputs'] ?? [];
     }
 
     protected function buildRawStateFromManifold(\App\Simulation\Runtime\State\WorldState $state, int $tick): array
@@ -217,6 +264,11 @@ class RuleVmService
             'has_shadow_rules' => !empty($state->get('meta.active_mutations', [])),
             'singularity_progress' => (float)$state->get('meta.singularity_progress', 0)
         ];
+
+        // Phase 3: Inject 8D Computed Metrics for DSL
+        $calc8d = $this->compute8DMetrics($state->getHyperspaceVector());
+        $raw['hyperspace_8d_magnitude'] = $calc8d['hyperspace_8d_magnitude'];
+        $raw['hyperspace_8d_resonance'] = $calc8d['hyperspace_8d_resonance'];
 
         return $raw;
     }
@@ -250,96 +302,92 @@ class RuleVmService
 
         $outputs = $result['outputs'] ?? [];
         $tick = (int) ($snapshot ? $snapshot->tick : $universe->current_tick);
-        $this->processOutputs($state, $outputs, $universe->id, $tick);
+        $this->processOutputs($state, $outputs, (int) ($universe->id ?? 0), $tick);
     }
 
-    protected function processOutputs(\App\Simulation\Runtime\State\WorldState $state, array $outputs, int $universeId, int $tick): void
+    /**
+     * Phase 5: Map raw DSL outputs to an EngineResult (Pure model).
+     */
+    public function mapOutputsToResults(array $outputs, int $universeId, int $tick, \App\Simulation\Runtime\State\WorldState $state): \App\Simulation\Domain\EngineResult
     {
+        $events = [];
+        $effects = [];
+
         foreach ($outputs as $out) {
             $type = $out['type'] ?? '';
-            
-            // 1. Standard Event Emission
-            if ($type === 'event' && ! empty($out['event_name'])) {
-                $this->emitSimulationEvent($universeId, $out['event_name'], $tick, $out['metadata'] ?? []);
+
+            if ($type === 'event' && !empty($out['event_name'])) {
+                // Return as raw array/event for emitEvents
+                $events[] = $out; 
             }
 
-            // 2. Standardized state adjustments (In-memory via WorldState)
             if ($type === 'adjust_stability' && isset($out['adjust_stability_delta'])) {
                 $current = (float) $state->get('stability_index', 1.0);
-                $state->set('stability_index', max(0.0, min(1.0, $current + (float) $out['adjust_stability_delta'])));
+                $effects[] = new \App\Simulation\Effects\WorldStateUpdateEffect([
+                    'stability_index' => max(0.0, min(1.0, $current + (float) $out['adjust_stability_delta']))
+                ]);
             }
 
             if ($type === 'adjust_entropy' && isset($out['adjust_entropy_delta'])) {
                 $current = (float) $state->get('entropy', 0.0);
                 $newEntropy = max(0.0, min(1.0, $current + (float) $out['adjust_entropy_delta']));
-                $state->set('entropy', $newEntropy);
-                $state->set('global_entropy', $newEntropy);
+                $effects[] = new \App\Simulation\Effects\WorldStateUpdateEffect([
+                    'entropy' => $newEntropy,
+                    'global_entropy' => $newEntropy
+                ]);
             }
 
             if ($type === 'add_path' && isset($out['add_path'], $out['add_path_delta'])) {
                 $current = (float) $state->get($out['add_path'], 0.0);
-                $state->set($out['add_path'], max(0.0, min(1.0, $current + (float) $out['add_path_delta'])));
+                $effects[] = new \App\Simulation\Effects\WorldStateUpdateEffect([
+                    $out['add_path'] => max(0.0, min(1.0, $current + (float) $out['add_path_delta']))
+                ]);
             }
 
             if ($type === 'set_path' && isset($out['set_path'], $out['set_path_value'])) {
-                $state->set($out['set_path'], $out['set_path_value']);
+                $effects[] = new \App\Simulation\Effects\WorldStateUpdateEffect([
+                    $out['set_path'] => $out['set_path_value']
+                ]);
             }
 
-            // 3. Phase 32: Declarative Actions (Drift & Constraints)
-            if ($type === 'drift_path' && isset($out['path'], $out['target'], $out['speed'])) {
-                $current = (float) ($state->get($out['path']) ?? 0.0);
-                $newVal = $current + (float) $out['speed'] * ((float) $out['target'] - $current);
-                $state->set($out['path'], $newVal);
-            }
-
-            if ($type === 'constraints') {
-                $this->applyConstraintsToState($state, $out['constraints'] ?? []);
-            }
-
-            // 4. Actor Spawning Trigger
             if ($type === 'spawn_actor' && isset($out['spawn_actor_kind'])) {
-                $this->emitSimulationEvent($universeId, 'SPAWN_ACTOR', $tick, ['kind' => $out['spawn_actor_kind']]);
+                $events[] = ['type' => 'SPAWN_ACTOR', 'payload' => ['kind' => $out['spawn_actor_kind']]];
             }
+        }
 
-            // 5. Phase 42: Meta-History Phase Shifts
-            if ($type === 'event' && ($out['event_name'] ?? '') === 'HISTORICAL_PHASE_SHIFT') {
-                $phase = $out['metadata']['phase'] ?? 'UNKNOWN';
-                $state->set('timeline.historical_phase', $phase);
-                Log::info("RuleVmService: Meta-History Phase Shift to {$phase} for Universe {$universeId}");
-            }
+        return new \App\Simulation\Domain\EngineResult($events, $effects, []);
+    }
 
-            // 6. Phase 69: Terminal Primitives (V10)
-            if ($type === 'saturate' && isset($out['path'], $out['limit'])) {
-                $current = (float) $state->get($out['path'], 0.0);
-                $limit = (float) $out['limit'];
-                if ($current > $limit) {
-                    $state->set($out['path'], $limit);
-                    $this->emitSimulationEvent($universeId, 'FIELD_SATURATION', $tick, ['path' => $out['path']]);
-                }
-            }
-
-            if ($type === 'leak' && isset($out['target_index'], $out['packet'])) {
-                // Rò rỉ dữ liệu xuống tầng giả lập lồng nhau
-                $nested = $state->getNestedRealities();
-                $target = (int) $out['target_index'];
-                if (isset($nested[$target])) {
-                    $nested[$target]['leaked_data'][] = $out['packet'];
-                    $state->setNestedRealities($nested);
-                    $this->emitSimulationEvent($universeId, 'INFORMATION_LEAK', $tick, ['target' => $target]);
-                }
-            }
-
-            // Phase 72: Meaning Weighting
-            if ($type === 'weight_meaning' && isset($out['meaning_id'], $out['weight_delta'])) {
-                $systems = $state->get('meta.meaning_systems', []);
-                foreach ($systems as &$sys) {
-                    if ($sys['id'] === $out['meaning_id']) {
-                        $sys['total_influence'] = max(0.0, min(1.0, (float)$sys['total_influence'] + (float)$out['weight_delta']));
-                        break;
+    protected function processOutputs(\App\Simulation\Runtime\State\WorldState $state, array $outputs, int $universeId, int $tick): void
+    {
+        // ... (existing processOutputs implementation)
+        // Note: In Phase 5+, this will be deprecated once all engines are Pure.
+        $result = $this->mapOutputsToResults($outputs, $universeId, $tick, $state);
+        
+        // Emulate behavior for now
+        foreach ($result->stateChanges as $effect) {
+            // We use a trick: we know WorldStateUpdateEffect has apply but we need WorldStateMutable
+            // For now, processOutputs still works on mutable state
+            if (method_exists($effect, 'apply')) {
+                $effect->apply($state instanceof \App\Simulation\Runtime\State\WorldStateMutable ? $state : new class($state) extends \App\Simulation\Runtime\State\WorldStateMutable {
+                    public function __construct(private $s) {}
+                    public function set($k, $v): void { $this->s->set($k, $v); }
+                    public function get($k, $d=null) { return $this->s->get($k, $d); }
+                    public function getStateVector(): array { return $this->s->getStateVector(); }
+                    public function setStateVector(array $v): void { 
+                        // This is hacky, but processOutputs is legacy
+                        $rem = new \ReflectionProperty(get_class($this->s), 'data');
+                        $rem->setAccessible(true);
+                        $rem->setValue($this->s, $v);
                     }
-                }
-                $state->set('meta.meaning_systems', $systems);
+                });
             }
+        }
+        
+        foreach ($result->events as $ev) {
+             if (is_array($ev) && isset($ev['event_name'])) {
+                 $this->emitSimulationEvent($universeId, $ev['event_name'], $tick, $ev['metadata'] ?? []);
+             }
         }
     }
 

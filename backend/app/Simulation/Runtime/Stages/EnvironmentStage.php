@@ -5,8 +5,8 @@ namespace App\Simulation\Runtime\Stages;
 use App\Models\Universe;
 use App\Models\UniverseSnapshot;
 use App\Simulation\Runtime\Contracts\SimulationStageInterface;
-use App\Simulation\Engines\ClimateEngine;
-use App\Services\Simulation\GeologicalEngine;
+use App\Simulation\Engines\Physics\ClimateEngine;
+use App\Simulation\Engines\Physics\GeologicalEngine;
 
 /**
  * EnvironmentStage – handles climate and geological changes.
@@ -26,8 +26,10 @@ final class EnvironmentStage implements SimulationStageInterface
             return;
         }
 
+        $ctx = new \App\Simulation\Domain\TickContext((int) ($universe->id ?? 0), $tick, (int) ($universe->seed ?? 0));
+
         // 1. Climate logic (Modern WorldState approach)
-        $this->climateEngine->runWithState($state, $tick);
+        $this->climateEngine->handle($state, $ctx);
 
         // 2. Geological logic (Phase 40: Unified)
         $this->geologicalEngine->runWithState($state, $tick);

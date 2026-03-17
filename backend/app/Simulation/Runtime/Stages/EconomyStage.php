@@ -5,9 +5,11 @@ namespace App\Simulation\Runtime\Stages;
 use App\Models\Universe;
 use App\Models\UniverseSnapshot;
 use App\Simulation\Runtime\Contracts\SimulationStageInterface;
-use App\Services\Simulation\GlobalEconomyEngine;
-use App\Services\Simulation\InequalityEngine;
-use App\Services\Simulation\MarketEngine;
+use App\Simulation\Engines\Social\GlobalEconomyEngine;
+use App\Simulation\Engines\Social\InequalityEngine;
+use App\Simulation\Engines\Social\MarketEngine;
+use App\Simulation\Engines\Social\TradeEngine;
+use App\Simulation\Domain\TickContext;
 
 /**
  * Economy stage: global economy (Tier 10) + market prices + inequality (Doc §7). Interval typically 20 ticks.
@@ -18,7 +20,7 @@ final class EconomyStage implements SimulationStageInterface
         protected GlobalEconomyEngine $globalEconomyEngine,
         protected MarketEngine $marketEngine,
         protected InequalityEngine $inequalityEngine,
-        protected \App\Simulation\Engines\TradeEngine $tradeEngine,
+        protected TradeEngine $tradeEngine,
         protected \App\Simulation\Runtime\State\StateManager $stateManager,
         protected \App\Services\Simulation\RuleVmService $ruleVm
     ) {}
@@ -28,10 +30,12 @@ final class EconomyStage implements SimulationStageInterface
         $state = $this->stateManager->get();
         if (!$state) return;
 
-        $this->globalEconomyEngine->runWithState($state, $tick);
-        $this->tradeEngine->runWithState($state, $tick);
-        $this->marketEngine->runWithState($state, $tick);
-        $this->inequalityEngine->runWithState($state, $tick);
+        $ctx = new TickContext((int) ($universe->id ?? 0), $tick, (int) ($universe->multiverse_id ?? 0));
+
+        $this->globalEconomyEngine->handle($state, $ctx);
+        $this->tradeEngine->handle($state, $ctx);
+        $this->marketEngine->handle($state, $ctx);
+        $this->inequalityEngine->handle($state, $ctx);
 
         // 4. Macro-Economic DSL (Phase 45 Integration)
         $dslFile = resource_path('worldos_rules/simulation/market.dsl');

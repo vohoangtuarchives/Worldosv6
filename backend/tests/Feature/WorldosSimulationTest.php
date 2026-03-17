@@ -57,6 +57,7 @@ class WorldosSimulationTest extends TestCase
 
     public function test_simulation_advance_returns_ok_and_saves_snapshot(): void
     {
+        $this->withoutExceptionHandling();
         $universe = Universe::firstOrFail();
         $response = $this->postJson('/api/worldos/simulation/advance', [
             'universe_id' => $universe->id,

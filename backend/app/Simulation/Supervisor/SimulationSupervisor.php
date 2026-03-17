@@ -97,7 +97,9 @@ final class SimulationSupervisor
             $currentMetrics['engine_health'] = round($healthScore, 2);
             $currentMetrics['last_tick_ms'] = round($durationTotal, 2);
             $snapshot->metrics = $currentMetrics;
-            $snapshot->save();
+            if ($snapshot->exists) {
+                $snapshot->save();
+            }
 
             if ($tickDurationMsPerTick > 200) {
                 Log::warning("SimulationSupervisor: High engine load detected.", [

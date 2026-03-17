@@ -14,9 +14,9 @@ final class CultureStage implements SimulationStageInterface
 {
     public function __construct(
         protected CultureEngine $cultureEngine,
-        protected \App\Simulation\Engines\MythogenesisEngine $mythogenesisEngine,
-        protected \App\Simulation\Engines\MeaningEngine $meaningEngine,
-        protected \App\Simulation\Engines\KnowledgeEvolutionEngine $knowledgeEvolutionEngine,
+        protected \App\Simulation\Engines\Meta\MythogenesisEngine $mythogenesisEngine,
+        protected \App\Simulation\Engines\Meta\MeaningEngine $meaningEngine,
+        protected \App\Simulation\Engines\Meta\KnowledgeEvolutionEngine $knowledgeEvolutionEngine,
         protected \App\Simulation\Runtime\State\StateManager $stateManager
     ) {}
 
@@ -25,9 +25,11 @@ final class CultureStage implements SimulationStageInterface
         $state = $this->stateManager->get();
         if (!$state) return;
 
+        $ctx = new \App\Simulation\Domain\TickContext((int) ($universe->id ?? 0), $tick, (int) ($universe->seed ?? 0));
+
         $this->cultureEngine->runWithState($state, $tick);
-        $this->mythogenesisEngine->run($state, $tick);
-        $this->meaningEngine->run($state, $tick);
-        $this->knowledgeEvolutionEngine->run($state, $tick);
+        $this->mythogenesisEngine->handle($state, $ctx);
+        $this->meaningEngine->handle($state, $ctx);
+        $this->knowledgeEvolutionEngine->handle($state, $ctx);
     }
 }

@@ -5,7 +5,7 @@ namespace App\Simulation\Runtime\Stages;
 use App\Models\Universe;
 use App\Models\UniverseSnapshot;
 use App\Simulation\Runtime\Contracts\SimulationStageInterface;
-use App\Services\Simulation\CivilizationSettlementEngine;
+use App\Simulation\Engines\Social\CivilizationSettlementEngine;
 
 /**
  * Civilization stage: settlements, governance (Tier 9). Economy/Politics/War are separate stages.

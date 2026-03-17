@@ -7,7 +7,7 @@ use App\Models\UniverseSnapshot;
 class DecideUniverseAction
 {
     public function __construct(
-        protected \App\Services\Simulation\DecisionEngine $decisionEngine
+        protected \App\Simulation\Engines\Meta\DecisionEngine $decisionEngine
     ) {}
 
     /**

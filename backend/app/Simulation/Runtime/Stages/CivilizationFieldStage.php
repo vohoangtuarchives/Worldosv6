@@ -5,8 +5,8 @@ namespace App\Simulation\Runtime\Stages;
 use App\Models\Universe;
 use App\Models\UniverseSnapshot;
 use App\Simulation\Runtime\Contracts\SimulationStageInterface;
-use App\Services\Simulation\CivilizationFieldEngine;
-use App\Services\Simulation\CivilizationLongCycleEngine;
+use App\Simulation\Engines\Social\CivilizationFieldEngine;
+use App\Simulation\Engines\Social\CivilizationLongCycleEngine;
 
 /**
  * CivilizationFieldStage – handles CFT (Civilization Field Theory).

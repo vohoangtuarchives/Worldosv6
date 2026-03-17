@@ -19,3 +19,6 @@ export { VoidArchive } from "./VoidArchive";
 export { AttractorMandala } from "./AttractorMandala";
 export { CognitiveGraph } from "./CognitiveGraph";
 export { default as SocialIntegrityGraph } from "./SocialIntegrityGraph";
+export { DiplomacyPanel } from "./DiplomacyPanel";
+export { CulturePanel } from "./CulturePanel";
+export { FinancePanel } from "./FinancePanel";

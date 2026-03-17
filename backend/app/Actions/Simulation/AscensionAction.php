@@ -6,7 +6,7 @@ use App\Models\Universe;
 use App\Models\InstitutionalEntity;
 use App\Models\SupremeEntity;
 use App\Models\Chronicle;
-use App\Services\Simulation\WorldWillEngine;
+use App\Simulation\Engines\Meta\WorldWillEngine;
 
 /**
  * Ascension Action: Triggers the ascension of high-tier entities to Supreme status.

@@ -105,5 +105,9 @@ class AppServiceProvider extends ServiceProvider
             \App\Events\Simulation\SimulationEventOccurred::class,
             \App\Listeners\Simulation\SyncWorldEventToCausalityGraph::class
         );
+        \Illuminate\Support\Facades\Event::listen(
+            \App\Events\Simulation\SimulationEventOccurred::class,
+            \App\Listeners\Simulation\RecordHistoricalFact::class
+        );
     }
 }

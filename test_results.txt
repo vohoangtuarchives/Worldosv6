@@ -1,0 +1,247 @@
+PHPUnit 11.5.55 by Sebastian Bergmann and contributors.
+
+Runtime:       PHP 8.4.19
+Configuration: /var/www/phpunit.xml
+
+..E.............E.....EE..FEEF......                              36 / 36 (100%)
+
+Time: 00:09.003, Memory: 70.50 MB
+
+There were 6 errors:
+
+1) Tests\Feature\ExampleTest::test_the_application_returns_a_successful_response
+RuntimeException: Unsupported cipher or incorrect key length. Supported ciphers are: aes-128-cbc, aes-256-cbc, aes-128-gcm, aes-256-gcm.
+
+/var/www/vendor/laravel/framework/src/Illuminate/Encryption/Encrypter.php:61
+/var/www/vendor/laravel/framework/src/Illuminate/Encryption/EncryptionServiceProvider.php:32
+/var/www/vendor/laravel/framework/src/Illuminate/Container/Container.php:1115
+/var/www/vendor/laravel/framework/src/Illuminate/Container/Container.php:933
+/var/www/vendor/laravel/framework/src/Illuminate/Foundation/Application.php:1078
+/var/www/vendor/laravel/framework/src/Illuminate/Container/Container.php:864
+/var/www/vendor/laravel/framework/src/Illuminate/Foundation/Application.php:1058
+/var/www/vendor/laravel/framework/src/Illuminate/Container/Container.php:1336
+/var/www/vendor/laravel/framework/src/Illuminate/Container/Container.php:1237
+/var/www/vendor/laravel/framework/src/Illuminate/Container/Container.php:1162
+/var/www/vendor/laravel/framework/src/Illuminate/Container/Container.php:933
+/var/www/vendor/laravel/framework/src/Illuminate/Foundation/Application.php:1078
+/var/www/vendor/laravel/framework/src/Illuminate/Container/Container.php:864
+/var/www/vendor/laravel/framework/src/Illuminate/Foundation/Application.php:1058
+/var/www/vendor/laravel/framework/src/Illuminate/Foundation/Http/Kernel.php:257
+/var/www/vendor/laravel/framework/src/Illuminate/Foundation/Http/Kernel.php:215
+/var/www/vendor/laravel/framework/src/Illuminate/Foundation/Testing/Concerns/MakesHttpRequests.php:611
+/var/www/vendor/laravel/framework/src/Illuminate/Foundation/Testing/Concerns/MakesHttpRequests.php:368
+/var/www/tests/Feature/ExampleTest.php:15
+
+2) Tests\Feature\PulseWorldActionTest::test_pulse_world_action_advances_all_active_universes
+ArgumentCountError: Too few arguments to function App\Actions\Simulation\PulseWorldAction::__construct(), 4 passed in /var/www/tests/Feature/PulseWorldActionTest.php on line 78 and exactly 5 expected
+
+/var/www/app/Actions/Simulation/PulseWorldAction.php:15
+/var/www/tests/Feature/PulseWorldActionTest.php:78
+
+3) Tests\Feature\Services\Simulation\GrandNarrativeServiceTest::test_generate_report_returns_structured_data
+BadMethodCallException: Call to undefined method App\Models\Universe::factory()
+
+/var/www/vendor/laravel/framework/src/Illuminate/Support/Traits/ForwardsCalls.php:67
+/var/www/vendor/laravel/framework/src/Illuminate/Support/Traits/ForwardsCalls.php:36
+/var/www/vendor/laravel/framework/src/Illuminate/Database/Eloquent/Model.php:2540
+/var/www/vendor/laravel/framework/src/Illuminate/Database/Eloquent/Model.php:2556
+/var/www/tests/Feature/Services/Simulation/GrandNarrativeServiceTest.php:18
+
+4) Tests\Feature\Services\Simulation\GrandNarrativeServiceTest::test_detect_paradoxes
+Error: Call to undefined method App\Services\Simulation\GrandNarrativeService::generateReportWithData()
+
+/var/www/tests/Feature/Services/Simulation/GrandNarrativeServiceTest.php:69
+
+5) Tests\Feature\Simulation\AdvanceSnapshotRuleVmIntegrationTest::test_advance_saves_snapshot_then_rule_vm_fires_event_when_enabled
+Illuminate\Database\QueryException: SQLSTATE[23503]: Foreign key violation: 7 ERROR:  insert or update on table "actors" violates foreign key constraint "actors_universe_id_foreign"
+DETAIL:  Key (universe_id)=(0) is not present in table "universes". (Connection: pgsql, Host: postgres, Port: 5432, Database: worldos, SQL: insert into "actors" ("universe_id", "name", "archetype", "traits", "metrics", "is_alive", "generation", "biography", "is_heroic", "heroic_type", "updated_at", "created_at") values (0, Nhân Vật 739 Jr., Người Thường, [0.4275,0.4275,0.4275,0.4275,0.4275,0.4275,0.4275,0.4275,0.4275,0.4275,0.4275,0.4275,0.4275,0.4275,0.4275,0.4275,0.4275,0.4275], {"physic":[0.45,0.45,0.45,0.45,0.45],"spawned_at_tick":0,"energy":59.745,"max_energy":200,"metabolism":0.35,"life_expectancy":107.0625}, 1, 2, ?, 0, ?, 2026-03-16 17:16:20, 2026-03-16 17:16:20) returning "id")
+
+/var/www/vendor/laravel/framework/src/Illuminate/Database/Connection.php:838
+/var/www/vendor/laravel/framework/src/Illuminate/Database/Connection.php:794
+/var/www/vendor/laravel/framework/src/Illuminate/Database/Connection.php:411
+/var/www/vendor/laravel/framework/src/Illuminate/Database/Connection.php:398
+/var/www/vendor/laravel/framework/src/Illuminate/Database/Query/Processors/PostgresProcessor.php:24
+/var/www/vendor/laravel/framework/src/Illuminate/Database/Query/Builder.php:4140
+/var/www/vendor/laravel/framework/src/Illuminate/Database/Eloquent/Builder.php:2235
+/var/www/vendor/laravel/framework/src/Illuminate/Database/Eloquent/Model.php:1436
+/var/www/vendor/laravel/framework/src/Illuminate/Database/Eloquent/Model.php:1401
+/var/www/vendor/laravel/framework/src/Illuminate/Database/Eloquent/Model.php:1240
+/var/www/vendor/laravel/framework/src/Illuminate/Database/Eloquent/Builder.php:1219
+/var/www/vendor/laravel/framework/src/Illuminate/Support/helpers.php:388
+/var/www/vendor/laravel/framework/src/Illuminate/Database/Eloquent/Builder.php:1218
+/var/www/vendor/laravel/framework/src/Illuminate/Support/Traits/ForwardsCalls.php:23
+/var/www/vendor/laravel/framework/src/Illuminate/Database/Eloquent/Model.php:2540
+/var/www/vendor/laravel/framework/src/Illuminate/Database/Eloquent/Model.php:2556
+/var/www/app/Modules/Intelligence/Repositories/ActorEloquentRepository.php:67
+/var/www/vendor/laravel/framework/src/Illuminate/Database/Concerns/ManagesTransactions.php:35
+/var/www/vendor/laravel/framework/src/Illuminate/Database/DatabaseManager.php:491
+/var/www/vendor/laravel/framework/src/Illuminate/Support/Facades/Facade.php:363
+/var/www/app/Modules/Intelligence/Repositories/ActorEloquentRepository.php:45
+/var/www/app/Modules/Intelligence/Repositories/ActorEloquentRepository.php:36
+/var/www/app/Modules/Intelligence/Actions/SpawnActorAction.php:54
+/var/www/app/Modules/Intelligence/Actions/ProcessActorEnergyAction.php:117
+/var/www/app/Simulation/Runtime/Stages/ActorStage.php:41
+/var/www/app/Simulation/Runtime/Systems/StageSystemAdapter.php:34
+/var/www/app/Simulation/Runtime/WorldKernel.php:99
+/var/www/app/Simulation/Runtime/WorldKernel.php:77
+/var/www/app/Simulation/Runtime/SimulationTickPipeline.php:50
+/var/www/app/Simulation/Runtime/SimulationTickOrchestrator.php:31
+/var/www/app/Simulation/Supervisor/RuntimePipeline.php:23
+/var/www/app/Simulation/Supervisor/SimulationSupervisor.php:82
+/var/www/app/Actions/Simulation/AdvanceSimulationAction.php:20
+/var/www/app/Services/Simulation/SimulationTracer.php:25
+/var/www/app/Actions/Simulation/AdvanceSimulationAction.php:19
+/var/www/tests/Feature/Simulation/AdvanceSnapshotRuleVmIntegrationTest.php:121
+
+Caused by
+PDOException: SQLSTATE[23503]: Foreign key violation: 7 ERROR:  insert or update on table "actors" violates foreign key constraint "actors_universe_id_foreign"
+DETAIL:  Key (universe_id)=(0) is not present in table "universes".
+
+/var/www/vendor/laravel/framework/src/Illuminate/Database/Connection.php:425
+/var/www/vendor/laravel/framework/src/Illuminate/Database/Connection.php:827
+/var/www/vendor/laravel/framework/src/Illuminate/Database/Connection.php:794
+/var/www/vendor/laravel/framework/src/Illuminate/Database/Connection.php:411
+/var/www/vendor/laravel/framework/src/Illuminate/Database/Connection.php:398
+/var/www/vendor/laravel/framework/src/Illuminate/Database/Query/Processors/PostgresProcessor.php:24
+/var/www/vendor/laravel/framework/src/Illuminate/Database/Query/Builder.php:4140
+/var/www/vendor/laravel/framework/src/Illuminate/Database/Eloquent/Builder.php:2235
+/var/www/vendor/laravel/framework/src/Illuminate/Database/Eloquent/Model.php:1436
+/var/www/vendor/laravel/framework/src/Illuminate/Database/Eloquent/Model.php:1401
+/var/www/vendor/laravel/framework/src/Illuminate/Database/Eloquent/Model.php:1240
+/var/www/vendor/laravel/framework/src/Illuminate/Database/Eloquent/Builder.php:1219
+/var/www/vendor/laravel/framework/src/Illuminate/Support/helpers.php:388
+/var/www/vendor/laravel/framework/src/Illuminate/Database/Eloquent/Builder.php:1218
+/var/www/vendor/laravel/framework/src/Illuminate/Support/Traits/ForwardsCalls.php:23
+/var/www/vendor/laravel/framework/src/Illuminate/Database/Eloquent/Model.php:2540
+/var/www/vendor/laravel/framework/src/Illuminate/Database/Eloquent/Model.php:2556
+/var/www/app/Modules/Intelligence/Repositories/ActorEloquentRepository.php:67
+/var/www/vendor/laravel/framework/src/Illuminate/Database/Concerns/ManagesTransactions.php:35
+/var/www/vendor/laravel/framework/src/Illuminate/Database/DatabaseManager.php:491
+/var/www/vendor/laravel/framework/src/Illuminate/Support/Facades/Facade.php:363
+/var/www/app/Modules/Intelligence/Repositories/ActorEloquentRepository.php:45
+/var/www/app/Modules/Intelligence/Repositories/ActorEloquentRepository.php:36
+/var/www/app/Modules/Intelligence/Actions/SpawnActorAction.php:54
+/var/www/app/Modules/Intelligence/Actions/ProcessActorEnergyAction.php:117
+/var/www/app/Simulation/Runtime/Stages/ActorStage.php:41
+/var/www/app/Simulation/Runtime/Systems/StageSystemAdapter.php:34
+/var/www/app/Simulation/Runtime/WorldKernel.php:99
+/var/www/app/Simulation/Runtime/WorldKernel.php:77
+/var/www/app/Simulation/Runtime/SimulationTickPipeline.php:50
+/var/www/app/Simulation/Runtime/SimulationTickOrchestrator.php:31
+/var/www/app/Simulation/Supervisor/RuntimePipeline.php:23
+/var/www/app/Simulation/Supervisor/SimulationSupervisor.php:82
+/var/www/app/Actions/Simulation/AdvanceSimulationAction.php:20
+/var/www/app/Services/Simulation/SimulationTracer.php:25
+/var/www/app/Actions/Simulation/AdvanceSimulationAction.php:19
+/var/www/tests/Feature/Simulation/AdvanceSnapshotRuleVmIntegrationTest.php:121
+
+6) Tests\Feature\Simulation\AdvanceSnapshotRuleVmIntegrationTest::test_advance_with_rule_engine_disabled_does_not_dispatch_rule_event
+Illuminate\Database\QueryException: SQLSTATE[23503]: Foreign key violation: 7 ERROR:  insert or update on table "actors" violates foreign key constraint "actors_universe_id_foreign"
+DETAIL:  Key (universe_id)=(0) is not present in table "universes". (Connection: pgsql, Host: postgres, Port: 5432, Database: worldos, SQL: insert into "actors" ("universe_id", "name", "archetype", "traits", "metrics", "is_alive", "generation", "biography", "is_heroic", "heroic_type", "updated_at", "created_at") values (0, Nhân Vật 921 Jr., Chiến Binh, [0.4275,0.4275,0.4275,0.4275,0.4275,0.4275,0.4275,0.4275,0.4275,0.4275,0.4275,0.4275,0.4275,0.4275,0.4275,0.4275,0.4275,0.4275], {"physic":[0.45,0.45,0.45,0.45,0.45],"spawned_at_tick":0,"energy":59.745,"max_energy":200,"metabolism":0.35,"life_expectancy":107.0625}, 1, 2, ?, 0, ?, 2026-03-16 17:16:20, 2026-03-16 17:16:20) returning "id")
+
+/var/www/vendor/laravel/framework/src/Illuminate/Database/Connection.php:838
+/var/www/vendor/laravel/framework/src/Illuminate/Database/Connection.php:794
+/var/www/vendor/laravel/framework/src/Illuminate/Database/Connection.php:411
+/var/www/vendor/laravel/framework/src/Illuminate/Database/Connection.php:398
+/var/www/vendor/laravel/framework/src/Illuminate/Database/Query/Processors/PostgresProcessor.php:24
+/var/www/vendor/laravel/framework/src/Illuminate/Database/Query/Builder.php:4140
+/var/www/vendor/laravel/framework/src/Illuminate/Database/Eloquent/Builder.php:2235
+/var/www/vendor/laravel/framework/src/Illuminate/Database/Eloquent/Model.php:1436
+/var/www/vendor/laravel/framework/src/Illuminate/Database/Eloquent/Model.php:1401
+/var/www/vendor/laravel/framework/src/Illuminate/Database/Eloquent/Model.php:1240
+/var/www/vendor/laravel/framework/src/Illuminate/Database/Eloquent/Builder.php:1219
+/var/www/vendor/laravel/framework/src/Illuminate/Support/helpers.php:388
+/var/www/vendor/laravel/framework/src/Illuminate/Database/Eloquent/Builder.php:1218
+/var/www/vendor/laravel/framework/src/Illuminate/Support/Traits/ForwardsCalls.php:23
+/var/www/vendor/laravel/framework/src/Illuminate/Database/Eloquent/Model.php:2540
+/var/www/vendor/laravel/framework/src/Illuminate/Database/Eloquent/Model.php:2556
+/var/www/app/Modules/Intelligence/Repositories/ActorEloquentRepository.php:67
+/var/www/vendor/laravel/framework/src/Illuminate/Database/Concerns/ManagesTransactions.php:35
+/var/www/vendor/laravel/framework/src/Illuminate/Database/DatabaseManager.php:491
+/var/www/vendor/laravel/framework/src/Illuminate/Support/Facades/Facade.php:363
+/var/www/app/Modules/Intelligence/Repositories/ActorEloquentRepository.php:45
+/var/www/app/Modules/Intelligence/Repositories/ActorEloquentRepository.php:36
+/var/www/app/Modules/Intelligence/Actions/SpawnActorAction.php:54
+/var/www/app/Modules/Intelligence/Actions/ProcessActorEnergyAction.php:117
+/var/www/app/Simulation/Runtime/Stages/ActorStage.php:41
+/var/www/app/Simulation/Runtime/Systems/StageSystemAdapter.php:34
+/var/www/app/Simulation/Runtime/WorldKernel.php:99
+/var/www/app/Simulation/Runtime/WorldKernel.php:77
+/var/www/app/Simulation/Runtime/SimulationTickPipeline.php:50
+/var/www/app/Simulation/Runtime/SimulationTickOrchestrator.php:31
+/var/www/app/Simulation/Supervisor/RuntimePipeline.php:23
+/var/www/app/Simulation/Supervisor/SimulationSupervisor.php:82
+/var/www/app/Actions/Simulation/AdvanceSimulationAction.php:20
+/var/www/app/Services/Simulation/SimulationTracer.php:25
+/var/www/app/Actions/Simulation/AdvanceSimulationAction.php:19
+/var/www/tests/Feature/Simulation/AdvanceSnapshotRuleVmIntegrationTest.php:194
+
+Caused by
+PDOException: SQLSTATE[23503]: Foreign key violation: 7 ERROR:  insert or update on table "actors" violates foreign key constraint "actors_universe_id_foreign"
+DETAIL:  Key (universe_id)=(0) is not present in table "universes".
+
+/var/www/vendor/laravel/framework/src/Illuminate/Database/Connection.php:425
+/var/www/vendor/laravel/framework/src/Illuminate/Database/Connection.php:827
+/var/www/vendor/laravel/framework/src/Illuminate/Database/Connection.php:794
+/var/www/vendor/laravel/framework/src/Illuminate/Database/Connection.php:411
+/var/www/vendor/laravel/framework/src/Illuminate/Database/Connection.php:398
+/var/www/vendor/laravel/framework/src/Illuminate/Database/Query/Processors/PostgresProcessor.php:24
+/var/www/vendor/laravel/framework/src/Illuminate/Database/Query/Builder.php:4140
+/var/www/vendor/laravel/framework/src/Illuminate/Database/Eloquent/Builder.php:2235
+/var/www/vendor/laravel/framework/src/Illuminate/Database/Eloquent/Model.php:1436
+/var/www/vendor/laravel/framework/src/Illuminate/Database/Eloquent/Model.php:1401
+/var/www/vendor/laravel/framework/src/Illuminate/Database/Eloquent/Model.php:1240
+/var/www/vendor/laravel/framework/src/Illuminate/Database/Eloquent/Builder.php:1219
+/var/www/vendor/laravel/framework/src/Illuminate/Support/helpers.php:388
+/var/www/vendor/laravel/framework/src/Illuminate/Database/Eloquent/Builder.php:1218
+/var/www/vendor/laravel/framework/src/Illuminate/Support/Traits/ForwardsCalls.php:23
+/var/www/vendor/laravel/framework/src/Illuminate/Database/Eloquent/Model.php:2540
+/var/www/vendor/laravel/framework/src/Illuminate/Database/Eloquent/Model.php:2556
+/var/www/app/Modules/Intelligence/Repositories/ActorEloquentRepository.php:67
+/var/www/vendor/laravel/framework/src/Illuminate/Database/Concerns/ManagesTransactions.php:35
+/var/www/vendor/laravel/framework/src/Illuminate/Database/DatabaseManager.php:491
+/var/www/vendor/laravel/framework/src/Illuminate/Support/Facades/Facade.php:363
+/var/www/app/Modules/Intelligence/Repositories/ActorEloquentRepository.php:45
+/var/www/app/Modules/Intelligence/Repositories/ActorEloquentRepository.php:36
+/var/www/app/Modules/Intelligence/Actions/SpawnActorAction.php:54
+/var/www/app/Modules/Intelligence/Actions/ProcessActorEnergyAction.php:117
+/var/www/app/Simulation/Runtime/Stages/ActorStage.php:41
+/var/www/app/Simulation/Runtime/Systems/StageSystemAdapter.php:34
+/var/www/app/Simulation/Runtime/WorldKernel.php:99
+/var/www/app/Simulation/Runtime/WorldKernel.php:77
+/var/www/app/Simulation/Runtime/SimulationTickPipeline.php:50
+/var/www/app/Simulation/Runtime/SimulationTickOrchestrator.php:31
+/var/www/app/Simulation/Supervisor/RuntimePipeline.php:23
+/var/www/app/Simulation/Supervisor/SimulationSupervisor.php:82
+/var/www/app/Actions/Simulation/AdvanceSimulationAction.php:20
+/var/www/app/Services/Simulation/SimulationTracer.php:25
+/var/www/app/Actions/Simulation/AdvanceSimulationAction.php:19
+/var/www/tests/Feature/Simulation/AdvanceSnapshotRuleVmIntegrationTest.php:194
+
+--
+
+There were 2 failures:
+
+1) Tests\Feature\Services\Simulation\LegitimacyEliteServiceIntegrationTest::test_writes_legitimacy_aggregate_and_elite_ratio_with_institutions_and_actors
+Failed asserting that an array has the key 'legitimacy_aggregate'.
+
+/var/www/tests/Feature/Services/Simulation/LegitimacyEliteServiceIntegrationTest.php:85
+
+2) Tests\Feature\SimulationKernelFeatureTest::test_kernel_run_tick_returns_world_state_with_real_registry
+Failed asserting that an instance of class App\Simulation\Domain\SimulationTickResult is an instance of class App\Simulation\Runtime\State\WorldState.
+
+/var/www/tests/Feature/SimulationKernelFeatureTest.php:48
+
+--
+
+There was 1 risky test:
+
+1) Tests\Feature\PulseWorldActionTest::test_pulse_world_action_advances_all_active_universes
+* Test code or tested code did not remove its own error handlers
+
+* Test code or tested code did not remove its own exception handlers
+
+/var/www/tests/Feature/PulseWorldActionTest.php:18
+
+ERRORS!
+Tests: 36, Assertions: 163, Errors: 6, Failures: 2, PHPUnit Deprecations: 4, Risky: 1.

@@ -19,14 +19,19 @@ final class EngineResult
     /** @var array<string, mixed> Metrics for analytics / AEE */
     public array $metrics = [];
 
+    /** @var array<string, int> Causal parent mapping (e.g. event_id => parent_chronicle_id) */
+    public array $causalLinks = [];
+
     public function __construct(
         array $events = [],
         array $stateChanges = [],
         array $metrics = [],
+        array $causalLinks = [],
     ) {
         $this->events = $events;
         $this->stateChanges = $stateChanges;
         $this->metrics = $metrics;
+        $this->causalLinks = $causalLinks;
     }
 
     public static function empty(): self
@@ -37,5 +42,20 @@ final class EngineResult
     public static function fromEffects(array $effects, array $events = [], array $metrics = []): self
     {
         return new self($events, $effects, $metrics);
+    }
+
+    public function addEvent(array|object $event): self
+    {
+        $this->events[] = $event;
+        return $this;
+    }
+
+    /**
+     * Link an event type to a parent chronicle ID for Causality 2.0.
+     */
+    public function linkEvent(string $eventType, int $parentChronicleId): self
+    {
+        $this->causalLinks[$eventType] = $parentChronicleId;
+        return $this;
     }
 }

@@ -24,7 +24,7 @@ class NarrativeAiService
         protected ResidualInjector $residual,
         protected \App\Services\AI\VectorSearchService $vectorSearch,
         protected \App\Services\AI\MemoryService $memory,
-        protected \App\Services\Simulation\MythicResonanceEngine $resonance,
+        protected \App\Simulation\Engines\Meta\MythicResonanceEngine $resonance,
         protected GenrePromptBridge $genreBridge,
         protected ?LlmNarrativeClientInterface $llmClient = null
     ) {

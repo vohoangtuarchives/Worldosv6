@@ -5,22 +5,26 @@ namespace App\Simulation;
 use App\Events\Simulation\SimulationEventOccurred;
 use Illuminate\Support\Facades\Event;
 
+use App\Simulation\Events\Contracts\SimulationEventInterface;
+
 /**
  * Event Bus for simulation events (Tier 3).
- * Central place to emit ActorDied, SpeciesExtinct, CollapseTriggered, PhaseTransition, etc.
- * Dispatches SimulationEventOccurred so listeners can log to Chronicle, History, or metrics.
+ * Central place to emit typed events (e.g. ActorDiedEvent).
+ * Dispatches both the typed event and the generic SimulationEventOccurred for legacy listeners.
  */
 final class SimulationEventBus
 {
-    public const TYPE_ACTOR_DIED = 'actor_died';
-    public const TYPE_SPECIES_EXTINCT = 'species_extinct';
-    public const TYPE_ECOLOGICAL_COLLAPSE = 'ecological_collapse';
-    public const TYPE_ECOLOGICAL_COLLAPSE_RECOVERY = 'ecological_collapse_recovery';
-    public const TYPE_ECOLOGICAL_PHASE_TRANSITION = 'ecological_phase_transition';
-    public const TYPE_CIVILIZATION_COLLAPSE = 'civilization_collapse';
-
-    public function dispatch(int $universeId, string $type, int $tick, array $payload = []): void
+    public function dispatch(SimulationEventInterface $event): void
     {
-        Event::dispatch(new SimulationEventOccurred($universeId, $type, $tick, $payload));
+        // 1. Phân phối Typed Event mới
+        Event::dispatch($event);
+        
+        // 2. Phân phối Event chung cho các listener cũ (Kafka, DB, Neo4j)
+        Event::dispatch(new SimulationEventOccurred(
+            $event->getUniverseId(),
+            $event->getType(),
+            $event->getTick(),
+            $event->getPayload()
+        ));
     }
 }

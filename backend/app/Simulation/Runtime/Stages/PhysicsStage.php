@@ -5,7 +5,7 @@ namespace App\Simulation\Runtime\Stages;
 use App\Models\Universe;
 use App\Models\UniverseSnapshot;
 use App\Simulation\Runtime\Contracts\SimulationStageInterface;
-use App\Simulation\Engines\CosmicPressureEngine;
+use App\Simulation\Engines\Physics\CosmicPressureEngine;
 
 /**
  * PhysicsStage – high-level universal physics and pressures.
@@ -13,7 +13,7 @@ use App\Simulation\Engines\CosmicPressureEngine;
 final class PhysicsStage implements SimulationStageInterface
 {
     public function __construct(
-        protected CosmicPressureEngine $cosmicPressureEngine,
+        protected \App\Simulation\Engines\Physics\CosmicPressureEngine $cosmicPressureEngine,
         protected \App\Simulation\Runtime\State\StateManager $stateManager
     ) {}
 
@@ -24,6 +24,7 @@ final class PhysicsStage implements SimulationStageInterface
             return;
         }
 
-        $this->cosmicPressureEngine->runWithState($state);
+        $ctx = new \App\Simulation\Domain\TickContext((int) ($universe->id ?? 0), $tick, (int) ($universe->seed ?? 0));
+        $this->cosmicPressureEngine->handle($state, $ctx);
     }
 }

@@ -4,9 +4,9 @@ namespace App\Listeners\Simulation;
 
 use App\Events\Simulation\UniverseSimulationPulsed;
 use App\Services\Material\MaterialLifecycleEngine;
-use App\Services\Simulation\MaterialEvolutionEngine;
-use App\Services\Simulation\OmegaEngine;
-use App\Services\Simulation\AscensionEngine;
+use App\Simulation\Engines\Physics\MaterialEvolutionEngine;
+use App\Simulation\Engines\Meta\OmegaEngine;
+use App\Simulation\Engines\Meta\AscensionEngine;
 use App\Repositories\UniverseRepository;
 use Illuminate\Contracts\Queue\ShouldQueue;
 

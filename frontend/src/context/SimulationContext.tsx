@@ -16,6 +16,7 @@ interface SimulationContextType {
     interactions: any[];
     trajectories: any[];
     universes: any[];
+    liveEvents: any[]; // New state for realtime events from Kafka/Broadcasting
     loading: boolean;
     error: string | null;
     isPaused: boolean;
@@ -41,6 +42,7 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
     const [interactions, setInteractions] = useState<any[]>([]);
     const [trajectories, setTrajectories] = useState<any[]>([]);
     const [universes, setUniverses] = useState<any[]>([]);
+    const [liveEvents, setLiveEvents] = useState<any[]>([]); // Kafka realtime events
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [isPaused, setIsPaused] = useState(false);
@@ -207,6 +209,43 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
         };
     }, [universeId, isPaused, fetchVitalData, refresh]);
 
+    // Centrifugo Live Events (Kafka stream broadcast)
+    useEffect(() => {
+        if (!universeId || isPaused || typeof window === "undefined") return;
+
+        import("centrifuge").then(({ Centrifuge }) => {
+            const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+            const centrifuge = new Centrifuge(`${protocol}//${window.location.host}/connection/websocket`);
+            // Subscribe to the public channel where SimulationEventStreamReceived is broadcasted
+            const sub = centrifuge.newSubscription("public:universes");
+
+            sub.on("publication", (ctx) => {
+                const data = ctx.data as any;
+                // If it's a pulse event, it updates timeline. If it's a simulation stream event from Kafka, it has universeId and type.
+                if (data && data.universeId && String(data.universeId) === String(universeId)) {
+                    // It's our event!
+                    setLiveEvents((prev) => {
+                        const newEvent = {
+                            id: data.occurredAt + "-" + Math.random(),
+                            tick: data.tick,
+                            type: data.type,
+                            payload: data.payload,
+                            created_at: data.occurredAt
+                        };
+                        return [newEvent, ...prev].slice(0, 50); // Keep last 50 events
+                    });
+                }
+            });
+
+            sub.subscribe();
+            centrifuge.connect();
+
+            return () => {
+                centrifuge.disconnect();
+            };
+        });
+    }, [universeId, isPaused]);
+
     // Auxiliary data: refetch when snapshot tick changes (replaces auxiliary 20s polling)
     const prevTickRef = useRef<number | null>(null);
     useEffect(() => {
@@ -252,6 +291,7 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
         interactions,
         trajectories,
         universes,
+        liveEvents,
         loading,
         error,
         isPaused,
@@ -263,7 +303,7 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
     }), [
         universeId, universe, latestSnapshot, anomalies, institutions,
         actors, chronicles, supremeEntities, materials, interactions, trajectories,
-        universes, loading, error, isPaused, refresh
+        universes, liveEvents, loading, error, isPaused, refresh
     ]);
 
     return (
