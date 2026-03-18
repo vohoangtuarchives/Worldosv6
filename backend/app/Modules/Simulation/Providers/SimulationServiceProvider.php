@@ -15,6 +15,8 @@ class SimulationServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        $this->app->register(\App\Modules\Narrative\Providers\NarrativeServiceProvider::class);
+
         // Bindings for repositories
         $this->app->bind(RelicRepositoryInterface::class, RelicEloquentRepository::class);
         $this->app->bind(TrajectoryRepositoryInterface::class, TrajectoryEloquentRepository::class);
@@ -248,7 +250,7 @@ class SimulationServiceProvider extends ServiceProvider
             $kernel->registerSystem(
                 \App\Simulation\Runtime\WorldKernel::PHASE_SOCIAL,
                 \App\Simulation\Runtime\WorldKernel::RULE_CYCLE,
-                new \App\Simulation\Runtime\Systems\EngineSystemAdapter($app->make(\App\Simulation\Engines\Meta\CivilizationPhaseTransitionEngine::class))
+                new \App\Simulation\Runtime\Systems\EngineSystemAdapter($app->make(\App\Simulation\Engines\Meta\ThermodynamicPhaseEngine::class))
             );
 
             // Phase 5: Meta (V10 Engines)
@@ -402,9 +404,14 @@ class SimulationServiceProvider extends ServiceProvider
         $this->app->singleton(\App\Simulation\Engines\Meta\MythogenesisEngine::class);
         $this->app->singleton(\App\Simulation\Engines\Meta\MeaningEngine::class);
         $this->app->singleton(\App\Simulation\Engines\Meta\KnowledgeEvolutionEngine::class);
-        $this->app->singleton(\App\Simulation\Engines\Meta\CivilizationPhaseTransitionEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\Meta\ThermodynamicPhaseEngine::class);
         $this->app->singleton(\App\Simulation\Engines\Meta\SingularityStabilityEngine::class);
-        $this->app->singleton(\App\Simulation\Engines\Meta\AscensionEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\Meta\AscensionEngine::class, function ($app) {
+            return new \App\Simulation\Engines\Meta\AscensionEngine(
+                $app->make(\App\Services\Simulation\WorldTemplateManager::class),
+                $app->make(\App\Contracts\LlmNarrativeClientInterface::class),
+            );
+        });
         $this->app->singleton(\App\Services\Simulation\ZenithMetricsService::class);
         $this->app->singleton(\App\Services\Simulation\ReasoningService::class);
         $this->app->singleton(\App\Simulation\Engines\Social\CivilizationCollapseEngine::class);
@@ -488,12 +495,13 @@ class SimulationServiceProvider extends ServiceProvider
                 $app->make(\App\Simulation\Engines\Meta\MythogenesisEngine::class),
                 $app->make(\App\Simulation\Engines\Meta\MeaningEngine::class),
                 $app->make(\App\Simulation\Engines\Meta\KnowledgeEvolutionEngine::class),
-                $app->make(\App\Simulation\Engines\Meta\CivilizationPhaseTransitionEngine::class),
+                $app->make(\App\Simulation\Engines\Meta\ThermodynamicPhaseEngine::class),
                 $app->make(\App\Simulation\Engines\Meta\SingularityStabilityEngine::class),
                 $app->make(\App\Simulation\Engines\Meta\AscensionEngine::class),
                 $app->make(\App\Services\Simulation\ZenithMetricsService::class),
                 $app->make(\App\Simulation\Engines\Meta\CausalHistoryEngine::class),
-                $app->make(\App\Simulation\Runtime\WorldKernel::class)
+                $app->make(\App\Simulation\Runtime\WorldKernel::class),
+                $app->make(\App\Modules\Narrative\Services\NarrativeEngine::class)
             );
         });
         $this->app->singleton(\App\Simulation\Runtime\SimulationTickOrchestrator::class);

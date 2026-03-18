@@ -16,4 +16,9 @@ interface UniverseSimilarityServiceInterface
      * @return array<array{universe_id: int, similarity: float}>
      */
     public function getNeighbors(UniverseSnapshot $snapshot, float $threshold = 0.5): array;
+
+    /**
+     * Find the best candidate for merging with the given snapshot.
+     */
+    public function getMergeCandidate(UniverseSnapshot $snapshot): ?UniverseSnapshot;
 }

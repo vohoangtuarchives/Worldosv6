@@ -12,7 +12,7 @@ class AscensionEngine
 {
     public function __construct(
         protected WorldTemplateManager $worldTemplateManager,
-        protected \App\Services\Narrative\NarrativeAiService $aiService
+        protected \App\Contracts\LlmNarrativeClientInterface $llmClient
     ) {}
 
     /**
@@ -48,7 +48,7 @@ class AscensionEngine
 
         // AI generate Axiom Shift for the Universe
         $prompt = "Một thực thể vĩ đại mang tên '{$entity->name}' vừa vượt qua quy luật bình thường trong mô phỏng WorldOS. Hãy đưa ra 1 mô tả ngắn gọn về MỘT QUY LUẬT VẬT LÝ hay CƠ CHẾ mà thực thể này vừa thay đổi vĩnh viễn (Axiom Shift). Format: 'Axiom Shift: [Nội dung quy luật đổi]'.";
-        $axiomDescription = $this->aiService->generateSnippet($prompt);
+        $axiomDescription = $this->llmClient->generate($prompt);
 
         if ($axiomDescription) {
             $this->worldTemplateManager->applyLocalAxiomShift($universe, [

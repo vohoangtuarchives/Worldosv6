@@ -5,7 +5,6 @@ namespace App\Modules\Simulation\Services;
 use App\Models\Chronicle;
 use App\Models\Universe;
 use App\Models\World;
-use App\Services\Narrative\NarrativeAiService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 
@@ -18,12 +17,11 @@ class NarrativeExtractionEngine
 {
     public function __construct(
         protected TimelineSelectionEngine $timelineSelection,
-        protected NarrativeAiService $narrativeAi
+        protected \App\Modules\Narrative\Services\UniverseHistoryGenerator $historyGenerator
     ) {}
 
     /**
      * Extract a single lore/story chronicle for one universe over a tick range.
-     * If range is null, uses 0 to latest snapshot (or current_tick).
      */
     public function extractLore(Universe $universe, ?int $fromTick = null, ?int $toTick = null): ?Chronicle
     {
@@ -33,17 +31,23 @@ class NarrativeExtractionEngine
             $toTick = $latest ? (int) $latest->tick : (int) ($universe->current_tick ?? 0);
         }
 
-        if ($toTick < $fromTick) {
-            Log::warning("NarrativeExtractionEngine: invalid range universe_id={$universe->id} from={$fromTick} to={$toTick}");
-            return null;
-        }
-
-        $type = (string) config('worldos.narrative_extraction.chronicle_type', 'lore');
-
         try {
-            return $this->narrativeAi->generateChronicle($universe->id, $fromTick, $toTick, $type);
+            $history = $this->historyGenerator->generate($universe, $fromTick, $toTick);
+            
+            if (!$history) {
+                return null;
+            }
+
+            // Return a temporary chronicle or use the history text
+            return Chronicle::create([
+                'universe_id' => $universe->id,
+                'from_tick' => $fromTick,
+                'to_tick' => $toTick,
+                'content' => $history->full_text,
+                'type' => 'lore'
+            ]);
         } catch (\Throwable $e) {
-            Log::error("NarrativeExtractionEngine: extractLore failed universe_id={$universe->id}: " . $e->getMessage());
+            Log::error("NarrativeExtractionEngine: extractLore failed: " . $e->getMessage());
             return null;
         }
     }

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services\Narrative;
+namespace App\Modules\Narrative\Services;
 
 use App\Contracts\LlmNarrativeClientInterface;
 use Illuminate\Support\Facades\Http;
@@ -8,7 +8,6 @@ use Illuminate\Support\Facades\Log;
 
 /**
  * OpenAI (or OpenAI-compatible) LLM adapter for narrative generation.
- * Configure via OPENAI_API_KEY and NARRATIVE_LLM_MODEL or worldos.narrative.
  */
 class OpenAINarrativeService implements LlmNarrativeClientInterface
 {
@@ -55,10 +54,6 @@ class OpenAINarrativeService implements LlmNarrativeClientInterface
             if ($response->successful()) {
                 return trim((string) ($response->json('choices.0.message.content') ?? ''));
             }
-            Log::warning('OpenAI narrative response not successful', [
-                'status' => $response->status(),
-                'body' => $response->body(),
-            ]);
         } catch (\Throwable $e) {
             Log::error('OpenAI narrative error: ' . $e->getMessage());
         }

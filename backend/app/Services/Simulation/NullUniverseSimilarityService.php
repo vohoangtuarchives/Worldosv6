@@ -10,8 +10,13 @@ use App\Models\UniverseSnapshot;
  */
 final class NullUniverseSimilarityService implements UniverseSimilarityServiceInterface
 {
-    public function getMergeCandidate(UniverseSnapshot $snapshot): ?array
+    public function getMergeCandidate(UniverseSnapshot $snapshot): ?UniverseSnapshot
     {
         return null;
+    }
+
+    public function getNeighbors(UniverseSnapshot $snapshot, float $threshold = 0.5): array
+    {
+        return [];
     }
 }

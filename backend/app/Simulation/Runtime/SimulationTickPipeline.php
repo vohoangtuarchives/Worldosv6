@@ -29,12 +29,13 @@ final class SimulationTickPipeline
         protected \App\Simulation\Engines\Meta\MythogenesisEngine $mythEngine,
         protected \App\Simulation\Engines\Meta\MeaningEngine $meaningEngine,
         protected \App\Simulation\Engines\Meta\KnowledgeEvolutionEngine $knowledgeEngine,
-        protected \App\Simulation\Engines\Meta\CivilizationPhaseTransitionEngine $phaseEngine,
+        protected \App\Simulation\Engines\Meta\ThermodynamicPhaseEngine $phaseEngine,
         protected \App\Simulation\Engines\Meta\SingularityStabilityEngine $stabilityEngine,
         protected \App\Simulation\Engines\Meta\AscensionEngine $ascensionEngine,
         protected \App\Services\Simulation\ZenithMetricsService $metricsService,
         protected \App\Simulation\Engines\Meta\CausalHistoryEngine $causalHistoryEngine,
-        protected \App\Simulation\Runtime\WorldKernel $kernel
+        protected \App\Simulation\Runtime\WorldKernel $kernel,
+        protected \App\Modules\Narrative\Services\NarrativeEngine $narrativeEngine
     ) {}
 
     /**
@@ -60,5 +61,15 @@ final class SimulationTickPipeline
 
         // Phase 37: Save Universal State
         $this->stateManager->save($universe);
+
+        // Phase 80: Narrative Integration (Rewrite)
+        // 1 Tick = 1 LLM Call. Pulse the Narrative Engine after state persistence.
+        $universeModel = \App\Models\Universe::find($universe->id);
+        $snapshotModel = $savedSnapshot ?? \App\Models\UniverseSnapshot::where('universe_id', $universe->id)->where('tick', $tick)->first();
+        
+        if ($universeModel && $snapshotModel) {
+            $universeEntity = app(\App\Modules\Simulation\Contracts\UniverseRepositoryInterface::class)->findById($universe->id);
+            $this->narrativeEngine->pulse($universeEntity, $snapshotModel);
+        }
     }
 }

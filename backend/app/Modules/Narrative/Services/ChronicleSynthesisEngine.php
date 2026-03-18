@@ -1,15 +1,11 @@
 <?php
 
-namespace App\Services\Narrative;
+namespace App\Modules\Narrative\Services;
 
 use App\Contracts\CausalityGraphServiceInterface;
-use Illuminate\Support\Collection;
 
 /**
- * Phase 5: Chronicle Synthesis Engine 🕰️📜
- * 
- * Chịu trách nhiệm tổng hợp các liên kết nhân quả từ CausalityGraph và 
- * chuyển đổi chúng thành cấu trúc "Fact Sheet" mà LLM có thể hiểu được.
+ * ChronicleSynthesisEngine: Synthesizes causal links into a "Fact Sheet" for LLM analysis.
  */
 class ChronicleSynthesisEngine
 {
@@ -22,7 +18,7 @@ class ChronicleSynthesisEngine
      */
     public function synthesize(int $universeId, int $fromTick, int $toTick): array
     {
-        $links = $this->causalityGraph->getRecentLinksForUniverse($universeId, 50);
+        $links = $this->causalityGraph->getRecentLinksForUniverse($universeId, 100);
 
         return collect($links)
             ->filter(fn($link) => $link['tick'] >= $fromTick && $link['tick'] <= $toTick)
@@ -33,18 +29,14 @@ class ChronicleSynthesisEngine
             ->toArray();
     }
 
-    /**
-     * Format a raw causal link into a human-readable (and LLM-readable) string.
-     */
     protected function formatLinkAsNarrative(array $link): string
     {
         $src = $this->parseEntity($link['src']);
         $tgt = $this->parseEntity($link['tgt']);
         $rel = $link['rel'];
         
-        // Example: [Environment] Scarcity triggered [Resource] Depletion
         return sprintf(
-            "[%s] %s -> %s -> [%s] %s (Probability: %s)",
+            "[%s:%s] %s -> [%s:%s] (Prob: %s)",
             ucfirst($src['type']),
             $src['id'],
             strtoupper($rel),
