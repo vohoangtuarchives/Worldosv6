@@ -14,24 +14,40 @@ use App\Simulation\Contracts\StateCacheInterface;
 final class StateSynchronizer
 {
     public function __construct(
-        private readonly UniverseRepositoryInterface $universeRepository,
+        private readonly \App\Modules\Simulation\Contracts\UniverseRepositoryInterface $universeRepository,
+        private readonly \App\Modules\Simulation\Contracts\WorldRepositoryInterface $worldRepository,
         private readonly TemporalSyncService $temporalSync,
         private readonly StateCacheInterface $stateCache,
     ) {}
 
-    public function sync(Universe $universe, array $snapshotData, int $ticks, ?array $engineManifest = null): void
+    public function sync(\App\Modules\Simulation\Entities\UniverseEntity $universe, array $snapshotData, int $ticks, ?array $engineManifest = null): void
     {
-        $this->temporalSync->advanceGlobalClock($universe->world, $ticks);
-        $this->temporalSync->synchronize($universe);
+        $world = $this->worldRepository->findById($universe->worldId);
+        if ($world) {
+            // Chúng ta vẫn cần Model cho TemporalSyncService nếu nó chưa được refactor.
+            // Trong DDD transition, đôi khi cần fetch model tạm thời ở infrastructure layer.
+            $worldModel = \App\Models\World::find($world->id);
+            if ($worldModel) {
+                 $this->temporalSync->advanceGlobalClock($worldModel, $ticks);
+            }
+        }
+        
+        // Cụ thể cho Universe, TemporalSyncService:synchronize yêu cầu Model.
+        $universeModel = \App\Models\Universe::find($universe->id);
+        if ($universeModel) {
+            $this->temporalSync->synchronize($universeModel);
+        }
 
         if (is_array($engineManifest)) {
-            $this->universeRepository->update($universe->id, ['engine_manifest' => $engineManifest]);
+            $this->universeRepository->updateStatus($universe->id, 'active'); // Helper để update field lẻ nếu cần, hoặc dùng update chung
+            // Nhưng repo chưa có updateEngineManifest. Tôi sẽ dùng Model tạm thời hoặc mở rộng Repo.
+            $universeModel?->update(['engine_manifest' => $engineManifest]);
         }
 
         $this->syncUniverseFromSnapshotData($universe, $snapshotData);
     }
 
-    private function syncUniverseFromSnapshotData(Universe $universe, array $snapshotData): void
+    private function syncUniverseFromSnapshotData(\App\Modules\Simulation\Entities\UniverseEntity $universe, array $snapshotData): void
     {
         $stateVector = is_string($snapshotData['state_vector'] ?? null)
             ? json_decode($snapshotData['state_vector'], true) ?? []
@@ -55,7 +71,7 @@ final class StateSynchronizer
         $stateVector['attractors'] = is_array($stateVector['attractors'] ?? null) ? $stateVector['attractors'] : [];
         $stateVector['dark_attractors'] = is_array($stateVector['dark_attractors'] ?? null) ? $stateVector['dark_attractors'] : [];
 
-        $existingVec = is_array($universe->state_vector) ? $universe->state_vector : [];
+        $existingVec = is_array($universe->stateVector) ? $universe->stateVector : [];
         $stateVector['macro_agents'] = is_array($stateVector['macro_agents'] ?? null) ? $stateVector['macro_agents'] : ($existingVec['macro_agents'] ?? []);
 
         $fields = null;
@@ -84,12 +100,13 @@ final class StateSynchronizer
             }
         }
 
-        $this->universeRepository->update($universe->id, [
-            'current_tick' => $snapshotData['tick'],
-            'state_vector' => $stateVector,
-            'entropy' => $stateVector['entropy'],
-        ]);
-        $universe->refresh();
+        // Cập nhật Entity
+        $universe->currentTick = (int) $snapshotData['tick'];
+        $universe->stateVector = $stateVector;
+        $universe->entropy = (float) $stateVector['entropy'];
+
+        // Lưu qua Repository
+        $this->universeRepository->save($universe);
 
         $tick = (int) ($snapshotData['tick'] ?? 0);
         $this->stateCache->set((int) $universe->id, $stateVector, $tick);

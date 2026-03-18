@@ -12,17 +12,17 @@ use App\Simulation\Contracts\StateCacheInterface;
  * When state_cache=redis, prefers cached state for prepareEngineStateInput if cache tick >= universe.current_tick (Phase 2 §2.3).
  */
 final class EngineDriver
-{
-    public function __construct(
+{    public function __construct(
         private readonly SimulationEngineClientInterface $engine,
         private readonly GeographyResourceService $geographyResource,
         private readonly StateCacheInterface $stateCache,
+        private readonly \App\Modules\Simulation\Contracts\WorldRepositoryInterface $worldRepository,
     ) {}
 
     /**
      * @return array{ok: bool, snapshot?: array, error_message?: string, _tick_duration_ms_per_tick?: float}
      */
-    public function advance(Universe $universe, int $ticks): array
+    public function advance(\App\Modules\Simulation\Entities\UniverseEntity $universe, int $ticks): array
     {
         $stateInput = $this->prepareEngineStateInput($universe);
         $worldConfig = $this->prepareWorldConfig($universe);
@@ -46,14 +46,14 @@ final class EngineDriver
         return $response;
     }
 
-    private function prepareEngineStateInput(Universe $universe): array
+    private function prepareEngineStateInput(\App\Modules\Simulation\Entities\UniverseEntity $universe): array
     {
-        $currentTick = (int) $universe->current_tick;
+        $currentTick = (int) $universe->currentTick;
         $cached = $this->stateCache->get((int) $universe->id);
         if ($cached !== null && ($cached['tick'] ?? 0) >= $currentTick && isset($cached['state_vector']) && is_array($cached['state_vector'])) {
             $vec = $cached['state_vector'];
         } else {
-            $vec = is_array($universe->state_vector) ? $universe->state_vector : [];
+            $vec = is_array($universe->stateVector) ? $universe->stateVector : [];
         }
         $zones = [];
         $globalEntropy = $vec['entropy'] ?? 0.0;
@@ -79,7 +79,7 @@ final class EngineDriver
 
         return [
             'universe_id' => $universe->id,
-            'tick' => (int) $universe->current_tick,
+            'tick' => (int) $universe->currentTick,
             'zones' => $zones,
             'global_entropy' => (float) $globalEntropy,
             'knowledge_core' => (float) $knowledgeCore,
@@ -98,16 +98,19 @@ final class EngineDriver
         ];
     }
 
-    private function prepareWorldConfig(Universe $universe): array
+    private function prepareWorldConfig(\App\Modules\Simulation\Entities\UniverseEntity $universe): array
     {
-        $world = $universe->world;
+        $world = $this->worldRepository->findById($universe->worldId);
+        if (!$world) {
+             throw new \RuntimeException("World not found for universe {$universe->id}");
+        }
 
         return [
             'world_id' => $world->id,
             'origin' => $world->origin ?? 'generic',
             'axiom' => $world->axiom,
-            'world_seed' => $world->world_seed,
-            'genome' => empty($universe->kernel_genome) ? null : $universe->kernel_genome,
+            'world_seed' => $world->worldSeed,
+            'genome' => empty($universe->kernelGenome) ? null : $universe->kernelGenome,
         ];
     }
 

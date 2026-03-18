@@ -10,44 +10,78 @@ class SocietyAnalyzer
      * Checks triggers for emergent faction formation based on archetype ratios
      * and fragmented scores. Returns array of Faction configurations to spawn.
      */
-    public function detectEmergentFactions(array $archetypeRatios, float $fragmentedScore, \App\Services\Simulation\SimulationPRNG $rng): array
+    public function detectEmergentFactions(Universe $universe, array $archetypeRatios, float $fragmentedScore, \App\Services\Simulation\SimulationPRNG $rng): array
     {
         $newFactions = [];
+        $axioms = $universe->axioms ?? [];
+        $hasLinhKi = ($axioms['has_linh_ki'] ?? false) === true;
+        $entropy = $universe->entropy ?? 0.5;
 
-        // Check Warrior dominance
+        // 1. Warrior dominance (Militaristic)
         $warriorRatio = $archetypeRatios['Chiến Binh'] ?? 0.0;
-        if ($warriorRatio > 0.35) {
+        $swordsmanRatio = $archetypeRatios['Kiếm Sĩ'] ?? 0.0;
+        if (($warriorRatio + $swordsmanRatio) > 0.35) {
             $newFactions[] = [
                 'name' => 'Quân Phiệt ' . $rng->nextInt(100, 999),
                 'type' => 'militaristic',
                 'description' => 'Một thế lực quân phiệt trỗi dậy từ sự áp đảo của các chiến binh.',
-                'bias' => ['battle' => 1.5, 'trade' => 0.6]
+                'bias' => ['power' => 0.8, 'status' => 0.6, 'survival' => 0.4]
             ];
         }
 
-        // Check Scholar/Engineer dominance
-        $intellectRatio = ($archetypeRatios['Học Giả'] ?? 0.0) + ($archetypeRatios['Kỹ Sư'] ?? 0.0);
-        if ($intellectRatio > 0.40) {
+        // 2. Axiom-based: Tu Chân Tông Môn (Sect)
+        if ($hasLinhKi) {
+            $cultivatorRatio = $archetypeRatios['Tu Chân Giả'] ?? 0.0;
+            if ($cultivatorRatio > 0.10) {
+                $newFactions[] = [
+                    'name' => 'Tiên Môn ' . $rng->nextInt(100, 999),
+                    'type' => 'spiritual',
+                    'description' => 'Một tông môn tu tiên chính đạo được thành lập để tìm kiếm đạo quả.',
+                    'bias' => ['meaning' => 0.9, 'knowledge' => 0.7, 'power' => 0.4]
+                ];
+            }
+
+            // Ma Môn (Evil Sect)
+            $evilRatio = $archetypeRatios['Tà Tu'] ?? 0.0;
+            if ($evilRatio > 0.05 && $entropy > 0.7) {
+                $newFactions[] = [
+                    'name' => 'Ma Giáo ' . $rng->nextInt(100, 999),
+                    'type' => 'predatory',
+                    'description' => 'Một thế lực ma giáo trỗi dậy trong hỗn loạn, tôn thờ sức mạnh tuyệt đối.',
+                    'bias' => ['power' => 1.0, 'chaos' => 0.8, 'survival' => 0.5]
+                ];
+            }
+        }
+
+        // 3. Ideology-based Factions (Phase 13)
+        $topIdeology = \App\Models\CulturalArtifact::where('universe_id', $universe->id)
+            ->where('type', 'IDEOLOGY')
+            ->where('is_active', true)
+            ->orderByDesc('power_level')
+            ->first();
+
+        if ($topIdeology && $rng->nextInt(1, 100) > 80) {
             $newFactions[] = [
-                'name' => 'Hội Học Sĩ ' . $rng->nextInt(100, 999), 
-                'type' => 'academic',
-                'description' => 'Một tổ chức khoa học và kiến trúc được thành lập bởi các học giả và kỹ sư.',
-                'bias' => ['research' => 1.5, 'battle' => 0.5]
+                'name' => 'Hội ' . $topIdeology->name,
+                'type' => 'ideological',
+                'description' => "Một tổ chức chính trị - xã hội được thành lập xung quanh tư tưởng '{$topIdeology->name}'.",
+                'bias' => $topIdeology->properties['trait_modifiers'] ?? ['meaning' => 0.5]
             ];
         }
 
-        // Check heavy fragmentation
+        // 4. Heavy fragmentation (Insurgent)
         if ($fragmentedScore > 0.6) {
             $newFactions[] = [
                 'name' => 'Quân Cát Cứ ' . $rng->nextInt(100, 999), 
                 'type' => 'insurgent',
                 'description' => 'Một toán loạn quân hình thành trong thời kỳ suy vong.',
-                'bias' => ['crime' => 1.5, 'battle' => 1.2, 'trade' => 0.2]
+                'bias' => ['chaos' => 0.7, 'power' => 0.6, 'survival' => 0.8]
             ];
         }
 
         return $newFactions;
     }
+
 
     /**
      * Store newly formed factions into the Universe state vector.

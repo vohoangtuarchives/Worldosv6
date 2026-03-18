@@ -27,7 +27,8 @@ class RunMicroCycleAction
         private SocietyMetricsCalculator $metricsCalculator,
         private PhaseDetector $phaseDetector,
         private MacroStateEvolution $macroEvolution,
-        private SocietyAnalyzer $societyAnalyzer
+        private SocietyAnalyzer $societyAnalyzer,
+        private \App\Simulation\Engines\Meta\CulturalInfluenceEngine $culturalInfluenceEngine
     ) {}
 
     /**
@@ -41,6 +42,13 @@ class RunMicroCycleAction
         $seed = $universe->seed ?? 0;
         
         $budget = new EntropyBudget($globalEntropy, count($actorStates));
+
+        // Phase 13: Cultural Influence
+        // Update cultural pressure in universe state vector before iterating actors
+        $worldState = new \App\Simulation\Runtime\State\WorldState($universe->state_vector ?? []);
+        $ctx = new \App\Simulation\Domain\TickContext($universe->id, $tick, $seed);
+        $this->culturalInfluenceEngine->handle($worldState, $ctx);
+        $universe->state_vector = $worldState->toArray(); // Sync back
         
         // 1. Calculate Social Field
         $socialField = $this->socialFieldCalculator->calculate($actorStates);
@@ -64,12 +72,22 @@ class RunMicroCycleAction
             // Step 2: Traits evolution (Actions mapping is skipped in pure cycle unless injected, 
             // so we rely on drift & cognitive engine for trait updates normally.
             
-            // Survival check
-            $actor = $this->transitionSystem->processSurvival($actor, $globalEntropy, $rng);
+            // Survival check (Taking Metabolic survival_modifier into account)
+            $fitness = (float) ($universe->state_vector['survival_modifier'] ?? 1.0);
+            $actor = $this->transitionSystem->processSurvival($actor, $globalEntropy, $rng, 0.0, $fitness);
 
             // Step 3: Drift & Update Archetype 
-            // We pass in phaseScore for fitness landscape calculation
-            $actor = $this->updateArchetypeAction->handle($actor, $worldAxiom, $globalEntropy, $ratios, $phaseScore);
+            // Phase 13: Inject cultural pressure into classification
+            $culturalPressure = $universe->state_vector['cultural_pressure'] ?? [];
+            $actor = $this->updateArchetypeAction->handle(
+                $actor, 
+                $worldAxiom, 
+                $globalEntropy, 
+                $ratios, 
+                $phaseScore,
+                [], // Zone fields
+                $culturalPressure
+            );
             
             $nextActorStates[] = $actor;
         }
@@ -80,7 +98,7 @@ class RunMicroCycleAction
         // Step 5: Factions Detection (Phase 7 Emergent Factions)
         $fragmentedScore = $phaseScore->fragmented;
         $microRng = new SimulationPRNG($seed + $tick); 
-        $factionsToSpawn = $this->societyAnalyzer->detectEmergentFactions($newRatios, $fragmentedScore, $microRng);
+        $factionsToSpawn = $this->societyAnalyzer->detectEmergentFactions($universe, $newRatios, $fragmentedScore, $microRng);
         $this->societyAnalyzer->storeFactions($universe, $factionsToSpawn, $tick, $microRng);
 
         // Step 6: Macro State Evolution

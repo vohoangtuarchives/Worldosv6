@@ -33,6 +33,7 @@ final class SimulationTickPipeline
         protected \App\Simulation\Engines\Meta\SingularityStabilityEngine $stabilityEngine,
         protected \App\Simulation\Engines\Meta\AscensionEngine $ascensionEngine,
         protected \App\Services\Simulation\ZenithMetricsService $metricsService,
+        protected \App\Simulation\Engines\Meta\CausalHistoryEngine $causalHistoryEngine,
         protected \App\Simulation\Runtime\WorldKernel $kernel
     ) {}
 

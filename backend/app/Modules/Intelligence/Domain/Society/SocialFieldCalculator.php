@@ -15,51 +15,42 @@ class SocialFieldCalculator
     public function calculate(array $actors): SocialField
     {
         if (empty($actors)) {
-            return new SocialField(0.0, 0.0, 0.0, 0.0);
+            return new SocialField();
         }
 
-        $aggression = 0.0;
-        $rational = 0.0;
-        $spiritual = 0.0;
-        $conformity = 0.0;
+        $sums = [
+            'survival'     => 0.0,
+            'reproduction' => 0.0,
+            'wealth'       => 0.0,
+            'power'        => 0.0,
+            'knowledge'    => 0.0,
+            'meaning'      => 0.0,
+            'status'       => 0.0,
+            'belonging'    => 0.0,
+        ];
 
         foreach ($actors as $actor) {
-            // Mapping Actor traits to corresponding fields
-            
-            // Aggression: Dominance + Vengeance + Coercion
-            $aggression += (
-                ($actor->traits['Dominance'] ?? 0.0) + 
-                ($actor->traits['Vengeance'] ?? 0.0) +
-                ($actor->traits['Coercion'] ?? 0.0)
-            ) / 3;
-
-            // Rational: Curiosity + Pragmatism
-            $rational += (
-                ($actor->traits['Curiosity'] ?? 0.0) + 
-                ($actor->traits['Pragmatism'] ?? 0.0)
-            ) / 2;
-            
-            // Spiritual: Hope + Dogmatism
-            $spiritual += (
-                ($actor->traits['Hope'] ?? 0.0) + 
-                ($actor->traits['Dogmatism'] ?? 0.0)
-            ) / 2;
-
-            // Conformity: Conformity + Solidarity + Loyalty
-            $conformity += (
-                ($actor->traits['Conformity'] ?? 0.0) + 
-                ($actor->traits['Solidarity'] ?? 0.0) +
-                ($actor->traits['Loyalty'] ?? 0.0)
-            ) / 3;
+            $sums['survival']     += ($actor->traits['Resilience'] ?? 0.5);
+            $sums['reproduction'] += ($actor->traits['Vitality'] ?? 0.5);
+            $sums['wealth']       += ($actor->traits['Pragmatism'] ?? 0.5) * 0.7 + ($actor->traits['Ambition'] ?? 0.5) * 0.3;
+            $sums['power']        += ($actor->traits['Dominance'] ?? 0.5) * 0.6 + ($actor->traits['Coercion'] ?? 0.5) * 0.4;
+            $sums['knowledge']    += ($actor->traits['Curiosity'] ?? 0.5);
+            $sums['meaning']      += ($actor->traits['Hope'] ?? 0.5) * 0.7 + (1 - ($actor->traits['Dogmatism'] ?? 0.5)) * 0.3;
+            $sums['status']       += ($actor->traits['Pride'] ?? 0.5) * 0.8 + ($actor->traits['Dominance'] ?? 0.5) * 0.2;
+            $sums['belonging']    += ($actor->traits['Solidarity'] ?? 0.5) * 0.4 + ($actor->traits['Conformity'] ?? 0.5) * 0.3 + ($actor->traits['Loyalty'] ?? 0.3);
         }
 
         $count = count($actors);
 
         return new SocialField(
-            $aggression / $count,
-            $rational / $count,
-            $spiritual / $count,
-            $conformity / $count
+            $sums['survival'] / $count,
+            $sums['reproduction'] / $count,
+            $sums['wealth'] / $count,
+            $sums['power'] / $count,
+            $sums['knowledge'] / $count,
+            $sums['meaning'] / $count,
+            $sums['status'] / $count,
+            $sums['belonging'] / $count
         );
     }
 }

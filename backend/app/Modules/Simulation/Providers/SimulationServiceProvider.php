@@ -19,6 +19,19 @@ class SimulationServiceProvider extends ServiceProvider
         $this->app->bind(RelicRepositoryInterface::class, RelicEloquentRepository::class);
         $this->app->bind(TrajectoryRepositoryInterface::class, TrajectoryEloquentRepository::class);
         $this->app->bind(UniverseRepositoryInterface::class, UniverseEloquentRepository::class);
+        $this->app->bind(\App\Modules\Simulation\Contracts\WorldRepositoryInterface::class, \App\Modules\Simulation\Repositories\WorldEloquentRepository::class);
+        $this->app->bind(\App\Modules\Simulation\Contracts\SnapshotRepositoryInterface::class, \App\Modules\Simulation\Repositories\SnapshotEloquentRepository::class);
+
+        $this->app->singleton(\App\Simulation\Domain\Pipelines\SpawnPipeline::class, function ($app) {
+            return new \App\Simulation\Domain\Pipelines\SpawnPipeline([
+                $app->make(\App\Simulation\Domain\Pipelines\Steps\InheritStateStep::class),
+                $app->make(\App\Simulation\Domain\Pipelines\Steps\MutateGenomeStep::class),
+                $app->make(\App\Simulation\Domain\Pipelines\Steps\PreCreateInjectionStep::class),
+                $app->make(\App\Simulation\Domain\Pipelines\Steps\CreateUniverseStep::class),
+                $app->make(\App\Simulation\Domain\Pipelines\Steps\InheritAxiomsStep::class),
+                $app->make(\App\Simulation\Domain\Pipelines\Steps\FinalizeSpawnStep::class),
+            ]);
+        });
 
         $this->app->singleton(\App\Modules\Simulation\Services\ConvergenceEngine::class);
         $this->app->singleton(\App\Modules\Simulation\Services\ResonanceEngine::class);
@@ -142,6 +155,9 @@ class SimulationServiceProvider extends ServiceProvider
         $this->app->singleton(\App\Simulation\Engines\Meta\SingularityEngine::class);
         $this->app->singleton(\App\Simulation\Engines\Biological\AutopoieticEvolutionEngine::class);
         $this->app->singleton(\App\Simulation\Engines\Meta\InformationDensityEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\Physics\MetabolicEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\Meta\IdeologyEngine::class);
+        $this->app->singleton(\App\Simulation\Engines\Meta\CulturalInfluenceEngine::class);
         $this->app->singleton(\App\Services\Simulation\CausalCacheService::class);
         $this->app->singleton(\App\Services\Simulation\RuleMutationService::class);
         $this->app->singleton(\App\Services\Simulation\StructuralHashService::class);
@@ -152,6 +168,11 @@ class SimulationServiceProvider extends ServiceProvider
             $kernel = new \App\Simulation\Runtime\WorldKernel($app->make(\App\Simulation\Runtime\State\StateManager::class));
             
             // Phase 1: Environment
+            $kernel->registerSystem(
+                \App\Simulation\Runtime\WorldKernel::PHASE_ENVIRONMENT,
+                \App\Simulation\Runtime\WorldKernel::RULE_METABOLISM,
+                new \App\Simulation\Runtime\Systems\EngineSystemAdapter($app->make(\App\Simulation\Engines\Physics\MetabolicEngine::class))
+            );
             $kernel->registerSystem(
                 \App\Simulation\Runtime\WorldKernel::PHASE_ENVIRONMENT,
                 \App\Simulation\Runtime\WorldKernel::RULE_EXTRACTION,
@@ -235,6 +256,21 @@ class SimulationServiceProvider extends ServiceProvider
                 \App\Simulation\Runtime\WorldKernel::PHASE_META,
                 \App\Simulation\Runtime\WorldKernel::RULE_NARRATIVE,
                 new \App\Simulation\Runtime\Systems\EngineSystemAdapter($app->make(\App\Simulation\Engines\Meta\MythogenesisEngine::class))
+            );
+            $kernel->registerSystem(
+                \App\Simulation\Runtime\WorldKernel::PHASE_META,
+                \App\Simulation\Runtime\WorldKernel::RULE_NARRATIVE,
+                new \App\Simulation\Runtime\Systems\EngineSystemAdapter($app->make(\App\Simulation\Engines\Meta\CulturalInfluenceEngine::class))
+            );
+            $kernel->registerSystem(
+                \App\Simulation\Runtime\WorldKernel::PHASE_META,
+                \App\Simulation\Runtime\WorldKernel::RULE_NARRATIVE,
+                new \App\Simulation\Runtime\Systems\EngineSystemAdapter($app->make(\App\Simulation\Engines\Meta\IdeologyEngine::class))
+            );
+            $kernel->registerSystem(
+                \App\Simulation\Runtime\WorldKernel::PHASE_META,
+                \App\Simulation\Runtime\WorldKernel::RULE_CORRECTION,
+                new \App\Simulation\Runtime\Systems\EngineSystemAdapter($app->make(\App\Simulation\Engines\Meta\CausalHistoryEngine::class))
             );
             $kernel->registerSystem(
                 \App\Simulation\Runtime\WorldKernel::PHASE_META,
@@ -347,11 +383,6 @@ class SimulationServiceProvider extends ServiceProvider
                 new \App\Simulation\Runtime\Systems\StageSystemAdapter($app->make(\App\Simulation\Runtime\Stages\MetaCosmicStage::class))
             );
 
-            $kernel->registerSystem(
-                \App\Simulation\Runtime\WorldKernel::PHASE_META,
-                \App\Simulation\Runtime\WorldKernel::RULE_CORRECTION,
-                new \App\Simulation\Runtime\Systems\EngineSystemAdapter($app->make(\App\Simulation\Engines\Meta\CausalHistoryEngine::class))
-            );
 
             return $kernel;
         });
@@ -461,6 +492,7 @@ class SimulationServiceProvider extends ServiceProvider
                 $app->make(\App\Simulation\Engines\Meta\SingularityStabilityEngine::class),
                 $app->make(\App\Simulation\Engines\Meta\AscensionEngine::class),
                 $app->make(\App\Services\Simulation\ZenithMetricsService::class),
+                $app->make(\App\Simulation\Engines\Meta\CausalHistoryEngine::class),
                 $app->make(\App\Simulation\Runtime\WorldKernel::class)
             );
         });

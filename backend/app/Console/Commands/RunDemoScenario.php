@@ -29,7 +29,7 @@ class RunDemoScenario extends Command
     /**
      * Execute the console command.
      */
-    public function handle(AdvanceSimulationAction $action, ImplicitOrchestratorService $orchestrator, NarrativeAiService $narrative)
+    public function handle(AdvanceSimulationAction $action, ImplicitOrchestratorService $orchestrator, NarrativeAiService $narrative, \App\Actions\Simulation\InjectCrisisAction $crisisAction)
     {
         $this->info("--- Starting WorldOS V6 Demo Scenario ---");
 
@@ -39,22 +39,28 @@ class RunDemoScenario extends Command
             ['name' => 'Default Multiverse']
         );
 
-        // 1. Setup World & Saga
-        $this->info("[1/4] Genesis: Creating World and Saga...");
-        $world = World::firstOrCreate(
+        // 1. Setup World
+        $this->info("[1/4] Genesis: Creating World...");
+        $world = World::updateOrCreate(
             ['slug' => 'demo-world'],
-            ['name' => 'Demo World', 'multiverse_id' => $multiverse->id]
+            [
+                'name' => 'Demo World', 
+                'multiverse_id' => $multiverse->id,
+                'global_tick' => 0,
+                'axiom' => ['meta_edicts' => []],
+                'world_seed' => ['seed' => 12345],
+                'origin' => 'generic',
+                'current_genre' => 'fantasy',
+                'base_genre' => 'fantasy',
+                'active_genre_weights' => [],
+                'is_autonomic' => false,
+                'is_chaotic' => false,
+                'snapshot_interval' => 10,
+            ]
         );
-        
-        $sagaName = 'Demo Saga ' . now()->format('H:i:s');
-        $saga = Saga::create([
-            'name' => $sagaName,
-            'world_id' => $world->id,
-            'status' => 'active',
-        ]);
 
-        // Initialize Universe
-        $universe = $orchestrator->spawnUniverse($world, null, $saga->id);
+        // Initialize Universe (Remove Saga, fix parameters)
+        $universe = $orchestrator->spawnUniverse($world, null, null);
         $this->info("      Created Universe ID: {$universe->id}");
 
         // 2. Stable Era
@@ -71,57 +77,8 @@ class RunDemoScenario extends Command
         // 3. The Crisis
         $this->info("[3/4] The Crisis: Injecting High Entropy...");
         $universe->refresh();
-        $vec = $universe->state_vector ?? [];
+        $injectedCount = $crisisAction->execute($universe, 0.85, 0.95);
         
-        // Inject global metadata
-        $vec['entropy'] = 0.85; // Critical threshold
-        $vec['scars'] = ['pre_war_tension'];
-
-        // Inject into ZONES (Crucial for Engine Physics)
-        $injectedCount = 0;
-        
-        // Handle explicit 'zones' structure
-        if (isset($vec['zones']) && is_array($vec['zones'])) {
-            foreach ($vec['zones'] as $idx => $zone) {
-                if (isset($zone['state'])) {
-                    $vec['zones'][$idx]['state']['entropy'] = 0.95;
-                    // Inject Material: "Unstable Reactor"
-                    $vec['zones'][$idx]['state']['active_materials'] = [
-                        [
-                            'slug' => 'unstable_reactor',
-                            'output' => 1.0,
-                            'pressure_coefficients' => [
-                                'entropy' => 0.1, // Adds 0.1 entropy per tick (scaled by 0.01 in engine -> 0.001)
-                                'innovation' => 0.5,
-                            ]
-                        ]
-                    ];
-                    $injectedCount++;
-                }
-            }
-        } 
-        // Handle flat array structure (numeric keys)
-        else {
-            foreach ($vec as $key => $val) {
-                if (is_int($key) && is_array($val) && isset($val['state'])) {
-                    $vec[$key]['state']['entropy'] = 0.95;
-                    // Inject Material: "Unstable Reactor"
-                    $vec[$key]['state']['active_materials'] = [
-                        [
-                            'slug' => 'unstable_reactor',
-                            'output' => 1.0,
-                            'pressure_coefficients' => [
-                                'entropy' => 0.1,
-                                'innovation' => 0.5,
-                            ]
-                        ]
-                    ];
-                    $injectedCount++;
-                }
-            }
-        }
-        
-        $universe->update(['state_vector' => $vec]);
         $this->info("      Entropy set to 0.85 (Global) / 0.95 (Zones). Affected {$injectedCount} zones.");
         $this->info("      System destabilized.");
 

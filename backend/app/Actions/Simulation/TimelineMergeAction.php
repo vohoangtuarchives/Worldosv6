@@ -27,7 +27,7 @@ class TimelineMergeAction
             // 1. Create New Prime Universe
             $prime = $uA->replicate();
             $prime->name = "Prime Synthesis: " . $uA->name . " & " . $uB->name;
-            $prime->parent_id = $uA->id; 
+            $prime->parent_universe_id = $uA->id; 
             $prime->status = 'active';
             $prime->save();
 

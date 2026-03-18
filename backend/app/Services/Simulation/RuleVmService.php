@@ -353,6 +353,28 @@ class RuleVmService
             if ($type === 'spawn_actor' && isset($out['spawn_actor_kind'])) {
                 $events[] = ['type' => 'SPAWN_ACTOR', 'payload' => ['kind' => $out['spawn_actor_kind']]];
             }
+
+            if ($type === 'drift' && !empty($out['drift_path'])) {
+                $path = $out['drift_path'];
+                $target = $out['drift_target'] ?? null;
+                $speed = $out['drift_speed'] ?? null;
+                
+                $current = (float) $state->get($path, 0.0);
+                
+                if ($target === null && $speed !== null) {
+                    // "drift X by Y" -> target is None, speed is Y (delta)
+                    $newVal = $current + (float) $speed;
+                } else if ($target !== null && $speed !== null) {
+                    // "drift X target Y speed Z" -> approach Y 
+                    $newVal = $current + ((float) $speed) * ((float)$target - $current);
+                } else {
+                    $newVal = $current;
+                }
+                
+                $effects[] = new \App\Simulation\Effects\WorldStateUpdateEffect([
+                    $path => $newVal
+                ]);
+            }
         }
 
         return new \App\Simulation\Domain\EngineResult($events, $effects, []);

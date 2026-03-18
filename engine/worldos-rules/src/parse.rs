@@ -112,9 +112,11 @@ fn parse_one_rule(name: &str, lines: &[&str]) -> Result<Rule, ParseError> {
     let mut cooldown_ticks: Option<u64> = None;
     let mut scope: Option<String> = None;
 
+    let mut pending_calc: Option<String> = None;
+
     for line in lines {
         let line = line.trim();
-        if line.is_empty() || line.starts_with('#') {
+        if line.is_empty() || line.starts_with('#') || line.starts_with("//") {
             continue;
         }
         let lower = line.to_lowercase();
@@ -148,7 +150,7 @@ fn parse_one_rule(name: &str, lines: &[&str]) -> Result<Rule, ParseError> {
         if lower.starts_with("chance") {
             let rest = line[6..].trim();
             if rest.contains('(') || rest.contains('+') || rest.contains('-') || rest.contains('*') || rest.contains('/') {
-                chance_expr = Some(parse_expr(rest)?);
+                chance_expr = Some(parse_expr(rest.trim_matches('"'))?);
             } else if let Ok(n) = rest.parse::<f64>() {
                 chance_expr = Some(Expr::ConstFloat(n.clamp(0.0, 1.0)));
             } else {
@@ -184,6 +186,24 @@ fn parse_one_rule(name: &str, lines: &[&str]) -> Result<Rule, ParseError> {
                 }
             }
             Some("then") => {
+                if lower.starts_with("calc ") {
+                    let cname = line[5..].trim().to_string();
+                    pending_calc = Some(cname);
+                    continue;
+                }
+                if lower.starts_with("formula ") {
+                    if let Some(cname) = pending_calc.take() {
+                        let expr_str = line[8..].trim().trim_matches('"');
+                        let expr = parse_expr(expr_str)?;
+                        actions.push(Action::Calc { name: cname, formula: expr });
+                        continue;
+                    } else {
+                        return Err(ParseError::InvalidAction("formula without calc".to_string()));
+                    }
+                }
+                if pending_calc.is_some() {
+                    pending_calc = None; // Reset if next line is not formula
+                }
                 let act = parse_action(line)?;
                 actions.push(act);
             }
@@ -275,12 +295,37 @@ fn parse_action(line: &str) -> Result<Action, ParseError> {
             return Err(ParseError::InvalidAction(line.to_string()));
         }
         let path = parts[0].to_string();
-        let value = parse_expr(parts[1])?;
+        let value = parse_expr(parts[1].trim_matches('"'))?;
         return Ok(Action::Set { path, value });
     }
     if lower.starts_with("spawn_actor") {
         let kind = line[11..].trim().to_string(); // "spawn_actor" = 11
         return Ok(Action::SpawnActor { kind });
+    }
+    if lower.starts_with("drift ") {
+        let rest = line[6..].trim();
+        if let Some(by_idx) = rest.find(" by ") {
+            let path = rest[..by_idx].trim().to_string();
+            let expr = parse_expr(rest[by_idx + 4..].trim().trim_matches('"'))?;
+            return Ok(Action::Drift { path, target: None, speed: Some(expr) });
+        } else if let Some(target_idx) = rest.find(" target ") {
+            let path = rest[..target_idx].trim().to_string();
+            let after_target = rest[target_idx + 8..].trim();
+            if let Some(speed_idx) = after_target.find(" speed ") {
+                let target_expr = parse_expr(after_target[..speed_idx].trim().trim_matches('"'))?;
+                let speed_expr = parse_expr(after_target[speed_idx + 7..].trim().trim_matches('"'))?;
+                return Ok(Action::Drift { path, target: Some(target_expr), speed: Some(speed_expr) });
+            }
+        }
+    }
+    if lower.starts_with("metadata ") {
+        let rest = line[9..].trim();
+        let parts: Vec<&str> = rest.split_whitespace().collect();
+        if parts.len() >= 2 {
+            let key = parts[0].to_string();
+            let val = parts[1..].join(" ").trim_matches('"').to_string();
+            return Ok(Action::Metadata { key, value: val });
+        }
     }
     Err(ParseError::InvalidAction(line.to_string()))
 }
@@ -374,7 +419,31 @@ fn parse_expr(s: &str) -> Result<Expr, ParseError> {
 
 /// Parse full DSL text into a list of rules.
 pub fn parse_rules(dsl: &str) -> Result<Vec<Rule>, ParseError> {
-    let lines: Vec<&str> = dsl.lines().collect();
+    // Strip block comments
+    let mut clean_dsl = String::new();
+    let mut in_block = false;
+    let bytes = dsl.as_bytes();
+    let mut bytes_idx = 0;
+    while bytes_idx < bytes.len() {
+        if !in_block && bytes_idx + 1 < bytes.len() && bytes[bytes_idx] == b'/' && bytes[bytes_idx+1] == b'*' {
+            in_block = true;
+            bytes_idx += 2;
+            continue;
+        }
+        if in_block && bytes_idx + 1 < bytes.len() && bytes[bytes_idx] == b'*' && bytes[bytes_idx+1] == b'/' {
+            in_block = false;
+            bytes_idx += 2;
+            continue;
+        }
+        if !in_block {
+            clean_dsl.push(bytes[bytes_idx] as char);
+        } else if bytes[bytes_idx] == b'\n' {
+            clean_dsl.push('\n'); // preserve lines
+        }
+        bytes_idx += 1;
+    }
+
+    let lines: Vec<&str> = clean_dsl.lines().collect();
     let mut rules = Vec::new();
     let mut i = 0;
     while i < lines.len() {

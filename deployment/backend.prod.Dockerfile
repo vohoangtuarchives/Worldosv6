@@ -1,6 +1,17 @@
+# Stage 1: Build FFI Library
+FROM rust:latest AS ffi_builder
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    pkg-config protobuf-compiler \
+    && rm -rf /var/lib/apt/lists/*
+WORKDIR /app
+# We will set Docker build context to the root folder.
+COPY engine/ /app/
+RUN cargo build --release -p worldos-ffi
+
+# Stage 2: PHP Application
 FROM php:8.4-fpm
 
-# Install dependencies
+# Install dependencies, including libffi-dev for FFI
 RUN apt-get update && apt-get install -y \
     git \
     unzip \
@@ -8,9 +19,11 @@ RUN apt-get update && apt-get install -y \
     libzip-dev \
     libonig-dev \
     libxml2-dev \
+    libffi-dev \
     && pecl install redis \
     && docker-php-ext-enable redis \
-    && docker-php-ext-install pdo pdo_pgsql pgsql zip opcache pcntl bcmath sockets
+    && docker-php-ext-configure ffi --with-ffi \
+    && docker-php-ext-install pdo pdo_pgsql pgsql zip opcache pcntl bcmath sockets ffi
 
 # Clear cache
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
@@ -20,8 +33,11 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www
 
-# Copy code
-COPY . /var/www
+# Copy code from backend folder (context is root)
+COPY backend/ /var/www
+
+# Copy the compiled shared library from the ffi_builder stage
+COPY --from=ffi_builder /app/target/release/libworldos_ffi.so /var/www/ffi_lib/worldos_ffi.so
 
 # Install dependencies (no dev).
 RUN composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev
@@ -37,10 +53,10 @@ RUN php artisan package:discover --ansi \
 
 RUN chmod -R 775 /var/www/storage /var/www/bootstrap/cache
 
-# Keep a copy of public for entrypoint (when backend_public volume is mounted over /var/www/public)
+# Keep a copy of public for entrypoint
 RUN cp -a /var/www/public /var/www/public.from-image
 
-COPY scripts/entrypoint.prod.sh /usr/local/bin/entrypoint.sh
+COPY backend/scripts/entrypoint.prod.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
 EXPOSE 9000

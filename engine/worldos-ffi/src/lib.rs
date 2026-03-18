@@ -139,6 +139,47 @@ pub unsafe extern "C" fn process_fields_v7(
     1
 }
 
+/// Phase 15: Grid-Based Metabolic Calculation (O(N) parallelized)
+#[no_mangle]
+pub unsafe extern "C" fn process_metabolism_grid(
+    count: usize,
+    population: *mut f64,
+    biomass: *mut f64,
+    industry: *const f64,
+    net_energy_out: *mut f64,
+    efficiency: f64,
+    base_energy: f64,
+) -> f64 { // Returns total waste (entropy generation)
+    if count == 0 { return 0.0; }
+    
+    let pop = slice::from_raw_parts_mut(population, count);
+    let bio = slice::from_raw_parts_mut(biomass, count);
+    let ind = slice::from_raw_parts(industry, count);
+    let net = slice::from_raw_parts_mut(net_energy_out, count);
+    
+    let total_waste: f64 = (0..count).into_par_iter().map(|i| {
+        let p = pop[i];
+        let ind_act = ind[i];
+        
+        let gross_energy = base_energy * efficiency;
+        let maintenance = (p * 0.01) + (ind_act * 0.05);
+        let net_e = gross_energy - maintenance;
+        net[i] = net_e;
+        
+        // Emulate starvation
+        if net_e < -0.5 {
+            let deaths = p * 0.3; // 30% penalty
+            pop[i] = p - deaths;
+            bio[i] += deaths * 0.05; // Return to biomass
+        }
+        
+        let waste_rate = 1.0 - efficiency;
+        (maintenance * waste_rate) * 0.1
+    }).sum();
+    
+    total_waste
+}
+
 #[no_mangle]
 pub unsafe extern "C" fn evaluate_dsl_v10(
     dsl_ptr: *const c_char,

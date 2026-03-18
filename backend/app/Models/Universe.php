@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Universe extends Model
 {
@@ -13,6 +14,7 @@ class Universe extends Model
         'seed', 'current_tick', 'level', 'epoch', 'status', 'state_vector', 'engine_manifest', 'name',
         'observation_load', 'last_observed_at', 'observer_bonus',
         'structural_coherence', 'entropy', 'kernel_genome', 'fitness_score',
+        'axioms',
     ];
 
     protected $casts = [
@@ -25,6 +27,7 @@ class Universe extends Model
         'entropy' => 'float',
         'kernel_genome' => 'array',
         'fitness_score' => 'float',
+        'axioms' => 'array',
     ];
 
     public function world(): BelongsTo
@@ -50,6 +53,16 @@ class Universe extends Model
     public function snapshots(): HasMany
     {
         return $this->hasMany(UniverseSnapshot::class);
+    }
+
+    public function latestSnapshot(): HasOne
+    {
+        return $this->hasOne(UniverseSnapshot::class)->latestOfMany('tick');
+    }
+
+    public function eras(): HasMany
+    {
+        return $this->hasMany(Era::class);
     }
 
     public function branchEvents(): HasMany

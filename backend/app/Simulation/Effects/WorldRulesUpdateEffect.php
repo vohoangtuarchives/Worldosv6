@@ -26,4 +26,9 @@ final class WorldRulesUpdateEffect implements Effect
         $vec['world_rules'] = array_merge($current, $this->rules);
         $state->setStateVector($vec);
     }
+
+    public function getRules(): array
+    {
+        return $this->rules;
+    }
 }

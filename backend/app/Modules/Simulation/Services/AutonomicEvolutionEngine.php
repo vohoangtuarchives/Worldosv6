@@ -45,7 +45,10 @@ class AutonomicEvolutionEngine implements UniverseEvaluatorInterface
         $recommendation = 'continue';
         $mergeCandidateUniverseId = null;
 
-        if ($this->similarityService !== null) {
+        $minTicksBeforeMerge = (int) config('worldos.autonomic.min_ticks_before_merge', 50);
+        $tick = (int) ($snapshot->tick ?? 0);
+
+        if ($this->similarityService !== null && $tick >= $minTicksBeforeMerge) {
             $candidate = $this->similarityService->getMergeCandidate($snapshot);
             if ($candidate !== null && ($candidate['similarity'] ?? 0) >= $mergeThreshold) {
                 $recommendation = 'merge';

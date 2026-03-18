@@ -27,6 +27,7 @@ class FfiRuleEngine
                 $this->ffi = FFI::cdef("
                     char* evaluate_dsl_v10(const char* dsl_script, const char* state_json, uint64_t seed);
                     void free_rust_string(char* s);
+                    double process_metabolism_grid(size_t count, double* population, double* biomass, const double* industry, double* net_energy_out, double efficiency, double base_energy);
                 ", $libraryPath);
             } catch (\Throwable $e) {
                 Log::error("FFI::cdef error: " . $e->getMessage());
@@ -109,6 +110,25 @@ class FfiRuleEngine
                         'type' => 'spawn_actor',
                         'spawn_actor_kind' => $out['SpawnActor']['kind'] ?? ''
                     ];
+                } elseif (isset($out['Drift'])) {
+                    $normalized[] = [
+                        'type' => 'drift',
+                        'drift_path' => $out['Drift']['path'] ?? '',
+                        'drift_target' => $out['Drift']['target'] ?? null,
+                        'drift_speed' => $out['Drift']['speed'] ?? null
+                    ];
+                } elseif (isset($out['Calc'])) {
+                    $normalized[] = [
+                        'type' => 'calc',
+                        'calc_name' => $out['Calc']['name'] ?? '',
+                        'calc_value' => $out['Calc']['value'] ?? null
+                    ];
+                } elseif (isset($out['Metadata'])) {
+                    $normalized[] = [
+                        'type' => 'metadata',
+                        'metadata_key' => $out['Metadata']['key'] ?? '',
+                        'metadata_value' => $out['Metadata']['value'] ?? ''
+                    ];
                 }
             }
 
@@ -125,5 +145,43 @@ class FfiRuleEngine
             
             return null;
         }
+    }
+
+    /**
+     * Phase 15: Grid-Based Metabolic Calculation using Rust FFI
+     */
+    public function computeMetabolismGrid(array &$populations, array &$biomasses, array $industries, float $efficiency, float $baseEnergy): array
+    {
+        if ($this->ffi === null) {
+            return ['total_waste' => 0.0, 'net_energies' => []]; // Fallback
+        }
+
+        $count = count($populations);
+        if ($count === 0) return ['total_waste' => 0.0, 'net_energies' => []];
+
+        $cPop = FFI::new("double[$count]");
+        $cBio = FFI::new("double[$count]");
+        $cInd = FFI::new("double[$count]");
+        $cNet = FFI::new("double[$count]");
+
+        for ($i = 0; $i < $count; $i++) {
+            $cPop[$i] = (float)($populations[$i] ?? 0.0);
+            $cBio[$i] = (float)($biomasses[$i] ?? 0.0);
+            $cInd[$i] = (float)($industries[$i] ?? 0.0);
+        }
+
+        $totalWaste = $this->ffi->process_metabolism_grid($count, FFI::addr($cPop[0]), FFI::addr($cBio[0]), FFI::addr($cInd[0]), FFI::addr($cNet[0]), $efficiency, $baseEnergy);
+
+        $netEnergies = [];
+        for ($i = 0; $i < $count; $i++) {
+            $populations[$i] = $cPop[$i];
+            $biomasses[$i] = $cBio[$i];
+            $netEnergies[$i] = $cNet[$i];
+        }
+
+        return [
+            'total_waste' => $totalWaste,
+            'net_energies' => $netEnergies
+        ];
     }
 }

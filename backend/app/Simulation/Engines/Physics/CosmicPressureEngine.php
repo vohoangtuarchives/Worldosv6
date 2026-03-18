@@ -44,8 +44,6 @@ final class CosmicPressureEngine implements SimulationEngine
     private const ASCENSION_WEIGHT = 0.012;
 
     public function __construct(
-        private readonly CosmicSignalCollector $signalCollector,
-        private readonly PhasePressureCalculator $phasePressureCalculator,
         private RuleVmService $ruleVm,
     ) {
     }

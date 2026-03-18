@@ -41,4 +41,28 @@ class ActorState
             heroicType: array_key_exists('heroicType', $changes) ? $changes['heroicType'] : $this->heroicType
         );
     }
+
+    public function getMotivationProfile(): array
+    {
+        return [
+            'survival'     => ($this->traits['Resilience'] ?? 0.5),
+            'reproduction' => ($this->traits['Vitality'] ?? 0.5),
+            'wealth'       => ($this->traits['Pragmatism'] ?? 0.5) * 0.7 + ($this->traits['Ambition'] ?? 0.5) * 0.3,
+            'power'        => ($this->traits['Dominance'] ?? 0.5) * 0.6 + ($this->traits['Coercion'] ?? 0.5) * 0.4,
+            'knowledge'    => ($this->traits['Curiosity'] ?? 0.5),
+            'meaning'      => ($this->traits['Hope'] ?? 0.5) * 0.7 + (1 - ($this->traits['Dogmatism'] ?? 0.5)) * 0.3,
+            'status'       => ($this->traits['Pride'] ?? 0.5) * 0.8 + ($this->traits['Dominance'] ?? 0.5) * 0.2,
+            'belonging'    => ($this->traits['Solidarity'] ?? 0.5) * 0.4 + ($this->traits['Conformity'] ?? 0.5) * 0.3 + ($this->traits['Loyalty'] ?? 0.3),
+        ];
+    }
+
+    public function getPhysicHealth(): float
+    {
+        return (float)($this->traits['Vitality'] ?? 0.5);
+    }
+
+    public function getInfluence(): float
+    {
+        return (float)($this->metrics['influence'] ?? 0.0);
+    }
 }

@@ -19,7 +19,9 @@ use Illuminate\Support\Facades\Log;
  */
 class CausalHistoryEngine implements SimulationEngine
 {
-    use DefaultSimulationEnginePhase;
+    public function version(): string { return '1.0.0'; }
+    public function isParallelSafe(): bool { return true; }
+    public function priorityCategory(): string { return 'meta'; }
 
     public function __construct(
         protected CausalityGraphServiceInterface $causalityGraph

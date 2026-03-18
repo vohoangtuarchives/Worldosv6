@@ -36,7 +36,8 @@ class ArchetypeClassifier
         float $entropy,
         array $currentPopulationRatios = [],
         ?\App\Modules\Intelligence\Domain\Phase\PhaseScore $phaseScore = null,
-        array $zoneFields = [] // Added to context
+        array $zoneFields = [],
+        array $culturalPressure = [] // Phase 13: Cultural heritage influence
     ): ?string {
         $stats = BehaviorStats::fromArray($actor->metrics['behavior_stats'] ?? []);
         $stableCycles = $actor->metrics['archetype_stable_cycles'] ?? 0;
@@ -54,7 +55,7 @@ class ArchetypeClassifier
         $currentMaxScore = 0.0;
         
         // Map Actor Traits to 8D Motivation Dimensions for InternalFit
-        $actor8D = $this->mapTraitsTo8D($actor->traits);
+        $actor8D = $actor->getMotivationProfile();
 
         foreach ($this->definitions as $def) {
             if (!$def->isEligible($worldAxiom)) {
@@ -75,13 +76,23 @@ class ArchetypeClassifier
                 $internalFit += $weight * ($actor8D[$key] ?? 0.5);
             }
 
-            // 3. Saturation Penalty (Replicator dynamics)
+            // 3. Cultural Pressure (Phase 13: Influence from Epics/Ideologies)
+            $culturalBoost = 0.0;
+            if (!empty($culturalPressure)) {
+                foreach ($def->motivationVector as $key => $weight) {
+                    // How much this archetype aligns with current cultural trends
+                    $culturalBoost += $weight * ($culturalPressure[$key] ?? 0.0);
+                }
+            }
+
+            // 4. Saturation Penalty (Replicator dynamics)
             $ratio = $currentPopulationRatios[$def->name] ?? 0.0;
             $target = $def->distributionTarget;
             $penalty = ($ratio > $target) ? ($ratio - $target) * 2.0 : 0.0;
 
             // Final Emergence Score
-            $finalScore = ($envReward * 0.4) + ($internalFit * 0.6) - $penalty;
+            // Culture now accounts for 20% of the decision logic, making heritage powerful
+            $finalScore = ($envReward * 0.3) + ($internalFit * 0.5) + ($culturalBoost * 0.2) - $penalty;
             
             $scores[$def->name] = $finalScore;
 
@@ -106,19 +117,6 @@ class ArchetypeClassifier
         return null; 
     }
 
-    private function mapTraitsTo8D(array $traits): array
-    {
-        return [
-            'survival'     => ($traits['Resilience'] ?? 0.5),
-            'reproduction' => ($traits['Vitality'] ?? 0.5),
-            'wealth'       => ($traits['Pragmatism'] ?? 0.5) * 0.7 + ($traits['Ambition'] ?? 0.5) * 0.3,
-            'power'        => ($traits['Dominance'] ?? 0.5) * 0.6 + ($traits['Coercion'] ?? 0.5) * 0.4,
-            'knowledge'    => ($traits['Curiosity'] ?? 0.5),
-            'meaning'      => ($traits['Hope'] ?? 0.5) * 0.7 + (1 - ($traits['Dogmatism'] ?? 0.5)) * 0.3,
-            'status'       => ($traits['Pride'] ?? 0.5) * 0.8 + ($traits['Dominance'] ?? 0.5) * 0.2,
-            'belonging'    => ($traits['Solidarity'] ?? 0.5) * 0.4 + ($traits['Conformity'] ?? 0.5) * 0.3 + ($traits['Loyalty'] ?? 0.3),
-        ];
-    }
 
     private function registerCoreArchetypes(): void
     {
@@ -228,6 +226,48 @@ class ArchetypeClassifier
             scoreFunction: fn() => 1.0,
             motivationVector: ['knowledge' => 0.7, 'power' => 0.7, 'status' => 0.8, 'wealth' => 0.5],
             distributionTarget: 0.01
+        ));
+
+        // --- Axiom-based Specialists ---
+
+        // 13. Cultivator (Tu Chân Giả) - Requires has_linh_ki
+        $this->register(new ArchetypeDefinition(
+            name: 'Tu Chân Giả',
+            namePrefix: 'Đạo Hữu',
+            scoreFunction: fn() => 1.0,
+            condition: fn($axiom) => ($axiom['has_linh_ki'] ?? false) === true,
+            motivationVector: ['meaning' => 0.9, 'knowledge' => 0.8, 'survival' => 0.7, 'status' => 0.4],
+            distributionTarget: 0.02
+        ));
+
+        // 14. Evil Cultivator (Tà Tu) - Requires has_linh_ki & high entropy
+        $this->register(new ArchetypeDefinition(
+            name: 'Tà Tu',
+            namePrefix: 'Ma Đầu',
+            scoreFunction: fn($state, $stats, $entropy) => $entropy > 0.6 ? 1.5 : 0.5,
+            condition: fn($axiom) => ($axiom['has_linh_ki'] ?? false) === true,
+            motivationVector: ['power' => 1.0, 'status' => 0.8, 'survival' => 0.6, 'meaning' => 0.3],
+            distributionTarget: 0.01
+        ));
+
+        // 15. Swordsman (Kiếm Sĩ) - Requires has_martial_arts
+        $this->register(new ArchetypeDefinition(
+            name: 'Kiếm Sĩ',
+            namePrefix: 'Kiếm Khách',
+            scoreFunction: fn() => 1.0,
+            condition: fn($axiom) => ($axiom['has_martial_arts'] ?? false) === true,
+            motivationVector: ['power' => 0.8, 'survival' => 0.8, 'status' => 0.7, 'belonging' => 0.5],
+            distributionTarget: 0.05
+        ));
+
+        // 16. Hacker - Requires high technology
+        $this->register(new ArchetypeDefinition(
+            name: 'Hacker',
+            namePrefix: 'Tin Tặc',
+            scoreFunction: fn() => 1.0,
+            condition: fn($axiom) => ($axiom['tech_level'] ?? 1) >= 5,
+            motivationVector: ['knowledge' => 1.0, 'status' => 0.7, 'wealth' => 0.6, 'power' => 0.5],
+            distributionTarget: 0.02
         ));
     }
 }

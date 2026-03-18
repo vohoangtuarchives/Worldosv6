@@ -12,20 +12,7 @@ class UniverseEloquentRepository implements UniverseRepositoryInterface
     {
         $model = UniverseModel::find($id);
         
-        if (!$model) {
-            return null;
-        }
-
-        return new UniverseEntity(
-            id: $model->id,
-            worldId: $model->world_id,
-            name: $model->name ?? "Universe #{$model->id}",
-            entropy: (float) (($model->state_vector ?? [])['entropy'] ?? 0.0),
-            stabilityIndex: (float) (($model->state_vector ?? [])['stability_index'] ?? 0.0),
-            observationLoad: (float) ($model->observation_load ?? 0.0),
-            stateVector: $model->state_vector ?? [],
-            status: $model->status
-        );
+        return $model ? $this->toEntity($model) : null;
     }
 
     public function save(UniverseEntity $entity): void
@@ -37,9 +24,50 @@ class UniverseEloquentRepository implements UniverseRepositoryInterface
         $stateVector['stability_index'] = $entity->stabilityIndex;
 
         $model->update([
+            'current_tick' => $entity->currentTick,
             'observation_load' => $entity->observationLoad,
             'state_vector' => $stateVector,
-            'status' => $entity->status
+            'kernel_genome' => $entity->kernelGenome,
+            'status' => $entity->status,
+            'entropy' => $entity->entropy,
+            'structural_coherence' => $entity->structuralCoherence,
+            'observer_bonus' => $entity->observerBonus,
+            'fitness_score' => $entity->fitnessScore,
         ]);
+    }
+
+    public function findActiveByWorldId(int $worldId): array
+    {
+        return UniverseModel::where('world_id', $worldId)
+            ->where('status', 'active')
+            ->get()
+            ->map(fn (UniverseModel $m) => $this->toEntity($m))
+            ->all();
+    }
+
+    public function updateStatus(int $id, string $status): void
+    {
+        UniverseModel::where('id', $id)->update(['status' => $status]);
+    }
+
+    private function toEntity(UniverseModel $model): UniverseEntity
+    {
+        $sv = $model->state_vector ?? [];
+
+        return new UniverseEntity(
+            id: (int) $model->id,
+            worldId: (int) $model->world_id,
+            name: $model->name ?? "Universe #{$model->id}",
+            currentTick: (int) ($model->current_tick ?? 0),
+            entropy: (float) ($model->entropy ?? $sv['entropy'] ?? 0.0),
+            stabilityIndex: (float) ($sv['stability_index'] ?? 0.0),
+            observationLoad: (float) ($model->observation_load ?? 0.0),
+            stateVector: $sv,
+            kernelGenome: $model->kernel_genome ?? [],
+            status: $model->status ?? 'active',
+            structuralCoherence: (float) ($model->structural_coherence ?? 1.0),
+            observerBonus: (float) ($model->observer_bonus ?? 0.0),
+            fitnessScore: (float) ($model->fitness_score ?? 0.0)
+        );
     }
 }

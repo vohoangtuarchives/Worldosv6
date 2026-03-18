@@ -8,11 +8,16 @@ class UniverseEntity
         public readonly int $id,
         public readonly int $worldId,
         public readonly string $name,
+        public int $currentTick,
         public float $entropy,
         public float $stabilityIndex,
         public float $observationLoad,
         public array $stateVector,
-        public ?string $status = 'active'
+        public array $kernelGenome = [],
+        public string $status = 'active',
+        public float $structuralCoherence = 1.0,
+        public float $observerBonus = 0.0,
+        public float $fitnessScore = 0.0
     ) {}
 
     public function applyObservationInterference(float $intensity): void

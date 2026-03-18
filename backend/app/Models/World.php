@@ -30,4 +30,8 @@ class World extends Model
         return $this->hasMany(Universe::class);
     }
 
+    public function epochs(): HasMany
+    {
+        return $this->hasMany(Epoch::class);
     }
+}

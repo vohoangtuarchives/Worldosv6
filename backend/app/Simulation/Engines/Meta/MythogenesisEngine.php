@@ -65,6 +65,12 @@ class MythogenesisEngine implements SimulationEngine
         foreach ($recentFacts as $fact) {
             $impact = $this->calculateImpact($fact);
             
+            // Phase 12: Generative Literature
+            // Nếu tác động cực lớn, sinh ra Cultural Artifact (Sử thi/Hệ tư tưởng)
+            if ($impact > 0.9) {
+                $this->generateCulturalArtifact($fact, $rng);
+            }
+
             // Nếu tác động vượt ngưỡng, bắt đầu quá trình thần thoại hóa
             if ($impact > 0.75) {
                 $archetype = $this->determineArchetype($fact, $rng);
@@ -136,6 +142,41 @@ class MythogenesisEngine implements SimulationEngine
     {
         // Placeholder cho việc generate story (Sau này có thể tích hợp AI)
         return "Huyền thoại về một {$archetype} xuất hiện từ sự kiện {$fact->category} tại Tick #{$fact->tick}.";
+    }
+
+    private function generateCulturalArtifact(\App\Models\HistoricalFact $fact, $rng): void
+    {
+        $type = $fact->category === 'WAR' ? 'EPIC' : 'IDEOLOGY';
+        $name = $this->generateTitle($fact, $type, $rng);
+
+        \App\Models\CulturalArtifact::create([
+            'universe_id' => $fact->universe_id,
+            'author_id' => $fact->actors[0] ?? null, // Khớp với model
+            'type' => $type,
+            'name' => $name, // Khớp với model
+            'power_level' => 0.3, // Khớp với model
+            'properties' => [ // Khớp với model
+                'content' => $this->generateContent($fact, $type),
+                'source_fact_id' => $fact->id,
+                'trait_modifiers' => $type === 'EPIC' ? ['power' => 0.1] : ['meaning' => 0.1],
+            ],
+            'created_at_tick' => $fact->tick,
+            'is_active' => true,
+        ]);
+
+        Log::alert("CULTURAL LEGACY: A new {$type} titled '{$name}' has been written!");
+    }
+
+    private function generateTitle(\App\Models\HistoricalFact $fact, string $type, $rng): string
+    {
+        $prefixes = ['Sử thi', 'Khải huyền', 'Bản thảo', 'Hệ tư tưởng'];
+        $core = $fact->category;
+        return $prefixes[$rng->nextInt(0, 3)] . " về " . $core . " tại " . $fact->location;
+    }
+
+    private function generateContent(\App\Models\HistoricalFact $fact, string $type): string
+    {
+        return "Tác phẩm này ghi lại sự kiện {$fact->category} diễn ra tại Tick {$fact->tick}, nó sẽ được truyền tụng qua nhiều kỷ nguyên.";
     }
 
     private function applyDslRules(WorldState $state, int $tick): void

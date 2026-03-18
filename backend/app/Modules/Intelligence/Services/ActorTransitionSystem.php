@@ -46,7 +46,7 @@ class ActorTransitionSystem
         float $entropy,
         SimulationRng $rng,
         float $ageRatio = 0.0,
-        float $fitness = 1.0,
+        float $fitness = 1.0, // This will map to survival_modifier from MetabolicEngine
         float $collapseDeathProbAdd = 0.0
     ): ActorState {
         if (!$state->isAlive) {
@@ -64,9 +64,9 @@ class ActorTransitionSystem
         $prob = 1 / (1 + exp(-$logit));
 
         // Starvation (energy economy): reduce survival when starving
-        $starving = !empty($state->metrics['starving']);
+        $starving = !empty($state->metrics['starving']) || $fitness < 1.0;
         if ($starving) {
-            $prob *= 0.7;
+            $prob *= max(0.5, $fitness); // Apply metabolic pressure
         }
 
         $baselineDeathChance = 0.015;

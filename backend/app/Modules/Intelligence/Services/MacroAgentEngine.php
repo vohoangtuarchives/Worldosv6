@@ -15,7 +15,8 @@ use Illuminate\Support\Facades\Log;
 class MacroAgentEngine
 {
     public function __construct(
-        protected ActorRepositoryInterface $actorRepository
+        protected ActorRepositoryInterface $actorRepository,
+        protected MacroAgentDecisionService $decisionService
     ) {}
 
     /**
@@ -26,6 +27,7 @@ class MacroAgentEngine
         $stateVector = $universe->state_vector;
         $agents = $stateVector['macro_agents'] ?? [];
         $changed = false;
+        $tick = (int) ($universe->current_tick ?? 0);
 
         foreach ($agents as $idx => &$agent) {
             if (!isset($agent['leader_id'])) {
@@ -39,6 +41,12 @@ class MacroAgentEngine
                     $changed = true;
                 } else {
                     $this->updateAgentStatsFromLeader($agent, $universe);
+                    
+                    // Phân quyền AI ra sắc lệnh mỗi 10 ticks
+                    if ($tick > 0 && $tick % 10 === 0) {
+                        $this->generateAgentEdict($agent, $universe, $stateVector);
+                    }
+                    
                     $changed = true;
                 }
             }
@@ -47,6 +55,45 @@ class MacroAgentEngine
         if ($changed) {
             $stateVector['macro_agents'] = $agents;
             $universe->state_vector = $stateVector;
+        }
+    }
+
+    private function generateAgentEdict(array &$agent, Universe $universe, array &$stateVector): void
+    {
+        $leader = $this->actorRepository->find($agent['leader_id']);
+        if (!$leader) return;
+
+        Log::info("MACRO AI: Generating Edict for Faction {$agent['type']} via LLM");
+        
+        $edict = $this->decisionService->generateEdict($universe, $agent, $leader);
+        if ($edict) {
+            $agent['active_edict'] = $edict;
+            
+            // Ép sắc lệnh vào Zone tương ứng của Faction
+            if (isset($agent['zone_id']) && isset($stateVector['zones'])) {
+                $zoneId = $agent['zone_id'];
+                foreach ($stateVector['zones'] as $zIdx => &$zone) {
+                    if (($zone['id'] ?? $zIdx) == $zoneId) {
+                        $zone['state']['cultural_directive'] = $edict['policy_focus'] ?? 'NONE';
+                        
+                        // Cập nhật 8-Attractor Drift theo sắc lệnh
+                        if (isset($edict['drift_target']) && is_array($edict['drift_target'])) {
+                            $currentVec = $zone['state']['culture_vector'] ?? [
+                                'survival'=>0.5, 'power'=>0.5, 'order'=>0.5, 'reason'=>0.5,
+                                'strategy'=>0.5, 'system'=>0.5, 'holistic'=>0.5, 'integral'=>0.5
+                            ];
+                            foreach ($edict['drift_target'] as $dim => $val) {
+                                if (array_key_exists($dim, $currentVec)) {
+                                    // Áp đặt ngay lập tức định hướng (leader force bias)
+                                    $currentVec[$dim] = (float) $val;
+                                }
+                            }
+                            $zone['state']['culture_vector'] = $currentVec;
+                        }
+                    }
+                }
+            }
+            Log::info("MACRO AI EDICT: {$leader->name} in Zone {$agent['zone_id']} declared [{$edict['edict_name']}] - Focus: {$edict['policy_focus']}");
         }
     }
 

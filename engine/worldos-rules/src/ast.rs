@@ -120,6 +120,9 @@ pub enum Action {
     Add { path: String, value: Expr },
     Set { path: String, value: Expr },
     SpawnActor { kind: String },
+    Drift { path: String, target: Option<Expr>, speed: Option<Expr> },
+    Calc { name: String, formula: Expr },
+    Metadata { key: String, value: String },
 }
 
 // ---------------------------------------------------------------------------

@@ -18,25 +18,49 @@ class SocietyMetricsCalculator
             return 0.0;
         }
 
-        $values = [];
-        $sum = 0.0;
+        $dimensions = [
+            'survival', 'reproduction', 'wealth', 'power', 
+            'knowledge', 'meaning', 'status', 'belonging'
+        ];
 
-        foreach ($actors as $actor) {
-            $val = (($actor->traits['Dominance'] ?? 0.0) + ($actor->traits['Vengeance'] ?? 0.0)) / 2;
-            $values[] = $val;
-            $sum += $val;
+        $totalVariance = 0.0;
+
+        foreach ($dimensions as $dim) {
+            $values = [];
+            $sum = 0.0;
+
+            foreach ($actors as $actor) {
+                $val = $this->getDimensionValue($actor, $dim);
+                $values[] = $val;
+                $sum += $val;
+            }
+
+            $mean = $sum / count($values);
+            $varianceSum = 0.0;
+            foreach ($values as $val) {
+                $varianceSum += pow($val - $mean, 2);
+            }
+            $totalVariance += ($varianceSum / count($values));
         }
 
-        $mean = $sum / count($values);
+        // Return average standard deviation across all dimensions
+        return sqrt($totalVariance / count($dimensions));
+    }
 
-        $varianceSum = 0.0;
-        foreach ($values as $val) {
-            $varianceSum += pow($val - $mean, 2);
-        }
-
-        $variance = $varianceSum / count($values);
-        
-        return sqrt($variance);
+    private function getDimensionValue(ActorState $actor, string $dim): float
+    {
+        $traits = $actor->traits;
+        return match($dim) {
+            'survival'     => ($traits['Resilience'] ?? 0.5),
+            'reproduction' => ($traits['Vitality'] ?? 0.5),
+            'wealth'       => ($traits['Pragmatism'] ?? 0.5) * 0.7 + ($traits['Ambition'] ?? 0.5) * 0.3,
+            'power'        => ($traits['Dominance'] ?? 0.5) * 0.6 + ($traits['Coercion'] ?? 0.5) * 0.4,
+            'knowledge'    => ($traits['Curiosity'] ?? 0.5),
+            'meaning'      => ($traits['Hope'] ?? 0.5) * 0.7 + (1 - ($traits['Dogmatism'] ?? 0.5)) * 0.3,
+            'status'       => ($traits['Pride'] ?? 0.5) * 0.8 + ($traits['Dominance'] ?? 0.5) * 0.2,
+            'belonging'    => ($traits['Solidarity'] ?? 0.5) * 0.4 + ($traits['Conformity'] ?? 0.5) * 0.3 + ($traits['Loyalty'] ?? 0.3),
+            default        => 0.5
+        };
     }
 
     /**

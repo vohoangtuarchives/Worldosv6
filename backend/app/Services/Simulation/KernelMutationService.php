@@ -70,6 +70,8 @@ class KernelMutationService
         $order = 1.0 - min(1.0, ($universe->entropy ?? 0.5));
         $knowledge = $metrics['knowledge_core'] ?? 0.1;
         $stability = $universe->structural_coherence ?? 0.5;
+        
+        $stateVector = $universe->state_vector ?? [];
         $complexity = (float)($stateVector['phase_score']['information'] ?? 0) * 0.5;
         
         // Fitness = f(Order, Knowledge, Stability, Complexity)

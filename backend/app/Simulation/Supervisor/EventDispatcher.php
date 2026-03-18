@@ -4,8 +4,8 @@ namespace App\Simulation\Supervisor;
 
 use App\Contracts\Repositories\UniverseRepositoryInterface;
 use App\Events\Simulation\UniverseSimulationPulsed;
-use App\Models\Universe;
-use App\Models\UniverseSnapshot;
+use App\Modules\Simulation\Entities\UniverseEntity;
+use App\Modules\Simulation\Entities\SnapshotEntity;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
@@ -15,16 +15,22 @@ use Illuminate\Support\Facades\Log;
 final class EventDispatcher
 {
     public function __construct(
-        private readonly UniverseRepositoryInterface $universeRepository,
+        private readonly \App\Modules\Simulation\Contracts\UniverseRepositoryInterface $universeRepository,
     ) {}
 
-    public function dispatchPulsed(Universe $universe, UniverseSnapshot $snapshot, array $engineResponse, int $ticks, float $tickDurationMsPerTick): void
+    public function dispatchPulsed(UniverseEntity $universe, SnapshotEntity $snapshot, array $engineResponse, int $ticks, float $tickDurationMsPerTick): void
     {
-        event(new UniverseSimulationPulsed(
-            $universe,
-            $snapshot,
-            array_merge($engineResponse, ['_ticks' => $ticks])
-        ));
+        // Vẫn cần Model cho Event (UniverseSimulationPulsed) nếu Event chưa refactor
+        $universeModel = \App\Models\Universe::find($universe->id);
+        $snapshotModel = \App\Models\UniverseSnapshot::find($snapshot->id);
+
+        if ($universeModel && $snapshotModel) {
+            event(new \App\Events\Simulation\UniverseSimulationPulsed(
+                $universeModel,
+                $snapshotModel,
+                array_merge($engineResponse, ['_ticks' => $ticks])
+            ));
+        }
 
         Cache::put("worldos.tick_duration_ms.{$universe->id}", $tickDurationMsPerTick, now()->addHours(1));
 
@@ -36,14 +42,15 @@ final class EventDispatcher
             'tick_duration_ms' => round($tickDurationMsPerTick, 2),
         ]);
 
-        $snapshotData = $engineResponse['snapshot'] ?? [];
-        $this->universeRepository->update($universe->id, ['current_tick' => $snapshotData['tick'] ?? $snapshot->tick]);
-
-        $universe->refresh();
-        $universe->structural_coherence = min(1.0, $universe->structural_coherence + $universe->observer_bonus);
-        if ((int) ($snapshot->tick) % 10 === 0) {
-            $universe->fitness_score = app(\App\Services\Simulation\KernelMutationService::class)->calculateFitness($universe);
+        // Cập nhật Entity thông qua logic domain
+        $universe->currentTick = (int) ($engineResponse['snapshot']['tick'] ?? $snapshot->tick);
+        
+        $universe->structuralCoherence = min(1.0, $universe->structuralCoherence + ($universe->observerBonus ?? 0));
+        
+        if ($universe->currentTick % 10 === 0) {
+            $universe->fitnessScore = app(\App\Services\Simulation\KernelMutationService::class)->calculateFitness(\App\Models\Universe::find($universe->id));
         }
-        $universe->save();
+
+        $this->universeRepository->save($universe);
     }
 }

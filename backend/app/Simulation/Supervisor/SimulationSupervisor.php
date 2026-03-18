@@ -2,8 +2,6 @@
 
 namespace App\Simulation\Supervisor;
 
-use App\Contracts\Repositories\UniverseRepositoryInterface;
-use App\Models\Universe;
 use App\Simulation\EngineRegistry;
 use Illuminate\Support\Facades\Log;
 
@@ -13,7 +11,8 @@ use Illuminate\Support\Facades\Log;
 final class SimulationSupervisor
 {
     public function __construct(
-        private readonly UniverseRepositoryInterface $universeRepository,
+        private readonly \App\Modules\Simulation\Contracts\UniverseRepositoryInterface $universeRepository,
+        private readonly \App\Modules\Simulation\Contracts\SnapshotRepositoryInterface $snapshotRepository,
         private readonly EngineDriver $engineDriver,
         private readonly StateSynchronizer $stateSynchronizer,
         private readonly SnapshotManager $snapshotManager,
@@ -31,93 +30,79 @@ final class SimulationSupervisor
     {
         Log::info('Simulation: advance requested', ['universe_id' => $universeId, 'ticks' => $ticks]);
 
-        $universe = $this->universeRepository->find($universeId);
+        $universe = $this->universeRepository->findById($universeId);
 
         if (! $universe || $universe->status === 'halted' || $universe->status === 'restarting') {
             Log::warning('Simulation: advance rejected (universe not found or halted)', ['universe_id' => $universeId]);
-
             return ['ok' => false, 'error_message' => 'Universe not found, is halted, or is restarting'];
         }
-        if (! $universe->world) {
-            Log::warning('Simulation: advance rejected (universe has no world)', ['universe_id' => $universeId]);
 
-            return ['ok' => false, 'error_message' => 'Universe has no world'];
-        }
+        // Logic advance forward
+        $tickDurationMsTotal = 0;
+        $engineResponse = ['ok' => true];
 
-        // Phase 70: The Eternal Now (Tickless Model)
-        $state = $this->stateManager->get();
-        $actualTicks = $ticks;
-        
-        if ($state) {
-            $saliency = $this->scheduler->calculateTimeSaliency($state);
-            $jump = $this->scheduler->getTickJump($saliency);
+        for ($i = 0; $i < $ticks; $i++) {
+            $tickStart = microtime(true);
             
-            // Nếu thực tại ít biến động, ta có thể "nén" thời gian bằng cách chạy nhiều tick hơn trong 1 request
-            if ($jump > 1 && $ticks === 1) {
-                $actualTicks = $jump;
-                Log::info("Simulation: Time Compression (Tickless). Jumping $jump ticks.");
+            $engineResponse = $this->engineDriver->advance($universe, 1);
+            if (! ($engineResponse['ok'] ?? false)) {
+                Log::error('Simulation: engine failure', ['universe_id' => $universe->id, 'error' => $engineResponse['error_message'] ?? 'unknown']);
+                return $engineResponse;
             }
-        }
 
-        $response = $this->engineDriver->advance($universe, $actualTicks);
+            $snapshotData = $engineResponse['snapshot'] ?? [];
+            $tickDurationMsPerTick = (float) ($engineResponse['_tick_duration_ms_per_tick'] ?? 0.0);
+            $tickDurationMsTotal += $tickDurationMsPerTick;
 
-        if (! ($response['ok'] ?? false)) {
-            return $response;
-        }
+            $engineManifest = $this->engineRegistry->getManifest();
 
-        $snapshotData = $response['snapshot'] ?? [];
-        if (empty($snapshotData)) {
-            return $response;
-        }
+            // Sync Entity & Persistence
+            $this->stateSynchronizer->sync($universe, $snapshotData, 1, $engineManifest);
 
-        $tickDurationMsPerTick = (float) ($response['_tick_duration_ms_per_tick'] ?? 0.0);
-        $engineManifest = $this->engineRegistry->getManifest();
-
-        $this->stateSynchronizer->sync($universe, $snapshotData, $actualTicks, $engineManifest);
-
-        $snapshot = $this->snapshotManager->persistOrVirtual($universe, $snapshotData, $tickDurationMsPerTick, $engineManifest);
-
-        $this->eventDispatcher->dispatchPulsed($universe, $snapshot, $response, $actualTicks, $tickDurationMsPerTick);
-
-        $this->runtimePipeline->run(
-            $universe,
-            (int) $snapshotData['tick'],
-            $snapshot,
-            $response,
-            $actualTicks
-        );
-
-        // Vector 7: Engine Health Monitor Tracking
-        if ($snapshot) {
-            $durationTotal = $tickDurationMsPerTick * $actualTicks;
-            // Target ideal tick is < 50ms per tick. Max penalty at 500ms.
+            // Snapshot Persistence via Repository
+            $snapshot = $this->snapshotRepository->create([
+                'universe_id' => $universe->id,
+                'tick' => $universe->currentTick,
+                'state_vector' => $universe->stateVector,
+                'entropy' => $universe->entropy,
+            ]);
+            
+            // Vector 7: Engine Health Monitor Tracking (§V11)
             $healthScore = max(0, min(100, 100 - (($tickDurationMsPerTick - 50) / 4.5)));
+            $metrics = $snapshotData['metrics'] ?? [];
+            if (!is_array($metrics)) {
+                $metrics = [];
+            }
+            $metrics['engine_health'] = round($healthScore, 2);
+            $metrics['last_tick_ms'] = round($tickDurationMsPerTick, 2);
+            $snapshot->metrics = $metrics;
+
+            $this->snapshotRepository->save($snapshot);
+
+            // Internal Dispatching
+            $this->eventDispatcher->dispatchPulsed($universe, $snapshot, $engineResponse, 1, $tickDurationMsPerTick);
             
-            $currentMetrics = $snapshot->metrics ?? [];
-            $currentMetrics['engine_health'] = round($healthScore, 2);
-            $currentMetrics['last_tick_ms'] = round($durationTotal, 2);
-            $snapshot->metrics = $currentMetrics;
-            if ($snapshot->exists) {
-                $snapshot->save();
-            }
-
-            if ($tickDurationMsPerTick > 200) {
-                Log::warning("SimulationSupervisor: High engine load detected.", [
-                    'universe_id' => $universeId,
-                    'health_score' => $healthScore,
-                    'ms_per_tick' => $tickDurationMsPerTick
-                ]);
-            }
+            // Run common pipeline (Events, Evolutionary Leaps, etc.)
+            $this->runtimePipeline->run(
+                $universe,
+                (int) $snapshotData['tick'],
+                $snapshot,
+                $engineResponse,
+                1
+            );
         }
 
-        // Phase 70: Tick Dilation (Delay)
-        if ($state) {
-            $delay = $this->scheduler->getOptimalDelay($state);
-            if ($delay > 0) {
-                usleep($delay * 1000);
-            }
-        }
+        return $this->handleSuccess($universe);
+    }
 
-        return $response;
+    private function handleSuccess(\App\Modules\Simulation\Entities\UniverseEntity $universe): array
+    {
+        $latest = $this->snapshotRepository->findLatestByUniverse($universe->id);
+        return [
+            'ok' => true,
+            'universe_id' => $universe->id,
+            'tick' => $universe->currentTick,
+            'snapshot' => $latest ? $latest->toArray() : [],
+        ];
     }
 }
