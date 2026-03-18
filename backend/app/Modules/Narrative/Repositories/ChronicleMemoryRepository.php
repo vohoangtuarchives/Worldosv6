@@ -34,18 +34,20 @@ class ChronicleMemoryRepository
     /**
      * Store a new narrative event.
      */
-    public function store(int $universeId, int $tick, string $content, array $omens, array $events): Chronicle
+    public function store(int $universeId, int $tick, \App\Modules\Narrative\Dto\NarrativeMeaning $meaning): Chronicle
     {
         return Chronicle::create([
             'universe_id' => $universeId,
             'from_tick'   => $tick,
             'to_tick'     => $tick,
-            'content'     => $content,
+            'content'     => $meaning->summary,
             'type'        => 'narrative_tick',
             'raw_payload' => [
-                'omens' => $omens,
-                'detected_events' => $events,
-                'engine_version' => '8.0'
+                'tension' => $meaning->tension,
+                'direction' => $meaning->direction,
+                'omens' => $meaning->omens,
+                'detected_events' => $meaning->keyFactors,
+                'engine_version' => '9.0_V2'
             ]
         ]);
     }

@@ -2,12 +2,14 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class World extends Model
 {
+    use HasFactory;
     protected $fillable = ['multiverse_id', 'name', 'slug', 'axiom', 'world_seed', 'origin', 'current_genre', 'base_genre', 'active_genre_weights', 'is_autonomic', 'global_tick', 'is_chaotic', 'snapshot_interval'];
 
     protected $casts = [

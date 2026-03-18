@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -9,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Universe extends Model
 {
+    use HasFactory;
     protected $fillable = [
         'world_id', 'multiverse_id', 'parent_universe_id', 'forked_at_tick',
         'seed', 'current_tick', 'level', 'epoch', 'status', 'state_vector', 'engine_manifest', 'name',

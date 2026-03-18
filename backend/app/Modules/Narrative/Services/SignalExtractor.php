@@ -2,6 +2,7 @@
 
 namespace App\Modules\Narrative\Services;
 
+use App\Modules\Narrative\Dto\NarrativeMeaning;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -12,9 +13,9 @@ class SignalExtractor
 {
     /**
      * @param string $llmResponse Raw text from LLM (expected to contain JSON)
-     * @return array{omens: array, impacts: array, events: array, chronicle: string}
+     * @return NarrativeMeaning
      */
-    public function extract(string $llmResponse): array
+    public function extract(string $llmResponse): NarrativeMeaning
     {
         // Try to extract JSON between backticks if present
         if (preg_match('/```json(.*?)```/s', $llmResponse, $matches)) {
@@ -26,25 +27,14 @@ class SignalExtractor
         $decoded = json_decode($json, true);
 
         if (json_last_error() !== JSON_ERROR_NONE) {
-            Log::warning("SignalExtractor: Invalid JSON received from LLM. Falling back to empty signals.");
-            return $this->emptySignals($llmResponse);
+            Log::warning("SignalExtractor: Invalid JSON received from LLM. Falling back to default meaning.");
+            return new NarrativeMeaning(
+                summary: $llmResponse,
+                tension: 'medium',
+                direction: 'stagnation'
+            );
         }
 
-        return [
-            'omens'     => $decoded['omens'] ?? [],
-            'impacts'   => $decoded['impacts'] ?? [],
-            'events'    => $decoded['events'] ?? [],
-            'chronicle' => $decoded['chronicle'] ?? ($decoded['text'] ?? $llmResponse)
-        ];
-    }
-
-    protected function emptySignals(string $originalContent): array
-    {
-        return [
-            'omens'     => [],
-            'impacts'   => [],
-            'events'    => [],
-            'chronicle' => $originalContent
-        ];
+        return NarrativeMeaning::fromArray($decoded);
     }
 }

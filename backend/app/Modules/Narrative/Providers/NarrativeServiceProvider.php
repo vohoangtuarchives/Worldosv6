@@ -7,6 +7,8 @@ use App\Modules\Narrative\Services\NarrativeEngine;
 use App\Modules\Narrative\Services\StateExtractorDSL;
 use App\Modules\Narrative\Services\SignalExtractor;
 use App\Modules\Narrative\Services\StateMutationEngine;
+use App\Modules\Narrative\Services\ChronicleSynthesisEngine;
+use App\Modules\Narrative\Services\UniverseHistoryGenerator;
 use App\Modules\Narrative\Repositories\ChronicleMemoryRepository;
 use App\Contracts\LlmNarrativeClientInterface;
 use App\Modules\Narrative\Services\OpenAINarrativeService;

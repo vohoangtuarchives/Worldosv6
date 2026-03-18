@@ -152,29 +152,43 @@ pub unsafe extern "C" fn process_metabolism_grid(
 ) -> f64 { // Returns total waste (entropy generation)
     if count == 0 { return 0.0; }
     
-    let pop = slice::from_raw_parts_mut(population, count);
-    let bio = slice::from_raw_parts_mut(biomass, count);
-    let ind = slice::from_raw_parts(industry, count);
-    let net = slice::from_raw_parts_mut(net_energy_out, count);
+    // Shadow parameters with SendPtr to isolate them from capture errors (§Level-10)
+    let p_p = SendPtr(population);
+    let b_p = SendPtr(biomass);
+    let i_p = SendPtr(industry as *mut f64);
+    let n_p = SendPtr(net_energy_out);
     
-    let total_waste: f64 = (0..count).into_par_iter().map(|i| {
-        let p = pop[i];
-        let ind_act = ind[i];
-        
-        let gross_energy = base_energy * efficiency;
-        let maintenance = (p * 0.01) + (ind_act * 0.05);
-        let net_e = gross_energy - maintenance;
-        net[i] = net_e;
-        
-        // Emulate starvation
-        if net_e < -0.5 {
-            let deaths = p * 0.3; // 30% penalty
-            pop[i] = p - deaths;
-            bio[i] += deaths * 0.05; // Return to biomass
+    let total_waste: f64 = (0..count).into_par_iter().map(move |i| {
+        // Access pointers strictly via SendPtr inside unsafe block
+        let pp = p_p;
+        let bp = b_p;
+        let ip = i_p;
+        let np = n_p;
+
+        unsafe {
+            let p_ptr = pp.0.add(i);
+            let b_ptr = bp.0.add(i);
+            let i_ptr = ip.0.add(i);
+            let n_ptr = np.0.add(i);
+
+            let p = *p_ptr;
+            let ind_act = *i_ptr;
+            
+            let gross_energy = base_energy * efficiency;
+            let maintenance = (p * 0.01) + (ind_act * 0.05);
+            let net_e = gross_energy - maintenance;
+            *n_ptr = net_e;
+            
+            // Emulate starvation
+            if net_e < -0.5 {
+                let deaths = p * 0.3; // 30% penalty
+                *p_ptr = p - deaths;
+                *b_ptr += deaths * 0.05; // Return to biomass
+            }
+            
+            let waste_rate = 1.0 - efficiency;
+            (maintenance * waste_rate) * 0.1
         }
-        
-        let waste_rate = 1.0 - efficiency;
-        (maintenance * waste_rate) * 0.1
     }).sum();
     
     total_waste

@@ -1,6 +1,20 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useSimulation } from "@/context/SimulationContext";
+
+function formatDistanceToNow(date: Date, options?: { addSuffix?: boolean }) {
+    const now = new Date();
+    const diff = Math.abs(now.getTime() - date.getTime());
+    const seconds = Math.floor(diff / 1000);
+    if (seconds < 60) return options?.addSuffix ? "vừa xong" : "vừa xong";
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return options?.addSuffix ? `${minutes} phút trước` : `${minutes} phút`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return options?.addSuffix ? `${hours} giờ trước` : `${hours} giờ`;
+    const days = Math.floor(hours / 24);
+    return options?.addSuffix ? `${days} ngày trước` : `${days} ngày`;
+}
 
 export type Anomaly = {
     id: string;
@@ -9,9 +23,6 @@ export type Anomaly = {
     severity: "CRITICAL" | "WARN" | "INFO";
     tick: number;
 };
-
-import { useSimulation } from "@/context/SimulationContext";
-import { formatDistanceToNow } from "date-fns";
 
 export function EventFeed({ universeId: _unusedId }: { universeId: number | null }) {
     const { anomalies, liveEvents } = useSimulation();

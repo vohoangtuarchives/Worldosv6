@@ -14,6 +14,9 @@ final class StateVectorUniverseSimilarityService implements UniverseSimilaritySe
 {
     private const FIELD_KEYS = ['survival', 'power', 'wealth', 'knowledge', 'meaning'];
 
+    /**
+     * @return array{universe_id: int, similarity: float, state_vector: mixed}|null
+     */
     public function getMergeCandidate(UniverseSnapshot $snapshot): ?array
     {
         $threshold = (float) config('worldos.autonomic.merge_similarity_threshold', 0.92);

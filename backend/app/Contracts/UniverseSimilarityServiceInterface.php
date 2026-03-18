@@ -20,5 +20,5 @@ interface UniverseSimilarityServiceInterface
     /**
      * Find the best candidate for merging with the given snapshot.
      */
-    public function getMergeCandidate(UniverseSnapshot $snapshot): ?UniverseSnapshot;
+    public function getMergeCandidate(UniverseSnapshot $snapshot): ?array;
 }
