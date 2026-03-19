@@ -7,7 +7,7 @@ use App\Models\Universe;
 use App\Models\UniverseSnapshot;
 use App\Simulation\Runtime\SimulationTickOrchestrator;
 use App\Simulation\Runtime\State\StateManager;
-use App\Services\Simulation\ZenithMetricsService;
+use App\Modules\Simulation\Services\ZenithMetricsService;
 
 class WorldosZenithAscentCommand extends Command
 {
@@ -74,3 +74,4 @@ class WorldosZenithAscentCommand extends Command
         return 0;
     }
 }
+

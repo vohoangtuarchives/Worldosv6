@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Services\Simulation\GrandNarrativeService;
+use App\Modules\Simulation\Services\GrandNarrativeService;
 use Illuminate\Http\JsonResponse;
 
 class GrandNarrativeController extends Controller
@@ -25,3 +25,4 @@ class GrandNarrativeController extends Controller
         }
     }
 }
+

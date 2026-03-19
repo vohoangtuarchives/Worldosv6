@@ -7,7 +7,7 @@ use App\Simulation\Contracts\SimulationEngine;
 use App\Simulation\Domain\EngineResult;
 use App\Simulation\Domain\TickContext;
 use App\Simulation\Runtime\State\WorldState;
-use App\Services\Simulation\RuleVmService;
+use App\Modules\Simulation\Services\RuleEngine\RuleVmService;
 use App\Simulation\Effects\WorldRulesUpdateEffect;
 use App\Models\UniverseSnapshot;
 use function resource_path;
@@ -87,3 +87,6 @@ final class PopulationEngine implements SimulationEngine
         return new EngineResult([], $effects, []);
     }
 }
+
+
+

@@ -4,7 +4,7 @@ namespace App\Simulation\Supervisor;
 
 use App\Contracts\SimulationEngineClientInterface;
 use App\Models\Universe;
-use App\Services\Simulation\GeographyResourceService;
+use App\Modules\Simulation\Services\GeographyResourceService;
 use App\Simulation\Contracts\StateCacheInterface;
 
 /**
@@ -162,3 +162,4 @@ final class EngineDriver
         $snapshotData['state_vector'] = $stateVector;
     }
 }
+

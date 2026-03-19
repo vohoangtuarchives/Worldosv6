@@ -7,7 +7,7 @@ use App\Simulation\Contracts\SimulationEngine;
 use App\Simulation\Domain\EngineResult;
 use App\Simulation\Domain\TickContext;
 use App\Simulation\Runtime\State\WorldState;
-use App\Services\Simulation\RuleVmService;
+use App\Modules\Simulation\Services\RuleEngine\RuleVmService;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -109,3 +109,6 @@ class SingularityStabilityEngine implements SimulationEngine
         $state->set('meta.causal_divergence', (float)$state->get('meta.causal_divergence', 0) * 0.7);
     }
 }
+
+
+

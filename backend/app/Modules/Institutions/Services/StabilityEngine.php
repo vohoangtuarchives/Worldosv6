@@ -3,7 +3,7 @@
 namespace App\Modules\Institutions\Services;
 
 use App\Simulation\Runtime\Domain\UniverseState;
-use App\Services\Simulation\RuleVmService;
+use App\Modules\Simulation\Services\RuleEngine\RuleVmService;
 use function resource_path;
 
 /**
@@ -41,3 +41,6 @@ class StabilityEngine
         return $state;
     }
 }
+
+
+

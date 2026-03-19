@@ -4,7 +4,7 @@ namespace App\Simulation\Engines\Social;
 
 use App\Contracts\Repositories\UniverseRepositoryInterface;
 use App\Models\Universe;
-use App\Services\Simulation\RuleVmService;
+use App\Modules\Simulation\Services\RuleEngine\RuleVmService;
 use Illuminate\Support\Facades\Log;
 use function resource_path;
 use function config;
@@ -138,3 +138,6 @@ class InequalityEngine implements \App\Simulation\Contracts\SimulationEngine
         return is_array($sv) ? $sv : [];
     }
 }
+
+
+

@@ -3,7 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\RuleProposal;
-use App\Services\Simulation\DeployRuleProposalService;
+use App\Modules\Simulation\Services\RuleEngine\DeployRuleProposalService;
 use Illuminate\Console\Command;
 
 /**
@@ -37,3 +37,6 @@ class DeployRuleProposalCommand extends Command
         return 1;
     }
 }
+
+
+

@@ -5,7 +5,7 @@ namespace App\Simulation\Supervisor\Handlers;
 use App\Models\Universe;
 use App\Models\UniverseSnapshot;
 use App\Simulation\Supervisor\Contracts\PostSnapshotHandlerInterface;
-use App\Services\Simulation\CivilizationDiscoveryService;
+use App\Modules\Simulation\Services\CivilizationDiscoveryService;
 
 final class CivilizationDiscoveryPostSnapshotHandler implements PostSnapshotHandlerInterface
 {

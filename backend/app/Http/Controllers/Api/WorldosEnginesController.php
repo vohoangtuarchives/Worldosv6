@@ -7,7 +7,7 @@ use App\Models\Universe;
 use App\Models\World;
 use App\Simulation\EngineProductMapping;
 use App\Simulation\EngineRegistry;
-use App\Services\Simulation\SimulationMetricsExporter;
+use App\Modules\Simulation\Services\SimulationMetricsExporter;
 use App\Modules\Simulation\Services\CivilizationMemoryEngine;
 use App\Modules\Simulation\Services\GreatPersonEngine;
 use App\Modules\Simulation\Services\IdeologyEvolutionEngine;
@@ -303,3 +303,4 @@ class WorldosEnginesController extends Controller
         ]);
     }
 }
+

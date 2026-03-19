@@ -5,7 +5,7 @@ namespace App\Modules\Institutions\Services;
 use App\Simulation\Runtime\Domain\UniverseState;
 use App\Simulation\Runtime\Events\AscensionEvent;
 use App\Simulation\Runtime\Events\EschatonEvent;
-use App\Services\Simulation\RuleVmService;
+use App\Modules\Simulation\Services\RuleEngine\RuleVmService;
 use function resource_path;
 
 /**
@@ -83,3 +83,6 @@ class AscensionEngine
         return 1 / (1 + exp(-$k * ($pressure - $x0)));
     }
 }
+
+
+

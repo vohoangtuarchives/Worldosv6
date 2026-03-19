@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Universe;
-use App\Services\Simulation\ZenithMetricsService;
+use App\Modules\Simulation\Services\ZenithMetricsService;
 use App\Simulation\Runtime\State\StateManager;
 use Illuminate\Http\JsonResponse;
 
@@ -49,3 +49,4 @@ class ZenithController extends Controller
         ]);
     }
 }
+

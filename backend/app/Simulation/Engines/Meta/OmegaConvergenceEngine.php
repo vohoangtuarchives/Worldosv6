@@ -9,7 +9,7 @@ use App\Simulation\Domain\TickContext;
 use App\Simulation\Runtime\State\WorldState;
 use Illuminate\Support\Facades\Log;
 use App\Models\UniverseBridge;
-use App\Services\Simulation\ConvergenceScoreService;
+use App\Modules\Simulation\Services\ConvergenceScoreService;
 use App\Simulation\Effects\WorldStateUpdateEffect;
 
 /**
@@ -86,4 +86,5 @@ class OmegaConvergenceEngine implements SimulationEngine
         return new EngineResult([], $effects);
     }
 }
+
 

@@ -21,7 +21,7 @@ class StateManager
         protected \App\Modules\Intelligence\Services\EcosystemMetricsService $ecosystemMetrics,
         protected \App\Services\AI\OmenIntegrationService $omenService,
         protected \App\Contracts\UniverseSimilarityServiceInterface $similarityService,
-        protected \App\Services\Simulation\HolographicCompressionService $compressionService
+        protected \App\Modules\Simulation\Services\HolographicCompressionService $compressionService
     ) {}
 
     protected array $originalData = [];
@@ -37,11 +37,6 @@ class StateManager
         }
 
         $this->originalData = $data;
-
-        // Merge with snapshot metrics if needed for read-only access
-        if ($snapshot) {
-            $data['_snapshot_metrics'] = $snapshot->metrics ?? [];
-        }
 
         // Phase 42: Load real-time ecosystem metrics into state
         $data['ecosystem_metrics'] = $this->ecosystemMetrics->forUniverse($universe);
@@ -59,7 +54,6 @@ class StateManager
         // Phase 80: Load Resources and Ideas from state_vector (§World-Kernel)
         $resources = array_map(fn($r) => ResourceEntity::fromArray($r), $data['resources'] ?? []);
         $this->currentState->setResourceEntities($resources);
-
         $ideas = array_map(fn($i) => IdeaEntity::fromArray($i), $data['ideas'] ?? []);
         $this->currentState->setIdeaEntities($ideas);
 
@@ -89,7 +83,7 @@ class StateManager
         $isObserved = $universe->last_observed_at && 
                       $universe->last_observed_at->diffInSeconds(\Illuminate\Support\Carbon::now()) < 30;
         $this->currentState->setIsObserved($isObserved);
-
+        
         // Phase 56: Neighboring Realities Pool (Reality Bleeding)
         if ($snapshot) {
             $neighbors = $this->similarityService->getNeighbors($snapshot, 0.6); // 60% similarity threshold for resonance
@@ -139,3 +133,4 @@ class StateManager
         return $this->currentState;
     }
 }
+

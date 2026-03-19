@@ -25,6 +25,10 @@ class DatabaseSeeder extends Seeder
         }
 
         $this->call([
+            RuleSetTierSeeder::class,
+            RuleSetDefinitionSeeder::class,
+            RuleSetCombineRulesSeeder::class,
+            VocationRegistrySeeder::class,
             CosmologySeeder::class,
             MaterialSeeder::class,
             SymbolicMaterialSeeder::class,
@@ -32,6 +36,7 @@ class DatabaseSeeder extends Seeder
             EventTriggerSeeder::class,
             CivilizationAttractorSeeder::class,
             AttractorSpawnRuleSeeder::class,
+            WorldRulesetRuntimeSeeder::class,
         ]);
     }
 }

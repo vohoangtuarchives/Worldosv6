@@ -10,6 +10,8 @@ pub mod constants;
 pub mod memory;
 pub mod types;
 pub mod universe;
+pub mod vocation;
+pub mod ruleset;
 pub mod ecological_engine;
 
 

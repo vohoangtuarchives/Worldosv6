@@ -11,7 +11,7 @@ class AutonomicWorkerService
 {
     public function __construct(
         protected WorldRegulatorEngine $worldAutonomicEngine,
-        protected \App\Services\Simulation\SurvivalPruningService $pruningService,
+        protected \App\Modules\Simulation\Services\SurvivalPruningService $pruningService,
         protected MultiverseSchedulerEngine $scheduler
     ) {}
 
@@ -68,3 +68,4 @@ class AutonomicWorkerService
         return $baseTicks;
     }
 }
+

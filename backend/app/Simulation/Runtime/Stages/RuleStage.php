@@ -5,7 +5,7 @@ namespace App\Simulation\Runtime\Stages;
 use App\Models\Universe;
 use App\Models\UniverseSnapshot;
 use App\Simulation\Runtime\Contracts\SimulationStageInterface;
-use App\Services\Simulation\RuleVmService;
+use App\Modules\Simulation\Services\RuleEngine\RuleVmService;
 use App\Simulation\Runtime\State\StateManager;
 use function resource_path;
 use function file_get_contents;
@@ -181,3 +181,6 @@ final class RuleStage implements SimulationStageInterface
         }
     }
 }
+
+
+

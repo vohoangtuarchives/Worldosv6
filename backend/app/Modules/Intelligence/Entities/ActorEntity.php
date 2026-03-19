@@ -100,7 +100,8 @@ class ActorEntity
         public int $generation = 1,
         public ?string $biography = null,
         public bool $isHeroic = false,
-        public ?string $heroicType = null
+        public ?string $heroicType = null,
+        public ?string $vocationId = null
     ) {}
 
     /**

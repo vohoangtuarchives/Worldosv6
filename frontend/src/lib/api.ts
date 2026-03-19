@@ -500,6 +500,17 @@ export const api = {
     async stats(universeId: number) {
       return apiFetch(`/worldos/rule-debugger/stats/${universeId}`);
     }
+  },
+  library: {
+    async rulesets() {
+      return apiFetch("/worldos/library/rulesets");
+    },
+    async vocations() {
+      return apiFetch("/worldos/library/vocations");
+    },
+    async vocation(id: string) {
+      return apiFetch(`/worldos/library/vocations/${id}`);
+    }
   }
 };
 

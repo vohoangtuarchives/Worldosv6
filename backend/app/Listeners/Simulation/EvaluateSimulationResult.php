@@ -12,7 +12,7 @@ use App\Repositories\UniverseRepository;
 use App\Services\Orchestrator\ImplicitOrchestratorService;
 use App\Simulation\Engines\Meta\AttractorEngine;
 use App\Simulation\Engines\Meta\DynamicAttractorEngine;
-use App\Services\Simulation\EventTriggerProcessor;
+use App\Modules\Simulation\Services\RuleEngine\EventTriggerProcessor;
 use App\Modules\Simulation\Contracts\UniverseRepositoryInterface;
 use App\Modules\Simulation\Services\VoidExplorationEngine;
 use App\Modules\Simulation\Services\EpochEngine;
@@ -21,6 +21,7 @@ use App\Modules\Simulation\Services\TrajectoryModelingEngine;
 use App\Simulation\Support\SimulationRandom;
 use App\Models\UniverseSnapshot;
 use App\Simulation\Runtime\Domain\UniverseState;
+use App\Modules\Simulation\Services\CosmicEnergyPoolService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 
 class EvaluateSimulationResult
@@ -56,24 +57,23 @@ class EvaluateSimulationResult
         protected EventTriggerProcessor $eventTriggerProcessor,
         protected \App\Modules\Simulation\Services\IdeologyEvolutionEngine $ideologyEvolutionEngine,
         protected \App\Modules\Simulation\Services\GreatPersonEngine $greatPersonEngine,
-        protected \App\Services\Simulation\GreatPersonLegacyService $greatPersonLegacyService,
+        protected \App\Modules\Simulation\Services\GreatPersonLegacyService $greatPersonLegacyService,
         protected TimelineMergeAction $timelineMergeAction,
-        protected \App\Services\Simulation\MacroAgentSpawnService $macroAgentSpawnService,
+        protected \App\Modules\Simulation\Services\MacroAgentSpawnService $macroAgentSpawnService,
         protected \App\Simulation\Engines\Meta\CapabilityEngine $capabilityEngine,
         protected \App\Simulation\Engines\Meta\ActorDecisionEngine $actorDecisionEngine,
         protected \App\Simulation\Engines\Meta\ArtifactCreationEngine $artifactCreationEngine,
         protected \App\Simulation\Engines\Social\IdeaDiffusionEngine $ideaDiffusionEngine,
-        protected \App\Services\Simulation\InstitutionDecayService $institutionDecayService,
+        protected \App\Modules\Simulation\Services\InstitutionDecayService $institutionDecayService,
         protected \App\Modules\Simulation\Services\EventNormalizer $eventNormalizer,
         protected \App\Services\Narrative\HistoricalFactEngine $historicalFactEngine,
         protected \App\Simulation\Contracts\WorldEventBusInterface $worldEventBus,
-        protected \App\Services\Narrative\PerspectiveEngine $perspectiveEngine,
         protected \App\Services\Narrative\NarrativeMemoryGraphService $narrativeMemoryGraph,
         protected \App\Services\Narrative\NarrativeScheduler $narrativeScheduler,
         protected \App\Services\Narrative\EraDetector $eraDetector,
         protected \App\Services\Narrative\ReligionSpreadEngine $religionSpreadEngine,
         protected \App\Services\Narrative\CausalTrajectoryFulfillment $causal_trajectoryFulfillment,
-        protected \App\Services\Simulation\CosmicEnergyPoolService $cosmicEnergyPoolService,
+        protected CosmicEnergyPoolService $cosmicEnergyPoolService,
         protected \App\Modules\Simulation\Services\AdaptiveSchedulerService $adaptiveScheduler,
     ) {}
 
@@ -465,18 +465,7 @@ class EvaluateSimulationResult
         }
 
         $interpretations = [];
-        if (config('worldos.narrative_v2.enable_perspective_layer', true)) {
-            $eventPayload = [
-                'category' => $historicalBlock['category'] ?? 'pressure_update',
-                'metrics' => $historicalBlock['metrics'] ?? $snapshot->metrics ?? [],
-                'events' => $historicalBlock['events'] ?? [],
-                'entropy' => $entropy,
-                'stability_index' => (float) $snapshot->stability_index,
-            ];
-            foreach ($this->perspectiveEngine->interpret($eventPayload, []) as $interp) {
-                $interpretations[] = $interp->toArray();
-            }
-        }
+        // Perspective layer disabled (PerspectiveEngine missing)
 
         // Distort snapshot data for AI perception
         $canonicalData = [
@@ -651,3 +640,7 @@ class EvaluateSimulationResult
         }
     }
 }
+
+
+
+

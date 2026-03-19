@@ -4,7 +4,7 @@ namespace App\Simulation\Runtime;
 
 use App\Models\Universe;
 use App\Models\UniverseSnapshot;
-use App\Services\Simulation\SimulationTracer;
+use App\Modules\Simulation\Services\SimulationTracer;
 use App\Simulation\Runtime\Contracts\SimulationStageInterface;
 use App\Simulation\Runtime\Contracts\TickSchedulerInterface;
 use Illuminate\Support\Facades\Cache;
@@ -22,7 +22,7 @@ final class SimulationTickPipeline
         protected \App\Simulation\Runtime\State\StateManager $stateManager,
         protected \App\Simulation\Runtime\EventDrivenScheduler $performanceScheduler,
         protected \App\Simulation\Engines\Biological\AutopoieticEvolutionEngine $evolutionEngine,
-        protected \App\Services\Simulation\RuleMutationService $mutationService,
+        protected \App\Modules\Simulation\Services\RuleMutationService $mutationService,
         protected \App\Simulation\Engines\Meta\InformationPropagationEngine $infoEngine,
         protected \App\Simulation\Engines\Meta\PowerStructureEngine $powerEngine,
         protected \App\Simulation\Engines\Social\CulturalAttractorEngine $cultureEngine,
@@ -32,7 +32,7 @@ final class SimulationTickPipeline
         protected \App\Simulation\Engines\Meta\ThermodynamicPhaseEngine $phaseEngine,
         protected \App\Simulation\Engines\Meta\SingularityStabilityEngine $stabilityEngine,
         protected \App\Simulation\Engines\Meta\AscensionEngine $ascensionEngine,
-        protected \App\Services\Simulation\ZenithMetricsService $metricsService,
+        protected \App\Modules\Simulation\Services\ZenithMetricsService $metricsService,
         protected \App\Simulation\Engines\Meta\CausalHistoryEngine $causalHistoryEngine,
         protected \App\Simulation\Runtime\WorldKernel $kernel,
         protected \App\Modules\Narrative\Services\NarrativeEngine $narrativeEngine
@@ -73,3 +73,4 @@ final class SimulationTickPipeline
         }
     }
 }
+

@@ -6,7 +6,7 @@ use App\Models\Universe;
 use App\Models\UniverseInteraction;
 use App\Models\Chronicle;
 use App\Actions\Simulation\MergeUniverseAction;
-use App\Services\Simulation\RuleVmService;
+use App\Modules\Simulation\Services\RuleEngine\RuleVmService;
 use function config;
 use function app;
 use function now;
@@ -167,3 +167,6 @@ class ConvergenceEngine
         }
     }
 }
+
+
+

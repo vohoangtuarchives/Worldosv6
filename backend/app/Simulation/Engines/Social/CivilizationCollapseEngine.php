@@ -9,7 +9,7 @@ use App\Models\InstitutionalEntity;
 use App\Models\Civilization;
 use App\Models\Chronicle;
 use App\Services\Narrative\NarrativeScheduler;
-use App\Services\Simulation\VaultService;
+use App\Modules\Simulation\Services\VaultService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -43,7 +43,7 @@ class CivilizationCollapseEngine
     public function __construct(
         protected UniverseRepositoryInterface $universeRepository,
         protected VaultService $vaultService,
-        protected \App\Services\Simulation\RuleVmService $ruleVm,
+        protected \App\Modules\Simulation\Services\RuleEngine\RuleVmService $ruleVm,
         protected ?NarrativeScheduler $narrativeScheduler = null
     ) {
         if ($this->narrativeScheduler === null && \app()->bound(NarrativeScheduler::class)) {
@@ -234,3 +234,4 @@ class CivilizationCollapseEngine
         return $civ;
     }
 }
+

@@ -4,7 +4,7 @@ namespace App\Modules\Intelligence\Services;
 
 use App\Models\Universe;
 use App\Modules\Intelligence\Entities\ActorState;
-use App\Services\Simulation\SimulationPRNG;
+use App\Modules\Simulation\Services\SimulationPRNG;
 
 /**
  * GreatPersonEngine (Điểm kết tinh Lịch sử)
@@ -129,3 +129,4 @@ class GreatPersonEngine
         return 1 / (1 + exp(-$x));
     }
 }
+

@@ -48,9 +48,10 @@ final class EventDispatcher
         $universe->structuralCoherence = min(1.0, $universe->structuralCoherence + ($universe->observerBonus ?? 0));
         
         if ($universe->currentTick % 10 === 0) {
-            $universe->fitnessScore = app(\App\Services\Simulation\KernelMutationService::class)->calculateFitness(\App\Models\Universe::find($universe->id));
+            $universe->fitnessScore = app(\App\Modules\Simulation\Services\KernelMutationService::class)->calculateFitness(\App\Models\Universe::find($universe->id));
         }
 
         $this->universeRepository->save($universe);
     }
 }
+

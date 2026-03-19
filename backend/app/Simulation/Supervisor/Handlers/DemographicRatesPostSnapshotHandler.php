@@ -5,7 +5,7 @@ namespace App\Simulation\Supervisor\Handlers;
 use App\Models\Universe;
 use App\Models\UniverseSnapshot;
 use App\Simulation\Supervisor\Contracts\PostSnapshotHandlerInterface;
-use App\Services\Simulation\DemographicRatesService;
+use App\Modules\Simulation\Services\DemographicRatesService;
 
 final class DemographicRatesPostSnapshotHandler implements PostSnapshotHandlerInterface
 {

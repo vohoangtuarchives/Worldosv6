@@ -4,7 +4,7 @@ namespace App\Modules\Simulation\Services;
 
 use App\Models\Universe;
 use App\Models\World;
-use App\Services\Simulation\RuleVmService;
+use App\Modules\Simulation\Services\RuleEngine\RuleVmService;
 use Illuminate\Support\Collection;
 use function resource_path;
 use function config;
@@ -116,3 +116,6 @@ class MultiverseSchedulerEngine
         return round((float) ($result['state']['priority_score'] ?? 0.5), 4);
     }
 }
+
+
+

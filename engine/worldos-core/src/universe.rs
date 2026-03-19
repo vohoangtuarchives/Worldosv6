@@ -131,6 +131,7 @@ impl UniverseState {
             archetype_discovery: None,
             narrative_tags: Vec::new(),
             fork_recommendation: false,
+            axioms: HashMap::new(),
         }
     }
 
@@ -162,6 +163,49 @@ impl UniverseState {
             archetype_discovery: None,
             narrative_tags: Vec::new(),
             fork_recommendation: false,
+            axioms: HashMap::new(),
+        }
+    }
+
+    /// Apply narrative-driven influences to the universe state before ticking.
+    pub fn apply_narrative_influence(&mut self, influence: &serde_json::Value) {
+        if let Some(inf_type) = influence.get("type").and_then(|v| v.as_str()) {
+            match inf_type {
+                "dark_attractor" => {
+                    if let Ok(da) = serde_json::from_value::<DarkAttractor>(influence.clone()) {
+                        self.dark_attractors.push(da);
+                    }
+                },
+                "emotion_spike" => {
+                    if let Some(zone_id) = influence.get("zone_id").and_then(|v| v.as_u64()) {
+                        let zone_id = zone_id as usize;
+                        if zone_id < self.behavior_context.emotion_fields.len() {
+                            let field = &mut self.behavior_context.emotion_fields[zone_id];
+                            if let Some(fear) = influence.get("fear").and_then(|v| v.as_f64()) {
+                                field.fear = (field.fear + fear as f32).clamp(0.0, 1.0);
+                            }
+                            if let Some(anger) = influence.get("anger").and_then(|v| v.as_f64()) {
+                                field.anger = (field.anger + anger as f32).clamp(0.0, 1.0);
+                            }
+                        }
+                    }
+                },
+                "narrative_tag" => {
+                    if let Ok(tag) = serde_json::from_value::<NarrativeTag>(influence.clone()) {
+                        self.narrative_tags.push(tag);
+                    }
+                },
+                "ruleset_axioms" => {
+                    if let Some(payload) = influence.get("payload").and_then(|v| v.as_object()) {
+                        for (key, val) in payload {
+                            if let Some(num) = val.as_f64() {
+                                self.axioms.insert(key.clone(), num);
+                            }
+                        }
+                    }
+                },
+                _ => {}
+            }
         }
     }
 
@@ -586,8 +630,50 @@ impl UniverseState {
         // V7: Quantum Overlay — decay superposition per tick
         self.tick_quantum_overlays();
 
+        // Phase 4: Vocation & Motivation Drift (§Phase 4 Synthesis)
+        self.tick_vocation_drift();
+
         self.refresh_aggregates();
         self.tick += 1;
+    }
+
+    /// Update agent motivation profiles based on 17D traits and RuleSet drift.
+    pub fn tick_vocation_drift(&mut self) {
+        let destiny_scale = self.axioms.get("destiny_gradient").cloned().unwrap_or(0.5) as f32;
+        let curiosity_scale = self.axioms.get("causal_curiosity").cloned().unwrap_or(0.5) as f32;
+        
+        for zone in &mut self.zones {
+            for agent in &mut zone.state.agents {
+                // 1. Calculate "Trait Motivation" (The Natural Drift)
+                // Creation influenced by Curiosity Scale
+                let natural_creation = (agent.trait_vector[8] * 0.4 + agent.trait_vector[1] * 0.3 + curiosity_scale as f64 * 0.3) as f32;
+                // Destruction: Vengeance (12) + Coercion (2)
+                let natural_destruction = (agent.trait_vector[12] * 0.7 + agent.trait_vector[2] * 0.3) as f32;
+                // Order: Dogmatism (9) + Conformity (6)
+                let natural_order = (agent.trait_vector[9] * 0.6 + agent.trait_vector[6] * 0.4) as f32;
+                // Chaos: RiskTolerance (10) - Dogmatism (9)
+                let natural_chaos = (agent.trait_vector[10] * 0.8 + (1.0 - agent.trait_vector[9]) * 0.2) as f32;
+                // Self-Preservation: Fear (11) + Pragmatism (7)
+                let natural_self_pres = (agent.trait_vector[11] * 0.7 + agent.trait_vector[7] * 0.3) as f32;
+                // Altruism: Empathy (4) + Solidarity (5)
+                let natural_altruism = (agent.trait_vector[4] * 0.6 + agent.trait_vector[5] * 0.4) as f32;
+                // Physical: Dominance (0) + Pride (15)
+                let natural_physical = (agent.trait_vector[0] * 0.5 + agent.trait_vector[15] * 0.5) as f32;
+                // Metaphysical influenced by Destiny Scale
+                let natural_metaphysical = (agent.trait_vector[13] * 0.3 + agent.trait_vector[8] * 0.2 + destiny_scale as f64 * 0.5) as f32;
+
+                // 2. Drift current motivation toward natural state (alpha = 0.05)
+                let alpha = 0.05;
+                agent.motivation_profile.creation += (natural_creation - agent.motivation_profile.creation) * alpha;
+                agent.motivation_profile.destruction += (natural_destruction - agent.motivation_profile.destruction) * alpha;
+                agent.motivation_profile.order += (natural_order - agent.motivation_profile.order) * alpha;
+                agent.motivation_profile.chaos += (natural_chaos - agent.motivation_profile.chaos) * alpha;
+                agent.motivation_profile.self_preservation += (natural_self_pres - agent.motivation_profile.self_preservation) * alpha;
+                agent.motivation_profile.altruism += (natural_altruism - agent.motivation_profile.altruism) * alpha;
+                agent.motivation_profile.physical += (natural_physical - agent.motivation_profile.physical) * alpha;
+                agent.motivation_profile.metaphysical += (natural_metaphysical - agent.motivation_profile.metaphysical) * alpha;
+            }
+        }
     }
 
     /// V7 §57: Quantum Overlay tick — decay superposition depth each tick.

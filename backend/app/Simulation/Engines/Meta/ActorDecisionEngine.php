@@ -3,7 +3,7 @@
 namespace App\Simulation\Engines\Meta;
 
 use App\Simulation\Support\SimulationRandom;
-use App\Services\Simulation\RuleVmService;
+use App\Modules\Simulation\Services\RuleEngine\RuleVmService;
 use function config;
 use function array_sum;
 use function round;
@@ -131,3 +131,6 @@ class ActorDecisionEngine
         return in_array($action, ['write', 'create_religion', 'build'], true);
     }
 }
+
+
+

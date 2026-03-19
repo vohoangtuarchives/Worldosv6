@@ -21,7 +21,9 @@ import {
   SocialIntegrityGraph,
   DiplomacyPanel,
   CulturePanel,
-  FinancePanel
+  FinancePanel,
+  VocationConstellation,
+  AkashicLibrary
 } from "@/components/Simulation";
 import {
   Activity,
@@ -70,7 +72,7 @@ import { ApexObserverTab } from "./zenith/ApexObserverTab";
 import { AttractorSidebarPanel } from "./AttractorSidebarPanel";
 import { ConvergenceMapPanel } from "@/components/features/cosmos/ConvergenceMapPanel";
 
-const PERSONAE_SUB_KEYS = ["actors", "factions", "civilizations", "supreme", "integrity", "materials", "diplomacy", "culture", "finance", "attractors"] as const;
+const PERSONAE_SUB_KEYS = ["actors", "factions", "civilizations", "vocation", "supreme", "integrity", "materials", "diplomacy", "culture", "finance", "attractors"] as const;
 type PersonaeSubKey = (typeof PERSONAE_SUB_KEYS)[number];
 
 /** Engine / nguồn liên quan tới từng loại thực thể (theo backend/docs/ENGINE_PRODUCTS.md). */
@@ -78,6 +80,7 @@ const PERSONAE_ENGINE_HINT: Record<PersonaeSubKey, string> = {
   actors: "Intelligence: GetUniverseActorsAction, ActorBehaviorEngine, ActorEvolutionService",
   factions: "ReligionEngine, GovernanceEngine, CivilizationFormationEngine, LawEvolutionEngine",
   civilizations: "CivilizationFormationEngine, ZoneConflictEngine, GreatFilterEngine",
+  vocation: "VocationRegistry, RuleSetCombinator, AxiomRegistry",
   supreme: "AscensionEngine, GreatPersonEngine",
   integrity: "SupremeEntity.karma (cùng nguồn Thực thể Tối cao)",
   materials: "ScenarioEngine, Material DAG, evolution pipeline",
@@ -113,7 +116,7 @@ export function CosmologicDashboard({ embedded = false }: { embedded?: boolean }
     | "cognitive"
     | "evolution"
     | "chronicles"
-    | "actors"
+    | "actors" // Personae / Entities
     | "archive"
     | "apex"
     | "multiverse"
@@ -383,6 +386,7 @@ export function CosmologicDashboard({ embedded = false }: { embedded?: boolean }
                         { key: "actors" as const, label: "Nhân vật", icon: Users, count: (actors ?? []).length },
                         { key: "factions" as const, label: "Thể chế", icon: Building2, count: (institutions ?? []).length },
                         { key: "civilizations" as const, label: "Văn minh", icon: Globe, count: civsCount },
+                        { key: "vocation" as const, label: "Thiên Mệnh", icon: Sparkles, count: 0 },
                         { key: "supreme" as const, label: "Thực thể Tối cao", icon: Sparkles, count: (supremeEntities ?? []).length },
                         { key: "integrity" as const, label: "Nợ nhân quả", icon: ShieldCheck, count: integrityCount },
                         { key: "materials" as const, label: "Vật liệu", icon: Package, count: materialsCount },
@@ -411,6 +415,14 @@ export function CosmologicDashboard({ embedded = false }: { embedded?: boolean }
                     {personaeSubTab === "actors" && <ActorList universeId={universeId} />}
                     {personaeSubTab === "factions" && <FactionList universeId={universeId} />}
                     {personaeSubTab === "civilizations" && <CivilizationList universeId={universeId} />}
+                    {personaeSubTab === "vocation" && (
+                      <div className="space-y-12 py-4">
+                         <VocationConstellation />
+                         <div className="pt-8 border-t border-white/5">
+                            <AkashicLibrary />
+                         </div>
+                      </div>
+                    )}
                     {personaeSubTab === "supreme" && <SupremeEntityList universeId={universeId} />}
                     {personaeSubTab === "integrity" && (
                       <IntegrityMonitor
@@ -492,6 +504,7 @@ export function CosmologicDashboard({ embedded = false }: { embedded?: boolean }
               {activeTab === "narrative" && universeId && (
                 <div className="p-6"> <CivilizationReview universeId={universeId as number} /> </div>
               )}
+| "archive"
               {activeTab === "archive" && universeId && ( <div className="p-6"> <VoidArchive universeId={universeId} /> </div> )}
               {activeTab === "apex" && universeId && ( <div className=""> <ApexObserverTab universeId={universeId} /> </div> )}
               {activeTab === "multiverse" && (

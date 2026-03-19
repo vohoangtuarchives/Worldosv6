@@ -7,7 +7,7 @@ use App\Simulation\Contracts\SimulationEngine;
 use App\Simulation\Domain\EngineResult;
 use App\Simulation\Domain\TickContext;
 use App\Simulation\Runtime\State\WorldState;
-use App\Services\Simulation\RuleMutationService;
+use App\Modules\Simulation\Services\RuleMutationService;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -150,3 +150,4 @@ class AutopoieticEvolutionEngine implements SimulationEngine
         ];
     }
 }
+

@@ -5,7 +5,7 @@ namespace App\Modules\Institutions\Services;
 use App\Models\Universe;
 use App\Models\UniverseSnapshot;
 use App\Models\MaterialInstance;
-use App\Services\Simulation\RuleVmService;
+use App\Modules\Simulation\Services\RuleEngine\RuleVmService;
 use Illuminate\Support\Facades\Log;
 use function resource_path;
 use function config;
@@ -27,7 +27,7 @@ class SocialDynamicsEngine
     ];
 
     public function __construct(
-        protected \App\Services\Simulation\RuleVmService $ruleVm,
+        protected \App\Modules\Simulation\Services\RuleEngine\RuleVmService $ruleVm,
         protected \App\Modules\Intelligence\Services\CultureEngine $cultureEngine
     ) {
         $this->cultureEngine = \app(\App\Modules\Intelligence\Services\CultureEngine::class);
@@ -182,3 +182,7 @@ class SocialDynamicsEngine
         ];
     }
 }
+
+
+
+

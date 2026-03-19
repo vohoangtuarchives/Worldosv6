@@ -12,7 +12,7 @@ use App\Simulation\Runtime\State\WorldState;
 use App\Simulation\Effects\OsmosisUpdateEffect;
 use App\Simulation\Events\WorldEvent;
 use App\Simulation\Events\WorldEventType;
-use App\Services\Simulation\RuleVmService;
+use App\Modules\Simulation\Services\RuleEngine\RuleVmService;
 use Illuminate\Support\Facades\Log;
 use function resource_path;
 use function file_get_contents;
@@ -149,3 +149,6 @@ final class MultiverseOsmosisEngine implements SimulationEngine
         return new OsmosisUpdateEffect($bleed);
     }
 }
+
+
+

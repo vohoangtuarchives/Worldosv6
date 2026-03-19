@@ -5,8 +5,8 @@ namespace App\Simulation\Supervisor\Handlers;
 use App\Models\Universe;
 use App\Models\UniverseSnapshot;
 use App\Simulation\Supervisor\Contracts\PostSnapshotHandlerInterface;
-use App\Services\Simulation\RuleVmService;
-use App\Services\Simulation\SelfImprovingSimulationService;
+use App\Modules\Simulation\Services\RuleEngine\RuleVmService;
+use App\Modules\Simulation\Services\SelfImprovingSimulationService;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;
@@ -40,3 +40,7 @@ final class SelfImprovingPostSnapshotHandler implements PostSnapshotHandlerInter
         }
     }
 }
+
+
+
+

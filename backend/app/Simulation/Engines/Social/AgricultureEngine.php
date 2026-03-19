@@ -7,7 +7,7 @@ use App\Simulation\Contracts\SimulationEngine;
 use App\Simulation\Domain\EngineResult;
 use App\Simulation\Domain\TickContext;
 use App\Simulation\Runtime\State\WorldState;
-use App\Services\Simulation\RuleVmService;
+use App\Modules\Simulation\Services\RuleEngine\RuleVmService;
 use App\Simulation\Events\WorldEvent;
 use App\Simulation\Events\WorldEventType;
 use function resource_path;
@@ -85,3 +85,6 @@ final class AgricultureEngine implements SimulationEngine
         return new EngineResult($events, [], []);
     }
 }
+
+
+

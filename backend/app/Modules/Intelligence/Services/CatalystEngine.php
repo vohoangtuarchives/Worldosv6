@@ -3,7 +3,7 @@
 namespace App\Modules\Intelligence\Services;
 
 use App\Models\Universe;
-use App\Services\Simulation\SimulationPRNG;
+use App\Modules\Simulation\Services\SimulationPRNG;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -128,3 +128,4 @@ class CatalystEngine
         }
     }
 }
+

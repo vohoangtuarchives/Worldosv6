@@ -10,7 +10,7 @@ use App\Simulation\Runtime\State\WorldState;
 use App\Simulation\Events\WorldEvent;
 use App\Simulation\Events\WorldEventType;
 use App\Simulation\Effects\WorldRulesUpdateEffect;
-use App\Services\Simulation\RuleVmService;
+use App\Modules\Simulation\Services\RuleEngine\RuleVmService;
 
 /**
  * Phase 76+ Vector 2: GovernanceEngine — Restored full event emission.
@@ -115,3 +115,6 @@ final class GovernanceEngine implements SimulationEngine
         return new EngineResult($events, $effects, []);
     }
 }
+
+
+

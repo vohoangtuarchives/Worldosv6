@@ -12,7 +12,7 @@ Tài liệu này dành cho các AI Agent (Antigravity, Cursor, etc.) để hiể
 ## 2. Quy tắc quan trọng (CRITICAL RULES)
 - **KHÔNG tự ý chạy `composer install` hoặc `npm install` trên máy Host.** 
 - Tất cả các lệnh artisan/composer PHẢI chạy thông qua Docker:
-  `docker compose -f deployment/docker-compose.dev.yml exec backend [command]`
+  `docker compose -f deployment/docker-compose.prod.yml exec backend [command]`
 - **PHP Requirement:** Luôn giữ `composer.json` ở mức `php: ^8.3` để tương thích với Docker image hiện tại.
 - **DDD & Patterns:** Tuân thủ Domain Driven Design, Event Driven, Repository và Action pattern cho PHP.
 

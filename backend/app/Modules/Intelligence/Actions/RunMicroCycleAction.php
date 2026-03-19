@@ -13,7 +13,7 @@ use App\Modules\Intelligence\Services\ActorTransitionSystem;
 use App\Modules\Intelligence\Services\ReplicatorDistributionUpdater;
 use App\Modules\Intelligence\Services\MacroStateEvolution;
 use App\Modules\Intelligence\Services\SocietyAnalyzer;
-use App\Services\Simulation\SimulationPRNG;
+use App\Modules\Simulation\Services\SimulationPRNG;
 use Illuminate\Support\Facades\Log;
 
 class RunMicroCycleAction
@@ -185,3 +185,4 @@ class RunMicroCycleAction
         return hash('sha256', json_encode($payload, JSON_UNESCAPED_UNICODE));
     }
 }
+

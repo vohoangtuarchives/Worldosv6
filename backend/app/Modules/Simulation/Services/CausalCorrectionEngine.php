@@ -6,7 +6,7 @@ use App\Models\Universe;
 use App\Models\UniverseSnapshot;
 use App\Models\Chronicle;
 use App\Models\SupremeEntity;
-use App\Services\Simulation\RuleVmService;
+use App\Modules\Simulation\Services\RuleEngine\RuleVmService;
 use Illuminate\Support\Facades\Log;
 use function resource_path;
 use function file_get_contents;
@@ -81,3 +81,6 @@ class CausalCorrectionEngine
         Log::info("Causal Correction executed for Entity [{$entity->name}] in Universe {$universe->id}");
     }
 }
+
+
+

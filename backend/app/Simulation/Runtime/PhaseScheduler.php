@@ -3,7 +3,7 @@
 namespace App\Simulation\Runtime;
 
 use App\Simulation\Runtime\Contracts\TickSchedulerInterface;
-use App\Services\Simulation\SimulationClock;
+use App\Modules\Simulation\Services\SimulationClock;
 
 /**
  * PhaseScheduler – implements 5-phase execution loop.
@@ -51,3 +51,4 @@ final class PhaseScheduler implements TickSchedulerInterface
         };
     }
 }
+

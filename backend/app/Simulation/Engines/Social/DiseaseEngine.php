@@ -7,7 +7,7 @@ use App\Simulation\Contracts\SimulationEngine;
 use App\Simulation\Domain\EngineResult;
 use App\Simulation\Domain\TickContext;
 use App\Simulation\Runtime\State\WorldState;
-use App\Services\Simulation\RuleVmService;
+use App\Modules\Simulation\Services\RuleEngine\RuleVmService;
 use App\Simulation\Effects\WorldRulesUpdateEffect;
 use App\Simulation\Events\WorldEvent;
 use App\Simulation\Events\WorldEventType;
@@ -117,3 +117,6 @@ final class DiseaseEngine implements SimulationEngine
         return new EngineResult($events, $effects, []);
     }
 }
+
+
+

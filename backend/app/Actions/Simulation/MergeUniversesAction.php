@@ -4,8 +4,9 @@ namespace App\Actions\Simulation;
 
 use App\Models\Universe;
 use App\Models\Chronicle;
-use App\Services\Simulation\ParadoxResolver;
-use App\Services\Simulation\SoulAnchorService;
+use App\Modules\Simulation\Services\ParadoxResolver;
+use App\Modules\Simulation\Services\SoulAnchorService;
+use App\Modules\Simulation\Services\MultiverseInteractionService;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -88,3 +89,4 @@ class MergeUniversesAction
         Log::info("ESSENCE: Universe #{$universe->id} recycled into {$essence} Primal Essence.");
     }
 }
+

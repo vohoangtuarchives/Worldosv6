@@ -5,7 +5,7 @@ namespace App\Simulation\Supervisor\Handlers;
 use App\Models\Universe;
 use App\Models\UniverseSnapshot;
 use App\Simulation\Supervisor\Contracts\PostSnapshotHandlerInterface;
-use App\Services\Simulation\ActorCognitiveService;
+use App\Modules\Simulation\Services\ActorCognitiveService;
 
 final class CognitivePostSnapshotHandler implements PostSnapshotHandlerInterface
 {
@@ -18,3 +18,4 @@ final class CognitivePostSnapshotHandler implements PostSnapshotHandlerInterface
         $this->cognitiveService->computeAndStore($universe, $snapshot);
     }
 }
+

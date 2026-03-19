@@ -20,7 +20,7 @@ class DeathNarrativeStrategy implements NarrativeStrategyInterface
         $scenarios = ['Heroic', 'Mundane', 'Absurd', 'Gamer', 'Classic Truck-kun'];
         // Fallback to crc32 seed if universe not immediately accessible
         $seed = crc32($entityType . $entity['id'] . $tick);
-        $prng = new \App\Services\Simulation\SimulationPRNG($seed);
+        $prng = new \App\Modules\Simulation\Services\SimulationPRNG($seed);
         $scenario = $prng->randomElement($scenarios);
 
         if ($count > 1) {
@@ -34,3 +34,4 @@ class DeathNarrativeStrategy implements NarrativeStrategyInterface
             . "Yêu cầu: Viết cảnh người này đang làm gì đó thì đột ngột biến mất, hoặc chết một cách bất đắc kỳ tử để xuyên không.";
     }
 }
+

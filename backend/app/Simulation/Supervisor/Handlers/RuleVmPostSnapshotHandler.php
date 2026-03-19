@@ -5,7 +5,7 @@ namespace App\Simulation\Supervisor\Handlers;
 use App\Models\Universe;
 use App\Models\UniverseSnapshot;
 use App\Simulation\Supervisor\Contracts\PostSnapshotHandlerInterface;
-use App\Services\Simulation\RuleVmService;
+use App\Modules\Simulation\Services\RuleEngine\RuleVmService;
 use Illuminate\Support\Facades\Config;
 
 final class RuleVmPostSnapshotHandler implements PostSnapshotHandlerInterface
@@ -21,3 +21,6 @@ final class RuleVmPostSnapshotHandler implements PostSnapshotHandlerInterface
         }
     }
 }
+
+
+

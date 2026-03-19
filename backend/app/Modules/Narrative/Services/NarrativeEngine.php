@@ -24,7 +24,8 @@ class NarrativeEngine
         protected NarrativeScheduler $scheduler,
         protected StateMutationEngine $mutationEngine,
         protected ChronicleMemoryRepository $memoryRepository,
-        protected LlmNarrativeClientInterface $llmClient
+        protected LlmNarrativeClientInterface $llmClient,
+        protected NarrativeFeedbackService $feedbackService
     ) {}
 
     /**
@@ -38,8 +39,15 @@ class NarrativeEngine
                 return;
             }
 
-            // 1. Extract Narrative Tokens from current state
-            $tokens = $this->extractor->extract($snapshot->state_vector ?? [], $snapshot->metrics ?? []);
+            // 1. Extract Narrative Context (Tokens + Events)
+            $contextData = $this->extractor->extractContext(
+                $universe->id, 
+                $snapshot->tick, 
+                $snapshot->state_vector ?? [], 
+                $snapshot->metrics ?? []
+            );
+            $tokens = $contextData['tokens'];
+            $events = $contextData['events'];
             
             // 2. Manage Narrative State (Arc, Conflicts)
             /** @var NarrativeState $state */
@@ -48,20 +56,13 @@ class NarrativeEngine
                 ['current_arc' => 'Genesis', 'active_conflicts' => []]
             );
 
-            // 3. Build Projection (Perceived State)
-            $projection = new NarrativeProjection(
-                entropy: (float) ($universe->entropy ?? 0),
-                stability: (float) ($universe->stabilityIndex ?? 0),
-                activeConflicts: array_unique(array_merge($tokens, $state->active_conflicts ?? []))
-            );
-
-            // 4. Build context from memory
-            $context = $this->memoryRepository->getContext($universe->id, $tokens);
+            // 3. Build context from memory (History)
+            $history = $this->memoryRepository->getContext($universe->id, $tokens);
             
-            // 5. Construct Prompt for LLM
-            $prompt = $this->buildPrompt($universe, $projection, $context, $state);
+            // 4. Construct Multi-Perspective Prompt (Emergent Focus)
+            $prompt = $this->buildEmergentPrompt($universe, $state, $history, $events, $tokens);
             
-            // 6. Single LLM Call (The Interpretation phase)
+            // 5. Single LLM Call (The Interpretation phase)
             $response = $this->llmClient->generate($prompt);
             
             if (!$response) {
@@ -69,59 +70,79 @@ class NarrativeEngine
                 return;
             }
 
-            // 7. Parse Narrative Meaning (AI interpretation)
+            // 6. Parse Narrative Meaning (AI interpretation)
             /** @var NarrativeMeaning $meaning */
             $meaning = $this->signalExtractor->extract($response);
             
-            // 8. Build Deterministic Signals (The System Brain phase)
+            // 7. Build Deterministic Signals (The System Brain phase)
             $signal = $this->signalBuilder->build($meaning);
             
-            // 9. Apply deterministic state mutations
+            // 8. Apply deterministic state mutations
             $this->mutationEngine->apply($universe, [
                 'entropy' => $signal->entropyDelta,
                 'stability' => $signal->stabilityDelta
             ]);
             
-            // 10. Store new Chronicle with memory index
+            // 9. Store new Chronicle with memory index
             $this->memoryRepository->store($universe->id, $snapshot->tick, $meaning);
 
-            // 11. Update Narrative State for continuity
+            // 10. Update Narrative State for continuity
             $state->update([
                 'active_conflicts' => array_slice($meaning->keyFactors, 0, 5),
                 'last_tick' => $snapshot->tick
             ]);
+
+            // 11. Apply Narrative Feedback (Omens)
+            if (!empty($meaning->omens)) {
+                $this->feedbackService->applyOmens($universe, $meaning->omens);
+            }
 
         } catch (\Throwable $e) {
             Log::error("NarrativeEngine: Pipeline failed for Universe {$universe->id}: " . $e->getMessage() . "\n" . $e->getTraceAsString());
         }
     }
 
-    protected function buildPrompt(UniverseEntity $universe, NarrativeProjection $projection, string $context, NarrativeState $state): string
+    /**
+     * Build an Emergent-focused prompt that prioritizes causal events over flat metrics.
+     */
+    protected function buildEmergentPrompt(UniverseEntity $universe, NarrativeState $state, string $history, array $events, array $tokens): string
     {
-        $tokens = implode(', ', $projection->toNarrativeTokens());
-        
+        $eventsText = empty($events) ? "Không có sự kiện đáng chú ý." : collect($events)->map(fn($e) => "- [Tick {$e['tick']}] {$e['summary']}")->implode("\n");
+        $tokensText = implode(', ', $tokens);
+
         return <<<EOT
-Bạn là Narrative Engine của WorldOS. Nhiệm vụ của bạn là diễn giải trạng thái mô phỏng thành một biên niên sử sống động và trích xuất ý nghĩa xu hướng.
+Bạn là Narrative Engine (Kiến trúc Sáng tạo) của WorldOS. Nhiệm vụ của bạn là dệt nên câu chuyện từ các sự kiện đột biến (Emergent Events) thay vì chỉ đọc số liệu khô khan.
 
-BỐI CẢNH VŨ TRỤ:
-- Tên: {$universe->name}
-- Chương hiện tại: {$state->current_arc}
-- Chỉ số Tinh thần: {$tokens}
+VAI TRÒ: Biên niên sử gia của đa vũ trụ.
+VŨ TRỤ: {$universe->name} (Chương: {$state->current_arc})
 
-DỮ LIỆU LỊCH SỬ GẦN ĐÂY:
-{$context}
+DỮ LIỆU THỰC TẠI (GROUND TRUTH):
+Các sự kiện vừa xảy ra trong mô phỏng:
+{$eventsText}
+
+BỐI CẢNH TOÀN CỤC (TOKEN):
+{$tokensText}
+
+BIÊN NIÊN SỬ GẦN ĐÂY:
+{$history}
 
 YÊU CẦU:
-1. Viết biên niên sử (Summary) về giai đoạn này.
-2. Xác định Tâm thế (Tension) và Hướng đi (Direction) của thực tại.
+1. DIỄN GIẢI CAUSALITY: Liên kết các sự kiện trên thành một chuỗi nhân quả hợp lý. Đừng chỉ liệt kê, hãy kể về hậu quả của những sự kiện này.
+2. NARRATIVE FEEDBACK: Nếu các sự kiện trên cho thấy một xu hướng mới (ví dụ: bạo lực gia tăng), hãy đề xuất các "Omen" (Điềm báo) để tác động ngược lại mô phỏng.
 
 PHẢI TRẢ VỀ JSON NGHIÊM NGẶT:
 {
-  "summary": "Nội dung biên niên sử tại đây...",
+  "summary": "Mô tả nhân quả sống động (Tiếng Việt)...",
   "tension": "low | medium | high",
   "direction": "growth | stagnation | collapse",
-  "key_factors": ["Từ khóa 1", "Từ khóa 2"],
-  "omens": ["Lời sấm truyền ngắn gọn"]
+  "key_factors": ["Tag nhân vật/sự kiện chính"],
+  "omens": [
+    {
+      "type": "crisis | oracle | mutation",
+      "description": "Mô tả điềm báo sẽ tiêm vào simulation",
+      "intensity": 0.5
+    }
+  ]
 }
 EOT;
     }

@@ -13,9 +13,9 @@ class PressureResolver
     protected float $k_base = 0.003;
 
     public function __construct(
-        protected \App\Services\Simulation\RuleVmService $ruleVm
+        protected \App\Modules\Simulation\Services\RuleEngine\RuleVmService $ruleVm
     ) {
-        $this->ruleVm = $ruleVm ?? \app(\App\Services\Simulation\RuleVmService::class);
+        $this->ruleVm = $ruleVm ?? \app(\App\Modules\Simulation\Services\RuleEngine\RuleVmService::class);
     }
 
     public function apply(MaterialInstance $instance, array $context): array
@@ -87,3 +87,4 @@ class PressureResolver
         return $out;
     }
 }
+

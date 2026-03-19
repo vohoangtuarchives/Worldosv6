@@ -10,7 +10,7 @@ class AutonomicPulseAction
         protected AdvanceSimulationAction $advanceAction,
         protected \App\Modules\Simulation\Services\WorldRegulatorEngine $worldAutonomicEngine,
         protected \App\Modules\Simulation\Services\MultiverseSchedulerEngine $scheduler,
-        protected \App\Services\Simulation\EvolutionarySparkService $sparkService
+        protected \App\Modules\Simulation\Services\EvolutionarySparkService $sparkService
     ) {}
 
     /**
@@ -56,3 +56,4 @@ class AutonomicPulseAction
         return $results;
     }
 }
+

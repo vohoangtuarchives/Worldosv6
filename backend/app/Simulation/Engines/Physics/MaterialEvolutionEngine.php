@@ -66,7 +66,7 @@ class MaterialEvolutionEngine
         // 1. EMERGENT PARADIGM SHIFT (GEN AI)
         // Khi innovation (ip_score) cực lớn, tỉ lệ cực nhỏ bypass hardcode mutation để GenAI tự sáng chế Material mới.
         if ($ipScore > 0.9) {
-            $prng = clone \App\Services\Simulation\SimulationPRNG::forUniverse($universe);
+            $prng = clone \App\Modules\Simulation\Services\SimulationPRNG::forUniverse($universe);
             if ($prng->nextInt(0, 100) < 5) { // 5% chance per tick at high innovation
                 $this->triggerGenAiSynthesis($universe, $activeInstances);
                 return; // Stop processing predefined mutations to let the new paradigm take root
@@ -88,7 +88,7 @@ class MaterialEvolutionEngine
                     $childMaterial = $mutation->childMaterial ?? null;
                     if (!$childMaterial) continue;
                     // 20% chance to discover child material per high-IP tick
-                    $prng = clone \App\Services\Simulation\SimulationPRNG::forUniverse($universe);
+                    $prng = clone \App\Modules\Simulation\Services\SimulationPRNG::forUniverse($universe);
                     if ($prng->nextInt(0, 100) < 20) {
                         $universe->materialInstances()->create([
                             'material_id' => $mutation->child_material_id,
@@ -144,3 +144,4 @@ class MaterialEvolutionEngine
         }
     }
 }
+

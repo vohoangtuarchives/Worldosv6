@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Services\Simulation\CivilizationDiscoveryService;
+use App\Modules\Simulation\Services\CivilizationDiscoveryService;
 use Illuminate\Console\Command;
 
 /**

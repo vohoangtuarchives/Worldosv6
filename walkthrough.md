@@ -35,5 +35,35 @@ Rewrote the core SoA (Struct-of-Arrays) logic to be thread-safe and feature-comp
 - **Integration:** Registered in [SimulationServiceProvider](file:///c:/projects/IPFactory/backend/app/Modules/Simulation/Providers/SimulationServiceProvider.php#14-287) and [PhaseScheduler](file:///c:/projects/IPFactory/backend/app/Simulation/Runtime/PhaseScheduler.php#11-54).
 - **Test Suite:** Created [test_vectorized_actors.php](file:///c:/projects/IPFactory/backend/test_vectorized_actors.php) for isolated logic verification (requires FFI-enabled environment).
 
+
+## Phase 76: RuleSet Ontology & Vocation Library 🌌
+
+I have finished seeding the "Physics of Reality" and the "Library of Professions" for the WorldOS simulation.
+
+### 1. 8-Tier RuleSet Ontology
+Implemented 17 distinct rulesets across 8 ontological tiers (Realistic, Wuxia, Xianxia, Fantasy, Mythology, Sci-Fi, Anime, Magitech, Ultimate/Dao, Primordial Chaos).
+- **Core:** [RuleSetDefinitionSeeder.php](file:///c:/projects/IPFactory/backend/database/seeders/RuleSetDefinitionSeeder.php)
+- **Physics:** 9-dimensional reality parameters (Gravity, Entropy, Metaphysics, Social Mobility, etc.) handled directly in Rust for high performance.
+- **FFI Endpoint:** [ruleset::get_combined_gravity](file:///c:/projects/IPFactory/engine/worldos-core/src/ruleset.rs) exposes real-time physics calculations to Laravel.
+
+### 2. Service-Ready Vocation Library
+Seeded 72 base professions (Martial, Scholarly, Shadow, Divine, Craft, Arcane, Tech, Ultimate).
+- **Core:** [VocationRegistrySeeder.php](file:///c:/projects/IPFactory/backend/database/seeders/VocationRegistrySeeder.php)
+- **Logic:** 8-dimensional motivation profile (Creation, Destruction, Order, Chaos, Self-Preservation, Altruism, Physical, Metaphysical).
+- **FFI Endpoint:** [vocation::calculate_alignment](file:///c:/projects/IPFactory/engine/worldos-core/src/vocation/scoring.rs) allows the engine to score actor suitability for roles using vectorized dot products.
+
+### 3. Integrated Verification
+- **Automated Tests:** Created [VocationRuleSetFfiTest.php](file:///c:/projects/IPFactory/backend/tests/Feature/Simulation/VocationRuleSetFfiTest.php) to verify the FfiActorEngine's ability to communicate with the Rust core.
+- **Results:** 
+    - Vocation alignment scoring (8D dot product) verified.
+    - Multi-tier ruleset gravity blending verified.
+    - Database successfully migrated and seeded in Docker.
+
+### 4. Tier 0 Default Integration
+- **Default Reality**: Mọi World mới khi tạo ra (nếu không khai báo khác) sẽ mặc định sử dụng RuleSet `realistic_modern` (Tier 0).
+- **Schema Update**: Bảng `worlds` đã được bổ sung cột `primary_ruleset_id`.
+- **Automated Lifecycle**: Sử dụng tính năng `booted` của Eloquent để tự động khởi tạo bản ghi `WorldRulesetRuntime` ngay khi World được tạo, đảm bảo tính nhất quán của thực tại.
+- **Idempotency**: Toàn bộ hệ thống Seeders (Tier, Definition, Vocation) đã được refactor để có thể chạy đi chạy lại nhiều lần không lỗi (`updateOrInsert`), giúp việc cập nhật thư viện Ontology trở nên dễ dàng và an toàn.
+
 > [!IMPORTANT]
-> To enable these performance boosts in production, ensure the `FFI` extension is enabled in your PHP-FPM configuration and the [worldos_ffi.dll](file:///c:/projects/IPFactory/engine/target/release/worldos_ffi.dll)/[so](file:///c:/projects/IPFactory/frontend/src/lib/api.ts#229-233) is present in `storage/app/`.
+> Toàn bộ hệ thống đã được xác minh qua `phpunit` [VocationRuleSetFfiTest.php](file:///c:/projects/IPFactory/backend/tests/Feature/Simulation/VocationRuleSetFfiTest.php) và thực hiện `migrate` thực tế trên môi trường Docker.

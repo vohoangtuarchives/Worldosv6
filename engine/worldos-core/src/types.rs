@@ -1,4 +1,6 @@
+use std::collections::HashMap;
 use crate::agent::Agent;
+use crate::vocation::definitions::MotivationProfile;
 use serde::{Deserialize, Serialize};
 use crate::sharding::{ShardId, ShardMap, GhostZone};
 
@@ -55,6 +57,8 @@ pub struct UniverseState {
     pub narrative_tags: Vec<NarrativeTag>,
     #[serde(default)]
     pub fork_recommendation: bool,
+    #[serde(default)]
+    pub axioms: HashMap<String, f64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

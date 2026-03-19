@@ -4,7 +4,7 @@ namespace App\Services\Orchestrator;
 
 use App\Models\Universe;
 use App\Models\World;
-use App\Services\Simulation\UniverseRuntimeService;
+use App\Modules\Simulation\Services\UniverseRuntimeService;
 use Illuminate\Support\Facades\Log;
 
 class ImplicitOrchestratorService
@@ -32,3 +32,4 @@ class ImplicitOrchestratorService
         );
     }
 }
+

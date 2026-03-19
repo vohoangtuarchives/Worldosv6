@@ -1,0 +1,76 @@
+{
+  "vocations": [
+    {
+      "id": "martial_artist",
+      "name": "Martial Artist (Võ sư)",
+      "tier": 0,
+      "base_stats": {
+        "strength": 1.2,
+        "agility": 1.1,
+        "vitality": 1.3,
+        "intelligence": 0.8,
+        "wisdom": 0.9
+      },
+      "requirements": {
+        "metabolism": 1.0,
+        "physical_limit": 100
+      },
+      "evolves_to": ["sword_master", "monk", "mercenary"],
+      "description": "Masters of physical combat and bodily discipline."
+    },
+    {
+      "id": "scholar",
+      "name": "Scholar (Học giả)",
+      "tier": 0,
+      "base_stats": {
+        "strength": 0.7,
+        "agility": 0.8,
+        "vitality": 0.8,
+        "intelligence": 1.5,
+        "wisdom": 1.4
+      },
+      "requirements": {
+        "cognition": 1.2,
+        "literacy": 50
+      },
+      "evolves_to": ["sage", "tactician", "alchemist"],
+      "description": "Seekers of knowledge and understanding of the world's laws."
+    },
+    {
+      "id": "farmer",
+      "name": "Farmer (Nông dân)",
+      "tier": 0,
+      "base_stats": {
+        "strength": 1.1,
+        "agility": 0.9,
+        "vitality": 1.4,
+        "intelligence": 0.8,
+        "wisdom": 1.1
+      },
+      "requirements": {
+        "stamina": 1.2
+      },
+      "evolves_to": ["landowner", "herbalist", "village_elder"],
+      "description": "Those who work the land and sustain the biological foundation."
+    },
+    {
+      "id": "sword_master",
+      "name": "Sword Master (Kiếm khách)",
+      "tier": 1,
+      "parent": "martial_artist",
+      "base_stats": {
+        "strength": 1.5,
+        "agility": 1.8,
+        "vitality": 1.4,
+        "intelligence": 1.1,
+        "wisdom": 1.2
+      },
+      "requirements": {
+        "ki_sense": 0.5,
+        "dexterity": 80
+      },
+      "evolves_to": ["sword_immortal"],
+      "description": "Refined warriors focusing on the art of the blade and early inner energy."
+    }
+  ]
+}

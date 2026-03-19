@@ -7,7 +7,7 @@ use App\Contracts\Repositories\UniverseRepositoryInterface;
 use App\Models\BranchEvent;
 use App\Models\Universe;
 use App\Services\Orchestrator\ImplicitOrchestratorService;
-use App\Services\Simulation\RuleVmService;
+use App\Modules\Simulation\Services\RuleEngine\RuleVmService;
 use Illuminate\Support\Collection;
 use function resource_path;
 use function config;
@@ -87,3 +87,6 @@ class ForkUniverseAction
         return $children;
     }
 }
+
+
+

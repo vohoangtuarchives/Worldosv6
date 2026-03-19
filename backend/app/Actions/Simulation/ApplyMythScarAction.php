@@ -10,7 +10,7 @@ class ApplyMythScarAction
 {
     public function __construct(
         protected \App\Contracts\GraphProviderInterface $graphProvider,
-        protected \App\Services\Simulation\RuleVmService $ruleVm
+        protected \App\Modules\Simulation\Services\RuleEngine\RuleVmService $ruleVm
     ) {}
 
     /**
@@ -64,3 +64,4 @@ class ApplyMythScarAction
         ]);
     }
 }
+

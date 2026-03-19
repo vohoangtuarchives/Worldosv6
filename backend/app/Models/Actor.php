@@ -29,6 +29,8 @@ class Actor extends Model
         'vitality',
         'is_heroic',
         'heroic_type',
+        'vocation_id',
+        'stats',
     ];
 
     protected $casts = [
@@ -36,6 +38,7 @@ class Actor extends Model
         'metrics' => 'array',
         'capabilities' => 'array',
         'vitality' => 'array',
+        'stats' => 'array',
         'is_alive' => 'boolean',
         'birth_tick' => 'integer',
         'death_tick' => 'integer',

@@ -4,7 +4,7 @@ namespace App\Simulation\Supervisor;
 
 use App\Contracts\Repositories\UniverseRepositoryInterface;
 use App\Models\Universe;
-use App\Services\Simulation\TemporalSyncService;
+use App\Modules\Simulation\Services\TemporalSyncService;
 use App\Simulation\Contracts\StateCacheInterface;
 
 /**
@@ -112,3 +112,4 @@ final class StateSynchronizer
         $this->stateCache->set((int) $universe->id, $stateVector, $tick);
     }
 }
+

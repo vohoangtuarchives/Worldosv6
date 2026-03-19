@@ -5,7 +5,7 @@ namespace App\Simulation\Runtime\Stages;
 use App\Models\Universe;
 use App\Models\UniverseSnapshot;
 use App\Simulation\Runtime\Contracts\SimulationStageInterface;
-use App\Services\Simulation\FfiActorEngine;
+use App\Modules\Simulation\Services\FfiActorEngine;
 use App\Simulation\Runtime\State\WorldState;
 use Illuminate\Support\Facades\Log;
 
@@ -62,6 +62,7 @@ class VectorizedActorStage implements SimulationStageInterface
         // 2. Execute Parallel Rust FFI (Zenith Logic)
         try {
             $results = $this->ffiActorEngine->processActorsSoa(
+                $tick,
                 $ids,
                 $zoneIds,
                 $hunger,
@@ -70,8 +71,7 @@ class VectorizedActorStage implements SimulationStageInterface
                 $trauma,
                 $heroicTypes,
                 $lineageIds,
-                $memes,
-                $tick
+                $memes
             );
 
             // 3. Update State Manifold back from vectorized results
@@ -109,3 +109,4 @@ class VectorizedActorStage implements SimulationStageInterface
         }
     }
 }
+

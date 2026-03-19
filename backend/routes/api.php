@@ -16,6 +16,8 @@ use App\Http\Controllers\Api\AgentConfigController;
 use App\Http\Controllers\Api\MultiverseMapController;
 use App\Http\Controllers\Api\WorldosEnginesController;
 use App\Http\Controllers\Api\CelestialEngineeringController;
+use App\Modules\Simulation\Http\Controllers\RuleSetLibraryController;
+use App\Modules\Simulation\Http\Controllers\VocationLibraryController;
 use App\Models\LegendaryAgent;
 
 Route::post('/login', [AuthController::class, 'login'])->name('login');
@@ -89,6 +91,11 @@ Route::middleware('auth:sanctum')->prefix('worldos')->group(function () {
         $worlds = \App\Models\World::with('multiverse:id,name')->get(['id', 'multiverse_id', 'name', 'slug', 'current_genre', 'base_genre']);
         return response()->json($worlds);
     })->name('worldos.worlds.index');
+
+    // RuleSet & Vocation Library
+    Route::get('library/rulesets', [RuleSetLibraryController::class, 'index']);
+    Route::get('library/vocations', [VocationLibraryController::class, 'index']);
+    Route::get('library/vocations/{id}', [VocationLibraryController::class, 'show']);
 
     Route::get('worlds/{id}/ip', function (string $id) {
         $world = \App\Models\World::findOrFail((int) $id);

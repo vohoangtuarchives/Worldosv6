@@ -41,7 +41,7 @@ class WarEngine implements \App\Simulation\Contracts\SimulationEngine
 
     public function __construct(
         protected UniverseRepositoryInterface $universeRepository,
-        protected \App\Services\Simulation\RuleVmService $ruleVm
+        protected \App\Modules\Simulation\Services\RuleEngine\RuleVmService $ruleVm
     ) {}
 
     public function runWithState(\App\Simulation\Runtime\State\WorldState $state, int $currentTick): void
@@ -77,3 +77,4 @@ class WarEngine implements \App\Simulation\Contracts\SimulationEngine
         return is_array($sv) ? $sv : [];
     }
 }
+

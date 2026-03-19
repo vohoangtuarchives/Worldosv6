@@ -3,7 +3,7 @@
 namespace App\Simulation\Domain\Pipelines\Steps;
 
 // use App\Simulation\Domain\Pipelines\SpawnStepInterface;
-use App\Services\Simulation\KernelMutationService;
+use App\Modules\Simulation\Services\KernelMutationService;
 
 /**
  * Bước đột biến genome cho vũ trụ mới.
@@ -27,3 +27,4 @@ class MutateGenomeStep implements SpawnStepInterface
         return $context;
     }
 }
+

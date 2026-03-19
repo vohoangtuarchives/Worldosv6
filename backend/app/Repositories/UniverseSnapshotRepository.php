@@ -18,37 +18,46 @@ class UniverseSnapshotRepository
      */
     public function save(Universe $universe, array $snapshot): UniverseSnapshot
     {
-        $model = UniverseSnapshot::updateOrCreate(
-            [
-                'universe_id' => $universe->id,
-                'tick' => $snapshot['tick'],
-            ],
-            [
-                'state_vector' => $snapshot['state_vector'] ?? [],
-                'entropy' => $snapshot['entropy'] ?? null,
-                'stability_index' => $snapshot['stability_index'] ?? null,
-                'metrics' => $snapshot['metrics'] ?? null,
-            ]
-        );
-
-        $universe->update([
-            'current_tick' => $snapshot['tick'],
-            'state_vector' => $snapshot['state_vector'] ?? [],
-        ]);
-
-        if ($this->observer) {
-            $this->observer->publishSnapshot(
-                $universe->id,
-                $universe->multiverse_id,
-                $snapshot['tick'],
-                ['entropy' => $snapshot['entropy'] ?? null, 'stability_index' => $snapshot['stability_index'] ?? null]
+        try {
+            $model = UniverseSnapshot::updateOrCreate(
+                [
+                    'universe_id' => $universe->id,
+                    'tick' => $snapshot['tick'],
+                ],
+                [
+                    'state_vector' => $snapshot['state_vector'] ?? [],
+                    'entropy' => $snapshot['entropy'] ?? null,
+                    'stability_index' => $snapshot['stability_index'] ?? null,
+                    'metrics' => $snapshot['metrics'] ?? null,
+                ]
             );
+
+            $universe->update([
+                'current_tick' => $snapshot['tick'],
+                'state_vector' => $snapshot['state_vector'] ?? [],
+            ]);
+
+            if ($this->observer) {
+                $this->observer->publishSnapshot(
+                    $universe->id,
+                    $universe->multiverse_id,
+                    $snapshot['tick'],
+                    ['entropy' => $snapshot['entropy'] ?? null, 'stability_index' => $snapshot['stability_index'] ?? null]
+                );
+            }
+
+            // Broadcast realtime event for Centrifugo
+            event(new \App\Events\Domain\Universe\UniversePulsed($universe, $model));
+
+            return $model;
+        } catch (\Illuminate\Database\QueryException $e) {
+            // Handle race conditions where two pulses try to save same tick
+            if ($e->getCode() == '23505') { // Postgres UNIQUE_VIOLATION
+                \Illuminate\Support\Facades\Log::warning("UniverseSnapshot UNIQUE_VIOLATION for Universe {$universe->id} T{$snapshot['tick']}. Re-fetching existing model.");
+                return UniverseSnapshot::where('universe_id', $universe->id)->where('tick', $snapshot['tick'])->firstOrFail();
+            }
+            throw $e;
         }
-
-        // Broadcast realtime event for Centrifugo
-        event(new \App\Events\Domain\Universe\UniversePulsed($universe, $model));
-
-        return $model;
     }
 
     /**

@@ -26,6 +26,10 @@ pub struct Agent {
     pub archetype: Archetype,
     /// Ring buffer for short-term memory (cap 5)
     pub memory: Vec<String>,
+    #[serde(default)]
+    pub vocation_id: Option<String>,
+    #[serde(default)]
+    pub motivation_profile: crate::vocation::definitions::MotivationProfile,
 }
 
 impl Agent {
@@ -35,6 +39,8 @@ impl Agent {
             trait_vector: traits,
             archetype,
             memory: Vec::with_capacity(5),
+            vocation_id: None,
+            motivation_profile: crate::vocation::definitions::MotivationProfile::default(),
         }
     }
 

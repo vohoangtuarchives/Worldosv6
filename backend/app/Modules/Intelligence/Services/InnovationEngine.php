@@ -3,7 +3,7 @@
 namespace App\Modules\Intelligence\Services;
 
 use App\Models\Universe;
-use App\Services\Simulation\RuleVmService;
+use App\Modules\Simulation\Services\RuleEngine\RuleVmService;
 use function resource_path;
 use function file_get_contents;
 use function app;
@@ -86,3 +86,6 @@ class InnovationEngine
         return max(0.1, 1.0 - $stagnation);
     }
 }
+
+
+

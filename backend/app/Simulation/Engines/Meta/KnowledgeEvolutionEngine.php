@@ -19,7 +19,7 @@ class KnowledgeEvolutionEngine implements SimulationEngine
     use DefaultSimulationEnginePhase;
 
     public function __construct(
-        private readonly \App\Services\Simulation\RuleVmService $ruleVm,
+        private readonly \App\Modules\Simulation\Services\RuleEngine\RuleVmService $ruleVm,
         private readonly \App\Modules\Intelligence\Services\InnovationEngine $innovationEngine
     ) {}
 
@@ -131,3 +131,4 @@ class KnowledgeEvolutionEngine implements SimulationEngine
         );
     }
 }
+

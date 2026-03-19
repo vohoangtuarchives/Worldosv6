@@ -7,7 +7,7 @@ use App\Models\Chronicle;
 use App\Models\Universe;
 use App\Modules\Intelligence\Services\EcosystemMetricsService;
 use App\Simulation\SimulationEventBus;
-use App\Services\Simulation\RuleVmService;
+use App\Modules\Simulation\Services\RuleEngine\RuleVmService;
 use Illuminate\Support\Facades\Log;
 use function resource_path;
 use function config;
@@ -62,3 +62,6 @@ class EcologicalCollapseEngine
         return is_array($sv) ? $sv : [];
     }
 }
+
+
+

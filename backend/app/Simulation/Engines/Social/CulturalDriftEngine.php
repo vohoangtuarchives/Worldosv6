@@ -37,7 +37,7 @@ final class CulturalDriftEngine implements SimulationEngine
 
     public function __construct(
         private readonly TopologyResolver $topology,
-        protected \App\Services\Simulation\RuleVmService $ruleVm,
+        protected \App\Modules\Simulation\Services\RuleEngine\RuleVmService $ruleVm,
     ) {
     }
 
@@ -121,3 +121,4 @@ final class CulturalDriftEngine implements SimulationEngine
         ];
     }
 }
+

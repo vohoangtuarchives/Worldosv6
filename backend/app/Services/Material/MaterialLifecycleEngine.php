@@ -4,15 +4,15 @@ namespace App\Services\Material;
 
 use App\Models\MaterialInstance;
 use App\Models\MaterialLog;
-use App\Services\Simulation\RuleVmService; // Added this line
+use App\Modules\Simulation\Services\RuleEngine\RuleVmService; // Added this line
 
 class MaterialLifecycleEngine
 {
     public function __construct(
         protected PressureResolver $pressureResolver,
-        protected \App\Services\Simulation\RuleVmService $ruleVm // Added this line
+        protected \App\Modules\Simulation\Services\RuleEngine\RuleVmService $ruleVm // Added this line
     ) {
-        $this->ruleVm = $ruleVm ?? \app(\App\Services\Simulation\RuleVmService::class); // Added this line
+        $this->ruleVm = $ruleVm ?? \app(\App\Modules\Simulation\Services\RuleEngine\RuleVmService::class); // Added this line
     }
 
     /**
@@ -67,7 +67,7 @@ class MaterialLifecycleEngine
     {
         if (!$instance->material) return false;
         // 10% chance to check mutations to avoid heavy load every tick
-        $prng = \App\Services\Simulation\SimulationPRNG::forUniverse($instance->universe);
+        $prng = \App\Modules\Simulation\Services\SimulationPRNG::forUniverse($instance->universe);
         if ($prng->nextInt(0, 9) > 0) return false;
 
         $mutations = $instance->material->parentMutations;
@@ -202,3 +202,7 @@ class MaterialLifecycleEngine
         ]);
     }
 }
+
+
+
+

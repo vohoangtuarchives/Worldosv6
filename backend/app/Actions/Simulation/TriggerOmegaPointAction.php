@@ -4,7 +4,7 @@ namespace App\Actions\Simulation;
 
 use App\Models\Universe;
 use App\Models\Chronicle;
-use App\Services\Simulation\HttpSimulationEngineClient;
+use App\Modules\Simulation\Services\HttpSimulationEngineClient;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -49,3 +49,4 @@ class TriggerOmegaPointAction
         ];
     }
 }
+

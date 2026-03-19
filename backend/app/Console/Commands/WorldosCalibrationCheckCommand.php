@@ -4,7 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\Universe;
 use App\Repositories\UniverseSnapshotRepository;
-use App\Services\Simulation\RealityCalibrationService;
+use App\Modules\Simulation\Services\RealityCalibrationService;
 use Illuminate\Console\Command;
 
 /**

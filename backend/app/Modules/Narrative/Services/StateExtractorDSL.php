@@ -17,8 +17,28 @@ class StateExtractorDSL
     /**
      * @param array $stateVector Raw state vector
      * @param array $metrics Aggregated simulation metrics
-     * @return string[] Array of active narrative tokens (e.g., ["WAR_PEAK", "CULTURAL_GOLDEN_AGE"])
+     * @return array Object containing both high-level tokens and detailed causal events.
      */
+    public function extractContext(int $universeId, int $tick, array $stateVector, array $metrics = []): array
+    {
+        $tokens = $this->extract($stateVector, $metrics);
+        
+        /** @var NarrativeEventRegistry $registry */
+        $registry = app(NarrativeEventRegistry::class);
+        
+        // Extract events for the last few ticks to provide causal context
+        $events = $registry->getEventsForContext($universeId, max(0, $tick - 5), $tick);
+
+        return [
+            'tokens' => $tokens,
+            'events' => $events->toArray(),
+            'timestamp' => [
+                'universe_id' => $universeId,
+                'tick' => $tick
+            ]
+        ];
+    }
+
     public function extract(array $stateVector, array $metrics = []): array
     {
         $tokens = [];

@@ -89,7 +89,7 @@ class MetabolicEngine implements SimulationEngine
         }
 
         // FFI Call
-        $ffiEngine = app(\App\Services\Simulation\FfiRuleEngine::class);
+        $ffiEngine = app(\App\Modules\Simulation\Services\RuleEngine\FfiRuleEngine::class);
         $result = $ffiEngine->computeMetabolismGrid($populations, $biomasses, $industries, $efficiency, $baseEnergy);
 
         $totalWaste = $result['total_waste'] ?? 0.0;
@@ -131,3 +131,4 @@ class MetabolicEngine implements SimulationEngine
         ], [], []);
     }
 }
+

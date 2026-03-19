@@ -62,12 +62,12 @@ class CulturalAttractorEngine implements SimulationEngine
         $dslScript = implode("\n", $dslLines);
 
         // 3. Chạy biểu thức qua RuleVmService (Rust FFI engine)
-        $vm = app(\App\Services\Simulation\RuleVmService::class);
-        $outputs = $vm->evaluateWithResults($state, $dslScript, $ctx->tick);
+        $vm = app(\App\Modules\Simulation\Services\RuleEngine\RuleVmService::class);
+        $outputs = $vm->evaluateWithResults($state, $dslScript, $ctx->getTick());
         
         // 4. Map kết quả parse về WorldStateUpdateEffect chuẩn
-        $universeId = (int) $state->get('universe_id', 0);
-        return $vm->mapOutputsToResults($outputs, $universeId, $ctx->tick, $state);
+        $universeId = $ctx->getUniverseId();
+        return $vm->mapOutputsToResults($outputs, $universeId, $ctx->getTick(), $state);
     }
 
     private function determineActiveAttractor(WorldState $state): array
@@ -116,3 +116,4 @@ class CulturalAttractorEngine implements SimulationEngine
         ];
     }
 }
+

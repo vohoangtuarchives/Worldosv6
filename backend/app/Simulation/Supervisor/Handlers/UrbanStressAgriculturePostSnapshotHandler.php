@@ -4,7 +4,7 @@ namespace App\Simulation\Supervisor\Handlers;
 
 use App\Models\Universe;
 use App\Models\UniverseSnapshot;
-use App\Services\Simulation\UrbanStressAgricultureService;
+use App\Modules\Simulation\Services\UrbanStressAgricultureService;
 use App\Simulation\Supervisor\Contracts\PostSnapshotHandlerInterface;
 use Illuminate\Support\Facades\Config;
 

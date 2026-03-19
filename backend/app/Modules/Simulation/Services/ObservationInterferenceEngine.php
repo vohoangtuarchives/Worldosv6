@@ -5,7 +5,7 @@ namespace App\Modules\Simulation\Services;
 use App\Simulation\Runtime\State\WorldState;
 use App\Modules\Simulation\Entities\UniverseEntity;
 use App\Modules\Simulation\Actions\WavefunctionCollapseAction;
-use App\Services\Simulation\RuleVmService;
+use App\Modules\Simulation\Services\RuleEngine\RuleVmService;
 use Illuminate\Support\Facades\Log;
 use function resource_path;
 use function file_exists;
@@ -16,7 +16,7 @@ class ObservationInterferenceEngine
     public function __construct(
         protected RuleVmService $ruleVm,
         protected WavefunctionCollapseAction $wavefunctionCollapseAction,
-        protected \App\Services\Simulation\ObserverSpectrumService $spectrumService
+        protected \App\Modules\Simulation\Services\ObserverSpectrumService $spectrumService
     ) {}
 
     /**
@@ -62,3 +62,7 @@ class ObservationInterferenceEngine
         Log::debug("ObservationInterferenceEngine: Processed quantum state for Universe {$state->get('universe_id')} at tick {$tick}");
     }
 }
+
+
+
+

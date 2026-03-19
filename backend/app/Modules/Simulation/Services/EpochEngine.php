@@ -6,7 +6,7 @@ use App\Modules\Simulation\Entities\UniverseEntity;
 use App\Models\Universe as UniverseModel;
 use App\Models\UniverseSnapshot;
 use App\Models\Epoch;
-use App\Services\Simulation\RuleVmService;
+use App\Modules\Simulation\Services\RuleEngine\RuleVmService;
 use App\Modules\Simulation\Actions\TransitionEpochAction;
 use App\Simulation\Runtime\State\WorldState;
 use Illuminate\Support\Facades\Log;
@@ -139,3 +139,6 @@ class EpochEngine
         ];
     }
 }
+
+
+

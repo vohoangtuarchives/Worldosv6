@@ -54,7 +54,7 @@ class ChaosEngine
             return;
         }
 
-        $prng = \App\Services\Simulation\SimulationPRNG::forUniverse($universe);
+        $prng = \App\Modules\Simulation\Services\SimulationPRNG::forUniverse($universe);
 
         // Rare full anomaly
         if ($prng->nextInt(0, 10000) > 1) {
@@ -71,7 +71,7 @@ class ChaosEngine
             'time_loop',
         ];
 
-        $prng = clone \App\Services\Simulation\SimulationPRNG::forUniverse($universe);
+        $prng = clone \App\Modules\Simulation\Services\SimulationPRNG::forUniverse($universe);
         $paradox = $prng->randomElement($paradoxes);
 
         switch ($paradox) {
@@ -117,3 +117,4 @@ class ChaosEngine
         Log::warning("CHAOS MATRIX: Reality fractured in Universe #{$universe->id}. Type: {$paradox}");
     }
 }
+

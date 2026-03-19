@@ -95,7 +95,8 @@ class ActorEloquentRepository implements ActorRepositoryInterface
             generation: (int) $model->generation,
             biography: $model->biography,
             isHeroic: (bool) ($model->is_heroic ?? false),
-            heroicType: $model->heroic_type ?? null
+            heroicType: $model->heroic_type ?? null,
+            vocationId: $model->vocation_id
         );
     }
 }

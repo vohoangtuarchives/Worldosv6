@@ -88,8 +88,11 @@ class WorldKernel
         // 2. Finalize: Link semantic impacts to the Causal History Engine
         $this->processCausalImpacts($state, $tick);
 
-        // 3. Event-Driven: Dispatch domain events based on state thresholds
+        // 3. Event-Driven: Dispatch domain events dựa trên ngưỡng state
         $this->dispatchDomainEvents($state, $tick);
+
+        // 4. Narrative-Driven: Process Emergent Narrative Feedback & Scars (§Level-10)
+        $this->finalizeNarrativeEmergence($state, $tick);
 
         $totalMs = round((microtime(true) - $startTime) * 1000, 2);
         Log::debug("WorldKernel: Orchestration Tick $tick Completed in {$totalMs}ms");
@@ -183,4 +186,131 @@ class WorldKernel
     {
         // Optional: Perform cross-layer leakage or stabilization logic
     }
+
+    /**
+     * Finalize Narrative Emergence: Bridge Simulation Results with Narrative Intent.
+     */
+    public function finalizeNarrativeEmergence(WorldState $state, int $tick): void
+    {
+        $universeId = (int) $state->get('universe_id', 0);
+        
+        // 1. Fetch pending narrative feedback signals and Universe axioms
+        $universe = \App\Models\Universe::find($universeId);
+        $signals = \App\Modules\Narrative\Models\NarrativeFeedbackSignal::pendingForTick($universeId, $tick)->get();
+        
+        $influences = $signals->map(fn($s) => $s->payload)->toArray();
+        if ($universe && !empty($universe->axioms)) {
+            $influences[] = [
+                'type' => 'ruleset_axioms',
+                'payload' => $universe->axioms
+            ];
+        }
+
+        // 2. Synchronize ActorEntities into Zones (Rust Agent structures)
+        echo "DEBUG: Calling syncActorsToZones...\n";
+        $this->syncActorsToZones($state);
+        
+        // 3. Call Rust Emergent Tick
+        /** @var \App\Modules\Simulation\Services\FfiActorEngine $ffi */
+        $ffi = app(\App\Modules\Simulation\Services\FfiActorEngine::class);
+        try {
+            $data = $state->toArray();
+            $data['universe_id'] = $universeId;
+            $data['tick'] = (int)$tick;
+            $data['global_entropy'] = (float)$state->get('entropy', 0.5);
+            $data['knowledge_core'] = (float)$state->get('knowledge_core', 0.0);
+            $data['zones'] = $state->getZones();
+            
+            $result = $ffi->tickUniverseEmergent($data, $influences, $tick);
+            
+            // 3. Update State from Rust (Macro-level changes)
+            if (isset($result['state'])) {
+                foreach ($result['state'] as $key => $value) {
+                    if (is_scalar($value) || is_array($value)) {
+                        $state->set($key, $value);
+                    }
+                }
+                
+                // 4. Sync agents back from zones to entities
+                $this->syncZonesToActors($state);
+            }
+
+            // 4. Record Scars (Events) and Tags
+            if (!empty($result['scars'])) {
+                foreach ($result['scars'] as $scar) {
+                    // Record as Chronicle or Narrative Event
+                    \App\Models\Chronicle::create([
+                        'universe_id' => $universeId,
+                        'from_tick' => $tick,
+                        'to_tick' => $tick,
+                        'type' => $scar['type'] ?? 'EMERGENT_SCAR',
+                        'content' => $scar['description'] ?? 'Unnamed emergent event',
+                        'importance' => 0.7,
+                        'raw_payload' => $scar
+                    ]);
+                }
+            }
+
+            // Mark signals as applied
+            $signals->each(fn($s) => $s->update(['status' => 'applied']));
+
+        } catch (\Exception $e) {
+            Log::error("WorldKernel: Narrative Emergence failed: " . $e->getMessage());
+        }
+    }
+
+    protected function syncActorsToZones(WorldState $state): void
+    {
+        $actorsByZone = [];
+        foreach ($state->getActorEntities() as $actor) {
+            // Map ActorEntity to Rust-compatible Agent structure
+            $zoneId = (int)data_get($actor->metrics, 'zone_id', 0);
+            $actorsByZone[$zoneId][] = [
+                'id' => (int)$actor->id,
+                'trait_vector' => array_map('floatval', array_values($actor->traits)),
+                'archetype' => strtolower($actor->archetype),
+                'memory' => [], // Rust-side memory is transient/short-term
+                'vocation_id' => $actor->vocationId,
+                'motivation_profile' => $actor->metrics['motivation_profile'] ?? [
+                    'creation' => 0.0, 'destruction' => 0.0, 'order' => 0.0, 'chaos' => 0.0,
+                    'self_preservation' => 0.0, 'altruism' => 0.0, 'physical' => 0.0, 'metaphysical' => 0.0
+                ]
+            ];
+        }
+
+        $zones = $state->getZones();
+        foreach ($zones as &$zone) {
+            $id = (int)$zone['id'];
+            $zone['state']['agents'] = $actorsByZone[$id] ?? [];
+        }
+        $state->setZones($zones);
+    }
+
+    protected function syncZonesToActors(WorldState $state): void
+    {
+        $entities = $state->getActorEntities();
+        $zones = $state->getZones();
+        $agentsById = [];
+
+        foreach ($zones as $zone) {
+            foreach ($zone['state']['agents'] ?? [] as $agent) {
+                $agentsById[(int)$agent['id']] = $agent;
+            }
+        }
+
+        foreach ($entities as $entity) {
+            if ($entity->id && isset($agentsById[$entity->id])) {
+                $agent = $agentsById[$entity->id];
+                // Update vocation and motivation from Rust result
+                $entity->vocationId = $agent['vocation_id'] ?? $entity->vocationId;
+                $entity->metrics['motivation_profile'] = $agent['motivation_profile'] ?? ($entity->metrics['motivation_profile'] ?? null);
+                
+                // Also update traits if they drifted (though core uses trait_vector index)
+                if (isset($agent['trait_vector'])) {
+                    $entity->traits = $agent['trait_vector'];
+                }
+            }
+        }
+    }
 }
+

@@ -6,7 +6,7 @@ use App\Models\Universe;
 use App\Models\Chronicle;
 use App\Modules\Institutions\Services\WorldEdictEngine;
 use Illuminate\Support\Facades\Log;
-use App\Services\Simulation\TheDreamingService;
+use App\Modules\Simulation\Services\TheDreamingService;
 
 /**
  * MythicResonanceEngine: The bridge between Narrative and Physics (§V11).
@@ -60,3 +60,4 @@ class MythicResonanceEngine
         }
     }
 }
+

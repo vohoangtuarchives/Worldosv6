@@ -47,7 +47,7 @@ final class ReligionEngine implements SimulationEngine
     }
 
     public function __construct(
-        protected \App\Services\Simulation\RuleVmService $ruleVm,
+        protected \App\Modules\Simulation\Services\RuleEngine\RuleVmService $ruleVm,
     ) {}
 
     public function handle(WorldState $state, TickContext $ctx): EngineResult
@@ -80,3 +80,4 @@ final class ReligionEngine implements SimulationEngine
         return new EngineResult($events, [], []);
     }
 }
+

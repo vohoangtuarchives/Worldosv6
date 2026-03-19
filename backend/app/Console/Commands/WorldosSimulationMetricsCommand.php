@@ -4,7 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\Universe;
 use App\Models\UniverseSnapshot;
-use App\Services\Simulation\SimulationMetricsLogger;
+use App\Modules\Simulation\Services\SimulationMetricsLogger;
 use Illuminate\Console\Command;
 
 /**
@@ -99,3 +99,4 @@ class WorldosSimulationMetricsCommand extends Command
         return 0;
     }
 }
+

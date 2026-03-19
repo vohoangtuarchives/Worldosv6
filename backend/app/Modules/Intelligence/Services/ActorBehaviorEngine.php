@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Log;
  * execution state (idle, eating, fleeing, mating, exploring). Cognitive modeling via DSL.
  * Stagger tick (actor_id % N === tick % N) for performance.
  */
-use App\Services\Simulation\RuleVmService;
+use App\Modules\Simulation\Services\RuleEngine\RuleVmService;
 use function resource_path;
 use function app;
 use function config;
@@ -280,3 +280,6 @@ class ActorBehaviorEngine
         return is_array($sv) ? $sv : [];
     }
 }
+
+
+

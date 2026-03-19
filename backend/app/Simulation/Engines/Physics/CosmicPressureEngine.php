@@ -14,7 +14,7 @@ use App\Simulation\Events\WorldEventType;
 use App\Simulation\Services\CosmicSignalCollector;
 use App\Simulation\Services\PhasePressureCalculator;
 use App\Simulation\Support\SimulationRandom;
-use App\Services\Simulation\RuleVmService;
+use App\Modules\Simulation\Services\RuleEngine\RuleVmService;
 use function resource_path;
 use function file_get_contents;
 use function max;
@@ -117,3 +117,6 @@ final class CosmicPressureEngine implements SimulationEngine
         return $snapshot;
     }
 }
+
+
+

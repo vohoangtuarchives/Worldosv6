@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Services\Simulation\RuleGraphService;
+use App\Modules\Simulation\Services\RuleEngine\RuleGraphService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -37,3 +37,6 @@ class RuleDebuggerController extends Controller
         ]);
     }
 }
+
+
+

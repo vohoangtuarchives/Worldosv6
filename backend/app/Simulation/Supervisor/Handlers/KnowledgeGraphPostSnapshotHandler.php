@@ -5,7 +5,7 @@ namespace App\Simulation\Supervisor\Handlers;
 use App\Models\Universe;
 use App\Models\UniverseSnapshot;
 use App\Simulation\Supervisor\Contracts\PostSnapshotHandlerInterface;
-use App\Services\Simulation\KnowledgeGraphService;
+use App\Modules\Simulation\Services\KnowledgeGraphService;
 
 final class KnowledgeGraphPostSnapshotHandler implements PostSnapshotHandlerInterface
 {
@@ -18,3 +18,4 @@ final class KnowledgeGraphPostSnapshotHandler implements PostSnapshotHandlerInte
         $this->knowledgeGraphService->evaluate($universe, (int) $snapshot->tick);
     }
 }
+

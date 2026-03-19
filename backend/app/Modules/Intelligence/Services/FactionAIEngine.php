@@ -5,7 +5,7 @@ namespace App\Modules\Intelligence\Services;
 use App\Models\Universe;
 use App\Modules\Intelligence\Contracts\ActorRepositoryInterface;
 use App\Modules\Intelligence\Entities\ActorEntity;
-use App\Services\Simulation\SimulationPRNG;
+use App\Modules\Simulation\Services\SimulationPRNG;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -167,3 +167,4 @@ class FactionAIEngine
         ];
     }
 }
+

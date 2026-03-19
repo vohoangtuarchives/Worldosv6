@@ -19,7 +19,7 @@ class MeaningEngine implements SimulationEngine
     use DefaultSimulationEnginePhase;
 
     public function __construct(
-        private readonly \App\Services\Simulation\RuleVmService $ruleVm
+        private readonly \App\Modules\Simulation\Services\RuleEngine\RuleVmService $ruleVm
     ) {}
 
     public function name(): string
@@ -133,3 +133,4 @@ class MeaningEngine implements SimulationEngine
         );
     }
 }
+

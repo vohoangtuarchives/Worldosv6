@@ -4,9 +4,9 @@ namespace App\Http\Controllers\Simulation;
 
 use App\Http\Controllers\Controller;
 use App\Simulation\Runtime\State\StateManager;
-use App\Services\Simulation\ZenithMetricsService;
+use App\Modules\Simulation\Services\ZenithMetricsService;
 use App\Services\Narrative\MeaningSeedService;
-use App\Services\Simulation\RuleMutationService;
+use App\Modules\Simulation\Services\RuleMutationService;
 use App\Models\UniverseSnapshot;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Storage;
@@ -374,3 +374,4 @@ class ApexObserverController extends Controller
         ]);
     }
 }
+

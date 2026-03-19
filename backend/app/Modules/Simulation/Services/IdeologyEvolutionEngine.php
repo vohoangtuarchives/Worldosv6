@@ -5,7 +5,7 @@ namespace App\Modules\Simulation\Services;
 use App\Models\Chronicle;
 use App\Models\InstitutionalEntity;
 use App\Models\Universe;
-use App\Services\Simulation\IdeologyConversionService;
+use App\Modules\Simulation\Services\IdeologyConversionService;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -127,3 +127,4 @@ class IdeologyEvolutionEngine
         $universe->save();
     }
 }
+

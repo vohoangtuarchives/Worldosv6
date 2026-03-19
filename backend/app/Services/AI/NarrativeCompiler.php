@@ -135,8 +135,8 @@ class NarrativeCompiler
     protected function pick(array $items): string
     {
         $prng = $this->universe 
-            ? \App\Services\Simulation\SimulationPRNG::forUniverse($this->universe)
-            : new \App\Services\Simulation\SimulationPRNG(rand(1, 1000));
+            ? \App\Modules\Simulation\Services\SimulationPRNG::forUniverse($this->universe)
+            : new \App\Modules\Simulation\Services\SimulationPRNG(rand(1, 1000));
             
         if (count($items) === 0) return '';
         return $prng->randomElement($items);
@@ -214,3 +214,4 @@ class NarrativeCompiler
         ];
     }
 }
+

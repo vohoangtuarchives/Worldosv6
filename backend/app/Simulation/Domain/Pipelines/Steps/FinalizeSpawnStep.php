@@ -3,8 +3,8 @@
 namespace App\Simulation\Domain\Pipelines\Steps;
 
 // use App\Simulation\Domain\Pipelines\SpawnStepInterface;
-use App\Services\Simulation\OriginSeeder;
-use App\Services\Simulation\KernelMutationService;
+use App\Modules\Simulation\Services\OriginSeeder;
+use App\Modules\Simulation\Services\KernelMutationService;
 
 /**
  * Bước hoàn tất: Seeding, Mutation post-processing, External Shocks.
@@ -38,3 +38,4 @@ class FinalizeSpawnStep implements SpawnStepInterface
         return $context;
     }
 }
+

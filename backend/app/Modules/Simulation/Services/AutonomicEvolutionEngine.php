@@ -7,7 +7,7 @@ use App\Contracts\UniverseSimilarityServiceInterface;
 use App\Models\UniverseSnapshot;
 use App\Models\Myth;
 use App\Models\School;
-use App\Services\Simulation\MetricsExtractor;
+use App\Modules\Simulation\Services\MetricsExtractor;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -153,3 +153,4 @@ class AutonomicEvolutionEngine implements UniverseEvaluatorInterface
         return min(1.0, $distance);
     }
 }
+

@@ -216,6 +216,98 @@ pub unsafe extern "C" fn evaluate_dsl_v10(
     }
 }
 
+/// Phase 55: Emergent Universe Tick (Meso/Macro layer influence)
+/// Receives full state and narrative influences, returns updated state + events.
+#[no_mangle]
+pub unsafe extern "C" fn tick_universe_emergent(
+    state_json_ptr: *const c_char,
+    influences_json_ptr: *const c_char,
+) -> *mut c_char {
+    if state_json_ptr.is_null() {
+        return CString::new("{\"error\": \"Null state pointer\"}").unwrap().into_raw();
+    }
+
+    let state_json = CStr::from_ptr(state_json_ptr).to_str().unwrap_or("{}");
+    let influences_json = if influences_json_ptr.is_null() {
+        "[]"
+    } else {
+        CStr::from_ptr(influences_json_ptr).to_str().unwrap_or("[]")
+    };
+
+    println!("FFI: tick_universe_emergent - State size: {}, Influences: {}", state_json.len(), influences_json);
+
+    // Phase 1: Deserialize
+    let mut universe: worldos_core::types::UniverseState = match serde_json::from_str(state_json) {
+        Ok(u) => u,
+        Err(e) => {
+            return CString::new(format!("{{\"error\": \"State deserialization failed: {:?}\"}}", e)).unwrap().into_raw();
+        }
+    };
+
+    let influences: Vec<serde_json::Value> = serde_json::from_str(influences_json).unwrap_or_default();
+
+    // Phase 2: Apply Influences (RuleSet Axioms, etc.)
+    for influence in influences {
+        if let Some(inf_type) = influence.get("type").and_then(|t| t.as_str()) {
+            if inf_type == "ruleset_axioms" {
+                if let Some(payload) = influence.get("payload") {
+                    println!("FFI: Applying RuleSet Axioms: {}", payload);
+                    // Map axioms to narrative influence (which uses the payload internally)
+                    universe.apply_narrative_influence(&influence);
+                }
+            }
+        }
+    }
+
+    // Phase 3: Tick Universe (Motivation Drift, etc.)
+    println!("FFI: Executing universe.tick()...");
+    let world_config = worldos_core::types::WorldConfig::default();
+    universe.tick(&world_config, None); 
+
+    // Phase 4: Serialize & Return
+    let outputs = serde_json::json!({
+        "state": universe,
+        "scars": universe.scars,
+        "narrative_tags": universe.narrative_tags
+    });
+
+    match serde_json::to_string(&outputs) {
+        Ok(json) => CString::new(json).unwrap().into_raw(),
+        Err(e) => CString::new(format!("{{\"error\": \"Serialization failed: {:?}\"}}", e)).unwrap().into_raw(),
+    }
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn vocation_calculate_alignment_ffi(
+    actor_motivation_json_ptr: *const c_char,
+    target_profile_json_ptr: *const c_char,
+) -> f32 {
+    if actor_motivation_json_ptr.is_null() || target_profile_json_ptr.is_null() { return 0.0; }
+    
+    let actor_json = CStr::from_ptr(actor_motivation_json_ptr).to_str().unwrap_or("{}");
+    let target_json = CStr::from_ptr(target_profile_json_ptr).to_str().unwrap_or("{}");
+    
+    let actor_motivation: worldos_core::vocation::definitions::MotivationProfile = 
+        serde_json::from_str(actor_json).unwrap_or_default();
+    let target_profile: worldos_core::vocation::definitions::MotivationProfile = 
+        serde_json::from_str(target_json).unwrap_or_default();
+        
+    worldos_core::vocation::scoring::calculate_vocation_alignment(&actor_motivation, &target_profile)
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn ruleset_get_gravity_ffi(
+    rulesets_json_ptr: *const c_char,
+) -> f32 {
+    if rulesets_json_ptr.is_null() { return 1.0; }
+    
+    let json = CStr::from_ptr(rulesets_json_ptr).to_str().unwrap_or("[]");
+    let rulesets: Vec<worldos_core::ruleset::RuleSet> = serde_json::from_str(json).unwrap_or_default();
+    
+    let engine = worldos_core::ruleset::RuleSetEngine { active_rulesets: rulesets };
+    engine.get_combined_gravity()
+}
+
 #[no_mangle]
 pub unsafe extern "C" fn free_rust_string(s: *mut c_char) {
     if !s.is_null() { let _ = CString::from_raw(s); }

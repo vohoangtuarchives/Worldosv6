@@ -7,8 +7,8 @@ use App\Contracts\SimulationEngineClientInterface;
 use App\Contracts\UniverseEvaluatorInterface;
 use App\Services\Narrative\OpenAINarrativeService;
 use App\Repositories\UniverseSnapshotRepository;
-use App\Services\Simulation\HttpSimulationEngineClient;
-use App\Services\Simulation\StubSimulationEngineClient;
+use App\Modules\Simulation\Services\HttpSimulationEngineClient;
+use App\Modules\Simulation\Services\StubSimulationEngineClient;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -111,3 +111,4 @@ class AppServiceProvider extends ServiceProvider
         );
     }
 }
+
