@@ -8,6 +8,12 @@ use crate::{
     ObserveRequest, ObserveResponse, UniverseSnapshot,
     BatchAdvanceRequest, BatchAdvanceResponse,
     TrajectoryAnalysisRequest, TrajectoryAnalysisResponse,
+    EvaluateRulesRequest, EvaluateRulesResponse,
+    ProcessActorsSoaRequest, ProcessActorsSoaResponse,
+    ProcessFieldsV7Request, ProcessFieldsV7Response,
+    ComputeMetabolismGridRequest, ComputeMetabolismGridResponse,
+    CalculateVocationAlignmentRequest, CalculateVocationAlignmentResponse,
+    GetCombinedGravityRequest, GetCombinedGravityResponse,
 };
 
 pub struct EngineService;
@@ -141,5 +147,87 @@ impl SimulationEngine for EngineService {
         let req = request.into_inner();
         let result = engine::run_trajectory_analysis(&req.points, req.recurrence_threshold);
         Ok(Response::new(result))
+    }
+
+    async fn evaluate_rules(
+        &self,
+        request: Request<EvaluateRulesRequest>,
+    ) -> Result<Response<EvaluateRulesResponse>, Status> {
+        let req = request.into_inner();
+        let (ok, error_message, outputs_json) = engine::run_evaluate_rules(&req.state_json, &req.rules_dsl);
+        Ok(Response::new(EvaluateRulesResponse {
+            ok,
+            error_message,
+            outputs_json,
+        }))
+    }
+
+    async fn process_actors_soa(
+        &self,
+        request: Request<ProcessActorsSoaRequest>,
+    ) -> Result<Response<ProcessActorsSoaResponse>, Status> {
+        let req = request.into_inner();
+        let response = engine::run_process_actors_soa(
+            req.tick,
+            req.ids,
+            req.zone_ids,
+            req.hunger,
+            req.energy,
+            req.fear,
+            req.trauma,
+            req.heroic_types,
+            req.lineage_ids,
+            req.memes,
+        );
+        Ok(Response::new(response))
+    }
+
+    async fn process_fields_v7(
+        &self,
+        request: Request<ProcessFieldsV7Request>,
+    ) -> Result<Response<ProcessFieldsV7Response>, Status> {
+        let req = request.into_inner();
+        let fields = engine::run_process_fields_v7(
+            req.fields,
+            req.neighbor_counts,
+            req.neighbor_offsets,
+            req.neighbors,
+            req.diffusion_rate,
+            req.preservation_rate,
+        );
+        Ok(Response::new(ProcessFieldsV7Response { fields }))
+    }
+
+    async fn compute_metabolism_grid(
+        &self,
+        request: Request<ComputeMetabolismGridRequest>,
+    ) -> Result<Response<ComputeMetabolismGridResponse>, Status> {
+        let req = request.into_inner();
+        let response = engine::run_compute_metabolism_grid(
+            req.populations,
+            req.biomasses,
+            req.industries,
+            req.efficiency,
+            req.base_energy,
+        );
+        Ok(Response::new(response))
+    }
+
+    async fn calculate_vocation_alignment(
+        &self,
+        request: Request<CalculateVocationAlignmentRequest>,
+    ) -> Result<Response<CalculateVocationAlignmentResponse>, Status> {
+        let req = request.into_inner();
+        let alignment = engine::run_calculate_vocation_alignment(&req.actor_motivation_json, &req.target_profile_json);
+        Ok(Response::new(CalculateVocationAlignmentResponse { alignment }))
+    }
+
+    async fn get_combined_gravity(
+        &self,
+        request: Request<GetCombinedGravityRequest>,
+    ) -> Result<Response<GetCombinedGravityResponse>, Status> {
+        let req = request.into_inner();
+        let gravity = engine::run_get_combined_gravity(&req.rulesets_json);
+        Ok(Response::new(GetCombinedGravityResponse { gravity }))
     }
 }

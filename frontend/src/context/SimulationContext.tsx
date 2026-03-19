@@ -1,7 +1,22 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { 
+  useUniverses, 
+  useUniverse, 
+  useLatestSnapshot, 
+  useActors, 
+  useInstitutions, 
+  useAnomalies, 
+  useSupremeEntities, 
+  useMaterials, 
+  useChronicles,
+  useInteractions,
+  useTrajectories,
+  simulationKeys
+} from '@/hooks/useSimulationQueries';
 
 interface SimulationContextType {
     universeId: number | null;
@@ -16,214 +31,119 @@ interface SimulationContextType {
     interactions: any[];
     trajectories: any[];
     universes: any[];
-    liveEvents: any[]; // New state for realtime events from Kafka/Broadcasting
+    liveEvents: any[];
     loading: boolean;
     error: string | null;
     isPaused: boolean;
     setIsPaused: (paused: boolean) => void;
     refresh: () => Promise<void>;
     setUniverseId: (id: number | null) => void;
-    setUniverse: React.Dispatch<React.SetStateAction<any | null>>;
-    setLatestSnapshot: React.Dispatch<React.SetStateAction<any | null>>;
 }
 
 const SimulationContext = createContext<SimulationContextType | undefined>(undefined);
 
 export function SimulationProvider({ children }: { children: React.ReactNode }) {
-    const [universeId, setUniverseId] = useState<number | null>(null);
-    const [universe, setUniverse] = useState<any | null>(null);
-    const [latestSnapshot, setLatestSnapshot] = useState<any | null>(null);
-    const [anomalies, setAnomalies] = useState<any[]>([]);
-    const [institutions, setInstitutions] = useState<any[]>([]);
-    const [actors, setActors] = useState<any[]>([]);
-    const [chronicles, setChronicles] = useState<any[]>([]);
-    const [supremeEntities, setSupremeEntities] = useState<any[]>([]);
-    const [materials, setMaterials] = useState<any[]>([]);
-    const [interactions, setInteractions] = useState<any[]>([]);
-    const [trajectories, setTrajectories] = useState<any[]>([]);
-    const [universes, setUniverses] = useState<any[]>([]);
-    const [liveEvents, setLiveEvents] = useState<any[]>([]); // Kafka realtime events
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+    const queryClient = useQueryClient();
+    const [universeId, setUniverseIdState] = useState<number | null>(null);
     const [isPaused, setIsPaused] = useState(false);
-
-    const isFetching = useRef(false);
+    const [liveEvents, setLiveEvents] = useState<any[]>([]);
+    const [localError, setLocalError] = useState<string | null>(null);
 
     // Sync from localStorage
     useEffect(() => {
         const stored = window.localStorage.getItem("universe_id");
-        if (stored) setUniverseId(Number(stored));
+        if (stored) setUniverseIdState(Number(stored));
 
         const handleStorage = () => {
             const current = window.localStorage.getItem("universe_id");
-            setUniverseId(current ? Number(current) : null);
+            setUniverseIdState(current ? Number(current) : null);
         };
 
         window.addEventListener("storage", handleStorage);
         return () => window.removeEventListener("storage", handleStorage);
     }, []);
 
-    const fetchVitalData = useCallback(async (id: number) => {
-        const [uRes, snapRes, anomRes] = await Promise.all([
-            api.universe(id),
-            api.snapshots(id, 1),
-            api.anomalies(id)
-        ]);
+    const setUniverseId = (id: number | null) => {
+        setUniverseIdState(id);
+        if (id) window.localStorage.setItem("universe_id", id.toString());
+        else window.localStorage.removeItem("universe_id");
+    };
 
-        const u = uRes.data || uRes;
-        setUniverse(u);
+    // React Query Hooks
+    const { data: universes = [], isLoading: loadingUniverses } = useUniverses();
+    const { data: universe = null, isLoading: loadingUniverse, error: universeError } = useUniverse(universeId);
+    const { data: latestSnapshot = null, isLoading: loadingSnapshot } = useLatestSnapshot(universeId);
+    
+    // Auxiliary Data (Only fetch if needed by components, but SimulationContext provides them for legacy support)
+    const { data: actors = [] } = useActors(universeId);
+    const { data: institutions = [] } = useInstitutions(universeId);
+    const { data: anomalies = [] } = useAnomalies(universeId);
+    const { data: supremeEntities = [] } = useSupremeEntities(universeId);
+    const { data: materials = [] } = useMaterials(universeId);
+    const { data: chronicles = [] } = useChronicles(universeId);
+    const { data: interactions = [] } = useInteractions(universeId);
+    const { data: trajectories = [] } = useTrajectories(universeId);
 
-        const snaps = snapRes.data || snapRes || [];
-        const currentTickFromUniverse = u?.current_tick != null ? Number(u.current_tick) : null;
-        if (Array.isArray(snaps) && snaps.length > 0) {
-            const snap = snaps[0];
-            const snapTick = snap?.tick != null ? Number(snap.tick) : null;
-            const tickToUse = currentTickFromUniverse != null && (snapTick == null || currentTickFromUniverse > snapTick)
-                ? currentTickFromUniverse
-                : snapTick;
-            setLatestSnapshot({
-                ...snap,
-                tick: tickToUse ?? snap?.tick,
-            });
-        } else if (currentTickFromUniverse != null) {
-            setLatestSnapshot((prev: { tick?: number; entropy?: number; stability_index?: number; metrics?: unknown } | null) => ({
-                tick: currentTickFromUniverse,
-                entropy: u?.entropy ?? (prev && typeof prev === 'object' ? prev.entropy : undefined),
-                stability_index: prev && typeof prev === 'object' ? prev.stability_index : undefined,
-                metrics: prev && typeof prev === 'object' && prev.metrics ? prev.metrics : {},
-            }));
-        }
+    const loading = loadingUniverses || loadingUniverse || loadingSnapshot;
+    const error = localError || (universeError as any)?.message || null;
 
-        const anoms = anomRes.data || anomRes || [];
-        setAnomalies(Array.isArray(anoms) ? anoms : []);
-    }, []);
-
-    const fetchAuxiliaryData = useCallback(async (id: number) => {
-        const [instRes, actorRes, chronRes, supremeRes, matRes, interRes, trajRes] = await Promise.all([
-            api.institutions(id),
-            api.actors(id),
-            api.chronicle(id),
-            api.supremeEntities(id),
-            api.materials(id),
-            api.interactions(id),
-            api.trajectories(id)
-        ]);
-
-        setInstitutions(instRes.data || instRes || []);
-        setActors(actorRes.data || actorRes || []);
-        setChronicles(chronRes.data || chronRes || []);
-        setSupremeEntities(supremeRes.data || supremeRes || []);
-        setMaterials(Array.isArray(matRes) ? matRes : (matRes?.data ?? matRes ?? []));
-        setInteractions(interRes.data || interRes || []);
-        setTrajectories(trajRes.data || trajRes || []);
-    }, []);
-
-    const refresh = useCallback(async (forceAux = false) => {
-        if (!universeId || isFetching.current) return;
-
-        isFetching.current = true;
-        setLoading(true);
-
-        try {
-            await fetchVitalData(universeId);
-            if (forceAux) {
-                await fetchAuxiliaryData(universeId);
-            }
-            setError(null);
-        } catch (e: any) {
-            console.error("Simulation refresh failed", e);
-            if (e.message?.includes("404") || e.status === 404) {
-                setError(`Vũ trụ #${universeId} không tồn tại hoặc đã bị xóa.`);
-                setUniverseId(null);
-                if (typeof window !== "undefined") {
-                    window.localStorage.removeItem("universe_id");
-                }
-            } else {
-                setError(`Lỗi đồng bộ: ${e.message || "Không xác định"}`);
-            }
-        } finally {
-            setLoading(false);
-            isFetching.current = false;
-        }
-    }, [universeId, fetchVitalData, fetchAuxiliaryData]);
-
-    // Realtime: SSE snapshot stream for current universe (replaces vital 5s polling)
+    // Realtime: SSE snapshot stream
     useEffect(() => {
         if (!universeId || isPaused || typeof window === "undefined") return;
 
         let es: EventSource | null = null;
-        let vitalDebounce: ReturnType<typeof setTimeout> | null = null;
         let retryCount = 0;
         const maxRetries = 5;
 
         const connect = () => {
             if (es) es.close();
-            
             const url = api.universeSnapshotStreamUrl(universeId);
             es = new EventSource(url);
 
             es.onmessage = (event) => {
                 try {
                     const data = JSON.parse(event.data);
-                    setLatestSnapshot({
+                    const newSnapshot = {
                         tick: data.tick,
                         entropy: data.entropy,
                         stability_index: data.stability_index,
                         metrics: data.metrics ?? {},
-                    });
-                    retryCount = 0; // Reset on success
-                    setError(null);
-
-                    if (vitalDebounce) clearTimeout(vitalDebounce);
-                    vitalDebounce = setTimeout(() => {
-                        fetchVitalData(universeId);
-                        vitalDebounce = null;
-                    }, 1500);
-                } catch (_) {
-                    // ignore parse errors
-                }
+                    };
+                    // Update React Query Cache directly
+                    queryClient.setQueryData(simulationKeys.latestSnapshot(universeId), newSnapshot);
+                    
+                    retryCount = 0;
+                    setLocalError(null);
+                } catch (_) {}
             };
 
             es.onerror = () => {
                 if (retryCount < maxRetries) {
                     retryCount++;
-                    const delay = Math.min(1000 * Math.pow(2, retryCount), 10000);
-                    console.warn(`SSE Connection lost. Retrying in ${delay}ms... (Attempt ${retryCount}/${maxRetries})`);
-                    setError(`Đang kết nối lại (${retryCount}/${maxRetries})...`);
-                    setTimeout(connect, delay);
+                    setTimeout(connect, Math.min(1000 * Math.pow(2, retryCount), 10000));
                 } else {
-                    setError("Mất kết nối realtime. Vui lòng làm mới trang.");
+                    setLocalError("Mất kết nối realtime.");
                     if (es) es.close();
                 }
             };
         };
 
         connect();
+        return () => { if (es) es.close(); };
+    }, [universeId, isPaused, queryClient]);
 
-        // Initial fetch (vital + auxiliary)
-        refresh(true);
-
-        return () => {
-            if (vitalDebounce) clearTimeout(vitalDebounce);
-            if (es) es.close();
-        };
-    }, [universeId, isPaused, fetchVitalData, refresh]);
-
-    // Centrifugo Live Events (Kafka stream broadcast)
+    // Centrifugo Live Events
     useEffect(() => {
         if (!universeId || isPaused || typeof window === "undefined") return;
 
         import("centrifuge").then(({ Centrifuge }) => {
             const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
             const centrifuge = new Centrifuge(`${protocol}//${window.location.host}/connection/websocket`);
-            // Subscribe to the public channel where SimulationEventStreamReceived is broadcasted
             const sub = centrifuge.newSubscription("public:universes");
 
             sub.on("publication", (ctx) => {
                 const data = ctx.data as any;
-                // If it's a pulse event, it updates timeline. If it's a simulation stream event from Kafka, it has universeId and type.
                 if (data && data.universeId && String(data.universeId) === String(universeId)) {
-                    // It's our event!
                     setLiveEvents((prev) => {
                         const newEvent = {
                             id: data.occurredAt + "-" + Math.random(),
@@ -232,53 +152,27 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
                             payload: data.payload,
                             created_at: data.occurredAt
                         };
-                        return [newEvent, ...prev].slice(0, 50); // Keep last 50 events
+                        return [newEvent, ...prev].slice(0, 50);
                     });
+                    
+                    // Trigger refetch of auxiliary data when important events occur
+                    if (data.type === 'snapshot_update' || data.type === 'pulse') {
+                        queryClient.invalidateQueries({ queryKey: simulationKeys.all });
+                    }
                 }
             });
 
             sub.subscribe();
             centrifuge.connect();
-
-            return () => {
-                centrifuge.disconnect();
-            };
+            return () => { centrifuge.disconnect(); };
         });
-    }, [universeId, isPaused]);
+    }, [universeId, isPaused, queryClient]);
 
-    // Auxiliary data: refetch when snapshot tick changes (replaces auxiliary 20s polling)
-    const prevTickRef = useRef<number | null>(null);
-    useEffect(() => {
-        if (!universeId) return;
-        const tick = latestSnapshot?.tick ?? null;
-        if (tick !== null && tick !== prevTickRef.current) {
-            prevTickRef.current = tick;
-            const t = setTimeout(() => {
-                fetchAuxiliaryData(universeId);
-            }, 2000);
-            return () => clearTimeout(t);
-        }
-        if (tick !== null) prevTickRef.current = tick;
-        if (tick === null) prevTickRef.current = null;
-    }, [universeId, latestSnapshot?.tick, fetchAuxiliaryData]);
+    const refresh = async () => {
+        await queryClient.invalidateQueries({ queryKey: simulationKeys.all });
+    };
 
-    // Universes list: fetch on mount and on window focus (no interval)
-    useEffect(() => {
-        const fetchUniverses = async () => {
-            try {
-                const res = await api.universes({});
-                setUniverses(res.data || res || []);
-            } catch (e) {
-                console.error("Failed to fetch universes list", e);
-            }
-        };
-        fetchUniverses();
-        const onFocus = () => fetchUniverses();
-        window.addEventListener("focus", onFocus);
-        return () => window.removeEventListener("focus", onFocus);
-    }, []);
-
-    const value = React.useMemo(() => ({
+    const value = useMemo(() => ({
         universeId,
         universe,
         latestSnapshot,
@@ -296,14 +190,12 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
         error,
         isPaused,
         setIsPaused,
-        refresh: () => refresh(true),
+        refresh,
         setUniverseId,
-        setUniverse,
-        setLatestSnapshot
     }), [
         universeId, universe, latestSnapshot, anomalies, institutions,
         actors, chronicles, supremeEntities, materials, interactions, trajectories,
-        universes, liveEvents, loading, error, isPaused, refresh
+        universes, liveEvents, loading, error, isPaused
     ]);
 
     return (

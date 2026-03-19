@@ -9,6 +9,7 @@ use App\Services\Narrative\OpenAINarrativeService;
 use App\Repositories\UniverseSnapshotRepository;
 use App\Modules\Simulation\Services\HttpSimulationEngineClient;
 use App\Modules\Simulation\Services\StubSimulationEngineClient;
+use App\Modules\Simulation\Services\GrpcSimulationEngineClient;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -21,10 +22,16 @@ class AppServiceProvider extends ServiceProvider
         // Ensure Monolog handler base classes load before config/logging.php references StreamHandler (fixes "AbstractHandler not found" on seed)
         class_exists(\Monolog\Handler\AbstractHandler::class, true);
 
-        $this->app->bind(SimulationEngineClientInterface::class, function ($app) {
+        $this->app->singleton(SimulationEngineClientInterface::class, function ($app) {
             $url = (string) config('worldos.simulation_engine_grpc_url', '');
-            if ($url !== '' && (str_starts_with($url, 'http://') || str_starts_with($url, 'https://'))) {
-                return new HttpSimulationEngineClient($url);
+            if ($url !== '') {
+                if (str_starts_with($url, 'grpc://')) {
+                    $hostname = str_replace('grpc://', '', $url);
+                    return new GrpcSimulationEngineClient($hostname);
+                }
+                if (str_starts_with($url, 'http://') || str_starts_with($url, 'https://')) {
+                    return new HttpSimulationEngineClient($url);
+                }
             }
             return new StubSimulationEngineClient;
         });
@@ -111,4 +118,3 @@ class AppServiceProvider extends ServiceProvider
         );
     }
 }
-

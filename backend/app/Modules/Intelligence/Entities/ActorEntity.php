@@ -137,7 +137,8 @@ class ActorEntity
             generation: $this->generation,
             biography: $this->biography,
             isHeroic: $this->isHeroic,
-            heroicType: $this->heroicType
+            heroicType: $this->heroicType,
+            vocationId: $this->vocationId
         );
     }
 
@@ -155,5 +156,6 @@ class ActorEntity
         $this->biography = $state->biography;
         $this->isHeroic = $state->isHeroic;
         $this->heroicType = $state->heroicType;
+        $this->vocationId = $state->vocationId;
     }
 }

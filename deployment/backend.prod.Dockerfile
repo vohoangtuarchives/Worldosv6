@@ -11,7 +11,7 @@ RUN cargo build --release -p worldos-ffi
 # Stage 2: PHP Application
 FROM php:8.4-fpm
 
-# Install dependencies, including libffi-dev for FFI
+# Install dependencies, including libffi-dev for FFI and gRPC build deps
 RUN apt-get update && apt-get install -y \
     git \
     unzip \
@@ -20,8 +20,12 @@ RUN apt-get update && apt-get install -y \
     libonig-dev \
     libxml2-dev \
     libffi-dev \
-    && pecl install redis \
-    && docker-php-ext-enable redis \
+    zlib1g-dev \
+    g++ \
+    make \
+    cmake \
+    && MAKEFLAGS="-j2" pecl install redis grpc protobuf \
+    && docker-php-ext-enable redis grpc protobuf \
     && docker-php-ext-configure ffi --with-ffi \
     && docker-php-ext-install pdo pdo_pgsql pgsql zip opcache pcntl bcmath sockets ffi
 

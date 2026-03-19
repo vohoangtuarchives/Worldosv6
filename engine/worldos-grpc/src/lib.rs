@@ -14,4 +14,11 @@ pub use worldos::simulation::{
     MergeRequest, MergeResponse, ObserveRequest, ObserveResponse,
     BatchAdvanceRequest, BatchAdvanceResponse,
     TrajectoryAnalysisRequest, TrajectoryAnalysisResponse, TrajectoryPoint, RegimeTransition,
+    // Vectorized Simulation Messages
+    EvaluateRulesRequest, EvaluateRulesResponse,
+    ProcessActorsSoaRequest, ProcessActorsSoaResponse, ActorSoaOutput,
+    ProcessFieldsV7Request, ProcessFieldsV7Response,
+    ComputeMetabolismGridRequest, ComputeMetabolismGridResponse,
+    CalculateVocationAlignmentRequest, CalculateVocationAlignmentResponse,
+    GetCombinedGravityRequest, GetCombinedGravityResponse,
 };

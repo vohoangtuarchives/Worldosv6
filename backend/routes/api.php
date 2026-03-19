@@ -295,28 +295,22 @@ Route::middleware('auth:sanctum')->prefix('worldos')->group(function () {
         ]);
     })->name('worldos.universes.generate-chronicle');
 
-    // Narrative v2: AI Historian — generate history volume / essay from Historical Fact + timeline
-    Route::post('universes/{id}/historian/generate', function (string $id, \Illuminate\Http\Request $request, \App\Services\Narrative\HistorianAgentService $historian) {
+    // Narrative v2: AI Historian (V8.0 UniverseHistoryGenerator)
+    Route::post('universes/{id}/historian/generate', function (string $id, \Illuminate\Http\Request $request, \App\Modules\Narrative\Services\UniverseHistoryGenerator $historian) {
         $universe = \App\Models\Universe::findOrFail((int) $id);
-        $outputType = $request->input('output_type', 'history_volume');
-        $outputType = in_array($outputType, ['history_volume', 'historian_essay', 'philosophy_treatise'], true) ? $outputType : 'history_volume';
-        $criteria = [
-            'from_tick' => $request->has('from_tick') ? (int) $request->input('from_tick') : null,
-            'to_tick' => $request->has('to_tick') ? (int) $request->input('to_tick') : null,
-            'theme' => $request->input('theme', 'general'),
-            'actor_id' => $request->has('actor_id') ? (int) $request->input('actor_id') : null,
-        ];
-        $chronicle = $historian->generateHistory($universe, $outputType, array_filter($criteria, fn ($v) => $v !== null));
-        if (! $chronicle) {
-            return response()->json(['message' => 'Historian generation failed or LLM unavailable.'], 422);
+        $fromTick = $request->has('from_tick') ? (int) $request->input('from_tick') : null;
+        $toTick = $request->has('to_tick') ? (int) $request->input('to_tick') : null;
+        
+        $history = $historian->generate($universe, $fromTick, $toTick);
+        if (! $history) {
+            return response()->json(['message' => 'Lỗi khi tạo lịch sử hoặc LLM không phản hồi.'], 422);
         }
         return response()->json([
             'data' => [
-                'id' => $chronicle->id,
-                'type' => $chronicle->type,
-                'content' => $chronicle->content,
-                'from_tick' => $chronicle->from_tick,
-                'to_tick' => $chronicle->to_tick,
+                'id' => $history->id,
+                'content' => $history->full_text,
+                'from_tick' => $history->from_tick,
+                'to_tick' => $history->to_tick,
             ],
         ]);
     })->name('worldos.universes.historian.generate');
@@ -505,7 +499,7 @@ Route::middleware('auth:sanctum')->prefix('worldos')->group(function () {
     Route::get('universes/{id}/history-timeline', function (
         string $id,
         \App\Contracts\Repositories\UniverseRepositoryInterface $universeRepo,
-        \App\Services\Simulation\HistoryEngine $historyEngine
+        \App\Simulation\Engines\Meta\HistoryEngine $historyEngine
     ) {
         $universe = $universeRepo->find((int) $id);
         if (!$universe) {
@@ -520,7 +514,7 @@ Route::middleware('auth:sanctum')->prefix('worldos')->group(function () {
 
     Route::get('universes/{id}/causal-links', function (
         string $id,
-        \App\Services\Narrative\ChronicleSynthesisEngine $synthesisEngine
+        \App\Modules\Narrative\Services\ChronicleSynthesisEngine $synthesisEngine
     ) {
         $fromTick = (int) request()->query('from_tick', 0);
         $toTick = (int) request()->query('to_tick', 1000000);

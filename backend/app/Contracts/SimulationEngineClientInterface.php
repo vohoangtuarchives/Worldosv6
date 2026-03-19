@@ -50,4 +50,58 @@ interface SimulationEngineClientInterface
      * @return array{ok: bool, outputs: array, error_message?: string}
      */
     public function evaluateRules(array $state, ?string $rulesDsl = null): array;
+
+    /**
+     * Vectorized Actor Processing (SoA - Structure of Arrays).
+     * Replaces FfiActorEngine::processActorsSoa.
+     */
+    public function processActorsSoa(
+        int $tick,
+        array $ids,
+        array $zoneIds,
+        array $hunger,
+        array $energy,
+        array $fear,
+        array $trauma,
+        array $heroicTypes,
+        array $lineageIds,
+        array $memes
+    ): array;
+
+    /**
+     * Vectorized Field Processing (Diffusion/Preservation).
+     * Replaces FfiActorEngine::processFieldsV7.
+     */
+    public function processFieldsV7(
+        array $fields, 
+        array $neighborCounts, 
+        array $neighborOffsets,
+        array $neighbors, 
+        float $diffusionRate, 
+        float $preservationRate
+    ): array;
+
+    /**
+     * Grid-Based Metabolic Calculation.
+     * Replaces FfiRuleEngine::computeMetabolismGrid.
+     */
+    public function computeMetabolismGrid(
+        array $populations, 
+        array $biomasses, 
+        array $industries, 
+        float $efficiency, 
+        float $baseEnergy
+    ): array;
+
+    /**
+     * Calculate Vocation Alignment.
+     * Replaces FfiActorEngine::calculateVocationAlignment.
+     */
+    public function calculateVocationAlignment(array $actorMotivation, array $targetProfile): float;
+
+    /**
+     * Get Combined Ruleset Gravity.
+     * Replaces FfiActorEngine::getCombinedGravity.
+     */
+    public function getCombinedGravity(array $rulesets): float;
 }

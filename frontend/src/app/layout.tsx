@@ -23,6 +23,8 @@ export const metadata: Metadata = {
   description: "Civilizational Dynamics Engine",
 };
 
+import QueryProvider from "@/context/QueryProvider";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -33,7 +35,9 @@ export default function RootLayout({
       <body
         className={`${display.variable} ${narrative.variable} ${mono.variable} antialiased`}
       >
-        {children}
+        <QueryProvider>
+          {children}
+        </QueryProvider>
       </body>
     </html>
   );

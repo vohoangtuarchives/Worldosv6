@@ -214,43 +214,43 @@ class HttpSimulationEngineClient implements SimulationEngineClientInterface
         ];
     }
 
-    /**
-     * V7 §57: Observer Effect — Observe a zone, triggering wavefunction collapse.
-     * Gửi lệnh tới Rust Engine để tăng observer_presence và tiêu hao Entropy.
-     */
-    public function observe(int $universeId, int $zoneId, float $entropyCost = 0.02): array
+    public function processActorsSoa(int $tick, array $ids, array $zoneIds, array $hunger, array $energy, array $fear, array $trauma, array $heroicTypes, array $lineageIds, array $memes): array
     {
-        $url = rtrim($this->baseUrl, '/').'/observe';
-        $payload = [
-            'universe_id' => $universeId,
-            'zone_id' => $zoneId,
-            'entropy_cost' => $entropyCost,
-        ];
+        $url = rtrim($this->baseUrl, '/').'/process-actors-soa';
+        $payload = compact('tick', 'ids', 'zoneIds', 'hunger', 'energy', 'fear', 'trauma', 'heroicTypes', 'lineageIds', 'memes');
+        $response = Http::post($url, $payload);
+        return $response->json() ?: [];
+    }
 
-        try {
-            $response = Http::timeout(15)->post($url, $payload);
-        } catch (\Throwable $e) {
-            return [
-                'ok' => false,
-                'error_message' => $e->getMessage(),
-            ];
-        }
+    public function processFieldsV7(array $fields, array $neighborCounts, array $neighborOffsets, array $neighbors, float $diffusionRate, float $preservationRate): array
+    {
+        $url = rtrim($this->baseUrl, '/').'/process-fields';
+        $payload = compact('fields', 'neighborCounts', 'neighborOffsets', 'neighbors', 'diffusionRate', 'preservationRate');
+        $response = Http::post($url, $payload);
+        return $response->json() ?: $fields;
+    }
 
-        if (!$response->successful()) {
-            return [
-                'ok' => false,
-                'error_message' => $response->body() ?: 'HTTP '.$response->status(),
-            ];
-        }
+    public function computeMetabolismGrid(array $populations, array $biomasses, array $industries, float $efficiency, float $baseEnergy): array
+    {
+        $url = rtrim($this->baseUrl, '/').'/compute-metabolism';
+        $payload = compact('populations', 'biomasses', 'industries', 'efficiency', 'baseEnergy');
+        $response = Http::post($url, $payload);
+        return $response->json() ?: ['total_waste' => 0.0, 'net_energies' => []];
+    }
 
-        $data = $response->json();
-        return [
-            'ok' => $data['ok'] ?? true,
-            'zone_id' => $zoneId,
-            'entropy_cost' => $entropyCost,
-            'message' => $data['message'] ?? 'Observation Interference applied.',
-            'error_message' => $data['error_message'] ?? null,
-        ];
+    public function calculateVocationAlignment(array $actorMotivation, array $targetProfile): float
+    {
+        $url = rtrim($this->baseUrl, '/').'/calculate-vocation-alignment';
+        $payload = compact('actorMotivation', 'targetProfile');
+        $response = Http::post($url, $payload);
+        return (float) ($response->json()['alignment'] ?? 0.0);
+    }
+
+    public function getCombinedGravity(array $rulesets): float
+    {
+        $url = rtrim($this->baseUrl, '/').'/get-combined-gravity';
+        $payload = compact('rulesets');
+        $response = Http::post($url, $payload);
+        return (float) ($response->json()['gravity'] ?? 1.0);
     }
 }
-

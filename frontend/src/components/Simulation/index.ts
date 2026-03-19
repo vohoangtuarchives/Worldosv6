@@ -24,4 +24,4 @@ export { CulturePanel } from "./CulturePanel";
 export { FinancePanel } from "./FinancePanel";
 export { MotivationRadar } from "./MotivationRadar";
 export { default as VocationConstellation } from "./VocationConstellation";
-export { default as AkashicLibrary } from "./AkashicLibrary";
+export { VocationLibrary } from "./VocationLibrary";

@@ -51,7 +51,8 @@ class ActorBehaviorEngine
         protected UniverseRepositoryInterface $universeRepository,
         protected \App\Services\Narrative\TraitMapper $traitMapper,
         protected \App\Simulation\Engines\Meta\ActorDecisionEngine $decisionEngine,
-        protected RuleVmService $ruleVm
+        protected RuleVmService $ruleVm,
+        protected \App\Modules\Simulation\Services\VocationActionEngine $vocationActionEngine
     ) {}
 
     /**
@@ -197,6 +198,9 @@ class ActorBehaviorEngine
         }
 
         $action = $this->selectAction($scores, $seed, $actor->id ?? 0, $tick);
+
+        // 3.1. Process Vocation-Specific Action (DSL Expansion)
+        $this->vocationActionEngine->process($actor, $state, $tick);
 
         // 4. Update Actor Metrics
         $monologue = $this->traitMapper->generateMonologueSeed($traits, $archetype);

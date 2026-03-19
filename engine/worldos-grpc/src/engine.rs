@@ -1,8 +1,14 @@
-//! Engine logic: advance, merge, observe, trajectory analysis.
+//! Engine logic: advance, merge, observe, trajectory analysis, and vectorized simulation.
 //! Used by both gRPC and HTTP transports.
 
 use worldos_core::{tick_with_cascade, KernelGenome, UniverseState, WorldConfig};
-use crate::{RegimeTransition, TrajectoryAnalysisResponse, TrajectoryPoint, WorldConfig as GrpcWorldConfig};
+use crate::{
+    RegimeTransition, TrajectoryAnalysisResponse, TrajectoryPoint, WorldConfig as GrpcWorldConfig,
+    ActorSoaOutput, ProcessActorsSoaResponse, ProcessFieldsV7Response, ComputeMetabolismGridResponse,
+};
+use rayon::prelude::*;
+use rand::SeedableRng;
+use rand::Rng;
 
 /// Deserialize state from bytes: JSON if starts with b'{', else bincode.
 pub fn deserialize_state(state_input: &[u8]) -> Result<UniverseState, String> {
@@ -29,7 +35,6 @@ pub fn run_advance(
         deserialize_state(state_input)?
     };
 
-    // Simulation accuracy: never run tick with 0 zones — bootstrap one zone so physics (entropy, diffusion) can run
     if state.zones.is_empty() {
         let saved_tick = state.tick;
         state = UniverseState::with_one_zone(universe_id, 100.0);
@@ -110,7 +115,6 @@ pub fn run_observe(
         deserialize_state(state_input)?
     };
 
-    // Simulation accuracy: never run with 0 zones — bootstrap one zone
     if state.zones.is_empty() {
         let saved_tick = state.tick;
         state = UniverseState::with_one_zone(universe_id, 100.0);
@@ -121,15 +125,7 @@ pub fn run_observe(
         zone.state.entropy = (zone.state.entropy + intensity * 0.05).min(1.0);
     }
 
-    let world = WorldConfig {
-        world_id: 0,
-        origin: "observed".to_string(),
-        axiom: None,
-        world_seed: None,
-        genome: None,
-        behavior_graph: None,
-        sharding_config: None,
-    };
+    let world = WorldConfig::default();
     let macro_idx = state.build_macro_index();
     let _events = tick_with_cascade(&mut state, &world, 4, Some(&macro_idx));
 
@@ -143,6 +139,180 @@ pub fn run_observe(
     let global_fields_json = serde_json::to_string(&state.global_fields).unwrap_or_else(|_| "{}".to_string());
 
     Ok((snap.tick, state_vector_json, entropy, stability_index, metrics_json, sci, instability_gradient, global_fields_json))
+}
+
+// ═══════════════════════════════════════════════════════
+// Vectorized Simulation Logic (ported from FFI)
+// ═══════════════════════════════════════════════════════
+
+pub fn run_evaluate_rules(state_json: &str, dsl: &str) -> (bool, String, String) {
+    let state: serde_json::Value = serde_json::from_str(state_json).unwrap_or(serde_json::Value::Null);
+    let mut rng = rand::rngs::StdRng::from_entropy();
+    match worldos_rules::evaluate_rules(dsl, &state, Some(&mut rng)) {
+        Ok(outputs) => {
+            let out_json = serde_json::to_string(&outputs).unwrap_or("{}".to_string());
+            (true, String::new(), out_json)
+        }
+        Err(e) => (false, format!("{:?}", e), "{}".to_string()),
+    }
+}
+
+pub fn run_process_actors_soa(
+    tick: u64,
+    ids: Vec<u64>,
+    zone_ids: Vec<u32>,
+    mut hunger: Vec<f32>,
+    mut energy: Vec<f32>,
+    fear: Vec<f32>,
+    mut trauma: Vec<f32>,
+    heroic_types: Vec<u32>,
+    lineage_ids: Vec<u64>,
+    memes: Vec<u64>,
+) -> ProcessActorsSoaResponse {
+    let count = ids.len();
+    if count == 0 {
+        return ProcessActorsSoaResponse { ok: true, error_message: String::new(), outputs: vec![] };
+    }
+
+    // Prepare seeds for determinism
+    let seeds: Vec<u64> = ids.iter().map(|id| id.wrapping_add(tick)).collect();
+
+    let outputs: Vec<ActorSoaOutput> = (0..count).into_par_iter().map(|i| {
+        let mut rng = rand::rngs::StdRng::seed_from_u64(seeds[i]);
+        
+        let h_val = hunger[i];
+        let e_val = energy[i];
+        let f_val = fear[i];
+        let t_val = trauma[i];
+
+        let mut action_id = 0; // Idle
+        let mut h_delta = 0.0;
+        let mut e_delta = 0.0;
+        let mut t_delta = -0.005; // Base trauma decay
+
+        let effective_fear = (f_val + t_val * 0.4).clamp(0.0, 1.0);
+
+        if h_val > 0.8 {
+            action_id = 1; // FindFood
+            h_delta = -0.4;
+            e_delta = 0.15;
+        } else if effective_fear > 0.65 {
+            action_id = 2; // Flee
+            e_delta = -0.25;
+            if effective_fear > 0.85 {
+                t_delta = 0.04;
+            }
+        }
+
+        let drift: f32 = rng.gen_range(-0.01..0.01);
+        
+        ActorSoaOutput {
+            action_id,
+            new_hunger: (h_val + h_delta + drift).clamp(0.0, 1.0),
+            new_energy: (e_val + e_delta + drift).clamp(0.0, 1.0),
+            new_trauma: (t_val + t_delta).clamp(0.0, 1.0),
+        }
+    }).collect();
+
+    ProcessActorsSoaResponse {
+        ok: true,
+        error_message: String::new(),
+        outputs,
+    }
+}
+
+pub fn run_process_fields_v7(
+    fields: Vec<f64>,
+    neighbor_counts: Vec<u32>,
+    neighbor_offsets: Vec<u32>,
+    neighbors: Vec<u32>,
+    diffusion_rate: f64,
+    preservation_rate: f64,
+) -> Vec<f64> {
+    let count = neighbor_counts.len();
+    if count == 0 { return fields; }
+    
+    let mut deltas = vec![0.0; count * 8];
+    for i in 0..count {
+        let n_count = neighbor_counts[i] as f64;
+        if n_count < 1e-9 { continue; }
+        let offset = neighbor_offsets[i] as usize;
+        for j in 0..(neighbor_counts[i] as usize) {
+            let neighbor_idx = neighbors[offset + j] as usize;
+            if neighbor_idx >= count { continue; }
+            for f in 0..8 {
+                let diff = fields[neighbor_idx * 8 + f] - fields[i * 8 + f];
+                deltas[i * 8 + f] += diffusion_rate * diff / n_count;
+            }
+        }
+    }
+    
+    let mut new_fields = fields;
+    for i in 0..count {
+        for f in 0..8 {
+            let idx = i * 8 + f;
+            new_fields[idx] *= preservation_rate;
+            new_fields[idx] = (new_fields[idx] + deltas[idx]).clamp(0.0, 1.0);
+        }
+    }
+    new_fields
+}
+
+pub fn run_compute_metabolism_grid(
+    mut populations: Vec<f64>,
+    mut biomasses: Vec<f64>,
+    industries: Vec<f64>,
+    efficiency: f64,
+    base_energy: f64,
+) -> ComputeMetabolismGridResponse {
+    let count = populations.len();
+    if count == 0 {
+        return ComputeMetabolismGridResponse { total_waste: 0.0, populations, biomasses, net_energies: vec![] };
+    }
+
+    let mut net_energies = vec![0.0; count];
+    let mut total_waste = 0.0;
+
+    for i in 0..count {
+        let p = populations[i];
+        let ind_act = industries[i];
+        
+        let gross_energy = base_energy * efficiency;
+        let maintenance = (p * 0.01) + (ind_act * 0.05);
+        let net_e = gross_energy - maintenance;
+        net_energies[i] = net_e;
+        
+        if net_e < -0.5 {
+            let deaths = p * 0.3;
+            populations[i] = p - deaths;
+            biomasses[i] += deaths * 0.05;
+        }
+        
+        let waste_rate = 1.0 - efficiency;
+        total_waste += (maintenance * waste_rate) * 0.1;
+    }
+
+    ComputeMetabolismGridResponse {
+        total_waste,
+        populations,
+        biomasses,
+        net_energies,
+    }
+}
+
+pub fn run_calculate_vocation_alignment(actor_motivation_json: &str, target_profile_json: &str) -> f32 {
+    let actor_motivation: worldos_core::vocation::definitions::MotivationProfile = 
+        serde_json::from_str(actor_motivation_json).unwrap_or_default();
+    let target_profile: worldos_core::vocation::definitions::MotivationProfile = 
+        serde_json::from_str(target_profile_json).unwrap_or_default();
+        
+    worldos_core::vocation::scoring::calculate_vocation_alignment(&actor_motivation, &target_profile)
+}
+
+pub fn run_get_combined_gravity(rulesets_json: &str) -> f32 {
+    let rulesets: Vec<worldos_core::ruleset::RuleSet> = serde_json::from_str(rulesets_json).unwrap_or_default();
+    let engine = worldos_core::ruleset::RuleSetEngine { active_rulesets: rulesets };
+    engine.get_combined_gravity()
 }
 
 // ═══════════════════════════════════════════════════════

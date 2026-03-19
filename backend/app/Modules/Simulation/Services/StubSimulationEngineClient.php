@@ -13,7 +13,6 @@ class StubSimulationEngineClient implements SimulationEngineClientInterface
     public function advance(int $universeId, int $ticks, array $stateInput = [], ?array $worldConfig = null): array
     {
         // Simple mock of a simulation advance
-        $tick = (int) (time() / 100);
         $state = $stateInput;
         $currentTick = $state['tick'] ?? 0;
         $entropy = $state['global_entropy'] ?? $state['entropy'] ?? 0.1;
@@ -80,5 +79,29 @@ class StubSimulationEngineClient implements SimulationEngineClientInterface
             'error_message' => null,
         ];
     }
-}
 
+    public function processActorsSoa(int $tick, array $ids, array $zoneIds, array $hunger, array $energy, array $fear, array $trauma, array $heroicTypes, array $lineageIds, array $memes): array
+    {
+        return array_fill(0, count($ids), ['action_id' => 0, 'new_hunger' => 0.5, 'new_energy' => 0.5, 'new_trauma' => 0.0]);
+    }
+
+    public function processFieldsV7(array $fields, array $neighborCounts, array $neighborOffsets, array $neighbors, float $diffusionRate, float $preservationRate): array
+    {
+        return $fields;
+    }
+
+    public function computeMetabolismGrid(array $populations, array $biomasses, array $industries, float $efficiency, float $baseEnergy): array
+    {
+        return ['total_waste' => 0.0, 'net_energies' => array_fill(0, count($populations), 0.0)];
+    }
+
+    public function calculateVocationAlignment(array $actorMotivation, array $targetProfile): float
+    {
+        return 0.5;
+    }
+
+    public function getCombinedGravity(array $rulesets): float
+    {
+        return 1.0;
+    }
+}

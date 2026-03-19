@@ -260,6 +260,10 @@ export const api = {
   async actors(id: number) {
     return apiFetch(`/worldos/universes/${id}/actors`);
   },
+  /** Get single actor detail. */
+  async getActor(actorId: number) {
+    return apiFetch(`/worldos/actors/${actorId}`);
+  },
   /** Life timeline for an actor (actor_events). */
   async actorEvents(actorId: number) {
     return apiFetch(`/worldos/actors/${actorId}/events`);

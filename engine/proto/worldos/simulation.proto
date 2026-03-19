@@ -10,10 +10,16 @@ service SimulationEngine {
   rpc Advance(AdvanceRequest) returns (AdvanceResponse);
   rpc Merge(MergeRequest) returns (MergeResponse);
   rpc Observe(ObserveRequest) returns (ObserveResponse);
-  // Batch: run N simulations in a single call (for evolution, meta-learning, escape tests)
   rpc BatchAdvance(BatchAdvanceRequest) returns (BatchAdvanceResponse);
-  // Analysis: recurrence matrix, Lyapunov estimation, attractor detection
   rpc AnalyzeTrajectory(TrajectoryAnalysisRequest) returns (TrajectoryAnalysisResponse);
+  
+  // V10+ Vectorized Simulation (Replaces PHP FFI)
+  rpc EvaluateRules(EvaluateRulesRequest) returns (EvaluateRulesResponse);
+  rpc ProcessActorsSoa(ProcessActorsSoaRequest) returns (ProcessActorsSoaResponse);
+  rpc ProcessFieldsV7(ProcessFieldsV7Request) returns (ProcessFieldsV7Response);
+  rpc ComputeMetabolismGrid(ComputeMetabolismGridRequest) returns (ComputeMetabolismGridResponse);
+  rpc CalculateVocationAlignment(CalculateVocationAlignmentRequest) returns (CalculateVocationAlignmentResponse);
+  rpc GetCombinedGravity(GetCombinedGravityRequest) returns (GetCombinedGravityResponse);
 }
 
 message ObserveRequest {
@@ -82,11 +88,6 @@ message UniverseSnapshot {
   double instability_gradient = 8;
 }
 
-// ═══════════════════════════════════════════════════════
-// BatchAdvance: Run N independent simulations in 1 call
-// Used by: FitnessEvaluator, MetaLearningEngine, DarkAttractorDetector, FutureSimulator
-// ═══════════════════════════════════════════════════════
-
 message BatchAdvanceRequest {
   repeated AdvanceRequest requests = 1;
 }
@@ -94,11 +95,6 @@ message BatchAdvanceRequest {
 message BatchAdvanceResponse {
   repeated AdvanceResponse responses = 1;
 }
-
-// ═══════════════════════════════════════════════════════
-// TrajectoryAnalysis: Detect strange attractors via recurrence analysis
-// Used by: StrangeAttractorDetector
-// ═══════════════════════════════════════════════════════
 
 message TrajectoryPoint {
   uint64 tick = 1;
@@ -127,3 +123,88 @@ message RegimeTransition {
   double distance = 3;  // how far the jump was
 }
 
+// ═══════════════════════════════════════════════════════
+// Vectorized Methods (Replaces FFI)
+// ═══════════════════════════════════════════════════════
+
+message EvaluateRulesRequest {
+    string state_json = 1;
+    string rules_dsl = 2;
+}
+
+message EvaluateRulesResponse {
+    bool ok = 1;
+    string error_message = 2;
+    string outputs_json = 3;
+}
+
+message ProcessActorsSoaRequest {
+    uint64 tick = 1;
+    repeated uint64 ids = 2;
+    repeated uint32 zone_ids = 3;
+    repeated float hunger = 4;
+    repeated float energy = 5;
+    repeated float fear = 6;
+    repeated float trauma = 7;
+    repeated uint32 heroic_types = 8;
+    repeated uint64 lineage_ids = 9;
+    repeated uint64 memes = 10;
+}
+
+message ActorSoaOutput {
+    uint32 action_id = 1;
+    float new_hunger = 2;
+    float new_energy = 3;
+    float new_trauma = 4;
+}
+
+message ProcessActorsSoaResponse {
+    bool ok = 1;
+    string error_message = 2;
+    repeated ActorSoaOutput outputs = 3;
+}
+
+message ProcessFieldsV7Request {
+    repeated double fields = 1; // Flattened [count * 8]
+    repeated uint32 neighbor_counts = 2;
+    repeated uint32 neighbor_offsets = 3;
+    repeated uint32 neighbors = 4;
+    double diffusion_rate = 5;
+    double preservation_rate = 6;
+}
+
+message ProcessFieldsV7Response {
+    repeated double fields = 1;
+}
+
+message ComputeMetabolismGridRequest {
+    repeated double populations = 1;
+    repeated double biomasses = 2;
+    repeated double industries = 3;
+    double efficiency = 4;
+    double base_energy = 5;
+}
+
+message ComputeMetabolismGridResponse {
+    double total_waste = 1;
+    repeated double populations = 2;
+    repeated double biomasses = 3;
+    repeated double net_energies = 4;
+}
+
+message CalculateVocationAlignmentRequest {
+    string actor_motivation_json = 1;
+    string target_profile_json = 2;
+}
+
+message CalculateVocationAlignmentResponse {
+    float alignment = 1;
+}
+
+message GetCombinedGravityRequest {
+    string rulesets_json = 1;
+}
+
+message GetCombinedGravityResponse {
+    float gravity = 1;
+}

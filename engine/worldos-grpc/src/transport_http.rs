@@ -14,7 +14,6 @@ use crate::{KernelGenome, TrajectoryPoint, WorldConfig};
 pub struct AdvanceHttpRequest {
     pub universe_id: u64,
     pub ticks: u64,
-    /// Optional: JSON that deserializes to worldos_core::UniverseState (tick, zones, entropy, global_fields, …). If absent/empty, engine bootstraps one zone.
     #[serde(default)]
     pub state_input: Option<serde_json::Value>,
     #[serde(default)]
@@ -348,249 +347,165 @@ async fn analyze_trajectory_http(Json(body): Json<TrajectoryAnalysisHttpRequest>
 }
 
 // ═══════════════════════════════════════════════════════
-// Evaluate Rules (DSL Rule VM)
+// Evaluate Rules
 // ═══════════════════════════════════════════════════════
 
 #[derive(Debug, Deserialize)]
 pub struct EvaluateRulesHttpRequest {
-    /// World state: JSON with paths per WorldOS_DSL_Spec §3 (tick, entropy, stability_index, sci, civilization.*, zones.*, etc.). Laravel builds this via RuleVmService::buildStateForVm(universe, snapshot).
     pub state: serde_json::Value,
-    /// Optional DSL text; if empty, VM uses no rules or default embedded rules.
     #[serde(default)]
     pub rules_dsl: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
-pub struct RuleOutputHttp {
-    #[serde(rename = "type")]
-    pub output_type: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub event_name: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub adjust_stability_delta: Option<f64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub adjust_entropy_delta: Option<f64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub add_path: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub add_path_delta: Option<f64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub set_path: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub set_path_value: Option<serde_json::Value>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub spawn_actor_kind: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub drift_path: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub drift_target: Option<f64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub drift_speed: Option<f64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub calc_name: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub calc_value: Option<serde_json::Value>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub metadata_key: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub metadata_value: Option<String>,
-}
-
-#[derive(Debug, Serialize)]
 pub struct EvaluateRulesHttpResponse {
     pub ok: bool,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub error_message: Option<String>,
-    pub outputs: Vec<RuleOutputHttp>,
+    pub error_message: String,
+    pub outputs: serde_json::Value,
 }
 
 async fn evaluate_rules_http(Json(body): Json<EvaluateRulesHttpRequest>) -> Json<EvaluateRulesHttpResponse> {
-    let mut vm = worldos_rules::RuleVm::new();
-    if let Some(ref dsl) = body.rules_dsl {
-        if !dsl.is_empty() {
-            if let Err(e) = vm.load_rules(dsl) {
-                return Json(EvaluateRulesHttpResponse {
-                    ok: false,
-                    error_message: Some(e.to_string()),
-                    outputs: vec![],
-                });
-            }
-        }
-    }
-    let tick = body.state.get("tick").and_then(|v| v.as_u64()).unwrap_or(0);
-    let outputs = vm.evaluate(&body.state, tick, None::<&mut rand::rngs::StdRng>, None);
-    let outputs_http: Vec<RuleOutputHttp> = outputs
-        .into_iter()
-        .map(|o| match o {
-            worldos_rules::RuleOutput::Event { name, .. } => RuleOutputHttp {
-                output_type: "event".to_string(),
-                event_name: Some(name),
-                adjust_stability_delta: None,
-                adjust_entropy_delta: None,
-                add_path: None,
-                add_path_delta: None,
-                set_path: None,
-                set_path_value: None,
-                spawn_actor_kind: None,
-                drift_path: None,
-                drift_target: None,
-                drift_speed: None,
-                calc_name: None,
-                calc_value: None,
-                metadata_key: None,
-                metadata_value: None,
-            },
-            worldos_rules::RuleOutput::AdjustStability { delta } => RuleOutputHttp {
-                output_type: "adjust_stability".to_string(),
-                event_name: None,
-                adjust_stability_delta: Some(delta),
-                adjust_entropy_delta: None,
-                add_path: None,
-                add_path_delta: None,
-                set_path: None,
-                set_path_value: None,
-                spawn_actor_kind: None,
-                drift_path: None,
-                drift_target: None,
-                drift_speed: None,
-                calc_name: None,
-                calc_value: None,
-                metadata_key: None,
-                metadata_value: None,
-            },
-            worldos_rules::RuleOutput::AdjustEntropy { delta } => RuleOutputHttp {
-                output_type: "adjust_entropy".to_string(),
-                event_name: None,
-                adjust_stability_delta: None,
-                adjust_entropy_delta: Some(delta),
-                add_path: None,
-                add_path_delta: None,
-                set_path: None,
-                set_path_value: None,
-                spawn_actor_kind: None,
-                drift_path: None,
-                drift_target: None,
-                drift_speed: None,
-                calc_name: None,
-                calc_value: None,
-                metadata_key: None,
-                metadata_value: None,
-            },
-            worldos_rules::RuleOutput::AddPath { path, delta } => RuleOutputHttp {
-                output_type: "add_path".to_string(),
-                event_name: None,
-                adjust_stability_delta: None,
-                adjust_entropy_delta: None,
-                add_path: Some(path),
-                add_path_delta: Some(delta),
-                set_path: None,
-                set_path_value: None,
-                spawn_actor_kind: None,
-                drift_path: None,
-                drift_target: None,
-                drift_speed: None,
-                calc_name: None,
-                calc_value: None,
-                metadata_key: None,
-                metadata_value: None,
-            },
-            worldos_rules::RuleOutput::SetPath { path, value } => RuleOutputHttp {
-                output_type: "set_path".to_string(),
-                event_name: None,
-                adjust_stability_delta: None,
-                adjust_entropy_delta: None,
-                add_path: None,
-                add_path_delta: None,
-                set_path: Some(path),
-                set_path_value: Some(value),
-                spawn_actor_kind: None,
-                drift_path: None,
-                drift_target: None,
-                drift_speed: None,
-                calc_name: None,
-                calc_value: None,
-                metadata_key: None,
-                metadata_value: None,
-            },
-            worldos_rules::RuleOutput::SpawnActor { kind } => RuleOutputHttp {
-                output_type: "spawn_actor".to_string(),
-                event_name: None,
-                adjust_stability_delta: None,
-                adjust_entropy_delta: None,
-                add_path: None,
-                add_path_delta: None,
-                set_path: None,
-                set_path_value: None,
-                spawn_actor_kind: Some(kind),
-                drift_path: None,
-                drift_target: None,
-                drift_speed: None,
-                calc_name: None,
-                calc_value: None,
-                metadata_key: None,
-                metadata_value: None,
-            },
-            worldos_rules::RuleOutput::Drift { path, target, speed } => RuleOutputHttp {
-                output_type: "drift".to_string(),
-                event_name: None,
-                adjust_stability_delta: None,
-                adjust_entropy_delta: None,
-                add_path: None,
-                add_path_delta: None,
-                set_path: None,
-                set_path_value: None,
-                spawn_actor_kind: None,
-                drift_path: Some(path),
-                drift_target: target,
-                drift_speed: speed,
-                calc_name: None,
-                calc_value: None,
-                metadata_key: None,
-                metadata_value: None,
-            },
-            worldos_rules::RuleOutput::Calc { name, value } => RuleOutputHttp {
-                output_type: "calc".to_string(),
-                event_name: None,
-                adjust_stability_delta: None,
-                adjust_entropy_delta: None,
-                add_path: None,
-                add_path_delta: None,
-                set_path: None,
-                set_path_value: None,
-                spawn_actor_kind: None,
-                drift_path: None,
-                drift_target: None,
-                drift_speed: None,
-                calc_name: Some(name),
-                calc_value: Some(value),
-                metadata_key: None,
-                metadata_value: None,
-            },
-            worldos_rules::RuleOutput::Metadata { key, value } => RuleOutputHttp {
-                output_type: "metadata".to_string(),
-                event_name: None,
-                adjust_stability_delta: None,
-                adjust_entropy_delta: None,
-                add_path: None,
-                add_path_delta: None,
-                set_path: None,
-                set_path_value: None,
-                spawn_actor_kind: None,
-                drift_path: None,
-                drift_target: None,
-                drift_speed: None,
-                calc_name: None,
-                calc_value: None,
-                metadata_key: Some(key),
-                metadata_value: Some(value),
-            },
-        })
-        .collect();
+    let state_json = body.state.to_string();
+    let dsl = body.rules_dsl.unwrap_or_default();
+    let (ok, error, outputs_json) = engine::run_evaluate_rules(&state_json, &dsl);
     Json(EvaluateRulesHttpResponse {
-        ok: true,
-        error_message: None,
-        outputs: outputs_http,
+        ok,
+        error_message: error,
+        outputs: serde_json::from_str(&outputs_json).unwrap_or(serde_json::Value::Null),
     })
+}
+
+// ═══════════════════════════════════════════════════════
+// Process Actors SoA
+// ═══════════════════════════════════════════════════════
+
+#[derive(Debug, Deserialize)]
+pub struct ProcessActorsSoaHttpRequest {
+    pub tick: u64,
+    pub ids: Vec<u64>,
+    pub zone_ids: Vec<u32>,
+    pub hunger: Vec<f32>,
+    pub energy: Vec<f32>,
+    pub fear: Vec<f32>,
+    pub trauma: Vec<f32>,
+    pub heroic_types: Vec<u32>,
+    pub lineage_ids: Vec<u64>,
+    pub memes: Vec<u64>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct ActorSoaOutputHttp {
+    pub action_id: u32,
+    pub new_hunger: f32,
+    pub new_energy: f32,
+    pub new_trauma: f32,
+}
+
+#[derive(Debug, Serialize)]
+pub struct ProcessActorsSoaHttpResponse {
+    pub ok: bool,
+    pub error_message: String,
+    pub outputs: Vec<ActorSoaOutputHttp>,
+}
+
+async fn process_actors_soa_http(Json(body): Json<ProcessActorsSoaHttpRequest>) -> Json<ProcessActorsSoaHttpResponse> {
+    let res = engine::run_process_actors_soa(
+        body.tick, body.ids, body.zone_ids, body.hunger, body.energy,
+        body.fear, body.trauma, body.heroic_types, body.lineage_ids, body.memes
+    );
+    Json(ProcessActorsSoaHttpResponse {
+        ok: res.ok,
+        error_message: res.error_message,
+        outputs: res.outputs.into_iter().map(|o| ActorSoaOutputHttp {
+            action_id: o.action_id,
+            new_hunger: o.new_hunger,
+            new_energy: o.new_energy,
+            new_trauma: o.new_trauma,
+        }).collect(),
+    })
+}
+
+// ═══════════════════════════════════════════════════════
+// Process Fields
+// ═══════════════════════════════════════════════════════
+
+#[derive(Debug, Deserialize)]
+pub struct ProcessFieldsHttpRequest {
+    pub fields: Vec<f64>,
+    pub neighbor_counts: Vec<u32>,
+    pub neighbor_offsets: Vec<u32>,
+    pub neighbors: Vec<u32>,
+    pub diffusion_rate: f64,
+    pub preservation_rate: f64,
+}
+
+async fn process_fields_http(Json(body): Json<ProcessFieldsHttpRequest>) -> Json<Vec<f64>> {
+    Json(engine::run_process_fields_v7(
+        body.fields, body.neighbor_counts, body.neighbor_offsets,
+        body.neighbors, body.diffusion_rate, body.preservation_rate
+    ))
+}
+
+// ═══════════════════════════════════════════════════════
+// Compute Metabolism
+// ═══════════════════════════════════════════════════════
+
+#[derive(Debug, Deserialize)]
+pub struct ComputeMetabolismHttpRequest {
+    pub populations: Vec<f64>,
+    pub biomasses: Vec<f64>,
+    pub industries: Vec<f64>,
+    pub efficiency: f64,
+    pub base_energy: f64,
+}
+
+#[derive(Debug, Serialize)]
+pub struct ComputeMetabolismHttpResponse {
+    pub total_waste: f64,
+    pub net_energies: Vec<f64>,
+    pub populations: Vec<f64>,
+    pub biomasses: Vec<f64>,
+}
+
+async fn compute_metabolism_http(Json(body): Json<ComputeMetabolismHttpRequest>) -> Json<ComputeMetabolismHttpResponse> {
+    let res = engine::run_compute_metabolism_grid(
+        body.populations, body.biomasses, body.industries,
+        body.efficiency, body.base_energy
+    );
+    Json(ComputeMetabolismHttpResponse {
+        total_waste: res.total_waste,
+        net_energies: res.net_energies,
+        populations: res.populations,
+        biomasses: res.biomasses,
+    })
+}
+
+// ═══════════════════════════════════════════════════════
+// Vocation & Gravity
+// ═══════════════════════════════════════════════════════
+
+#[derive(Debug, Deserialize)]
+pub struct CalculationRequest {
+    pub actor_motivation: serde_json::Value,
+    pub target_profile: serde_json::Value,
+}
+
+async fn calculate_vocation_alignment_http(Json(body): Json<CalculationRequest>) -> Json<serde_json::Value> {
+    let alignment = engine::run_calculate_vocation_alignment(
+        &body.actor_motivation.to_string(),
+        &body.target_profile.to_string()
+    );
+    Json(serde_json::json!({ "alignment": alignment }))
+}
+
+#[derive(Debug, Deserialize)]
+pub struct GravityRequest {
+    pub rulesets: serde_json::Value,
+}
+
+async fn get_combined_gravity_http(Json(body): Json<GravityRequest>) -> Json<serde_json::Value> {
+    let gravity = engine::run_get_combined_gravity(&body.rulesets.to_string());
+    Json(serde_json::json!({ "gravity": gravity }))
 }
 
 // ═══════════════════════════════════════════════════════
@@ -605,4 +520,9 @@ pub fn router() -> Router {
         .route("/batch-advance", post(batch_advance_http))
         .route("/analyze-trajectory", post(analyze_trajectory_http))
         .route("/evaluate-rules", post(evaluate_rules_http))
+        .route("/process-actors-soa", post(process_actors_soa_http))
+        .route("/process-fields", post(process_fields_http))
+        .route("/compute-metabolism", post(compute_metabolism_http))
+        .route("/calculate-vocation-alignment", post(calculate_vocation_alignment_http))
+        .route("/get-combined-gravity", post(get_combined_gravity_http))
 }
