@@ -265,10 +265,24 @@ class WorldKernel
         foreach ($state->getActorEntities() as $actor) {
             // Map ActorEntity to Rust-compatible Agent structure
             $zoneId = (int)data_get($actor->metrics, 'zone_id', 0);
+            // Archetype mapping (Vietnamese -> Rust Enum)
+            $archetype = strtolower($actor->archetype);
+            $mappedArchetype = match(true) {
+                str_contains($archetype, 'chiến binh') || str_contains($archetype, 'lãnh đạo') || str_contains($archetype, 'hộ vệ') || str_contains($archetype, 'tà tu') || str_contains($archetype, 'kiếm sĩ') => 'Warlord',
+                str_contains($archetype, 'tín đồ') || str_contains($archetype, 'tu sĩ') || str_contains($archetype, 'tu chân') => 'Zealot',
+                str_contains($archetype, 'kẻ cơ hội') || str_contains($archetype, 'thương nhân') || str_contains($archetype, 'kẻ phá bĩnh') => 'Opportunist',
+                str_contains($archetype, 'học giả') || str_contains($archetype, 'kỹ sư') || str_contains($archetype, 'hành giả') || str_contains($archetype, 'hacker') => 'Sage',
+                default => 'Commoner',
+            };
+
+            // Trait vector slicing (Rust Core expects 17 dimensions)
+            $traits = array_values($actor->traits);
+            $traitVector = array_slice(array_map('floatval', $traits), 0, 17);
+
             $actorsByZone[$zoneId][] = [
                 'id' => (int)$actor->id,
-                'trait_vector' => array_map('floatval', array_values($actor->traits)),
-                'archetype' => strtolower($actor->archetype),
+                'trait_vector' => $traitVector,
+                'archetype' => $mappedArchetype,
                 'memory' => [], // Rust-side memory is transient/short-term
                 'vocation_id' => $actor->vocationId,
                 'motivation_profile' => $actor->metrics['motivation_profile'] ?? [

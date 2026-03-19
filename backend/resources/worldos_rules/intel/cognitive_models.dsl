@@ -14,22 +14,24 @@ rule Homeostatic_Regulation
     set hunger h_hunger
     
     when starving then
-      set hunger (hunger + 0.5)
+      set hunger (hunger + 1.2)
+    end
     
     calc h_safety
       formula "0.8"
     set safety h_safety
     when collapse_active then
       set safety (safety - 0.4)
+    end
     
     calc h_repro
       formula "0.2"
     set reproduction h_repro
-    when energy > (maxEnergy * 0.7)
-    then
-      when generation < 10
-      then
+    when energy > (maxEnergy * 0.7) then
+      when generation < 10 then
         set reproduction (reproduction + 0.3)
+      end
+    end
     
     set social_need 0.5
 
@@ -65,10 +67,10 @@ rule Causal_Response
     calc causal_anxiety
       formula "(1.0 - causal_integrity)"
     
-    when causal_integrity < 0.4
-    then
+    when causal_integrity < 0.4 then
       set trait_fear (trait_fear + (0.2 * causal_anxiety))
       set trait_risk (trait_risk + (0.1 * causal_anxiety))
+    end
 
 # --- 4. Motivation Synthesis (Phase 30: 8-Attractor Aligned) ---
 

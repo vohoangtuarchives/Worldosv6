@@ -164,6 +164,7 @@ class ActorBehaviorEngine
             'meme_meaning'     => (float) ($culture[\App\Modules\Intelligence\Services\CultureEngine::MEME_MEANING] ?? 0.5),
             'meme_status'      => (float) ($culture[\App\Modules\Intelligence\Services\CultureEngine::MEME_STATUS] ?? 0.5),
             'meme_belonging'   => (float) ($culture[\App\Modules\Intelligence\Services\CultureEngine::MEME_BELONGING] ?? 0.5),
+            'tick'             => (int) $tick,
         ];
 
         // 2. Evaluate Cognitive Model via DSL
@@ -190,7 +191,7 @@ class ActorBehaviorEngine
 
         // Apply faction bias (still calculated in PHP for simplicity of reference)
         $factions = $state->get('factions', []);
-        $factionBias = $this->getFactionBias($actor->id, $factions);
+        $factionBias = $this->getFactionBias((int)($actor->id ?? 0), $factions);
         foreach ($factionBias as $act => $mul) {
             if (isset($scores[$act])) $scores[$act] *= $mul;
         }

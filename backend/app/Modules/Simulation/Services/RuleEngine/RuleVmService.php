@@ -44,10 +44,11 @@ class RuleVmService
     {
         // Try Rust FFI directly first for massive performance gains (V10)
         try {
+            $tick = (int)($state['tick'] ?? 0);
             $stateJson = json_encode($state);
-            if ($state['tick'] % 5 === 0) { // Log every 5 ticks to avoid bloat
+            if ($tick % 5 === 0) { // Log every 5 ticks to avoid bloat
                  Log::debug("RuleVmService FFI State Summary", [
-                     'tick' => $state['tick'],
+                     'tick' => $tick,
                      'keys' => array_keys($state),
                      'axioms_keys' => array_keys($state['axioms'] ?? []),
                      'base_mass' => $state['base_mass'] ?? 'MISSING'
