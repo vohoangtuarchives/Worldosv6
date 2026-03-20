@@ -156,7 +156,7 @@ export function useAdvanceMutation() {
     mutationFn: async ({ universeId, ticks }: { universeId: number; ticks: number }) => {
       return await api.advance(universeId, ticks);
     },
-    onSuccess: (data: any, variables) => {
+    onSuccess: (_data: any, variables: { universeId: number; ticks: number }) => {
       // Refresh dữ liệu snapshots sau khi advance
       queryClient.invalidateQueries({ queryKey: simulationKeys.latestSnapshot(variables.universeId) });
       queryClient.invalidateQueries({ queryKey: simulationKeys.universe(variables.universeId) });

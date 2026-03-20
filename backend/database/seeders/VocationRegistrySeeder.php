@@ -110,12 +110,12 @@ class VocationRegistrySeeder extends Seeder
         }
     }
 
-    private function makeVocation(string $id, string $name, int $minTier, array $tags, array $motivation): array
+    private function makeVocation(string $id, string $name, int $tier, array $tags, array $motivation): array
     {
         return [
             'id' => $id,
             'name' => $name,
-            'min_tier' => $minTier,
+            'tier' => $tier,
             'tags' => json_encode($tags),
             'motivation_profile' => json_encode([
                 'creation' => $motivation[0],

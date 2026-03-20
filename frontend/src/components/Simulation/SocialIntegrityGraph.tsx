@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   ReactFlow,
   Background,
@@ -27,7 +28,7 @@ const ActorNode = ({ data }: NodeProps) => {
   const isHeroic = !!data.is_heroic;
   return (
     <div className={cn(
-      "px-4 py-3 rounded-xl border bg-card/80 backdrop-blur-md shadow-xl min-w-[150px] transition-all group hover:scale-105",
+      "px-4 py-3 rounded-xl border bg-card/80 backdrop-blur-md shadow-xl min-w-[150px] transition-all group hover:scale-105 cursor-pointer",
       isHeroic ? "border-amber-500/50 glow-amber" : "border-border/60"
     )}>
       <Handle type="target" position={Position.Top} className="opacity-0" />
@@ -146,8 +147,21 @@ interface SocialIntegrityGraphProps {
 }
 
 export default function SocialIntegrityGraph({ nodes: initialNodes, edges: initialEdges, universeId }: SocialIntegrityGraphProps) {
+  const router = useRouter();
   const [fetchedData, setFetchedData] = React.useState<{ nodes: any[]; edges: any[] }>({ nodes: [], edges: [] });
   const [loading, setLoading] = React.useState(false);
+
+  const onNodeClick = useCallback((_: React.MouseEvent, node: any) => {
+    // Extract raw ID: either from data.id or stripping prefix from node.id
+    const rawId = node.data?.id || node.id;
+    const targetId = typeof rawId === 'string' && rawId.includes('_') 
+      ? rawId.split('_').pop() 
+      : rawId;
+
+    if ((node.type === 'Actor' || node.data?.type === 'Actor') && targetId && targetId !== 'undefined' && targetId !== 'null') {
+      router.push(`/dashboard/actor/${targetId}`, { scroll: false });
+    }
+  }, [router]);
 
   React.useEffect(() => {
     if (universeId && !initialNodes) {
@@ -211,6 +225,7 @@ export default function SocialIntegrityGraph({ nodes: initialNodes, edges: initi
         edges={edges}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
+        onNodeClick={onNodeClick}
         fitView
         colorMode="dark"
       >

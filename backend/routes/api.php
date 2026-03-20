@@ -463,6 +463,14 @@ Route::middleware('auth:sanctum')->prefix('worldos')->group(function () {
         return response()->json($events);
     })->name('worldos.actors.events');
 
+    Route::get('actors/{id}', function (string $id) {
+        $actor = \App\Models\Actor::with('supremeEntity')->find((int)$id);
+        if (!$actor) {
+            return response()->json(['message' => 'Actor not found'], 404);
+        }
+        return response()->json($actor);
+    })->name('worldos.actors.show');
+
     Route::get('universes/{id}/biology-metrics', function (
         string $id,
         \App\Modules\Intelligence\Services\BiologyMetricsService $service,

@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import {
     Users, Shield, Zap, Star, Eye, ChevronRight, User, Repeat, Orbit,
     Search, Filter, Skull, HeartPulse, BrainCircuit, Sparkles, Clock, MessageSquare, History as HistoryIcon

@@ -10,6 +10,12 @@ use App\Modules\Simulation\Repositories\TrajectoryEloquentRepository;
 
 use App\Modules\Simulation\Contracts\UniverseRepositoryInterface;
 use App\Modules\Simulation\Repositories\UniverseEloquentRepository;
+use App\Modules\Simulation\Vocation\Contracts\VocationRepositoryInterface;
+use App\Modules\Simulation\Vocation\Repositories\VocationEloquentRepository;
+use App\Modules\Simulation\Vocation\Contracts\SkillRepositoryInterface;
+use App\Modules\Simulation\Vocation\Repositories\SkillEloquentRepository;
+use App\Modules\Simulation\Vocation\Contracts\ActorMasteryRepositoryInterface;
+use App\Modules\Simulation\Vocation\Repositories\ActorMasteryEloquentRepository;
 
 class SimulationServiceProvider extends ServiceProvider
 {
@@ -23,6 +29,11 @@ class SimulationServiceProvider extends ServiceProvider
         $this->app->bind(UniverseRepositoryInterface::class, UniverseEloquentRepository::class);
         $this->app->bind(\App\Modules\Simulation\Contracts\WorldRepositoryInterface::class, \App\Modules\Simulation\Repositories\WorldEloquentRepository::class);
         $this->app->bind(\App\Modules\Simulation\Contracts\SnapshotRepositoryInterface::class, \App\Modules\Simulation\Repositories\SnapshotEloquentRepository::class);
+
+        // Vocation V1 Repository Bindings
+        $this->app->bind(VocationRepositoryInterface::class, VocationEloquentRepository::class);
+        $this->app->bind(SkillRepositoryInterface::class, SkillEloquentRepository::class);
+        $this->app->bind(ActorMasteryRepositoryInterface::class, ActorMasteryEloquentRepository::class);
 
         $this->app->singleton(\App\Simulation\Domain\Pipelines\SpawnPipeline::class, function ($app) {
             return new \App\Simulation\Domain\Pipelines\SpawnPipeline([
@@ -240,7 +251,13 @@ class SimulationServiceProvider extends ServiceProvider
 
         // Batch 10: FFI & Clients
         $this->app->singleton(\App\Modules\Simulation\Services\AxiomRegistry::class);
-        $this->app->singleton(\App\Modules\Simulation\Services\VocationEngine::class);
+        
+        // Vocation V1 Engine Services
+        $this->app->singleton(\App\Modules\Simulation\Vocation\DSL\ExpressionEngine::class);
+        $this->app->singleton(\App\Modules\Simulation\Vocation\Services\ElementInteractionService::class);
+        $this->app->singleton(\App\Modules\Simulation\Vocation\Services\VocationEvolutionService::class);
+        $this->app->singleton(\App\Modules\Simulation\Vocation\Services\VocationEngine::class);
+
         $this->app->singleton(\App\Modules\Simulation\Services\HttpSimulationEngineClient::class);
         $this->app->singleton(\App\Modules\Simulation\Services\StubSimulationEngineClient::class);
         $this->app->singleton(\App\Modules\Simulation\Services\FfiActorEngine::class);

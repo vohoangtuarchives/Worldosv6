@@ -73,9 +73,25 @@ class StubSimulationEngineClient implements SimulationEngineClientInterface
 
     public function evaluateRules(array $state, ?string $rulesDsl = null): array
     {
+        $outputs = [];
+
+        // Mock a calculation result if it looks like a skill execution
+        if ($rulesDsl && (str_contains($rulesDsl, 'calc') || str_contains($rulesDsl, 'damage'))) {
+            $outputs[] = [
+                'type' => 'Calc',
+                'path' => 'execution_result.value',
+                'value' => 150.5 // Mock damage value
+            ];
+            $outputs[] = [
+                'type' => 'SetPath',
+                'path' => 'execution_result.status',
+                'value' => 'success'
+            ];
+        }
+
         return [
             'ok' => true,
-            'outputs' => [],
+            'outputs' => $outputs,
             'error_message' => null,
         ];
     }
