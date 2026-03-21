@@ -92,4 +92,11 @@ class Actor extends Model
     {
         return $this->hasMany(Legend::class);
     }
+
+    /** Factions this actor belongs to. */
+    public function factions(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(Faction::class, 'actor_faction')
+            ->withPivot('loyalty');
+    }
 }

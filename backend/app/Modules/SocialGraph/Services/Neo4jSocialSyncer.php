@@ -1,0 +1,94 @@
+<?php
+
+namespace App\Modules\SocialGraph\Services;
+
+use Laudis\Neo4j\ClientBuilder;
+use Laudis\Neo4j\Contracts\ClientInterface;
+use App\Models\Actor;
+use Illuminate\Support\Facades\Log;
+
+class Neo4jSocialSyncer
+{
+    protected ClientInterface $client;
+
+    public function __construct()
+    {
+        $uri = config('worldos.graph.uri', 'bolt://neo4j:worldos_secret@neo4j:7687');
+        $this->client = ClientBuilder::create()
+            ->withDriver('bolt', $uri)
+            ->build();
+    }
+
+    /**
+     * Sync a batch of actors and their relationships to Neo4j.
+     */
+    public function syncActors(iterable $actors): void
+    {
+        foreach ($actors as $actor) {
+            $this->syncActorNode($actor);
+            $this->syncActorRelations($actor);
+        }
+    }
+
+    /**
+     * Create or update an Actor node.
+     */
+    protected function syncActorNode(Actor $actor): void
+    {
+        $this->client->run(<<<'CYPHER'
+            MERGE (a:Actor {id: $id})
+            SET a.name = $name,
+                a.archetype = $archetype,
+                a.universe_id = $universe_id,
+                a.is_alive = $is_alive
+        CYPHER, [
+            'id' => (int) $actor->id,
+            'name' => $actor->name,
+            'archetype' => $actor->archetype,
+            'universe_id' => (int) $actor->universe_id,
+            'is_alive' => (bool) $actor->is_alive,
+        ]);
+    }
+
+    /**
+     * Sync relationships from metrics.social_relations.
+     */
+    protected function syncActorRelations(Actor $actor): void
+    {
+        $relations = data_get($actor->metrics, 'social_relations', []);
+        
+        foreach ($relations as $targetId => $rel) {
+            $this->client->run(<<<'CYPHER'
+                MATCH (a:Actor {id: $source_id})
+                MATCH (b:Actor {id: $target_id})
+                MERGE (a)-[r:RELATION]->(b)
+                SET r.trust = $trust,
+                    r.fear = $fear,
+                    r.updated_at = timestamp()
+            CYPHER, [
+                'source_id' => (int) $actor->id,
+                'target_id' => (int) $targetId,
+                'trust' => (float) ($rel['trust'] ?? 0.0),
+                'fear' => (float) ($rel['fear'] ?? 0.0),
+            ]);
+        }
+    }
+
+    /**
+     * Find "Interesting Cliques" for Narrative Loom.
+     */
+    public function findAnomalousCliques(int $universeId): array
+    {
+        // Example: Find dense clusters of Fear
+        $result = $this->client->run(<<<'CYPHER'
+            MATCH (a:Actor)-[r:RELATION]->(b:Actor)
+            WHERE a.universe_id = $uId AND r.fear > 0.7
+            WITH a, count(r) as fear_connections
+            WHERE fear_connections > 3
+            RETURN a.id as actor_id, a.name as name, fear_connections
+            LIMIT 5
+        CYPHER, ['uId' => $universeId]);
+
+        return $result->toArray();
+    }
+}

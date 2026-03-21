@@ -5,8 +5,17 @@ pub mod worldos {
 }
 
 pub mod engine;
+pub mod behavior_graph;
+pub mod social_impact;
+pub mod civilization;
+pub mod diplomacy;
+pub mod urban_growth;
+pub mod belief;
+pub mod technology;
+pub mod calamity;
 pub mod transport_grpc;
 pub mod transport_http;
+pub mod kafka;
 
 pub use worldos::simulation::simulation_engine_server;
 pub use worldos::simulation::{

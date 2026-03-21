@@ -101,7 +101,9 @@ class ActorEntity
         public ?string $biography = null,
         public bool $isHeroic = false,
         public ?string $heroicType = null,
-        public ?string $vocationId = null
+        public ?string $vocationId = null,
+        public ?int $factionId = null,
+        public float $loyalty = 0.5
     ) {}
 
     /**
@@ -138,7 +140,9 @@ class ActorEntity
             biography: $this->biography,
             isHeroic: $this->isHeroic,
             heroicType: $this->heroicType,
-            vocationId: $this->vocationId
+            vocationId: $this->vocationId,
+            factionId: $this->factionId,
+            loyalty: $this->loyalty
         );
     }
 
@@ -157,5 +161,7 @@ class ActorEntity
         $this->isHeroic = $state->isHeroic;
         $this->heroicType = $state->heroicType;
         $this->vocationId = $state->vocationId;
+        $this->factionId = $state->factionId;
+        $this->loyalty = $state->loyalty;
     }
 }

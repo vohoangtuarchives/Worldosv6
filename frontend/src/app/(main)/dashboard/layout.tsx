@@ -10,9 +10,9 @@ export default function DashboardLayout({
   modal: React.ReactNode;
 }) {
   return (
-    <SimulationProvider>
+    <>
       {children}
       {modal}
-    </SimulationProvider>
+    </>
   );
 }

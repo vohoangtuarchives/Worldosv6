@@ -3,6 +3,7 @@
 import Link from "next/link";
 import UniverseSelector from "@/components/UniverseSelector";
 import { useRouter } from "next/navigation";
+import { SimulationProvider } from "@/context/SimulationContext";
 
 export default function MainLayout({
   children,
@@ -75,7 +76,11 @@ export default function MainLayout({
           </div>
         </div>
       </header>
-      <main className="flex-1 flex flex-col min-h-0">{children}</main>
+      <main className="flex-1 flex flex-col min-h-0">
+        <SimulationProvider>
+          {children}
+        </SimulationProvider>
+      </main>
     </div>
   );
 }

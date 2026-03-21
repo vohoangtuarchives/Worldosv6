@@ -54,6 +54,8 @@ interface SimulationEngineClientInterface
     /**
      * Vectorized Actor Processing (SoA - Structure of Arrays).
      * Replaces FfiActorEngine::processActorsSoa.
+     * 
+     * @return array{ok: bool, outputs: array, scars: array, spawned_actors: array, error_message?: string}
      */
     public function processActorsSoa(
         int $tick,
@@ -65,7 +67,15 @@ interface SimulationEngineClientInterface
         array $trauma,
         array $heroicTypes,
         array $lineageIds,
-        array $memes
+        array $memes,
+        array $traitsMatrix,
+        array $behaviorStates = [],
+        array $behaviorGraphs = [],
+        array $archetypes = [],
+        array $socialGraph = [],
+        array $activeSagas = [],
+        array $factionIds = [],
+        array $factionLoyalty = []
     ): array;
 
     /**

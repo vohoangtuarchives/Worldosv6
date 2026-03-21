@@ -1,7 +1,7 @@
 services:
   # Database (TimescaleDB)
   postgres:
-    image: timescale/timescaledb-ha:pg16
+    image: timescale/timescaledb-ha:pg18
     restart: always
     environment:
       POSTGRES_DB: ${DB_DATABASE:-worldos}
@@ -19,7 +19,7 @@ services:
 
   # Cache
   redis:
-    image: redis:7-alpine
+    image: redis:8-alpine
     restart: always
     volumes:
       - worldos_prod_redisdata:/data
@@ -33,7 +33,7 @@ services:
 
   # Event stream (Kafka API + REST) — Phase 1, doc §38
   redpanda:
-    image: redpandadata/redpanda:v24.2.5
+    image: redpandadata/redpanda:v25.3.10
     restart: always
     command:
       - redpanda
@@ -65,7 +65,7 @@ services:
 
   # Graph DB (Phase 5 Track B — WorldOS Data Graph)
   neo4j:
-    image: neo4j:5-community
+    image: neo4j:2026.02.3-community
     restart: always
     environment:
       NEO4J_AUTH: ${NEO4J_AUTH:-neo4j/worldos_secret}
@@ -207,7 +207,7 @@ services:
 
   # Engine (Rust)
   engine:
-    build: 
+    build:
       context: ../engine
       dockerfile: ../deployment/engine.prod.Dockerfile
       provenance: false
@@ -224,7 +224,7 @@ services:
 
   # NarrativeLoom (Python/LangGraph)
   narrative_loom:
-    build: 
+    build:
       context: ../narrative-loom
       dockerfile: Dockerfile
       provenance: false
@@ -243,7 +243,7 @@ services:
 
   # Centrifugo (Realtime Messaging)
   centrifugo:
-    image: centrifugo/centrifugo:v5
+    image: centrifugo/centrifugo:v6
     restart: always
     command: centrifugo --config=config.json
     environment:

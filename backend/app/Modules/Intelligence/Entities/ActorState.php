@@ -20,7 +20,9 @@ class ActorState
         public readonly ?string $biography = null,
         public readonly bool $isHeroic = false,
         public readonly ?string $heroicType = null,
-        public readonly ?string $vocationId = null
+        public readonly ?string $vocationId = null,
+        public readonly ?int $factionId = null,
+        public readonly float $loyalty = 0.5
     ) {}
 
     /**
@@ -40,7 +42,9 @@ class ActorState
             biography: array_key_exists('biography', $changes) ? $changes['biography'] : $this->biography,
             isHeroic: array_key_exists('isHeroic', $changes) ? $changes['isHeroic'] : $this->isHeroic,
             heroicType: array_key_exists('heroicType', $changes) ? $changes['heroicType'] : $this->heroicType,
-            vocationId: array_key_exists('vocationId', $changes) ? $changes['vocationId'] : $this->vocationId
+            vocationId: array_key_exists('vocationId', $changes) ? $changes['vocationId'] : $this->vocationId,
+            factionId: array_key_exists('factionId', $changes) ? $changes['factionId'] : $this->factionId,
+            loyalty: array_key_exists('loyalty', $changes) ? $changes['loyalty'] : $this->loyalty
         );
     }
 

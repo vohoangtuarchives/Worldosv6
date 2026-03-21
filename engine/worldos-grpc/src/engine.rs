@@ -165,59 +165,404 @@ pub fn run_process_actors_soa(
     mut energy: Vec<f32>,
     fear: Vec<f32>,
     mut trauma: Vec<f32>,
-    heroic_types: Vec<u32>,
-    lineage_ids: Vec<u64>,
-    memes: Vec<u64>,
+    _heroic_types: Vec<u32>,
+    _lineage_ids: Vec<u64>,
+    _memes: Vec<u64>,
+    behavior_states: Vec<i32>,
+    behavior_graphs: Vec<crate::worldos::simulation::BehaviorGraph>,
+    actor_archetypes: Vec<String>,
+    social_graph: Vec<crate::worldos::simulation::SocialEdge>,
+    edicts: Vec<crate::worldos::simulation::Edict>,
+    active_sagas: Vec<crate::worldos::simulation::WorldSaga>,
+    faction_ids: Vec<i32>,
+    faction_loyalty: Vec<f32>,
+    is_observed: bool,
+    faction_relations: Vec<crate::worldos::simulation::FactionRelation>,
+    belief_definitions: Vec<crate::worldos::simulation::BeliefDefinition>,
+    belief_alignments: Vec<f32>,
+    tech_definitions: Vec<crate::worldos::simulation::TechnologyDefinition>,
+    actor_tech_levels: Vec<f32>,
 ) -> ProcessActorsSoaResponse {
     let count = ids.len();
-    if count == 0 {
-        return ProcessActorsSoaResponse { ok: true, error_message: String::new(), outputs: vec![] };
+    
+    // 0. Initialize Engines
+    let mut behavior_engine = crate::behavior_graph::BehaviorGraphEngine::new();
+    for g in behavior_graphs {
+        // ... build internal graphs (omitted for brevity in this replace, keeping the existing loop) ...
+        let mut nodes = std::collections::HashMap::new();
+        for n in g.nodes {
+            nodes.insert(n.id, crate::behavior_graph::BehaviorNode { 
+                id: n.id, 
+                name: n.name.clone(), 
+                action_type: n.action_type.clone() 
+            });
+        }
+        let transitions = g.transitions.into_iter().map(|t| crate::behavior_graph::BehaviorTransition {
+            from_node_id: t.from_node_id,
+            to_node_id: t.to_node_id,
+            condition: t.condition.clone(),
+            weight: t.weight,
+        }).collect();
+        behavior_engine.add_graph(crate::behavior_graph::BehaviorGraph {
+            archetype: g.archetype.clone(),
+            nodes,
+            transitions,
+        });
     }
 
-    // Prepare seeds for determinism
-    let seeds: Vec<u64> = ids.iter().map(|id| id.wrapping_add(tick)).collect();
+    let edict_registry = crate::social_impact::EdictRegistry::from_proto(&edicts);
+    let social_impact = crate::social_impact::SocialImpactEngine::new();
+    let diplomacy_engine = crate::diplomacy::DiplomacyEngine::new(faction_relations);
+    let urban_growth_engine = crate::urban_growth::UrbanGrowthEngine::new(100); // Assume 100x100 grid for now
+    let belief_engine = crate::belief::BeliefEngine::new(belief_definitions);
+    let tech_engine = crate::technology::TechnologyEngine::new(tech_definitions);
+    
+    // 1. Build Fear Map for lookup
+    let fears_map: std::collections::HashMap<u64, f32> = ids.iter()
+        .zip(fear.iter())
+        .map(|(&id, &f)| (id, f))
+        .collect();
 
-    let outputs: Vec<ActorSoaOutput> = (0..count).into_par_iter().map(|i| {
-        let mut rng = rand::rngs::StdRng::seed_from_u64(seeds[i]);
-        
-        let h_val = hunger[i];
-        let e_val = energy[i];
-        let f_val = fear[i];
-        let t_val = trauma[i];
+    let actor_id_to_idx: std::collections::HashMap<u64, usize> = ids.iter()
+        .enumerate()
+        .map(|(i, &id)| (id, i))
+        .collect();
+    
+    // 2. Build Neighbors Map
+    let mut neighbors_map: std::collections::HashMap<u64, Vec<u64>> = std::collections::HashMap::new();
+    let mut neighbor_weights: std::collections::HashMap<u64, Vec<f32>> = std::collections::HashMap::new();
+    for edge in social_graph {
+        neighbors_map.entry(edge.source_id as u64).or_default().push(edge.target_id as u64);
+        neighbor_weights.entry(edge.source_id as u64).or_default().push(edge.weight);
+    }
 
-        let mut action_id = 0; // Idle
-        let mut h_delta = 0.0;
-        let mut e_delta = 0.0;
-        let mut t_delta = -0.005; // Base trauma decay
+    // 2.5 Saga Modifiers
+    let mut fear_mult = 1.0;
+    let mut energy_bonus = 0.0;
+    for saga in &active_sagas {
+        match saga.theme.as_str() {
+            "GOLDEN_AGE" => { fear_mult *= 0.6; energy_bonus += 0.05; },
+            "CATASTROPHE" => { fear_mult *= 2.0; energy_bonus -= 0.1; },
+            _ => {}
+        }
+    }
 
-        let effective_fear = (f_val + t_val * 0.4).clamp(0.0, 1.0);
+    // Phase 14: Technology Evolution
+    let new_tech_levels_matrix = tech_engine.process_step(
+        count, 
+        &traits_matrix, 
+        &actor_tech_levels, 
+        &belief_alignments, 
+        &social_graph
+    );
+    let tech_count = if count > 0 { new_tech_levels_matrix.len() / count } else { 0 };
 
-        if h_val > 0.8 {
-            action_id = 1; // FindFood
-            h_delta = -0.4;
-            e_delta = 0.15;
-        } else if effective_fear > 0.65 {
-            action_id = 2; // Flee
-            e_delta = -0.25;
-            if effective_fear > 0.85 {
-                t_delta = 0.04;
+    if count == 0 {
+        return ProcessActorsSoaResponse { 
+            ok: true, 
+            error_message: String::new(), 
+            outputs: vec![],
+            scars: vec![],
+            spawned_actors: vec![],
+            behavior_states_output: vec![],
+        };
+    }
+
+    let chunk_size = 17;
+    let results: Vec<(ActorSoaOutput, Vec<crate::AgentScar>, Vec<crate::NewActor>, i32, f32)> = (0..count)
+        .into_par_iter()
+        .map(|i| {
+            let id = ids[i];
+            let z_id = zone_ids[i];
+            let h_val = hunger[i];
+            let e_val = energy[i];
+            let f_val = fear[i];
+            let t_val = trauma[i];
+            let current_b_state = behavior_states.get(i).cloned().unwrap_or(0);
+            let archetype = actor_archetypes.get(i).cloned().unwrap_or("Commoner".to_string());
+            
+            let current_faction = faction_ids[i];
+            let mut current_loyalty = faction_loyalty[i];
+
+            // Extract individual 17D Trait Vector
+            let t_start = i * chunk_size;
+            let actor_traits = if traits_matrix.len() >= t_start + chunk_size {
+                &traits_matrix[t_start..t_start + chunk_size]
+            } else {
+                &[0.5; 17] // Fallback
+            };
+
+            // 1. Evaluate Behavior Graph
+            let new_b_state = behavior_engine.evaluate(
+                &archetype,
+                current_b_state,
+                actor_traits,
+                &[h_val, e_val, f_val, t_val]
+            );
+
+            // 2. Social Contagion (Fear Surge) & Faction Logic
+            let empty_ids = vec![];
+            let empty_weights = vec![];
+            let n_ids = neighbors_map.get(&id).unwrap_or(&empty_ids);
+            let n_weights = neighbor_weights.get(&id).unwrap_or(&empty_weights);
+            let mut fear_surge = social_impact.calculate_fear_surge(n_ids, n_weights, &fears_map);
+
+            // Faction logic (Phase 8)
+            for (idx, &nb_id) in n_ids.iter().enumerate() {
+                let weight = n_weights.get(idx).cloned().unwrap_or(1.0);
+                if let Some(&nb_idx) = actor_id_to_idx.get(&nb_id) {
+                    let nb_faction = faction_ids[nb_idx];
+                    if current_faction != 0 && nb_faction == current_faction {
+                        // Cohesion: increase loyalty, decrease fear
+                        current_loyalty = (current_loyalty + 0.005 * weight).min(1.0);
+                        fear_surge -= 0.01 * weight;
+                    } else if current_faction != 0 && nb_faction != 0 {
+                        // Rivalry: affected by diplomacy (Phase 11)
+                        let tension = diplomacy_engine.get_tension(current_faction, nb_faction);
+                        
+                        // decrease loyalty, increase fear based on tension
+                        current_loyalty = (current_loyalty - 0.002 * (0.5 + tension) * weight).max(0.0);
+                        fear_surge += 0.015 * (0.5 + tension) * weight;
+                    }
+                }
             }
-        }
 
-        let drift: f32 = rng.gen_range(-0.01..0.01);
-        
-        ActorSoaOutput {
-            action_id,
-            new_hunger: (h_val + h_delta + drift).clamp(0.0, 1.0),
-            new_energy: (e_val + e_delta + drift).clamp(0.0, 1.0),
-            new_trauma: (t_val + t_delta).clamp(0.0, 1.0),
-        }
+            // 3. Apply Action from Current Behavior Node
+            let current_node = behavior_engine.graphs.get(&archetype)
+                .and_then(|g| g.nodes.get(&new_b_state));
+            
+            let action_type = current_node.map(|n| n.action_type.as_str()).unwrap_or("Idle");
+
+            // Apply Tech Effects to Metabolism
+            let metabolism_mult = tech_engine.get_metabolism_multiplier(i, &new_tech_levels_matrix, tech_count);
+            
+            let mut h_delta = 0.03 * metabolism_mult; 
+            let mut e_delta = -0.02; 
+            let mut t_delta = -0.01 + fear_surge; 
+            let mut resource_delta = 0.0;
+            let mut actor_spawned = vec![];
+
+            match action_type {
+                "Forage" => {
+                    let extract_utility = 0.1 + (actor_traits[8] * 0.5 + actor_traits[1] * 0.3);
+                    if h_val > 0.3 && extract_utility > 0.4 {
+                        let yield_amt = (0.2 + 0.1 * actor_traits[7]).min(h_val);
+                        h_delta -= yield_amt;
+                        e_delta -= 0.15;
+                        resource_delta = yield_amt;
+                    }
+                },
+                "Flee" => {
+                    e_delta -= 0.2;
+                    t_delta -= 0.05;
+                },
+                "Socialize" => {
+                    e_delta -= 0.05;
+                    t_delta -= 0.02;
+                },
+                "Breed" => {
+                    if e_val > 0.8 && h_val < 0.2 {
+                        e_delta -= 0.6;
+                        let mut child_traits = actor_traits.to_vec();
+                        let mut rng = rand::rngs::StdRng::seed_from_u64(tick ^ id);
+                        for (idx, t) in child_traits.iter_mut().enumerate() {
+                            // Phase 6: Differentiated Genetic Drift
+                            let mut range = match idx {
+                                5 | 6 => 0.04,  // Solidarity, Conformity (Core stability)
+                                7 | 10 => 0.20, // Pragmatism, Risk Tolerance (High adaptation)
+                                _ => 0.10,      // Others
+                            };
+                            if is_observed {
+                                range /= 2.0; // Quantum Observer Effect: Slow down mutation when watched
+                            }
+                            let mutation = (rng.gen::<f32>() - 0.5) * range;
+                            *t = (*t + mutation).clamp(0.0, 1.0);
+                        }
+                        actor_spawned.push(crate::NewActor {
+                            parent_id: id as i32,
+                            zone_id: z_id as i32,
+                            archetype: archetype.clone(),
+                            trait_vector: child_traits,
+                        });
+                    }
+                },
+                _ => { // Idle
+                    e_delta += 0.01;
+                }
+            }
+
+            // 4. Macro Layer Influence (Edicts)
+            h_delta *= edict_registry.get_modifier("hunger_delta");
+            e_delta *= edict_registry.get_modifier("energy_delta");
+            t_delta *= edict_registry.get_modifier("trauma_gain");
+
+            // 5. Trauma & Fear Influence
+            if f_val > 0.3 {
+                t_delta += f_val * 0.1 * (0.5 + actor_traits[11]);
+            }
+
+            let drift: f32 = (rand::random::<f32>() - 0.5) * 0.01;
+            
+            let mut current_traits: Vec<f32> = actor_traits.to_vec();
+            let mut traits_mutated = false;
+            
+            let mut actor_scars = vec![];
+            
+            // Saga Detection & Trait Mutation logic
+            let final_hunger = (h_val + h_delta + drift).clamp(0.0, 1.0);
+            let final_trauma = (t_val + t_delta).clamp(0.0, 1.0);
+            let saga_fear = (f_val + fear_surge + drift) * fear_mult;
+
+            if final_trauma > 0.8 && t_val < 0.6 {
+                actor_scars.push(crate::AgentScar {
+                    tick,
+                    actor_id: id,
+                    category: "TRAUMA".to_string(), 
+                    description: format!("Actor {} suffered a severe emotional trauma.", id),
+                    raw_payload_json: format!("{{\"trauma\": {}, \"delta\": {}}}", final_trauma, t_delta),
+                });
+                // Shift: increase FEAR(11) and VENGEANCE(12)
+                current_traits[11] = (current_traits[11] + 0.05).min(1.0);
+                current_traits[12] = (current_traits[12] + 0.05).min(1.0);
+                traits_mutated = true;
+            }
+
+            if final_hunger > 0.95 {
+                actor_scars.push(crate::AgentScar {
+                    tick,
+                    actor_id: id,
+                    category: "STARVATION_THREAT".to_string(),
+                    description: format!("Actor {} is on the brink of starvation.", id),
+                    raw_payload_json: format!("{{\"hunger\": {}}}", final_hunger),
+                });
+                // Shift: increase PRAGMATISM(7), decrease EMPATHY(4)
+                current_traits[7] = (current_traits[7] + 0.1).min(1.0);
+                current_traits[4] = (current_traits[4] - 0.05).max(0.0);
+                traits_mutated = true;
+            }
+
+            if resource_delta > 5.0 {
+                actor_scars.push(crate::AgentScar {
+                    tick,
+                    actor_id: id,
+                    category: "SUDDEN_WEALTH".to_string(),
+                    description: format!("Actor {} gained significant resources suddenly.", id),
+                    raw_payload_json: format!("{{\"delta\": {}}}", resource_delta),
+                });
+                // Shift: increase PRIDE(15), increase AMBITION(1)
+                current_traits[15] = (current_traits[15] + 0.1).min(1.0);
+                current_traits[1] = (current_traits[1] + 0.05).min(1.0);
+                traits_mutated = true;
+            }
+
+            // Phase 13: Belief Evolution
+            let actor_traits = &new_trait_matrix[i * 17..(i + 1) * 17];
+            let belief_count = belief_engine.update_alignments(&[], &[], 0).len(); // Dummy to get count if needed, but better use input
+            
+            // We need the input alignments for this specific actor
+            let belief_count_actual = if count > 0 { belief_alignments.len() / count } else { 0 };
+            let actor_input_beliefs = if belief_count_actual > 0 {
+                &belief_alignments[i * belief_count_actual..(i + 1) * belief_count_actual]
+            } else {
+                &[]
+            };
+
+            let actor_new_beliefs = belief_engine.update_alignments(actor_traits, actor_input_beliefs, 1);
+
+            (
+                ActorSoaOutput {
+                    actor_id: id,
+                    action_id: 0, 
+                    new_hunger: final_hunger,
+                    new_energy: (e_val + e_delta + drift + energy_bonus).clamp(0.0, 1.0),
+                    new_trauma: final_trauma,
+                    resource_delta,
+                    new_traits: if traits_mutated { actor_traits.to_vec() } else { vec![] },
+                    new_faction_ids: vec![current_faction],
+                    new_faction_loyalty: vec![current_loyalty],
+                    new_belief_alignments: actor_new_beliefs,
+                    new_tech_levels: if tech_count > 0 {
+                        new_tech_levels_matrix[i * tech_count..(i + 1) * tech_count].to_vec()
+                    } else {
+                        vec![]
+                    },
+                },
+                actor_scars, 
+                actor_spawned,
+                new_b_state,
+                saga_fear.clamp(0.0, 1.0)
+            )
+        })
+        .collect();
+
+    let mut outputs = Vec::with_capacity(count);
+    let mut scars = Vec::new();
+    let mut spawned_actors = Vec::new();
+    let mut behavior_states_output = Vec::with_capacity(count);
+    let mut new_fear_vals = Vec::with_capacity(count);
+
+    for (out, mut s, mut b, b_state, n_fear) in results {
+        outputs.push(out);
+        scars.append(&mut s);
+        spawned_actors.append(&mut b);
+        behavior_states_output.push(b_state);
+        new_fear_vals.push(n_fear);
+    }
+
+    // Phase 4: Civilization Aggregation
+    let h_vals: Vec<f32> = outputs.iter().map(|o| o.new_hunger).collect();
+    let e_vals: Vec<f32> = outputs.iter().map(|o| o.new_energy).collect();
+    let t_vals: Vec<f32> = outputs.iter().map(|o| o.new_trauma).collect();
+    let r_deltas: Vec<f32> = outputs.iter().map(|o| o.resource_delta).collect();
+
+    let mut civ_metrics = crate::civilization::CivilizationAggregator::aggregate(
+        &zone_ids, &h_vals, &e_vals, &new_fear_vals, &t_vals, &r_deltas
+    );
+
+    // Phase 12: Urban Growth Metrics
+    // We compute a simplified urban density based on population density per zone in this shard
+    let mut zone_pop_density = std::collections::HashMap::new();
+    for &z in &zone_ids {
+        *zone_pop_density.entry(z).or_insert(0.0f32) += 1.0;
+    }
+    let urban_density: Vec<f32> = civ_metrics.zone_stats.iter().map(|z| {
+        let pop = zone_pop_density.get(&(z.zone_id as u32)).cloned().unwrap_or(0.0);
+        urban_growth_engine.compute_density(pop, 1.0, 0.5, 0.1) // Simplification for shard level
     }).collect();
+    civ_metrics.urban_density = urban_density.clone();
+
+    // Phase 15: The Great Filter (Calamities)
+    let max_urban_density = urban_density.into_iter().fold(0.0_f32, f32::max);
+    let min_cohesion = civ_metrics.zone_stats.iter().map(|z| z.social_cohesion).fold(1.0_f32, f32::min);
+    let max_extraction_rate = civ_metrics.zone_stats.iter().map(|z| z.total_resource_extracted).fold(0.0_f32, f32::max);
+    let peak_tech_level = if new_tech_levels_matrix.is_empty() { 0.0 } else { new_tech_levels_matrix.iter().copied().fold(0.0_f32, f32::max) };
+
+    let calamity_engine = crate::calamity::CalamityEngine::new();
+    let calamities = calamity_engine.assess_risks(
+        tick,
+        civ_metrics.global_entropy,
+        max_urban_density,
+        max_extraction_rate,
+        min_cohesion,
+        peak_tech_level,
+    );
+
+    if !calamities.is_empty() {
+        let (t_delta, h_delta) = calamity_engine.calculate_trauma_and_hunger_deltas(&calamities);
+        for out in &mut outputs {
+            out.new_trauma = (out.new_trauma + t_delta).clamp(0.0, 1.0);
+            out.new_hunger = (out.new_hunger + h_delta).clamp(0.0, 1.0);
+        }
+    }
 
     ProcessActorsSoaResponse {
         ok: true,
         error_message: String::new(),
         outputs,
+        scars,
+        spawned_actors,
+        civilization_metrics: Some(civ_metrics),
+        calamities,
     }
 }
 

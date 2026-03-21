@@ -179,6 +179,17 @@ class WorldState
     /** @param \App\Modules\Intelligence\Entities\ActorEntity[] $entities */
     public function setActorEntities(array $entities): void { $this->actorEntities = $entities; }
 
+    /**
+     * Remove an actor from the local entities collection to force reload.
+     */
+    public function forgetActor(int $actorId): void
+    {
+        $this->actorEntities = array_filter(
+            $this->actorEntities,
+            fn($a) => (int)$a->id !== $actorId
+        );
+    }
+
     /** @return \App\Modules\Institutions\Entities\InstitutionalEntity[] */
     public function getInstitutionalEntities(): array { return $this->institutionalEntities; }
     

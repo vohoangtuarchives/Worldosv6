@@ -132,5 +132,16 @@ class StateManager
     {
         return $this->currentState;
     }
+
+    /**
+     * Clear an actor from current state collections to force reload from DB.
+     * (Phase 9: Distributed Consistency)
+     */
+    public function forgetActor(int|string $actorId): void
+    {
+        if ($this->currentState) {
+            $this->currentState->forgetActor((int) $actorId);
+        }
+    }
 }
 

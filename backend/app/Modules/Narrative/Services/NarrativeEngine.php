@@ -25,7 +25,8 @@ class NarrativeEngine
         protected StateMutationEngine $mutationEngine,
         protected ChronicleMemoryRepository $memoryRepository,
         protected LlmNarrativeClientInterface $llmClient,
-        protected NarrativeFeedbackService $feedbackService
+        protected NarrativeFeedbackService $feedbackService,
+        protected \App\Modules\SocialGraph\Services\Neo4jSocialSyncer $graphSyncer
     ) {}
 
     /**
@@ -59,8 +60,11 @@ class NarrativeEngine
             // 3. Build context from memory (History)
             $history = $this->memoryRepository->getContext($universe->id, $tokens);
             
+            // 3b. Extract Graph Anomalies (Neo4j)
+            $graphCliques = $this->graphSyncer->findAnomalousCliques($universe->id);
+            
             // 4. Construct Multi-Perspective Prompt (Emergent Focus)
-            $prompt = $this->buildEmergentPrompt($universe, $state, $history, $events, $tokens);
+            $prompt = $this->buildEmergentPrompt($universe, $state, $history, $events, $tokens, $graphCliques);
             
             // 5. Single LLM Call (The Interpretation phase)
             $response = $this->llmClient->generate($prompt);
@@ -105,10 +109,12 @@ class NarrativeEngine
     /**
      * Build an Emergent-focused prompt that prioritizes causal events over flat metrics.
      */
-    protected function buildEmergentPrompt(UniverseEntity $universe, NarrativeState $state, string $history, array $events, array $tokens): string
+    protected function buildEmergentPrompt(UniverseEntity $universe, NarrativeState $state, string $history, array $events, array $tokens, array $cliques = []): string
     {
         $eventsText = empty($events) ? "Không có sự kiện đáng chú ý." : collect($events)->map(fn($e) => "- [Tick {$e['tick']}] {$e['summary']}")->implode("\n");
         $tokensText = implode(', ', $tokens);
+        
+        $graphText = empty($cliques) ? "Không có biến động xã hội đặc biệt." : collect($cliques)->map(fn($c) => "- Cấu trúc mạng lưới xung quanh {$c['name']} (ID: {$c['actor_id']}) đang có {$c['fear_connections']} kết nối sợ hãi dày đặc.")->implode("\n");
 
         return <<<EOT
 Bạn là Narrative Engine (Kiến trúc Sáng tạo) của WorldOS. Nhiệm vụ của bạn là dệt nên câu chuyện từ các sự kiện đột biến (Emergent Events) thay vì chỉ đọc số liệu khô khan.
@@ -120,6 +126,9 @@ DỮ LIỆU THỰC TẠI (GROUND TRUTH):
 Các sự kiện vừa xảy ra trong mô phỏng:
 {$eventsText}
 
+BIẾN ĐỘNG MẠNG LƯỚI XÃ HỘI (GRAPH INSIGHTS):
+{$graphText}
+
 BỐI CẢNH TOÀN CỤC (TOKEN):
 {$tokensText}
 
@@ -127,7 +136,7 @@ BIÊN NIÊN SỬ GẦN ĐÂY:
 {$history}
 
 YÊU CẦU:
-1. DIỄN GIẢI CAUSALITY: Liên kết các sự kiện trên thành một chuỗi nhân quả hợp lý. Đừng chỉ liệt kê, hãy kể về hậu quả của những sự kiện này.
+1. DIỄN GIẢI CAUSALITY: Liên kết các sự kiện và mạng lưới xã hội trên thành một chuỗi nhân quả hợp lý. Đừng chỉ liệt kê, hãy kể về hậu quả của những sự kiện này.
 2. NARRATIVE FEEDBACK: Nếu các sự kiện trên cho thấy một xu hướng mới (ví dụ: bạo lực gia tăng), hãy đề xuất các "Omen" (Điềm báo) để tác động ngược lại mô phỏng.
 
 PHẢI TRẢ VỀ JSON NGHIÊM NGẶT:

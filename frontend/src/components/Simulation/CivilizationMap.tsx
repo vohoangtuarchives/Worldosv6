@@ -11,6 +11,7 @@ interface ZoneData {
   entropy: number;
   dominant_institution?: { name: string; type: string; influence: number } | null;
   culture?: string | null;
+  urban_density?: number;
 }
 
 interface CivilizationMapProps {
@@ -49,6 +50,7 @@ export function CivilizationMap({
             entropy: Number((z.entropy as number) ?? 0),
             dominant_institution: z.dominant_institution as ZoneData["dominant_institution"],
             culture: z.culture as string | undefined,
+            urban_density: Number(z.urban_density ?? 0),
           }))
         );
       })
@@ -119,6 +121,17 @@ export function CivilizationMap({
                 strokeWidth={1}
                 className="cursor-pointer hover:stroke-muted-foreground"
               />
+              {zone.urban_density && zone.urban_density > 0.3 && (
+                <circle
+                  cx={cx}
+                  cy={cy}
+                  r={r + 4}
+                  fill="none"
+                  stroke="rgba(255,255,255,0.2)"
+                  strokeWidth={2}
+                  strokeDasharray="2,2"
+                />
+              )}
               <text
                 x={cx}
                 y={cy + 4}

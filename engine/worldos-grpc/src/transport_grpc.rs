@@ -168,17 +168,42 @@ impl SimulationEngine for EngineService {
     ) -> Result<Response<ProcessActorsSoaResponse>, Status> {
         let req = request.into_inner();
         let response = engine::run_process_actors_soa(
-            req.tick,
-            req.ids,
-            req.zone_ids,
+            req.tick as u64,
+            req.ids.iter().map(|&x| x as u64).collect(),
+            req.zone_ids.iter().map(|&x| x as u32).collect(),
             req.hunger,
             req.energy,
             req.fear,
             req.trauma,
-            req.heroic_types,
-            req.lineage_ids,
-            req.memes,
+            req.heroic_types.iter().map(|&x| x as u32).collect(),
+            req.lineage_ids.iter().map(|&x| x as u64).collect(),
+            req.memes.iter().map(|&x| x as u64).collect(),
+            req.traits_matrix,
+            req.behavior_states,
+            req.behavior_graphs,
+            req.archetypes,
+            req.social_graph,
+            req.edicts,
+            req.active_sagas,
+            req.faction_ids.iter().map(|&x| x as i32).collect(),
+            req.faction_loyalty,
+            req.is_observed,
+            req.faction_relations,
+            req.belief_definitions,
+            req.belief_alignments,
+            req.tech_definitions,
+            req.actor_tech_levels,
         );
+
+        // Phase 9: Distributed Simulation - Push state to Kafka in background
+        let tick = req.tick;
+        let response_clone = response.clone();
+        tokio::spawn(async move {
+            if let Err(e) = crate::kafka::send_state_update("actor-state-updates", &tick.to_string(), &response_clone).await {
+                eprintln!("Kafka Sync Error (Tick {}): {}", tick, e);
+            }
+        });
+
         Ok(Response::new(response))
     }
 

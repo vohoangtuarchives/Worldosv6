@@ -138,30 +138,171 @@ message EvaluateRulesResponse {
     string outputs_json = 3;
 }
 
+message BehaviorNode {
+    int32 id = 1;
+    string name = 2;
+    string action_type = 3;
+}
+
+message BehaviorTransition {
+    int32 from_node_id = 1;
+    int32 to_node_id = 2;
+    string condition = 3; // e.g., "fear > 0.6"
+    float weight = 4;
+}
+
+message BehaviorGraph {
+    string archetype = 1;
+    repeated BehaviorNode nodes = 2;
+    repeated BehaviorTransition transitions = 3;
+}
+
+message SocialEdge {
+    int32 source_id = 1;
+    int32 target_id = 2;
+    float weight = 3;
+}
+
+message Edict {
+    string name = 1;
+    string modifier_type = 2; // e.g. "hunger_delta", "trauma_gain"
+    float value = 3;
+}
+
+message FactionRelation {
+    int32 faction_a = 1;
+    int32 faction_b = 2;
+    float tension = 3; // 0.0 = Alliance, 1.0 = War
+}
+
+message BeliefDefinition {
+    int32 id = 1;
+    string name = 2;
+    string type = 3; // e.g. "Religion", "Ideology"
+    repeated float trait_weights = 4; // 17D weights for ideal profile
+}
+
+message TechnologyDefinition {
+    string id = 1;
+    string name = 2;
+    string code = 3;
+    repeated string requirements = 4;
+    string effects_json = 5;
+}
+
+/**
+ * Request for batch actor processing (SoA style)
+ */
 message ProcessActorsSoaRequest {
-    uint64 tick = 1;
-    repeated uint64 ids = 2;
-    repeated uint32 zone_ids = 3;
+    int32 tick = 1;
+    repeated int32 ids = 2;
+    repeated int32 zone_ids = 3;
     repeated float hunger = 4;
     repeated float energy = 5;
     repeated float fear = 6;
     repeated float trauma = 7;
-    repeated uint32 heroic_types = 8;
-    repeated uint64 lineage_ids = 9;
-    repeated uint64 memes = 10;
+    repeated int32 heroic_types = 8;
+    repeated int32 lineage_ids = 9;
+    repeated int32 memes = 10;
+    repeated float traits_matrix = 11; // 17D traits per actor
+    repeated int32 behavior_states = 12; // Current node ID in graph
+    repeated BehaviorGraph behavior_graphs = 13; // Set of graphs to evaluate
+    repeated SocialEdge social_graph = 14; 
+    repeated Edict edicts = 15;
+    repeated WorldSaga active_sagas = 16;
+    repeated string archetypes = 17;
+    repeated int32 faction_ids = 18;
+    repeated float faction_loyalty = 19;
+    bool is_observed = 20;
+    repeated FactionRelation faction_relations = 21;
+    repeated BeliefDefinition belief_definitions = 22;
+    repeated float belief_alignments = 23; // Matrix [ActorCount * BeliefCount]
+    repeated TechnologyDefinition tech_definitions = 24;
+    repeated float actor_tech_levels = 25; // Matrix [ActorCount * TechCount]
+}
+
+message WorldLegend {
+    uint64 id = 1;
+    string category = 2; // e.g. "Catastrophe", "Golden Age"
+    string title = 3;
+    string description = 4;
+    uint64 tick_start = 5;
+    uint64 tick_end = 6;
+    float importance = 7;
+    repeated uint64 involved_actor_ids = 8;
+}
+
+message WorldSaga {
+    uint64 id = 1;
+    string name = 2;
+    string theme = 3;
+    repeated WorldLegend legends = 4;
+}
+
+message AgentScar {
+    uint64 tick = 1;
+    uint64 actor_id = 2;
+    string category = 3; // e.g. "combat", "trade", "birth"
+    string description = 4;
+    string raw_payload_json = 5;
+}
+
+message NewActor {
+    uint64 parent_id = 1;
+    uint32 zone_id = 2;
+    string archetype = 3;
+    repeated float trait_vector = 4;
 }
 
 message ActorSoaOutput {
-    uint32 action_id = 1;
-    float new_hunger = 2;
-    float new_energy = 3;
-    float new_trauma = 4;
+    uint64 actor_id = 1;
+    uint32 action_id = 2;
+    float new_hunger = 3;
+    float new_energy = 4;
+    float new_trauma = 5;
+    float resource_delta = 6; 
+    repeated float new_traits = 7;
+    repeated int32 new_faction_ids = 8;
+    repeated float new_faction_loyalty = 9;
+    repeated float new_belief_alignments = 10;
+    repeated float new_tech_levels = 11;
 }
 
+message ZoneMetrics {
+    uint32 zone_id = 1;
+    float avg_hunger = 2;
+    float avg_energy = 3;
+    float avg_fear = 4;
+    float avg_trauma = 5;
+    float total_resource_extracted = 6;
+    float social_cohesion = 7;
+}
+
+message EmergentCalamity {
+    string type = 1; // "PANDEMIC", "ECOLOGICAL_COLLAPSE", "TOTAL_WAR", "SYSTEM_OVERLOAD"
+    uint32 epicenter_zone_id = 2; // Mức độ ảnh hưởng trung tâm
+    float intensity = 3; // 0.0 -> 1.0
+    string description = 4; // Kịch bản/Truyền thuyết do Rust sinh ra
+    uint64 trigger_tick = 5;
+}
+
+message CivilizationMetrics {
+    float global_entropy = 1;
+    repeated ZoneMetrics zone_stats = 2;
+    repeated float urban_density = 3; // Density per zone or cell (vectorized)
+}
+
+/**
+ * Response for batch actor processing
+ */
 message ProcessActorsSoaResponse {
     bool ok = 1;
     string error_message = 2;
     repeated ActorSoaOutput outputs = 3;
+    repeated AgentScar scars = 4;
+    repeated NewActor spawned_actors = 5;
+    CivilizationMetrics civilization_metrics = 6;
+    repeated EmergentCalamity calamities = 7;
 }
 
 message ProcessFieldsV7Request {
