@@ -391,6 +391,21 @@ pub struct ProcessActorsSoaHttpRequest {
     pub heroic_types: Vec<u32>,
     pub lineage_ids: Vec<u64>,
     pub memes: Vec<u64>,
+    pub traits_matrix: Vec<f32>,
+    pub behavior_states: Vec<i32>,
+    // we omit complex types for now or use JSON if needed
+    #[serde(default)]
+    pub actor_archetypes: Vec<String>,
+    #[serde(default)]
+    pub faction_ids: Vec<i32>,
+    #[serde(default)]
+    pub faction_loyalty: Vec<f32>,
+    #[serde(default)]
+    pub is_observed: bool,
+    #[serde(default)]
+    pub belief_alignments: Vec<f32>,
+    #[serde(default)]
+    pub actor_tech_levels: Vec<f32>,
 }
 
 #[derive(Debug, Serialize)]
@@ -411,7 +426,11 @@ pub struct ProcessActorsSoaHttpResponse {
 async fn process_actors_soa_http(Json(body): Json<ProcessActorsSoaHttpRequest>) -> Json<ProcessActorsSoaHttpResponse> {
     let res = engine::run_process_actors_soa(
         body.tick, body.ids, body.zone_ids, body.hunger, body.energy,
-        body.fear, body.trauma, body.heroic_types, body.lineage_ids, body.memes
+        body.fear, body.trauma, body.heroic_types, body.lineage_ids, body.memes,
+        body.traits_matrix, body.behavior_states, vec![], body.actor_archetypes,
+        vec![], vec![], vec![], body.faction_ids, body.faction_loyalty,
+        body.is_observed, vec![], vec![], body.belief_alignments,
+        vec![], body.actor_tech_levels
     );
     Json(ProcessActorsSoaHttpResponse {
         ok: res.ok,

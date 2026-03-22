@@ -2,7 +2,7 @@
 
 namespace App\Contracts\Simulation;
 
-use App\Models\Universe;
+use App\Modules\Simulation\Models\Universe;
 
 interface SeederInterface
 {
@@ -16,3 +16,4 @@ interface SeederInterface
      */
     public function supports(string $origin): bool;
 }
+

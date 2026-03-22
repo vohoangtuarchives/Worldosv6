@@ -12,7 +12,7 @@ use App\Modules\Psychology\Services\ImpulseGenerator;
 use App\Modules\Psychology\Services\MeaningEngine;
 use App\Modules\Psychology\Services\MemoryInfluenceAnalyzer;
 use App\Modules\Psychology\Services\StateEvolutionService;
-use App\Simulation\Engines\Social\PsychologyEngine;
+use App\Modules\Simulation\Core\Engines\Social\PsychologyEngine;
 use Illuminate\Support\ServiceProvider;
 
 class PsychologyServiceProvider extends ServiceProvider
@@ -56,3 +56,4 @@ class PsychologyServiceProvider extends ServiceProvider
         ], 'psychology-dsl');
     }
 }
+

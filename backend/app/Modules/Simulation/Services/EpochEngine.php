@@ -3,12 +3,12 @@
 namespace App\Modules\Simulation\Services;
 
 use App\Modules\Simulation\Entities\UniverseEntity;
-use App\Models\Universe as UniverseModel;
-use App\Models\UniverseSnapshot;
-use App\Models\Epoch;
+use App\Modules\Simulation\Models\Universe as UniverseModel;
+use App\Modules\Simulation\Models\UniverseSnapshot;
+use App\Modules\Simulation\Models\Epoch;
 use App\Modules\Simulation\Services\RuleEngine\RuleVmService;
 use App\Modules\Simulation\Actions\TransitionEpochAction;
-use App\Simulation\Runtime\State\WorldState;
+use App\Modules\Simulation\Core\Runtime\State\WorldState;
 use Illuminate\Support\Facades\Log;
 use function resource_path;
 use function file_get_contents;
@@ -139,6 +139,8 @@ class EpochEngine
         ];
     }
 }
+
+
 
 
 

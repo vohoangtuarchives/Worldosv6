@@ -2,7 +2,7 @@
 
 namespace App\Modules\Simulation\Vocation\Repositories;
 
-use App\Models\VocationDefinition as VocationModel;
+use App\Modules\Simulation\Models\VocationDefinition as VocationModel;
 use App\Modules\Simulation\Vocation\Contracts\VocationRepositoryInterface;
 use App\Modules\Simulation\Vocation\Entities\VocationEntity;
 
@@ -47,3 +47,4 @@ class VocationEloquentRepository implements VocationRepositoryInterface
         );
     }
 }
+

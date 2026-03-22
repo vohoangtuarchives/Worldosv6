@@ -3,7 +3,7 @@
 namespace App\Modules\Intelligence\Services;
 
 use App\Modules\Intelligence\Contracts\ActorRepositoryInterface;
-use App\Models\Universe;
+use App\Modules\Simulation\Models\Universe;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -28,7 +28,7 @@ class LanguageEngine
     /**
      * Run language communication and vocabulary growth. Call after ActorBehaviorEngine (so intent/goal is set).
      */
-    public function runWithState(\App\Simulation\Runtime\State\WorldState $state, int $currentTick): void
+    public function runWithState(\App\Modules\Simulation\Core\Runtime\State\WorldState $state, int $currentTick): void
     {
         $interval = (int) config('worldos.intelligence.language_tick_interval', 5);
         if ($interval <= 0 || $currentTick % $interval !== 0) {
@@ -164,3 +164,5 @@ class LanguageEngine
         return is_array($voc) ? $voc : [];
     }
 }
+
+

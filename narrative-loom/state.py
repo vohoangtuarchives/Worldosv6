@@ -24,6 +24,9 @@ class NarrativeState(TypedDict):
     
     final_prose: str
     
-    feedback: str
+    feedback: dict
+    revision_count: int
+    
+    past_memories: str
     
     current_agent: str

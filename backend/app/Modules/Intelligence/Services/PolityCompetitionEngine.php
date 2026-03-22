@@ -2,7 +2,7 @@
 
 namespace App\Modules\Intelligence\Services;
 
-use App\Models\Universe;
+use App\Modules\Simulation\Models\Universe;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -99,3 +99,4 @@ class PolityCompetitionEngine
         // In a real system, we would spawn new polities here
     }
 }
+

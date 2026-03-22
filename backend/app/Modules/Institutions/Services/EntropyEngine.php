@@ -2,9 +2,9 @@
 
 namespace App\Modules\Institutions\Services;
 
-use App\Simulation\Runtime\Domain\UniverseState;
+use App\Modules\Simulation\Core\Runtime\Domain\UniverseState;
 use App\Modules\Simulation\Services\RuleEngine\RuleVmService;
-use App\Simulation\Support\SimulationRandom;
+use App\Modules\Simulation\Core\Support\SimulationRandom;
 use function resource_path;
 
 /**
@@ -52,6 +52,7 @@ class EntropyEngine
         return $state;
     }
 }
+
 
 
 

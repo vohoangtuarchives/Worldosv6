@@ -2,7 +2,7 @@
 
 namespace App\Modules\Simulation\Services;
 
-use App\Models\UniverseSnapshot;
+use App\Modules\Simulation\Models\UniverseSnapshot;
 
 /**
  * Cosmic Phase = dominant axis (faith / chaos / order / tech) with hysteresis.
@@ -68,3 +68,4 @@ class CosmicPhaseDetector
         return $key;
     }
 }
+

@@ -4,9 +4,9 @@ namespace App\Modules\Simulation\Services;
 
 use App\Contracts\UniverseEvaluatorInterface;
 use App\Contracts\UniverseSimilarityServiceInterface;
-use App\Models\UniverseSnapshot;
-use App\Models\Myth;
-use App\Models\School;
+use App\Modules\Simulation\Models\UniverseSnapshot;
+use App\Modules\Narrative\Models\Myth;
+use App\Modules\SocialGraph\Models\School;
 use App\Modules\Simulation\Services\MetricsExtractor;
 use Illuminate\Support\Facades\Log;
 
@@ -153,4 +153,5 @@ class AutonomicEvolutionEngine implements UniverseEvaluatorInterface
         return min(1.0, $distance);
     }
 }
+
 

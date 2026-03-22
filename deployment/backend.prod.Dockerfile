@@ -1,17 +1,7 @@
-# Stage 1: Build FFI Library
-FROM rust:latest AS ffi_builder
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    pkg-config protobuf-compiler \
-    && rm -rf /var/lib/apt/lists/*
-WORKDIR /app
-# We will set Docker build context to the root folder.
-COPY engine/ /app/
-RUN cargo build --release -p worldos-ffi
-
 # Stage 2: PHP Application
 FROM php:8.4-fpm
 
-# Install dependencies, including libffi-dev for FFI and gRPC build deps
+# Install dependencies, including gRPC build deps
 RUN apt-get update && apt-get install -y \
     git \
     unzip \
@@ -19,15 +9,13 @@ RUN apt-get update && apt-get install -y \
     libzip-dev \
     libonig-dev \
     libxml2-dev \
-    libffi-dev \
     zlib1g-dev \
     g++ \
     make \
     cmake \
     && MAKEFLAGS="-j2" pecl install redis grpc protobuf \
     && docker-php-ext-enable redis grpc protobuf \
-    && docker-php-ext-configure ffi --with-ffi \
-    && docker-php-ext-install pdo pdo_pgsql pgsql zip opcache pcntl bcmath sockets ffi
+    && docker-php-ext-install pdo pdo_pgsql pgsql zip opcache pcntl bcmath sockets
 
 # Clear cache
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
@@ -39,9 +27,6 @@ WORKDIR /var/www
 
 # Copy code from backend folder (context is root)
 COPY backend/ /var/www
-
-# Copy the compiled shared library from the ffi_builder stage
-COPY --from=ffi_builder /app/target/release/libworldos_ffi.so /var/www/ffi_lib/worldos_ffi.so
 
 # Install dependencies (no dev).
 RUN composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev

@@ -2,8 +2,8 @@
 
 namespace App\Modules\Simulation\Services;
 
-use App\Models\Universe;
-use App\Models\UniverseSnapshot;
+use App\Modules\Simulation\Models\Universe;
+use App\Modules\Simulation\Models\UniverseSnapshot;
 
 /**
  * SimulationClock – The heart of WorldOS time.
@@ -49,3 +49,4 @@ class SimulationClock
         return $phases;
     }
 }
+

@@ -2,10 +2,10 @@
 
 namespace App\Modules\Institutions\Services;
 
-use App\Models\Universe;
-use App\Models\InstitutionalEntity as InstitutionalModel;
-use App\Models\Actor;
-use App\Models\Chronicle;
+use App\Modules\Simulation\Models\Universe;
+use App\Modules\SocialGraph\Models\InstitutionalEntity as InstitutionalModel;
+use App\Modules\Intelligence\Models\Actor;
+use App\Modules\Narrative\Models\Chronicle;
 use function resource_path;
 use function config;
 use function event;
@@ -20,8 +20,8 @@ use function usort;
 use function array_column;
 use function array_slice;
 use function shuffle;
-use App\Models\BranchEvent;
-use App\Simulation\Support\SimulationRandom;
+use App\Modules\Simulation\Models\BranchEvent;
+use App\Modules\Simulation\Core\Support\SimulationRandom;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -116,7 +116,7 @@ class GreatFilterEngine
         ]);
 
         // Broadcast as Anomaly
-        \event(new \App\Events\Simulation\AnomalyDetected($universe, [
+        \event(new \App\Modules\Simulation\Events\AnomalyDetected($universe, [
             'title' => "BỘ LỌC VĨ ĐẠI: " . strtoupper(str_replace('_', ' ', $type)),
             'description' => $content,
             'severity' => 'CRITICAL'
@@ -230,4 +230,7 @@ class GreatFilterEngine
         return $totalTrust / $actors->count();
     }
 }
+
+
+
 

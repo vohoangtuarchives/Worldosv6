@@ -2,7 +2,7 @@
 
 namespace App\Modules\Intelligence\Services;
 
-use App\Models\Universe;
+use App\Modules\Simulation\Models\Universe;
 
 class SocietyAnalyzer
 {
@@ -54,7 +54,7 @@ class SocietyAnalyzer
         }
 
         // 3. Ideology-based Factions (Phase 13)
-        $topIdeology = \App\Models\CulturalArtifact::where('universe_id', $universe->id)
+        $topIdeology = \App\Modules\Narrative\Models\CulturalArtifact::where('universe_id', $universe->id)
             ->where('type', 'IDEOLOGY')
             ->where('is_active', true)
             ->orderByDesc('power_level')
@@ -112,4 +112,5 @@ class SocietyAnalyzer
         $universe->state_vector = $stateVector;
     }
 }
+
 

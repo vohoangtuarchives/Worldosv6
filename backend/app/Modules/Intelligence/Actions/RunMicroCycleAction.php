@@ -2,7 +2,7 @@
 
 namespace App\Modules\Intelligence\Actions;
 
-use App\Models\Universe;
+use App\Modules\Simulation\Models\Universe;
 use App\Modules\Intelligence\Domain\Rng\SimulationRng;
 use App\Modules\Intelligence\Domain\Entropy\EntropyBudget;
 use App\Modules\Intelligence\Domain\Society\SocialFieldCalculator;
@@ -28,7 +28,7 @@ class RunMicroCycleAction
         private PhaseDetector $phaseDetector,
         private MacroStateEvolution $macroEvolution,
         private SocietyAnalyzer $societyAnalyzer,
-        private \App\Simulation\Engines\Meta\CulturalInfluenceEngine $culturalInfluenceEngine
+        private \App\Modules\Simulation\Core\Engines\Meta\CulturalInfluenceEngine $culturalInfluenceEngine
     ) {}
 
     /**
@@ -45,8 +45,8 @@ class RunMicroCycleAction
 
         // Phase 13: Cultural Influence
         // Update cultural pressure in universe state vector before iterating actors
-        $worldState = new \App\Simulation\Runtime\State\WorldState($universe->state_vector ?? []);
-        $ctx = new \App\Simulation\Domain\TickContext($universe->id, $tick, $seed);
+        $worldState = new \App\Modules\Simulation\Core\Runtime\State\WorldState($universe->state_vector ?? []);
+        $ctx = new \App\Modules\Simulation\Core\Domain\TickContext($universe->id, $tick, $seed);
         $this->culturalInfluenceEngine->handle($worldState, $ctx);
         $universe->state_vector = $worldState->toArray(); // Sync back
         
@@ -185,4 +185,6 @@ class RunMicroCycleAction
         return hash('sha256', json_encode($payload, JSON_UNESCAPED_UNICODE));
     }
 }
+
+
 

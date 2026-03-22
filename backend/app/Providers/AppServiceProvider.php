@@ -6,11 +6,13 @@ use App\Contracts\LlmNarrativeClientInterface;
 use App\Contracts\SimulationEngineClientInterface;
 use App\Contracts\UniverseEvaluatorInterface;
 use App\Services\Narrative\OpenAINarrativeService;
-use App\Repositories\UniverseSnapshotRepository;
+use App\Modules\Simulation\Repositories\UniverseSnapshotRepository;
 use App\Modules\Simulation\Services\HttpSimulationEngineClient;
 use App\Modules\Simulation\Services\StubSimulationEngineClient;
 use App\Modules\Simulation\Services\GrpcSimulationEngineClient;
+use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\ServiceProvider;
+use App\Broadcasting\CentrifugoBroadcaster;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -36,11 +38,11 @@ class AppServiceProvider extends ServiceProvider
             return new StubSimulationEngineClient;
         });
         $this->app->singleton(UniverseSnapshotRepository::class);
-        $this->app->singleton(\App\Services\Observer\ObserverService::class);
-        $this->app->singleton(\App\Services\AI\MemoryService::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\ObserverService::class);
+        $this->app->singleton(\App\Modules\Intelligence\Services\AI\MemoryService::class);
         $this->app->bind(
             \App\Contracts\GraphProviderInterface::class,
-            \App\Services\Graph\RelationalGraphProvider::class
+            \App\Modules\SocialGraph\Services\RelationalGraphProvider::class
         );
         $this->app->singleton(LlmNarrativeClientInterface::class, OpenAINarrativeService::class);
 
@@ -62,59 +64,64 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Broadcast::extend('centrifugo', function ($app) {
+            return new CentrifugoBroadcaster;
+        });
+
         \Illuminate\Support\Facades\Event::listen(
-            \App\Events\Simulation\UniverseSimulationPulsed::class,
-            \App\Listeners\Simulation\ProcessMaterialLifecycle::class
+            \App\Modules\Simulation\Events\UniverseSimulationPulsed::class,
+            \App\Modules\Simulation\Listeners\ProcessMaterialLifecycle::class
         );
         \Illuminate\Support\Facades\Event::listen(
-            \App\Events\Simulation\UniverseSimulationPulsed::class,
-            \App\Listeners\Simulation\GenerateNarrative::class
+            \App\Modules\Simulation\Events\UniverseSimulationPulsed::class,
+            \App\Modules\Narrative\Listeners\GenerateNarrative::class
         );
         // ProcessInstitutionalFramework (SupremeEntity, Institutions) must run BEFORE EvaluateSimulationResult
         // so Eval can merge cosmic impact into metrics and save once; no listener after Eval should write snapshot.
         \Illuminate\Support\Facades\Event::listen(
-            \App\Events\Simulation\UniverseSimulationPulsed::class,
+            \App\Modules\Simulation\Events\UniverseSimulationPulsed::class,
             \App\Modules\Institutions\Listeners\ProcessInstitutionalFramework::class
         );
         \Illuminate\Support\Facades\Event::listen(
-            \App\Events\Simulation\UniverseSimulationPulsed::class,
-            \App\Listeners\Simulation\EvaluateSimulationResult::class
+            \App\Modules\Simulation\Events\UniverseSimulationPulsed::class,
+            \App\Modules\Simulation\Listeners\EvaluateSimulationResult::class
         );
         \Illuminate\Support\Facades\Event::listen(
-            \App\Events\Simulation\UniverseSimulationPulsed::class,
-            \App\Listeners\Simulation\StagnationDetectorListener::class
+            \App\Modules\Simulation\Events\UniverseSimulationPulsed::class,
+            \App\Modules\Simulation\Listeners\StagnationDetectorListener::class
         );
         \Illuminate\Support\Facades\Event::listen(
-            \App\Events\Simulation\UniverseSimulationPulsed::class,
-            \App\Listeners\Simulation\SyncToGraph::class
+            \App\Modules\Simulation\Events\UniverseSimulationPulsed::class,
+            \App\Modules\SocialGraph\Listeners\SyncToGraph::class
         );
         \Illuminate\Support\Facades\Event::listen(
-            \App\Events\Simulation\UniverseSimulationPulsed::class,
+            \App\Modules\Simulation\Events\UniverseSimulationPulsed::class,
             \App\Modules\Intelligence\Listeners\ProcessIntelligenceEvolution::class
         );
         \Illuminate\Support\Facades\Event::listen(
-            \App\Events\Simulation\UniverseSimulationPulsed::class,
-            \App\Listeners\Simulation\PublishSimulationAdvancedToKafka::class
+            \App\Modules\Simulation\Events\UniverseSimulationPulsed::class,
+            \App\Modules\Simulation\Listeners\PublishSimulationAdvancedToKafka::class
         );
         \Illuminate\Support\Facades\Event::listen(
-            \App\Events\Simulation\SimulationEventOccurred::class,
-            \App\Listeners\Simulation\SyncWorldEventToGraph::class
+            \App\Modules\Simulation\Events\SimulationEventOccurred::class,
+            \App\Modules\SocialGraph\Listeners\SyncWorldEventToGraph::class
         );
         \Illuminate\Support\Facades\Event::listen(
-            \App\Events\Simulation\SimulationEventOccurred::class,
-            \App\Listeners\Simulation\PublishRuleFiredToKafka::class
+            \App\Modules\Simulation\Events\SimulationEventOccurred::class,
+            \App\Modules\Simulation\Listeners\PublishRuleFiredToKafka::class
         );
         \Illuminate\Support\Facades\Event::listen(
-            \App\Events\Simulation\RuleProposed::class,
-            \App\Listeners\Simulation\PersistRuleProposal::class
+            \App\Modules\Simulation\Events\RuleProposed::class,
+            \App\Modules\Simulation\Listeners\PersistRuleProposal::class
         );
         \Illuminate\Support\Facades\Event::listen(
-            \App\Events\Simulation\SimulationEventOccurred::class,
-            \App\Listeners\Simulation\SyncWorldEventToCausalityGraph::class
+            \App\Modules\Simulation\Events\SimulationEventOccurred::class,
+            \App\Modules\Simulation\Listeners\SyncWorldEventToCausalityGraph::class
         );
         \Illuminate\Support\Facades\Event::listen(
-            \App\Events\Simulation\SimulationEventOccurred::class,
-            \App\Listeners\Simulation\RecordHistoricalFact::class
+            \App\Modules\Simulation\Events\SimulationEventOccurred::class,
+            \App\Modules\Narrative\Listeners\RecordHistoricalFact::class
         );
     }
 }
+

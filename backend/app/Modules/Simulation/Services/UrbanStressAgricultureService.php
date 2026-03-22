@@ -2,8 +2,8 @@
 
 namespace App\Modules\Simulation\Services;
 
-use App\Models\Universe;
-use App\Repositories\UniverseRepository;
+use App\Modules\Simulation\Models\Universe;
+use App\Modules\Simulation\Repositories\UniverseRepository;
 use Illuminate\Support\Facades\Config;
 
 /**
@@ -68,3 +68,4 @@ final class UrbanStressAgricultureService
         return round(min(1.0, max(0.0, $capacity)), 3);
     }
 }
+

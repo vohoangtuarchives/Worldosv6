@@ -2,9 +2,9 @@
 
 namespace App\Modules\Simulation\Services;
 
-use App\Models\Universe;
-use App\Models\UniverseInteraction;
-use App\Models\Chronicle;
+use App\Modules\Simulation\Models\Universe;
+use App\Modules\Simulation\Models\UniverseInteraction;
+use App\Modules\Narrative\Models\Chronicle;
 use Illuminate\Support\Facades\Log;
 
 class MultiverseInteractionService
@@ -123,3 +123,4 @@ class MultiverseInteractionService
         Log::info("Migrated " . count($migrants) . " agents from Universe {$source->id} to {$target->id}");
     }
 }
+

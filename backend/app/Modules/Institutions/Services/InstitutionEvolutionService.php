@@ -2,8 +2,8 @@
 
 namespace App\Modules\Institutions\Services;
 
-use App\Models\Universe;
-use App\Models\UniverseSnapshot;
+use App\Modules\Simulation\Models\Universe;
+use App\Modules\Simulation\Models\UniverseSnapshot;
 use App\Modules\Institutions\Contracts\InstitutionalRepositoryInterface;
 use App\Modules\Institutions\Actions\SpawnInstitutionAction;
 use App\Modules\Institutions\Actions\CollapseInstitutionAction;
@@ -93,3 +93,4 @@ class InstitutionEvolutionService
         ]);
     }
 }
+

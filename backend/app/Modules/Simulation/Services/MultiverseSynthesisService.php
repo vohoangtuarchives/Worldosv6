@@ -2,8 +2,8 @@
 
 namespace App\Modules\Simulation\Services;
 
-use App\Models\Universe;
-use App\Models\UniverseInteraction;
+use App\Modules\Simulation\Models\Universe;
+use App\Modules\Simulation\Models\UniverseInteraction;
 use Illuminate\Support\Facades\Log;
 
 class MultiverseSynthesisService
@@ -87,4 +87,5 @@ class MultiverseSynthesisService
          return $prime;
     }
 }
+
 

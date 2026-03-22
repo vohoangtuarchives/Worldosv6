@@ -5,7 +5,6 @@ use std::collections::HashMap;
 
 use crate::constants;
 use crate::types::*;
-use crate::sharding::GhostZone;
 
 
 
@@ -325,6 +324,8 @@ impl UniverseState {
             z.state.material_stress = (z.state.material_stress + material_stress_delta).clamp(0.0, 1.0);
 
             // Level 7: Civilization Field Genesis (M1 Migration)
+            // Ported to MacroFieldEngine (Macro scale). 
+            // Individual zone fields are still updated here if needed for local effects.
             let s = &mut z.state;
             let structured_ratio = s.structured_mass / (s.base_mass + 1e-6);
             
@@ -333,6 +334,7 @@ impl UniverseState {
             s.civ_fields.wealth = (structured_ratio * 0.8 + s.free_energy / (s.base_mass * 2.0 + 1e-6)).clamp(0.0, 1.0);
             s.civ_fields.knowledge = (s.embodied_knowledge * 0.7 + s.knowledge_frontier * 0.3).clamp(0.0, 1.0);
             s.civ_fields.meaning = (s.cultural.myth_belief * 0.6 + (1.0 - s.material_stress) * 0.2 + s.entropy * 0.2).clamp(0.0, 1.0);
+            s.civ_fields.clamp_mut();
 
             // Deep Sim Phase 3: Cultural drift (deterministic) — prevents diffusion from making all zones identical.
             let seed = world.world_id.wrapping_add(self.tick).wrapping_mul(31).wrapping_add(z.id as u64).wrapping_add(idx as u64);
@@ -400,12 +402,13 @@ impl UniverseState {
             // Toggle Micro Mode if gradient is high
             self.instability_gradient = (avg_stress - 0.5).max(0.0) * 2.0; 
 
-            // Aggregate Global Fields
-            self.global_fields.survival = self.zones.iter().map(|z| z.state.civ_fields.survival).sum::<f64>() / n;
-            self.global_fields.power = self.zones.iter().map(|z| z.state.civ_fields.power).sum::<f64>() / n;
-            self.global_fields.wealth = self.zones.iter().map(|z| z.state.civ_fields.wealth).sum::<f64>() / n;
-            self.global_fields.knowledge = self.zones.iter().map(|z| z.state.civ_fields.knowledge).sum::<f64>() / n;
-            self.global_fields.meaning = self.zones.iter().map(|z| z.state.civ_fields.meaning).sum::<f64>() / n;
+            // Macro Field Evolution (Phase 4 Purification)
+            let macro_engine = crate::macro_fields::MacroFieldEngine::new();
+            macro_engine.update(self);
+
+            // Zone Potential Fields (Phase 4 Purification)
+            let potential_engine = crate::potential_fields::PotentialFieldEngine::new();
+            potential_engine.update(self);
         }
 
         // Level-8: Archetype Discovery — recognize civilization patterns

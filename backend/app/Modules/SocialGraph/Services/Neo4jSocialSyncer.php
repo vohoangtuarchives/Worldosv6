@@ -4,7 +4,7 @@ namespace App\Modules\SocialGraph\Services;
 
 use Laudis\Neo4j\ClientBuilder;
 use Laudis\Neo4j\Contracts\ClientInterface;
-use App\Models\Actor;
+use App\Modules\Intelligence\Models\Actor;
 use Illuminate\Support\Facades\Log;
 
 class Neo4jSocialSyncer
@@ -75,6 +75,52 @@ class Neo4jSocialSyncer
     }
 
     /**
+     * Create or update an Actor node by manual parameters.
+     */
+    public function createActorNode(string $id, string $name, string $archetype, int $universe_id): void
+    {
+        $this->client->run(<<<'CYPHER'
+            MERGE (a:Actor {id: $id})
+            SET a.name = $name,
+                a.archetype = $archetype,
+                a.universe_id = $universe_id,
+                a.is_alive = true
+        CYPHER, [
+            'id' => $id,
+            'name' => $name,
+            'archetype' => $archetype,
+            'universe_id' => $universe_id,
+        ]);
+    }
+
+    /**
+     * Create Parent-Child relationship.
+     */
+    public function createParentChildRelation(string $parentId, string $childId): void
+    {
+        $this->client->run(<<<'CYPHER'
+            MATCH (p:Actor {id: $pId})
+            MATCH (c:Actor {id: $cId})
+            MERGE (p)-[r:PARENT_OF]->(c)
+            SET r.created_at = timestamp()
+        CYPHER, [
+            'pId' => $parentId,
+            'cId' => $childId,
+        ]);
+    }
+
+    /**
+     * Mark actor as deceased.
+     */
+    public function markActorDeceased(string $id): void
+    {
+        $this->client->run(<<<'CYPHER'
+            MATCH (a:Actor {id: $id})
+            SET a.is_alive = false
+        CYPHER, ['id' => $id]);
+    }
+
+    /**
      * Find "Interesting Cliques" for Narrative Loom.
      */
     public function findAnomalousCliques(int $universeId): array
@@ -82,13 +128,14 @@ class Neo4jSocialSyncer
         // Example: Find dense clusters of Fear
         $result = $this->client->run(<<<'CYPHER'
             MATCH (a:Actor)-[r:RELATION]->(b:Actor)
-            WHERE a.universe_id = $uId AND r.fear > 0.7
+            WHERE a.universe_id = $universe_id AND r.fear > 0.7
             WITH a, count(r) as fear_connections
             WHERE fear_connections > 3
             RETURN a.id as actor_id, a.name as name, fear_connections
             LIMIT 5
-        CYPHER, ['uId' => $universeId]);
+        CYPHER, ['universe_id' => $universeId]);
 
         return $result->toArray();
     }
 }
+

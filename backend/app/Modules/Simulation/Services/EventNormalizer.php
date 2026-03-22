@@ -2,11 +2,11 @@
 
 namespace App\Modules\Simulation\Services;
 
-use App\Models\Universe;
-use App\Models\UniverseSnapshot;
-use App\Simulation\Contracts\WorldEventBusInterface;
-use App\Simulation\Events\WorldEvent;
-use App\Simulation\Events\WorldEventType;
+use App\Modules\Simulation\Models\Universe;
+use App\Modules\Simulation\Models\UniverseSnapshot;
+use App\Modules\Simulation\Core\Contracts\WorldEventBusInterface;
+use App\Modules\Simulation\Core\Events\WorldEvent;
+use App\Modules\Simulation\Core\Events\WorldEventType;
 
 /**
  * Event Normalizer: chuyển trạng thái mô phỏng/raw data thành WorldEvent chuẩn cho Event Bus.
@@ -67,4 +67,6 @@ class EventNormalizer
         }
     }
 }
+
+
 

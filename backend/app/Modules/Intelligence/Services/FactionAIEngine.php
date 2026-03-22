@@ -2,7 +2,7 @@
 
 namespace App\Modules\Intelligence\Services;
 
-use App\Models\Universe;
+use App\Modules\Simulation\Models\Universe;
 use App\Modules\Intelligence\Contracts\ActorRepositoryInterface;
 use App\Modules\Intelligence\Entities\ActorEntity;
 use App\Modules\Simulation\Services\SimulationPRNG;
@@ -167,4 +167,5 @@ class FactionAIEngine
         ];
     }
 }
+
 

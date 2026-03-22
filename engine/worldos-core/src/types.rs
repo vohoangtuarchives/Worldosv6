@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 use crate::agent::Agent;
-use crate::vocation::definitions::MotivationProfile;
 use serde::{Deserialize, Serialize};
 use crate::sharding::{ShardId, ShardMap, GhostZone};
 
@@ -109,6 +108,20 @@ pub struct CulturalVector {
     pub myth_belief: f64,
 }
 
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct ZonePressures {
+    #[serde(default)]
+    pub war: f64,
+    #[serde(default)]
+    pub economic: f64,
+    #[serde(default)]
+    pub religious: f64,
+    #[serde(default)]
+    pub migration: f64,
+    #[serde(default)]
+    pub innovation: f64,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NarrativeTag {
     pub slug: String,
@@ -134,6 +147,17 @@ pub struct CivilizationFields {
     pub status: f64,
     #[serde(default)]
     pub belonging: f64,
+    // Macro Phase 4 Purification
+    #[serde(default)]
+    pub authority: f64,
+    #[serde(default)]
+    pub fear_macro: f64,
+    #[serde(default)]
+    pub order_macro: f64,
+    #[serde(default)]
+    pub entropy_macro: f64,
+    #[serde(default)]
+    pub resonance: f64,
 }
 
 /// Cascade phase per zone: pressure above threshold advances Normal → Famine → Riots → Collapse.
@@ -280,6 +304,22 @@ impl CivilizationFields {
         clamp(&mut self.wealth);
         clamp(&mut self.knowledge);
         clamp(&mut self.meaning);
+        clamp(&mut self.authority);
+        clamp(&mut self.fear_macro);
+        clamp(&mut self.order_macro);
+        clamp(&mut self.entropy_macro);
+        clamp(&mut self.resonance);
+    }
+}
+
+impl ZonePressures {
+    pub fn clamp_mut(&mut self) {
+        let clamp = |v: &mut f64| *v = v.clamp(0.0, 1.0);
+        clamp(&mut self.war);
+        clamp(&mut self.economic);
+        clamp(&mut self.religious);
+        clamp(&mut self.migration);
+        clamp(&mut self.innovation);
     }
 }
 
@@ -334,9 +374,11 @@ pub struct ZoneState {
     #[serde(default)]
     pub wealth_proxy: f64,
     #[serde(default)]
-    pub biome: Biome,
-    #[serde(default)]
     pub eco_fields: EcologicalFields,
+    #[serde(default)]
+    pub pressures: ZonePressures,
+    #[serde(default)]
+    pub biome: Biome,
 }
 
 /// Quantum Overlay: Controls probabilistic state and observer effect (§57).
@@ -524,6 +566,7 @@ impl ZoneState {
             wealth_proxy: 0.0,
             biome: Biome::Barren,
             eco_fields: EcologicalFields::default(),
+            pressures: ZonePressures::default(),
         }
     }
 

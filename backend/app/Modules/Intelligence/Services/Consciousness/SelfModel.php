@@ -11,7 +11,7 @@ class SelfModel
     public function __construct(
         public readonly string $id,
         public readonly array $currentState,
-        /** @var \App\Models\CivilizationAttractor[] List of active rules */
+        /** @var \App\Modules\SocialGraph\Models\CivilizationAttractor[] List of active rules */
         public readonly array $activeAttractors,
         /** @var string Primary goal/telos of this civilization */
         public readonly string $telos = 'Complexity Maximization'
@@ -27,3 +27,4 @@ class SelfModel
         ];
     }
 }
+

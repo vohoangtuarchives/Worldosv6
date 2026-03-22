@@ -8,7 +8,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use App\Modules\SocialGraph\Services\Neo4jSocialSyncer;
-use App\Models\Actor;
+use App\Modules\Intelligence\Models\Actor;
 
 class SyncSocialGraphJob implements ShouldQueue
 {
@@ -34,3 +34,4 @@ class SyncSocialGraphJob implements ShouldQueue
             });
     }
 }
+

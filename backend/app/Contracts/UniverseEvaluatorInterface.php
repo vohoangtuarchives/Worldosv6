@@ -2,7 +2,7 @@
 
 namespace App\Contracts;
 
-use App\Models\UniverseSnapshot;
+use App\Modules\Simulation\Models\UniverseSnapshot;
 
 interface UniverseEvaluatorInterface
 {
@@ -13,3 +13,4 @@ interface UniverseEvaluatorInterface
      */
     public function evaluate(UniverseSnapshot $snapshot): array;
 }
+

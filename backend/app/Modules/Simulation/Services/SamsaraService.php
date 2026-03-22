@@ -2,9 +2,9 @@
 
 namespace App\Modules\Simulation\Services;
 
-use App\Models\Chronicle;
-use App\Models\LegendaryAgent;
-use App\Models\Universe;
+use App\Modules\Narrative\Models\Chronicle;
+use App\Modules\Intelligence\Models\LegendaryAgent;
+use App\Modules\Simulation\Models\Universe;
 
 class SamsaraService
 {
@@ -47,3 +47,4 @@ class SamsaraService
         ];
     }
 }
+

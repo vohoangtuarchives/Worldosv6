@@ -2,10 +2,10 @@
 
 namespace App\Modules\Simulation\Services;
 
-use App\Models\Universe;
-use App\Models\UniverseSnapshot;
-use App\Models\Chronicle;
-use App\Models\BranchEvent;
+use App\Modules\Simulation\Models\Universe;
+use App\Modules\Simulation\Models\UniverseSnapshot;
+use App\Modules\Narrative\Models\Chronicle;
+use App\Modules\Simulation\Models\BranchEvent;
 use App\Modules\Institutions\Services\WorldEdictEngine;
 use App\Services\Narrative\NarrativeAiService;
 
@@ -64,9 +64,9 @@ class ScenarioEngine
 
         // 2. Spawn Material (Numerical Footprint)
         if (isset($scenario['material_spawn'])) {
-            $material = \App\Models\Material::where('slug', str_replace('_', '-', $scenario['material_spawn']))->first();
+            $material = \App\Modules\Simulation\Models\Material::where('slug', str_replace('_', '-', $scenario['material_spawn']))->first();
             if ($material) {
-                \App\Models\MaterialInstance::create([
+                \App\Modules\Simulation\Models\MaterialInstance::create([
                     'universe_id' => $universe->id,
                     'material_id' => $material->id,
                     'lifecycle' => 'active',
@@ -119,3 +119,4 @@ class ScenarioEngine
         return $this->scenarios;
     }
 }
+

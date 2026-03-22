@@ -2,7 +2,7 @@
 
 namespace App\Modules\Intelligence\Repositories;
 
-use App\Models\AiMemory as AiMemoryModel;
+use App\Modules\Intelligence\Models\AiMemory as AiMemoryModel;
 use App\Modules\Intelligence\Contracts\AiMemoryRepositoryInterface;
 use App\Modules\Intelligence\Entities\AiMemoryEntity;
 
@@ -45,3 +45,4 @@ class AiMemoryEloquentRepository implements AiMemoryRepositoryInterface
             ->toArray();
     }
 }
+

@@ -2,7 +2,7 @@
 
 namespace App\Modules\Simulation\Repositories;
 
-use App\Models\Universe as UniverseModel;
+use App\Modules\Simulation\Models\Universe as UniverseModel;
 use App\Modules\Simulation\Contracts\UniverseRepositoryInterface;
 use App\Modules\Simulation\Entities\UniverseEntity;
 
@@ -71,3 +71,4 @@ class UniverseEloquentRepository implements UniverseRepositoryInterface
         );
     }
 }
+

@@ -2,8 +2,8 @@
 
 namespace App\Modules\Intelligence\Services\Analysis;
 
-use App\Models\CivilizationAttractor;
-use App\Models\AiMemory;
+use App\Modules\SocialGraph\Models\CivilizationAttractor;
+use App\Modules\Intelligence\Models\AiMemory;
 
 /**
  * Phase 3 Self-Reflection Engine.
@@ -51,3 +51,4 @@ class SelfReflectionEngine
         return CivilizationAttractor::where('name', $name)->exists();
     }
 }
+

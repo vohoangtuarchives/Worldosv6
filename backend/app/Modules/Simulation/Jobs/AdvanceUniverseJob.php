@@ -7,7 +7,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use App\Actions\Simulation\AdvanceSimulationAction;
+use App\Modules\Simulation\Actions\AdvanceSimulationAction;
 
 class AdvanceUniverseJob implements ShouldQueue
 {
@@ -29,3 +29,4 @@ class AdvanceUniverseJob implements ShouldQueue
         $action->execute($this->universeId, $this->ticks);
     }
 }
+

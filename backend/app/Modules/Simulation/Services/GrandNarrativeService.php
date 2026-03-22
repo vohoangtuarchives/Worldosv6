@@ -2,11 +2,11 @@
 
 namespace App\Modules\Simulation\Services;
 
-use App\Models\Universe;
-use App\Models\Idea;
-use App\Models\School;
-use App\Models\InstitutionalEntity;
-use App\Models\Material;
+use App\Modules\Simulation\Models\Universe;
+use App\Modules\Intelligence\Models\Idea;
+use App\Modules\SocialGraph\Models\School;
+use App\Modules\SocialGraph\Models\InstitutionalEntity;
+use App\Modules\Simulation\Models\Material;
 use App\Modules\Intelligence\Services\Dashboard\StateMetricsService;
 
 class GrandNarrativeService
@@ -93,7 +93,7 @@ class GrandNarrativeService
 
     protected function summarizeTech(int $universeId, array $macro): array
     {
-        $activeMaterials = \App\Models\MaterialInstance::where('universe_id', $universeId)
+        $activeMaterials = \App\Modules\Simulation\Models\MaterialInstance::where('universe_id', $universeId)
             ->where('lifecycle', Material::LIFECYCLE_ACTIVE)
             ->count();
             
@@ -130,3 +130,4 @@ class GrandNarrativeService
         return $paradoxes;
     }
 }
+

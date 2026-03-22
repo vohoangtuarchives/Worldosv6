@@ -21,21 +21,25 @@ class Simulation
 ObserveRequest
 universe_id (
 
-zone_index (
+zone_index (
+
 	intensity (
 state_input ("l
 ObserveResponse
 
 ok (
-error_message (	6
+
+error_message (	6
 snapshot (2$.worldos.simulation.UniverseSnapshot"0
 MergeRequest
 state_a (
 state_b ("j
-MergeResponse
+
+MergeResponse
 
 ok (
-error_message (	6
+
+error_message (	6
 snapshot (2$.worldos.simulation.UniverseSnapshot"€
 AdvanceRequest
 universe_id (
@@ -52,13 +56,15 @@ axiom_json (	
 KernelGenome
 diffusion_rate (
 entropy_coefficient (
-mutation_rate (
+
+mutation_rate (
 attractor_gravity (
 complexity_bonus ("l
 AdvanceResponse
 
 ok (
-error_message (	6
+
+error_message (	6
 snapshot (2$.worldos.simulation.UniverseSnapshot"»
 UniverseSnapshot
 universe_id (
@@ -100,22 +106,26 @@ state_json (	
 EvaluateRulesResponse
 
 ok (
-error_message (	
+
+error_message (	
 outputs_json (	"¾
 ProcessActorsSoaRequest
 tick (
 ids (
-zone_ids (
+zone_ids (
+
 hunger (
 energy (
 fear (
 trauma (
-heroic_types (
+heroic_types (
+
 lineage_ids	 (
 memes
  ("_
 ActorSoaOutput
-	action_id (
+	action_id (
+
 
 new_hunger (
 
@@ -125,13 +135,17 @@ new_trauma ("r
 ProcessActorsSoaResponse
 
 ok (
-error_message (	3
+
+error_message (	3
 outputs (2".worldos.simulation.ActorSoaOutput"¡
 ProcessFieldsV7Request
 fields (
-neighbor_counts (
-neighbor_offsets (
-	neighbors (
+neighbor_counts (
+
+neighbor_offsets (
+
+	neighbors (
+
 diffusion_rate (
 preservation_rate (")
 ProcessFieldsV7Response
@@ -155,7 +169,8 @@ efficiency (
 "CalculateVocationAlignmentResponse
 	alignment ("2
 GetCombinedGravityRequest
-rulesets_json (	"-
+
+rulesets_json (	"-
 GetCombinedGravityResponse
 gravity (2¡	
 SimulationEngineR
@@ -164,7 +179,8 @@ efficiency (
 Observe".worldos.simulation.ObserveRequest#.worldos.simulation.ObserveResponsea
 BatchAdvance\'.worldos.simulation.BatchAdvanceRequest(.worldos.simulation.BatchAdvanceResponser
 AnalyzeTrajectory-.worldos.simulation.TrajectoryAnalysisRequest..worldos.simulation.TrajectoryAnalysisResponsed
-EvaluateRules(.worldos.simulation.EvaluateRulesRequest).worldos.simulation.EvaluateRulesResponsem
+
+EvaluateRules(.worldos.simulation.EvaluateRulesRequest).worldos.simulation.EvaluateRulesResponsem
 ProcessActorsSoa+.worldos.simulation.ProcessActorsSoaRequest,.worldos.simulation.ProcessActorsSoaResponsej
 ProcessFieldsV7*.worldos.simulation.ProcessFieldsV7Request+.worldos.simulation.ProcessFieldsV7Response|
 ComputeMetabolismGrid0.worldos.simulation.ComputeMetabolismGridRequest1.worldos.simulation.ComputeMetabolismGridResponse‹

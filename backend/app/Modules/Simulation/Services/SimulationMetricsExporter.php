@@ -2,7 +2,7 @@
 
 namespace App\Modules\Simulation\Services;
 
-use App\Models\Universe;
+use App\Modules\Simulation\Models\Universe;
 use Illuminate\Support\Facades\Cache;
 
 /**
@@ -76,4 +76,5 @@ final class SimulationMetricsExporter
         return implode("\n", $lines);
     }
 }
+
 

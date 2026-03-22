@@ -5,14 +5,14 @@ pub struct CivilizationAggregator;
 
 impl CivilizationAggregator {
     pub fn aggregate(
-        zone_ids: &[i32],
+        zone_ids: &[u32],
         new_hungers: &[f32],
         new_energies: &[f32],
         new_fears: &[f32],
         new_traumas: &[f32],
         resource_deltas: &[f32],
     ) -> CivilizationMetrics {
-        let mut zone_data: HashMap<i32, Vec<(f32, f32, f32, f32, f32)>> = HashMap::new();
+        let mut zone_data: HashMap<u32, Vec<(f32, f32, f32, f32, f32)>> = HashMap::new();
         
         let count = zone_ids.len();
         for i in 0..count {
@@ -42,7 +42,7 @@ impl CivilizationAggregator {
             let avg_t = sum_t / z_count;
 
             zone_stats.push(ZoneMetrics {
-                zone_id: zid as u32,
+                zone_id: zid,
                 avg_hunger: sum_h / z_count,
                 avg_energy: sum_e / z_count,
                 avg_fear: avg_f,
@@ -63,6 +63,7 @@ impl CivilizationAggregator {
                 0.0
             },
             zone_stats,
+            urban_density: vec![],
         }
     }
 }

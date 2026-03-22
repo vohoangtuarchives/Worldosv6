@@ -2,8 +2,8 @@
 
 namespace App\Modules\Institutions\Actions;
 
-use App\Models\Universe;
-use App\Models\UniverseSnapshot;
+use App\Modules\Simulation\Models\Universe;
+use App\Modules\Simulation\Models\UniverseSnapshot;
 use App\Modules\Intelligence\Contracts\ActorRepositoryInterface;
 use App\Modules\Institutions\Actions\SpawnSupremeEntityAction;
 
@@ -55,3 +55,4 @@ class AscendHeroAction
         $this->actorRepository->save($actor);
     }
 }
+

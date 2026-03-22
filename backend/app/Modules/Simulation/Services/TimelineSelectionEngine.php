@@ -2,8 +2,8 @@
 
 namespace App\Modules\Simulation\Services;
 
-use App\Models\Universe;
-use App\Models\World;
+use App\Modules\Simulation\Models\Universe;
+use App\Modules\Simulation\Models\World;
 use Illuminate\Support\Collection;
 
 /**
@@ -159,3 +159,4 @@ class TimelineSelectionEngine
         return max(0.0, 0.5 - abs($entropy - 0.5));
     }
 }
+

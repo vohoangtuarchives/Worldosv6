@@ -2,7 +2,7 @@
 
 namespace App\Modules\Narrative\Repositories;
 
-use App\Models\Chronicle;
+use App\Modules\Narrative\Models\Chronicle;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -52,3 +52,4 @@ class ChronicleMemoryRepository
         ]);
     }
 }
+

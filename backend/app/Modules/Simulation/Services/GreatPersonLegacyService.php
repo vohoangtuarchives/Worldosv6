@@ -3,8 +3,8 @@
 namespace App\Modules\Simulation\Services;
 
 use App\Contracts\Repositories\UniverseRepositoryInterface;
-use App\Models\SupremeEntity;
-use App\Models\Universe;
+use App\Modules\Intelligence\Models\SupremeEntity;
+use App\Modules\Simulation\Models\Universe;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -25,7 +25,7 @@ final class GreatPersonLegacyService
         $count = $entities->count();
         $avgPower = $count > 0 ? (float) $entities->avg('power_level') : 0.0;
         $avgKarma = $count > 0 ? (float) $entities->avg('karma') : 0.5;
-        $legacyStages = \App\Models\Actor::where('universe_id', $universe->id)
+        $legacyStages = \App\Modules\Intelligence\Models\Actor::where('universe_id', $universe->id)
             ->whereIn('hero_stage', ['legacy', 'myth'])
             ->count();
 
@@ -50,4 +50,5 @@ final class GreatPersonLegacyService
         return is_array($sv) ? $sv : [];
     }
 }
+
 

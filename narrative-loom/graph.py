@@ -11,6 +11,7 @@ from agents.psychologist import psychologist_agent
 from agents.director import director_agent
 from agents.wordsmith import wordsmith_agent
 from agents.critic import critic_agent
+from agents.archivist import archivist_agent
 
 # Khởi tạo Graph
 workflow = StateGraph(NarrativeState)
@@ -27,6 +28,7 @@ workflow.add_node("The_Psychologist", psychologist_agent)
 workflow.add_node("The_Director", director_agent)
 workflow.add_node("The_Wordsmith", wordsmith_agent)
 workflow.add_node("The_Critic", critic_agent)
+workflow.add_node("The_Archivist", archivist_agent)
 
 # 2. Tuần tự kết nối
 workflow.set_entry_point("Event_Normalizer")
@@ -45,7 +47,25 @@ workflow.add_edge("The_Psychologist", "The_Director")
 workflow.add_edge("The_Director", "The_Wordsmith")
 
 workflow.add_edge("The_Wordsmith", "The_Critic")
-workflow.add_edge("The_Critic", END)
+
+def check_revision(state: NarrativeState):
+    fb = state.get("feedback", {})
+    if fb.get("is_passed", True):
+        return "The_Archivist"
+    if state.get("revision_count", 0) >= 2: # Max 2 vòng lặp để tránh infinite loop
+        return "The_Archivist"
+    return "The_Wordsmith"
+
+workflow.add_conditional_edges(
+    "The_Critic",
+    check_revision,
+    {
+        "The_Archivist": "The_Archivist",
+        "The_Wordsmith": "The_Wordsmith"
+    }
+)
+
+workflow.add_edge("The_Archivist", END)
 
 # Tương lai có thể thêm Edge có Điều Kiện (Conditional Edges): 
 # Ví dụ: Nếu Storyboard dở -> Yêu cầu Director viết lại thay vì đi đến Wordsmith.

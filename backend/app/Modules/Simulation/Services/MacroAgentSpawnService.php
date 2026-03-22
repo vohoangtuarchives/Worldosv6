@@ -2,8 +2,8 @@
 
 namespace App\Modules\Simulation\Services;
 
-use App\Models\Universe;
-use App\Models\InstitutionalEntity;
+use App\Modules\Simulation\Models\Universe;
+use App\Modules\SocialGraph\Models\InstitutionalEntity;
 
 /**
  * Deep Sim Phase B: spawn macro agents (ruler, army) when conditions are met;
@@ -158,4 +158,5 @@ class MacroAgentSpawnService
         return $count;
     }
 }
+
 

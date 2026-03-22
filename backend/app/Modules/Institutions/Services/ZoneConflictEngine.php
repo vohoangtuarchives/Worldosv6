@@ -2,14 +2,14 @@
 
 namespace App\Modules\Institutions\Services;
 
-use App\Models\Universe;
-use App\Models\UniverseSnapshot;
-use App\Models\MaterialInstance;
-use App\Models\Chronicle;
-use App\Models\BranchEvent;
-use App\Models\InstitutionalEntity;
+use App\Modules\Simulation\Models\Universe;
+use App\Modules\Simulation\Models\UniverseSnapshot;
+use App\Modules\Simulation\Models\MaterialInstance;
+use App\Modules\Narrative\Models\Chronicle;
+use App\Modules\Simulation\Models\BranchEvent;
+use App\Modules\SocialGraph\Models\InstitutionalEntity;
 use Illuminate\Support\Facades\DB;
-use App\Simulation\Support\SimulationRandom;
+use App\Modules\Simulation\Core\Support\SimulationRandom;
 
 class ZoneConflictEngine
 {
@@ -196,3 +196,5 @@ class ZoneConflictEngine
         }
     }
 }
+
+

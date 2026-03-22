@@ -2,8 +2,8 @@
 
 namespace App\Modules\Narrative\Services;
 
-use App\Models\ActorEvent;
-use App\Models\WorldEvent;
+use App\Modules\Intelligence\Models\ActorEvent;
+use App\Modules\Simulation\Models\WorldEvent;
 use Illuminate\Support\Collection;
 
 /**
@@ -34,7 +34,7 @@ class NarrativeEventRegistry
         });
 
         // 2. Fetch Chronicle Events (Macro-level)
-        $worldEvents = \App\Models\Chronicle::where('universe_id', $universeId)
+        $worldEvents = \App\Modules\Narrative\Models\Chronicle::where('universe_id', $universeId)
             ->whereBetween('from_tick', [$startTick, $endTick])
             ->get()
             ->map(function ($event) {
@@ -72,3 +72,4 @@ class NarrativeEventRegistry
         };
     }
 }
+

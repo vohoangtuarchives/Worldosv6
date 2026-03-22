@@ -2,8 +2,8 @@
 
 namespace App\Modules\Intelligence\Events;
 
-use App\Models\Universe;
-use App\Models\UniverseSnapshot;
+use App\Modules\Simulation\Models\Universe;
+use App\Modules\Simulation\Models\UniverseSnapshot;
 
 class ArchetypeImpactEvent
 {
@@ -16,3 +16,4 @@ class ArchetypeImpactEvent
         public readonly ?string $chronicleMessage = null
     ) {}
 }
+

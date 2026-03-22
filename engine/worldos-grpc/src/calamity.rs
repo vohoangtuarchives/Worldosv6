@@ -28,7 +28,7 @@ impl CalamityEngine {
         peak_tech_level: f32,
     ) -> Vec<EmergentCalamity> {
         let mut calamities = Vec::new();
-        let mut rng = rand::rng();
+        let mut rng = rand::thread_rng();
 
         // Avoid triggering calamites too often (e.g., only check every 100 ticks)
         if tick % 100 != 0 {
@@ -39,7 +39,7 @@ impl CalamityEngine {
         let war_risk = (1.0 - min_cohesion) * (1.0 + peak_tech_level);
         let eco_risk = max_extraction_rate * (1.0 + global_entropy);
 
-        if density_risk > self.pandemic_threshold && rng.random_bool(self.base_trigger_chance) {
+        if density_risk > self.pandemic_threshold && rng.gen_bool(self.base_trigger_chance) {
             calamities.push(EmergentCalamity {
                 r#type: "PANDEMIC".to_string(),
                 epicenter_zone_id: 1, // Simplified for now
@@ -49,7 +49,7 @@ impl CalamityEngine {
             });
         }
 
-        if war_risk > self.war_threshold && rng.random_bool(self.base_trigger_chance) {
+        if war_risk > self.war_threshold && rng.gen_bool(self.base_trigger_chance) {
             calamities.push(EmergentCalamity {
                 r#type: "TOTAL_WAR".to_string(),
                 epicenter_zone_id: 1,
@@ -59,7 +59,7 @@ impl CalamityEngine {
             });
         }
 
-        if eco_risk > self.ecological_collapse_threshold && rng.random_bool(self.base_trigger_chance) {
+        if eco_risk > self.ecological_collapse_threshold && rng.gen_bool(self.base_trigger_chance) {
             calamities.push(EmergentCalamity {
                 r#type: "ECOLOGICAL_COLLAPSE".to_string(),
                 epicenter_zone_id: 1,
@@ -70,7 +70,7 @@ impl CalamityEngine {
         }
 
         // The ultimate filter
-        if global_entropy > 0.95 && peak_tech_level > 0.9 && rng.random_bool(self.base_trigger_chance * 2.0) {
+        if global_entropy > 0.95 && peak_tech_level > 0.9 && rng.gen_bool(self.base_trigger_chance * 2.0) {
             calamities.push(EmergentCalamity {
                 r#type: "SYSTEM_OVERLOAD".to_string(),
                 epicenter_zone_id: 0,

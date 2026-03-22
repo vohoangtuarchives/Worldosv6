@@ -23,6 +23,7 @@ pub enum ParseError {
     InvalidExpr(String),
 }
 
+#[allow(dead_code)]
 fn condition_to_expr(c: &Condition) -> ConditionExpr {
     let right = match &c.value {
         ConditionValue::Float(f) => Expr::ConstFloat(*f),
@@ -87,6 +88,7 @@ fn parse_condition_line(line: &str) -> Result<ConditionExpr, ParseError> {
     Ok(ConditionExpr::Comparison { left, op, right })
 }
 
+#[allow(dead_code)]
 fn conditions_to_when(conditions: &[Condition]) -> ConditionExpr {
     let mut it = conditions.iter();
     let first = it.next().map(condition_to_expr).expect("at least one condition");
@@ -236,6 +238,7 @@ fn parse_one_rule(name: &str, lines: &[&str]) -> Result<Rule, ParseError> {
     })
 }
 
+#[allow(dead_code)]
 fn parse_condition(line: &str) -> Result<Condition, ParseError> {
     let parts: Vec<&str> = line.split_whitespace().collect();
     if parts.len() < 3 {

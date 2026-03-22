@@ -4,8 +4,8 @@ namespace App\Modules\Simulation\Actions;
 
 use App\Modules\Simulation\Entities\UniverseEntity;
 use App\Modules\Simulation\Contracts\UniverseRepositoryInterface;
-use App\Models\Chronicle;
-use App\Simulation\Runtime\State\WorldState;
+use App\Modules\Narrative\Models\Chronicle;
+use App\Modules\Simulation\Core\Runtime\State\WorldState;
 use Illuminate\Support\Facades\Log;
 
 class WavefunctionCollapseAction
@@ -22,7 +22,7 @@ class WavefunctionCollapseAction
         // Legacy bridge
     }
 
-    public function executeWithState(\App\Simulation\Runtime\State\WorldState $state, int $tick): void
+    public function executeWithState(\App\Modules\Simulation\Core\Runtime\State\WorldState $state, int $tick): void
     {
         $oldLoad = (float)$state->get('meta.observation_load', 0.0);
         $intensity = 0.2; 
@@ -45,7 +45,7 @@ class WavefunctionCollapseAction
         Log::debug("Wavefunction Collapse executed for Universe {$state->get('universe_id')} via manifold. New Load: {$newLoad}");
     }
 
-    protected function logStateNarrative(\App\Simulation\Runtime\State\WorldState $state, int $tick, float $newLoad): void
+    protected function logStateNarrative(\App\Modules\Simulation\Core\Runtime\State\WorldState $state, int $tick, float $newLoad): void
     {
         $narrative = "SỰ NGƯNG TRỆ CỦA CÁC KHẢ NĂNG: Áp lực từ Đệ nhất Quan sát nhân đã đạt mức " . number_format($newLoad, 1) . " Φ. " .
                      "Các biến số ngẫu nhiên đang bị nén chặt vào một thực tại duy nhất.";
@@ -88,3 +88,5 @@ class WavefunctionCollapseAction
         ]);
     }
 }
+
+

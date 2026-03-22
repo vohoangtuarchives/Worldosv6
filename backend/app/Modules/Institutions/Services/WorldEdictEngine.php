@@ -2,11 +2,11 @@
 
 namespace App\Modules\Institutions\Services;
 
-use App\Models\Universe;
-use App\Models\UniverseSnapshot;
-use App\Models\SupremeEntity;
-use App\Models\Chronicle;
-use App\Models\BranchEvent;
+use App\Modules\Simulation\Models\Universe;
+use App\Modules\Simulation\Models\UniverseSnapshot;
+use App\Modules\Intelligence\Models\SupremeEntity;
+use App\Modules\Narrative\Models\Chronicle;
+use App\Modules\Simulation\Models\BranchEvent;
 
 class WorldEdictEngine
 {
@@ -66,7 +66,7 @@ class WorldEdictEngine
             $snapshot->metrics = $metrics;
             $snapshot->save();
         } else {
-            $latest = \App\Models\UniverseSnapshot::where('universe_id', $universe->id)
+            $latest = \App\Modules\Simulation\Models\UniverseSnapshot::where('universe_id', $universe->id)
                 ->orderByDesc('tick')
                 ->first();
             if ($latest) {
@@ -202,3 +202,4 @@ class WorldEdictEngine
         return array_rand($this->edictDictionary); // random domain
     }
 }
+

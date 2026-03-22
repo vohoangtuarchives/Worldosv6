@@ -2,7 +2,7 @@
 
 namespace App\Modules\Intelligence\Services;
 
-use App\Models\Universe;
+use App\Modules\Simulation\Models\Universe;
 use App\Modules\Intelligence\Domain\Phase\PhaseDetector;
 
 class MacroStateEvolution
@@ -115,3 +115,4 @@ class MacroStateEvolution
         $universe->state_vector = $stateVector;
     }
 }
+

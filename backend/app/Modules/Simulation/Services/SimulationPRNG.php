@@ -2,7 +2,7 @@
 
 namespace App\Modules\Simulation\Services;
 
-use App\Models\Universe;
+use App\Modules\Simulation\Models\Universe;
 
 class SimulationPRNG
 {
@@ -78,3 +78,4 @@ class SimulationPRNG
         return $array[$key];
     }
 }
+

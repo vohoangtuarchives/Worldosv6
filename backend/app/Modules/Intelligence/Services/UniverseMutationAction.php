@@ -2,7 +2,7 @@
 
 namespace App\Modules\Intelligence\Services;
 
-use App\Models\Universe;
+use App\Modules\Simulation\Models\Universe;
 use App\Modules\Simulation\Services\SimulationPRNG;
 
 /**
@@ -40,4 +40,5 @@ class UniverseMutationAction
         return round(max(0.01, min(2.0, $value + $drift)), 4);
     }
 }
+
 

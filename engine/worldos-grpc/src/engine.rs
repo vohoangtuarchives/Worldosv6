@@ -4,8 +4,9 @@
 use worldos_core::{tick_with_cascade, KernelGenome, UniverseState, WorldConfig};
 use crate::{
     RegimeTransition, TrajectoryAnalysisResponse, TrajectoryPoint, WorldConfig as GrpcWorldConfig,
-    ActorSoaOutput, ProcessActorsSoaResponse, ProcessFieldsV7Response, ComputeMetabolismGridResponse,
+    ActorSoaOutput, ProcessActorsSoaResponse, ComputeMetabolismGridResponse,
 };
+use crate::worldos::simulation::{AgentScar, NewActor};
 use rayon::prelude::*;
 use rand::SeedableRng;
 use rand::Rng;
@@ -161,13 +162,14 @@ pub fn run_process_actors_soa(
     tick: u64,
     ids: Vec<u64>,
     zone_ids: Vec<u32>,
-    mut hunger: Vec<f32>,
-    mut energy: Vec<f32>,
+    hunger: Vec<f32>,
+    energy: Vec<f32>,
     fear: Vec<f32>,
-    mut trauma: Vec<f32>,
+    trauma: Vec<f32>,
     _heroic_types: Vec<u32>,
     _lineage_ids: Vec<u64>,
     _memes: Vec<u64>,
+    traits_matrix: Vec<f32>,
     behavior_states: Vec<i32>,
     behavior_graphs: Vec<crate::worldos::simulation::BehaviorGraph>,
     actor_archetypes: Vec<String>,
@@ -231,7 +233,7 @@ pub fn run_process_actors_soa(
     // 2. Build Neighbors Map
     let mut neighbors_map: std::collections::HashMap<u64, Vec<u64>> = std::collections::HashMap::new();
     let mut neighbor_weights: std::collections::HashMap<u64, Vec<f32>> = std::collections::HashMap::new();
-    for edge in social_graph {
+    for edge in &social_graph {
         neighbors_map.entry(edge.source_id as u64).or_default().push(edge.target_id as u64);
         neighbor_weights.entry(edge.source_id as u64).or_default().push(edge.weight);
     }
@@ -264,12 +266,13 @@ pub fn run_process_actors_soa(
             outputs: vec![],
             scars: vec![],
             spawned_actors: vec![],
-            behavior_states_output: vec![],
+            civilization_metrics: None,
+            calamities: vec![],
         };
     }
 
     let chunk_size = 17;
-    let results: Vec<(ActorSoaOutput, Vec<crate::AgentScar>, Vec<crate::NewActor>, i32, f32)> = (0..count)
+    let results: Vec<(ActorSoaOutput, Vec<AgentScar>, Vec<NewActor>, i32, f32)> = (0..count)
         .into_par_iter()
         .map(|i| {
             let id = ids[i];
@@ -346,7 +349,7 @@ pub fn run_process_actors_soa(
                 "Forage" => {
                     let extract_utility = 0.1 + (actor_traits[8] * 0.5 + actor_traits[1] * 0.3);
                     if h_val > 0.3 && extract_utility > 0.4 {
-                        let yield_amt = (0.2 + 0.1 * actor_traits[7]).min(h_val);
+                        let yield_amt = (0.2f32 + 0.1f32 * actor_traits[7]).min(h_val);
                         h_delta -= yield_amt;
                         e_delta -= 0.15;
                         resource_delta = yield_amt;
@@ -378,9 +381,9 @@ pub fn run_process_actors_soa(
                             let mutation = (rng.gen::<f32>() - 0.5) * range;
                             *t = (*t + mutation).clamp(0.0, 1.0);
                         }
-                        actor_spawned.push(crate::NewActor {
-                            parent_id: id as i32,
-                            zone_id: z_id as i32,
+                        actor_spawned.push(NewActor {
+                            parent_id: id,
+                            zone_id: z_id,
                             archetype: archetype.clone(),
                             trait_vector: child_traits,
                         });
@@ -414,7 +417,7 @@ pub fn run_process_actors_soa(
             let saga_fear = (f_val + fear_surge + drift) * fear_mult;
 
             if final_trauma > 0.8 && t_val < 0.6 {
-                actor_scars.push(crate::AgentScar {
+                actor_scars.push(AgentScar {
                     tick,
                     actor_id: id,
                     category: "TRAUMA".to_string(), 
@@ -428,7 +431,7 @@ pub fn run_process_actors_soa(
             }
 
             if final_hunger > 0.95 {
-                actor_scars.push(crate::AgentScar {
+                actor_scars.push(AgentScar {
                     tick,
                     actor_id: id,
                     category: "STARVATION_THREAT".to_string(),
@@ -442,7 +445,7 @@ pub fn run_process_actors_soa(
             }
 
             if resource_delta > 5.0 {
-                actor_scars.push(crate::AgentScar {
+                actor_scars.push(AgentScar {
                     tick,
                     actor_id: id,
                     category: "SUDDEN_WEALTH".to_string(),
@@ -456,8 +459,8 @@ pub fn run_process_actors_soa(
             }
 
             // Phase 13: Belief Evolution
-            let actor_traits = &new_trait_matrix[i * 17..(i + 1) * 17];
-            let belief_count = belief_engine.update_alignments(&[], &[], 0).len(); // Dummy to get count if needed, but better use input
+            let actor_traits = &traits_matrix[i * 17..(i + 1) * 17];
+            let _belief_count = belief_engine.update_alignments(&[], &[], 0).len(); // Dummy to get count if needed, but better use input
             
             // We need the input alignments for this specific actor
             let belief_count_actual = if count > 0 { belief_alignments.len() / count } else { 0 };

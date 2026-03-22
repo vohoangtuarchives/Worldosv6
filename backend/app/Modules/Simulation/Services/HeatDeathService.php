@@ -2,8 +2,8 @@
 
 namespace App\Modules\Simulation\Services;
 
-use App\Models\Demiurge;
-use App\Models\Universe;
+use App\Modules\Narrative\Models\Demiurge;
+use App\Modules\Simulation\Models\Universe;
 use App\Services\Orchestrator\ImplicitOrchestratorService;
 use Illuminate\Support\Facades\Log;
 
@@ -41,10 +41,11 @@ class HeatDeathService
         Demiurge::query()->update(['essence_pool' => \DB::raw('essence_pool * 0.5')]);
 
         // Pick a World to spawn a new Universe in (for simplicity, the first one)
-        $world = \App\Models\World::first();
+        $world = \App\Modules\Simulation\Models\World::first();
         if ($world) {
             $universe = $this->orchestrator->spawnUniverse($world, null, null);
             Log::info("BIG BANG: New Universe #{$universe->id} created to absorb excess divine energy.");
         }
     }
 }
+

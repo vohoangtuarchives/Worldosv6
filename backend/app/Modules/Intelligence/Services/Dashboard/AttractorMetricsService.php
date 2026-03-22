@@ -2,8 +2,8 @@
 
 namespace App\Modules\Intelligence\Services\Dashboard;
 
-use App\Models\AiMemory;
-use App\Models\CivilizationAttractor;
+use App\Modules\Intelligence\Models\AiMemory;
+use App\Modules\SocialGraph\Models\CivilizationAttractor;
 
 class AttractorMetricsService
 {
@@ -52,3 +52,4 @@ class AttractorMetricsService
         ];
     }
 }
+

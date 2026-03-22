@@ -4,7 +4,7 @@ namespace App\Modules\Intelligence\Services;
 
 use App\Modules\Intelligence\Contracts\ActorRepositoryInterface;
 use App\Modules\Intelligence\Actions\SpawnActorAction;
-use App\Models\Universe;
+use App\Modules\Simulation\Models\Universe;
 use App\Services\Narrative\NarrativeGeneratorService;
 use App\Modules\Intelligence\Services\ArchetypeResolverService;
 
@@ -123,3 +123,4 @@ class ActorEvolutionService
         }
     }
 }
+

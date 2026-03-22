@@ -3,7 +3,7 @@
 namespace App\Modules\Intelligence\Services;
 
 use App\Modules\Intelligence\Contracts\ActorRepositoryInterface;
-use App\Models\Universe;
+use App\Modules\Simulation\Models\Universe;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -33,7 +33,7 @@ class CultureEngine
         protected EvolutionPressureService $evolutionPressure
     ) {}
 
-    public function runWithState(\App\Simulation\Runtime\State\WorldState $state, int $currentTick): void
+    public function runWithState(\App\Modules\Simulation\Core\Runtime\State\WorldState $state, int $currentTick): void
     {
         $interval = (int) config('worldos.intelligence.culture_tick_interval', 10);
         if ($interval <= 0 || $currentTick % $interval !== 0) {
@@ -212,3 +212,5 @@ class CultureEngine
         return $out;
     }
 }
+
+

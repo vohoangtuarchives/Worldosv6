@@ -3,7 +3,7 @@
 namespace App\Modules\Intelligence\Services\Dashboard;
 
 use App\Modules\Intelligence\Services\Morphogenesis\EvolutionaryOperator;
-use App\Models\CivilizationAttractor;
+use App\Modules\SocialGraph\Models\CivilizationAttractor;
 
 class ArchetypeMetricsService
 {
@@ -13,7 +13,7 @@ class ArchetypeMetricsService
     public function getEvolutionMetrics(): array
     {
         // We query the DB for real simulation events reflecting evolution and archetypes.
-        $recentMemories = \App\Models\AiMemory::where('category', 'episode')
+        $recentMemories = \App\Modules\Intelligence\Models\AiMemory::where('category', 'episode')
             ->latest()
             ->limit(20)
             ->get();
@@ -59,3 +59,4 @@ class ArchetypeMetricsService
         ];
     }
 }
+

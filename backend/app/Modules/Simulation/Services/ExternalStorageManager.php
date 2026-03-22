@@ -2,7 +2,7 @@
 
 namespace App\Modules\Simulation\Services;
 
-use App\Models\UniverseSnapshot;
+use App\Modules\Simulation\Models\UniverseSnapshot;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 
@@ -83,3 +83,4 @@ class ExternalStorageManager
         Log::info("TREND SYNTHESIS: Processed " . $snapshots->count() . " ticks for Universe [{$universeId}]");
     }
 }
+

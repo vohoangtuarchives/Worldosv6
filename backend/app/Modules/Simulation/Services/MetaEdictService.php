@@ -2,9 +2,9 @@
 
 namespace App\Modules\Simulation\Services;
 
-use App\Models\World;
-use App\Models\Universe;
-use App\Models\UniverseSnapshot;
+use App\Modules\Simulation\Models\World;
+use App\Modules\Simulation\Models\Universe;
+use App\Modules\Simulation\Models\UniverseSnapshot;
 use Illuminate\Support\Facades\Log;
 
 class MetaEdictService
@@ -72,4 +72,5 @@ class MetaEdictService
         $stateVector['active_meta_laws'] = $universeDiplomacy;
     }
 }
+
 

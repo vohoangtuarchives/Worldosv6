@@ -2,7 +2,7 @@
 
 namespace App\Modules\Intelligence\Services;
 
-use App\Models\Universe;
+use App\Modules\Simulation\Models\Universe;
 
 /**
  * Phase 31: Universe Fitness Evaluator.
@@ -30,3 +30,4 @@ class UniverseFitnessEvaluator
         return round($fitness, 4);
     }
 }
+

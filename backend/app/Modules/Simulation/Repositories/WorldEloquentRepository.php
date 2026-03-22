@@ -2,7 +2,7 @@
 
 namespace App\Modules\Simulation\Repositories;
 
-use App\Models\World as WorldModel;
+use App\Modules\Simulation\Models\World as WorldModel;
 use App\Modules\Simulation\Contracts\WorldRepositoryInterface;
 use App\Modules\Simulation\Entities\WorldEntity;
 
@@ -80,3 +80,4 @@ class WorldEloquentRepository implements WorldRepositoryInterface
         );
     }
 }
+

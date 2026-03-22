@@ -2,8 +2,8 @@
 
 namespace App\Modules\Simulation\Services;
 
-use App\Models\Universe;
-use App\Models\UniverseSnapshot;
+use App\Modules\Simulation\Models\Universe;
+use App\Modules\Simulation\Models\UniverseSnapshot;
 use App\Services\Narrative\NarrativeAiService;
 use Illuminate\Support\Facades\Config;
 
@@ -116,3 +116,4 @@ class CivilizationNarrativeInterpreter
         return $template;
     }
 }
+

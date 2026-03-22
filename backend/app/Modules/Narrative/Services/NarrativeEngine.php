@@ -3,7 +3,7 @@
 namespace App\Modules\Narrative\Services;
 
 use App\Modules\Simulation\Entities\UniverseEntity;
-use App\Models\UniverseSnapshot;
+use App\Modules\Simulation\Models\UniverseSnapshot;
 use App\Contracts\LlmNarrativeClientInterface;
 use App\Modules\Narrative\Repositories\ChronicleMemoryRepository;
 use App\Modules\Narrative\Dto\NarrativeProjection;
@@ -155,4 +155,15 @@ PHẢI TRẢ VỀ JSON NGHIÊM NGẶT:
 }
 EOT;
     }
+
+    /**
+     * Legacy compatibility: Generate for a single chronicle.
+     */
+    public function generateForChronicle($chronicle): void {}
+
+    /**
+     * Legacy compatibility: Generate batched chronicles.
+     */
+    public function generateBatched($chronicles, int $windowSize): void {}
 }
+

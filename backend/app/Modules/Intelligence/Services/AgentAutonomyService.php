@@ -2,10 +2,10 @@
 
 namespace App\Modules\Intelligence\Services;
 
-use App\Models\AgentDecision;
-use App\Models\Chronicle;
-use App\Models\Universe;
-use App\Models\UniverseDecisionModel;
+use App\Modules\Intelligence\Models\AgentDecision;
+use App\Modules\Narrative\Models\Chronicle;
+use App\Modules\Simulation\Models\Universe;
+use App\Modules\Simulation\Models\UniverseDecisionModel;
 use App\Modules\Intelligence\Actions\FormContractAction;
 use App\Modules\Intelligence\Actions\MigrateAction;
 use App\Modules\Intelligence\Actions\PropagateMythAction;
@@ -293,3 +293,4 @@ class AgentAutonomyService
         return $vec;
     }
 }
+

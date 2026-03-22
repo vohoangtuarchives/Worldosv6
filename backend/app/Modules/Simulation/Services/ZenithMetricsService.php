@@ -2,7 +2,7 @@
 
 namespace App\Modules\Simulation\Services;
 
-use App\Simulation\Runtime\State\WorldState;
+use App\Modules\Simulation\Core\Runtime\State\WorldState;
 
 /**
  * Phase 72: Zenith Metrics Service 🛰️📊
@@ -78,3 +78,4 @@ class ZenithMetricsService
         return round($jump, 2);
     }
 }
+

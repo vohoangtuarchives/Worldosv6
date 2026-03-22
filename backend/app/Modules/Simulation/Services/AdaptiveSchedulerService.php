@@ -2,8 +2,8 @@
 
 namespace App\Modules\Simulation\Services;
 
-use App\Models\Universe;
-use App\Models\UniverseSnapshot;
+use App\Modules\Simulation\Models\Universe;
+use App\Modules\Simulation\Models\UniverseSnapshot;
 
 /**
  * Điều chỉnh tick rate cho các phân hệ / engine dựa trên Activity Signals.
@@ -116,3 +116,4 @@ class AdaptiveSchedulerService
         return (int) max(1, round($base * $modifier));
     }
 }
+

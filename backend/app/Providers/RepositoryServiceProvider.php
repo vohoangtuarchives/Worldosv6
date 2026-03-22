@@ -13,11 +13,11 @@ class RepositoryServiceProvider extends ServiceProvider
     {
         $this->app->bind(
             \App\Contracts\Repositories\UniverseRepositoryInterface::class,
-            \App\Repositories\UniverseRepository::class
+            \App\Modules\Simulation\Repositories\UniverseRepository::class
         );
         $this->app->bind(
             \App\Contracts\Repositories\BranchEventRepositoryInterface::class,
-            \App\Repositories\BranchEventRepository::class
+            \App\Modules\Simulation\Repositories\BranchEventRepository::class
         );
     }
 

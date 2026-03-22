@@ -3,9 +3,9 @@
 namespace App\Modules\Intelligence\Services\Morphogenesis;
 
 use App\Modules\Intelligence\Entities\Contracts\ActorArchetypeInterface;
-use App\Models\World;
-use App\Models\Universe;
-use App\Models\UniverseSnapshot;
+use App\Modules\Simulation\Models\World;
+use App\Modules\Simulation\Models\Universe;
+use App\Modules\Simulation\Models\UniverseSnapshot;
 
 /**
  * A data-driven archetype instantiated from a Genome.
@@ -63,3 +63,4 @@ class GeneratedArchetype implements ActorArchetypeInterface
         return $this->genome;
     }
 }
+

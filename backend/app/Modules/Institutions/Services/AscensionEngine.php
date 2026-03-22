@@ -2,9 +2,9 @@
 
 namespace App\Modules\Institutions\Services;
 
-use App\Simulation\Runtime\Domain\UniverseState;
-use App\Simulation\Runtime\Events\AscensionEvent;
-use App\Simulation\Runtime\Events\EschatonEvent;
+use App\Modules\Simulation\Core\Runtime\Domain\UniverseState;
+use App\Modules\Simulation\Core\Runtime\Events\AscensionEvent;
+use App\Modules\Simulation\Core\Runtime\Events\EschatonEvent;
 use App\Modules\Simulation\Services\RuleEngine\RuleVmService;
 use function resource_path;
 
@@ -20,7 +20,7 @@ class AscensionEngine
     /**
      * Evaluate cosmic-level events based on current universe state.
      * 
-     * @return \App\Simulation\Runtime\Contracts\SimulationEvent[]
+     * @return \App\Modules\Simulation\Core\Runtime\Contracts\SimulationEvent[]
      */
     public function evaluate(UniverseState $state): array
     {
@@ -83,6 +83,7 @@ class AscensionEngine
         return 1 / (1 + exp(-$k * ($pressure - $x0)));
     }
 }
+
 
 
 

@@ -2,12 +2,12 @@
 
 namespace App\Modules\Institutions\Actions;
 
-use App\Models\Actor;
-use App\Models\ActorEvent;
-use App\Models\Chronicle;
-use App\Models\BranchEvent;
-use App\Models\Universe;
-use App\Models\SupremeEntity as SupremeEntityModel;
+use App\Modules\Intelligence\Models\Actor;
+use App\Modules\Intelligence\Models\ActorEvent;
+use App\Modules\Narrative\Models\Chronicle;
+use App\Modules\Simulation\Models\BranchEvent;
+use App\Modules\Simulation\Models\Universe;
+use App\Modules\Intelligence\Models\SupremeEntity as SupremeEntityModel;
 use App\Modules\Institutions\Contracts\SupremeEntityRepositoryInterface;
 use App\Modules\Institutions\Entities\SupremeEntity;
 
@@ -113,3 +113,4 @@ class SpawnSupremeEntityAction
         );
     }
 }
+

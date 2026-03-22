@@ -2,9 +2,9 @@
 
 namespace App\Modules\Simulation\Services;
 
-use App\Models\Universe;
-use App\Models\LegacyVault;
-use App\Models\InstitutionalEntity;
+use App\Modules\Simulation\Models\Universe;
+use App\Modules\Narrative\Models\LegacyVault;
+use App\Modules\SocialGraph\Models\InstitutionalEntity;
 
 /**
  * VaultService – Bảo tàng Di sản Vũ trụ
@@ -49,4 +49,5 @@ class VaultService
             ->toArray();
     }
 }
+
 

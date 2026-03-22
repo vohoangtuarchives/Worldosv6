@@ -2,7 +2,7 @@
 
 namespace App\Modules\Simulation\Services;
 
-use App\Models\Universe;
+use App\Modules\Simulation\Models\Universe;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -19,7 +19,7 @@ class ResonanceAuditorService
         // Deprecated
     }
 
-    public function runWithState(\App\Simulation\Runtime\State\WorldState $state, int $currentTick): void
+    public function runWithState(\App\Modules\Simulation\Core\Runtime\State\WorldState $state, int $currentTick): void
     {
         $coherence = (float) $state->get('structural_coherence', 0.5);
         
@@ -38,4 +38,6 @@ class ResonanceAuditorService
         }
     }
 }
+
+
 

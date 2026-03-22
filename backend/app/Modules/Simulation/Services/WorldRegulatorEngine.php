@@ -2,9 +2,9 @@
 
 namespace App\Modules\Simulation\Services;
 
-use App\Models\World;
-use App\Models\Universe;
-use App\Actions\Simulation\WorldAxiomAction;
+use App\Modules\Simulation\Models\World;
+use App\Modules\Simulation\Models\Universe;
+use App\Modules\Simulation\Actions\WorldAxiomAction;
 use Illuminate\Support\Facades\Log;
 
 class WorldRegulatorEngine
@@ -70,7 +70,7 @@ class WorldRegulatorEngine
             }
         }
 
-        \App\Models\Chronicle::create([
+        \App\Modules\Narrative\Models\Chronicle::create([
             'universe_id' => $u->id,
             'from_tick' => (int)$u->current_tick,
             'to_tick' => (int)$u->current_tick,
@@ -82,3 +82,5 @@ class WorldRegulatorEngine
         ]);
     }
 }
+
+

@@ -87,6 +87,7 @@ class GrpcSimulationEngineClient implements SimulationEngineClientInterface
                 'metrics' => json_decode($snapshot->getMetricsJson(), true),
                 'sci' => $snapshot->getSci(),
                 'instability_gradient' => $snapshot->getInstabilityGradient(),
+                'global_fields' => method_exists($snapshot, 'getGlobalFieldsJson') ? json_decode($snapshot->getGlobalFieldsJson(), true) : [],
             ] : null,
         ];
     }

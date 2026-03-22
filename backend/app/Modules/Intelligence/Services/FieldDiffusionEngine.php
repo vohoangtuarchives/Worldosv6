@@ -2,7 +2,7 @@
 
 namespace App\Modules\Intelligence\Services;
 
-use App\Simulation\Services\TopologyResolver;
+use App\Modules\Simulation\Core\Services\TopologyResolver;
 
 /**
  * Phase 29: Field Diffusion Engine.
@@ -69,3 +69,4 @@ class FieldDiffusionEngine
         }
     }
 }
+

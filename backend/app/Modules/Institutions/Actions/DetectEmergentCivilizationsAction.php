@@ -2,8 +2,8 @@
 
 namespace App\Modules\Institutions\Actions;
 
-use App\Models\Universe;
-use App\Models\UniverseSnapshot;
+use App\Modules\Simulation\Models\Universe;
+use App\Modules\Simulation\Models\UniverseSnapshot;
 use App\Modules\Institutions\Contracts\InstitutionalRepositoryInterface;
 use App\Modules\Institutions\Entities\InstitutionalEntity;
 use Illuminate\Support\Facades\Log;
@@ -117,3 +117,4 @@ class DetectEmergentCivilizationsAction
         $this->spawnAction->handle($universe, $primaryZone, $tick, 'CIVILIZATION');
     }
 }
+

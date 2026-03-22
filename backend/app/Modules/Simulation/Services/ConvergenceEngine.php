@@ -2,10 +2,10 @@
 
 namespace App\Modules\Simulation\Services;
 
-use App\Models\Universe;
-use App\Models\UniverseInteraction;
-use App\Models\Chronicle;
-use App\Actions\Simulation\MergeUniverseAction;
+use App\Modules\Simulation\Models\Universe;
+use App\Modules\Simulation\Models\UniverseInteraction;
+use App\Modules\Narrative\Models\Chronicle;
+use App\Modules\Simulation\Actions\MergeUniverseAction;
 use App\Modules\Simulation\Services\RuleEngine\RuleVmService;
 use function config;
 use function app;
@@ -85,7 +85,7 @@ class ConvergenceEngine
         ];
 
         $dslPath = 'legend/fate_bifurcation';
-        $tempState = \App\Simulation\Runtime\State\WorldState::fromArray(array_merge(
+        $tempState = \App\Modules\Simulation\Core\Runtime\State\WorldState::fromArray(array_merge(
             ['universe_id' => $a->id],
             $vmState
         ));
@@ -145,7 +145,7 @@ class ConvergenceEngine
         // Evaluate DSL for Omega Point
         $vmState = ['entropy' => $entropy];
         $dslPath = 'legend/fate_bifurcation';
-        $tempState = \App\Simulation\Runtime\State\WorldState::fromArray(array_merge(
+        $tempState = \App\Modules\Simulation\Core\Runtime\State\WorldState::fromArray(array_merge(
             ['universe_id' => $universe->id],
             $vmState
         ));
@@ -167,6 +167,9 @@ class ConvergenceEngine
         }
     }
 }
+
+
+
 
 
 

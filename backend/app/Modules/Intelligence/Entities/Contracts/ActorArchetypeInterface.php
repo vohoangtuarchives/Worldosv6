@@ -2,9 +2,9 @@
 
 namespace App\Modules\Intelligence\Entities\Contracts;
 
-use App\Models\World;
-use App\Models\Universe;
-use App\Models\UniverseSnapshot;
+use App\Modules\Simulation\Models\World;
+use App\Modules\Simulation\Models\Universe;
+use App\Modules\Simulation\Models\UniverseSnapshot;
 
 interface ActorArchetypeInterface
 {
@@ -34,3 +34,4 @@ interface ActorArchetypeInterface
      */
     public function applyImpact(Universe $universe, UniverseSnapshot $snapshot, array $winnerAgent): array;
 }
+

@@ -2,7 +2,7 @@
 
 namespace App\Contracts;
 
-use App\Models\UniverseSnapshot;
+use App\Modules\Simulation\Models\UniverseSnapshot;
 
 /**
  * doc §13: merge when similarity between two universes > threshold.
@@ -22,3 +22,4 @@ interface UniverseSimilarityServiceInterface
      */
     public function getMergeCandidate(UniverseSnapshot $snapshot): ?array;
 }
+

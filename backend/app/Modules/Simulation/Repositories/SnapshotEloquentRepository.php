@@ -2,7 +2,7 @@
 
 namespace App\Modules\Simulation\Repositories;
 
-use App\Models\UniverseSnapshot;
+use App\Modules\Simulation\Models\UniverseSnapshot;
 use App\Modules\Simulation\Contracts\SnapshotRepositoryInterface;
 use App\Modules\Simulation\Entities\SnapshotEntity;
 
@@ -74,3 +74,4 @@ class SnapshotEloquentRepository implements SnapshotRepositoryInterface
         );
     }
 }
+

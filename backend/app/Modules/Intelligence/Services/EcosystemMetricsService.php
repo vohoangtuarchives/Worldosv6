@@ -2,7 +2,7 @@
 
 namespace App\Modules\Intelligence\Services;
 
-use App\Models\Universe;
+use App\Modules\Simulation\Models\Universe;
 
 /**
  * Ecosystem metrics for Ecological Collapse Engine: population, species, resources, biodiversity, instability.
@@ -117,3 +117,4 @@ class EcosystemMetricsService
         return min(1.0, $h / $maxH);
     }
 }
+

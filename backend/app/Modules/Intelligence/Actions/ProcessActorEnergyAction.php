@@ -6,7 +6,7 @@ use App\Contracts\Repositories\UniverseRepositoryInterface;
 use App\Modules\Intelligence\Contracts\ActorRepositoryInterface;
 use App\Modules\Intelligence\Entities\ActorEntity;
 use App\Modules\Intelligence\Domain\Rng\SimulationRng;
-use App\Models\Universe;
+use App\Modules\Simulation\Models\Universe;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -23,7 +23,7 @@ class ProcessActorEnergyAction
         private \App\Modules\Intelligence\Services\EvolutionPressureService $evolutionPressure
     ) {}
 
-    public function runWithState(\App\Simulation\Runtime\State\WorldState $state, array $simulationResponse): void
+    public function runWithState(\App\Modules\Simulation\Core\Runtime\State\WorldState $state, array $simulationResponse): void
     {
         $actors = $state->getActorEntities();
         if (empty($actors)) return;
@@ -144,7 +144,7 @@ class ProcessActorEnergyAction
                 if (!isset($zone['state'])) $zone['state'] = [];
                 $foodKey = array_key_exists('food', $zone['state']) ? 'food' : 'resources';
                 $current = (float) ($zone['state'][$foodKey] ?? 0);
-                $biomeFactor = \App\Simulation\Engines\Biological\EcologicalPhaseTransitionEngine::resourceRegenFactorForZone($zone['state']);
+                $biomeFactor = \App\Modules\Simulation\Core\Engines\Biological\EcologicalPhaseTransitionEngine::resourceRegenFactorForZone($zone['state']);
                 $zone['state'][$foodKey] = $current + $resourceRegenRate * $ticks * $biomeFactor;
             }
         }
@@ -160,7 +160,7 @@ class ProcessActorEnergyAction
         // Deprecated
     }
 
-    private function getZonesFromState(\App\Simulation\Runtime\State\WorldState $state): array
+    private function getZonesFromState(\App\Modules\Simulation\Core\Runtime\State\WorldState $state): array
     {
         return $state->get('zones', []);
     }
@@ -235,3 +235,5 @@ class ProcessActorEnergyAction
         return $out;
     }
 }
+
+

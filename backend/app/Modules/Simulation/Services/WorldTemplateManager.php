@@ -2,8 +2,8 @@
 
 namespace App\Modules\Simulation\Services;
 
-use App\Models\Universe;
-use App\Models\World;
+use App\Modules\Simulation\Models\Universe;
+use App\Modules\Simulation\Models\World;
 
 class WorldTemplateManager
 {
@@ -49,4 +49,5 @@ class WorldTemplateManager
         $world->save();
     }
 }
+
 

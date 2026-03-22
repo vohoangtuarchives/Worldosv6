@@ -2,7 +2,7 @@
 
 namespace App\Modules\Simulation\Services;
 
-use App\Simulation\Runtime\State\WorldState;
+use App\Modules\Simulation\Core\Runtime\State\WorldState;
 
 /**
  * Phase 59: Advanced Observer Spectrum Service (V8+) 👁️🌈
@@ -68,4 +68,5 @@ class ObserverSpectrumService
         ];
     }
 }
+
 

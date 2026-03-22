@@ -2,9 +2,9 @@
 
 namespace App\Modules\Intelligence\Services\Consciousness;
 
-use App\Simulation\Runtime\State\WorldState;
+use App\Modules\Simulation\Core\Runtime\State\WorldState;
 use App\Modules\Simulation\Services\RuleEngine\RuleVmService;
-use App\Simulation\SimulationEventBus;
+use App\Modules\Simulation\Core\SimulationEventBus;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -64,6 +64,7 @@ class CollectiveConsciousnessEngine
         return round($totalResonance / count($actors), 4);
     }
 }
+
 
 
 

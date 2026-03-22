@@ -2,7 +2,7 @@
 
 namespace App\Modules\Simulation\Repositories;
 
-use App\Models\ExtradimensionalRelic;
+use App\Modules\Narrative\Models\ExtradimensionalRelic;
 use App\Modules\Simulation\Contracts\RelicRepositoryInterface;
 use App\Modules\Simulation\Entities\RelicEntity;
 use Illuminate\Support\Collection;
@@ -54,3 +54,4 @@ class RelicEloquentRepository implements RelicRepositoryInterface
         );
     }
 }
+

@@ -2,7 +2,7 @@
 
 namespace App\Modules\Intelligence\Services;
 
-use App\Models\Universe;
+use App\Modules\Simulation\Models\Universe;
 
 /**
  * Phase 43: Institutional Domain Manager.
@@ -99,3 +99,4 @@ class InstitutionManager
         return $mods;
     }
 }
+

@@ -2,8 +2,8 @@
 
 namespace App\Modules\Simulation\Services;
 
-use App\Models\Universe;
-use App\Models\UniverseBridge;
+use App\Modules\Simulation\Models\Universe;
+use App\Modules\Simulation\Models\UniverseBridge;
 
 class ConvergenceScoreService
 {
@@ -101,4 +101,5 @@ class ConvergenceScoreService
         return $count > 0 ? $total / $count : null;
     }
 }
+
 

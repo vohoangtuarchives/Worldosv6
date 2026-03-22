@@ -208,8 +208,8 @@ services:
   # Engine (Rust)
   engine:
     build:
-      context: ../engine
-      dockerfile: ../deployment/engine.prod.Dockerfile
+      context: ..
+      dockerfile: deployment/engine.prod.Dockerfile
       provenance: false
     restart: always
     environment:

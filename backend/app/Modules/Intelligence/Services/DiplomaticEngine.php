@@ -2,7 +2,7 @@
 
 namespace App\Modules\Intelligence\Services;
 
-use App\Models\Universe;
+use App\Modules\Simulation\Models\Universe;
 
 /**
  * Phase 27: Diplomatic Engine.
@@ -75,3 +75,4 @@ class DiplomaticEngine
         return sqrt($sum);
     }
 }
+

@@ -2,7 +2,7 @@
 
 namespace App\Modules\Institutions\Listeners;
 
-use App\Events\Simulation\UniverseSimulationPulsed;
+use App\Modules\Simulation\Events\UniverseSimulationPulsed;
 use App\Modules\Institutions\Services\InstitutionEvolutionService;
 use App\Modules\Institutions\Services\DiplomaticResonanceEngine;
 
@@ -30,3 +30,4 @@ class ProcessInstitutionalFramework
         $this->socialDynamicsEngine->advance($event->universe, (int)$event->snapshot->tick);
     }
 }
+

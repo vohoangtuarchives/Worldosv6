@@ -2,9 +2,9 @@
 
 namespace App\Modules\Institutions\Services;
 
-use App\Models\SupremeEntity as SupremeEntityModel;
-use App\Models\Universe;
-use App\Models\UniverseSnapshot;
+use App\Modules\Intelligence\Models\SupremeEntity as SupremeEntityModel;
+use App\Modules\Simulation\Models\Universe;
+use App\Modules\Simulation\Models\UniverseSnapshot;
 use App\Modules\Institutions\Contracts\SupremeEntityRepositoryInterface;
 use App\Modules\Institutions\Actions\SpawnSupremeEntityAction;
 use App\Modules\Institutions\Actions\AscendHeroAction;
@@ -123,7 +123,7 @@ class SupremeEntityEvolutionService
         if (isset($state['civilization']['total_population'])) {
             return (float) $state['civilization']['total_population'];
         }
-        return (float) \App\Models\Actor::where('universe_id', $universe->id)->where('is_alive', true)->count();
+        return (float) \App\Modules\Intelligence\Models\Actor::where('universe_id', $universe->id)->where('is_alive', true)->count();
     }
 
     protected function applyCosmicImpact(Universe $universe, UniverseSnapshot $snapshot, array &$metrics): void
@@ -165,3 +165,4 @@ class SupremeEntityEvolutionService
         $snapshot->metrics = $metrics;
     }
 }
+

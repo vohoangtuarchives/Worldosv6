@@ -2,9 +2,9 @@
 
 namespace App\Modules\Intelligence\Actions;
 
-use App\Models\Universe;
+use App\Modules\Simulation\Models\Universe;
 use App\Modules\Intelligence\Services\CollectiveUnconsciousService;
-use App\Events\Intelligence\CollectiveUnconsciousShifted;
+use App\Modules\Intelligence\Events\CollectiveUnconsciousShifted;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -66,3 +66,5 @@ class UpdateCollectiveUnconsciousAction
         return false;
     }
 }
+
+

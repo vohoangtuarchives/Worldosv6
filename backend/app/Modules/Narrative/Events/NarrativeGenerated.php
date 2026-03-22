@@ -2,7 +2,7 @@
 
 namespace App\Modules\Narrative\Events;
 
-use App\Models\Chronicle;
+use App\Modules\Narrative\Models\Chronicle;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
@@ -20,3 +20,4 @@ class NarrativeGenerated
         public readonly array $signals
     ) {}
 }
+

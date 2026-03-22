@@ -30,7 +30,7 @@ impl TechnologyEngine {
             let logic = trait_matrix[i * 17 + 10]; // Logic trait
             let intelligence = trait_matrix[i * 17 + 1]; // Intelligence trait (Ambition/Intellect)
             
-            for (j, tech) in self.definitions.iter().enumerate() {
+            for (j, _tech) in self.definitions.iter().enumerate() {
                 let current_lv = new_tech_levels[i * tech_count + j];
                 if current_lv >= 1.0 { continue; }
 

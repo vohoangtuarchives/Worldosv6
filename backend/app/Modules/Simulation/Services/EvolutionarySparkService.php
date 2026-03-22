@@ -2,9 +2,9 @@
 
 namespace App\Modules\Simulation\Services;
 
-use App\Models\HistoricalFact;
-use App\Models\Universe;
-use App\Models\UniverseSnapshot;
+use App\Modules\Narrative\Models\HistoricalFact;
+use App\Modules\Simulation\Models\Universe;
+use App\Modules\Simulation\Models\UniverseSnapshot;
 use App\Modules\Intelligence\Domain\Rng\SimulationRng;
 use Illuminate\Support\Facades\Log;
 
@@ -71,3 +71,4 @@ class EvolutionarySparkService
         Log::info("EvolutionarySpark: Injected {$category} spark into Universe #{$universe->id} at Tick #{$tick}");
     }
 }
+

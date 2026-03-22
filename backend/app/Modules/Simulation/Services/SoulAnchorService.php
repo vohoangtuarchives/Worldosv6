@@ -2,8 +2,8 @@
 
 namespace App\Modules\Simulation\Services;
 
-use App\Models\LegendaryAgent;
-use App\Models\Universe;
+use App\Modules\Intelligence\Models\LegendaryAgent;
+use App\Modules\Simulation\Models\Universe;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -56,7 +56,7 @@ class SoulAnchorService
             
             Log::info("REINCARNATION: Transcendental Legend [{$agent->name}] has been reborn in Universe #{$stableUniverse->id}.");
             
-            \App\Models\Chronicle::create([
+            \App\Modules\Narrative\Models\Chronicle::create([
                 'universe_id' => $stableUniverse->id,
                 'from_tick' => $stableUniverse->current_tick,
                 'to_tick' => $stableUniverse->current_tick,
@@ -69,3 +69,4 @@ class SoulAnchorService
         }
     }
 }
+

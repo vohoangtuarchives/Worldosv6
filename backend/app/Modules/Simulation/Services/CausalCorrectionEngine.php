@@ -2,10 +2,10 @@
 
 namespace App\Modules\Simulation\Services;
 
-use App\Models\Universe;
-use App\Models\UniverseSnapshot;
-use App\Models\Chronicle;
-use App\Models\SupremeEntity;
+use App\Modules\Simulation\Models\Universe;
+use App\Modules\Simulation\Models\UniverseSnapshot;
+use App\Modules\Narrative\Models\Chronicle;
+use App\Modules\Intelligence\Models\SupremeEntity;
 use App\Modules\Simulation\Services\RuleEngine\RuleVmService;
 use Illuminate\Support\Facades\Log;
 use function resource_path;
@@ -27,7 +27,7 @@ class CausalCorrectionEngine
         // Bridge to manifold
     }
 
-    public function runWithState(\App\Simulation\Runtime\State\WorldState $state, int $tick): void
+    public function runWithState(\App\Modules\Simulation\Core\Runtime\State\WorldState $state, int $tick): void
     {
         $entities = $state->getSupremeEntities();
         if (empty($entities)) return;
@@ -81,6 +81,8 @@ class CausalCorrectionEngine
         Log::info("Causal Correction executed for Entity [{$entity->name}] in Universe {$universe->id}");
     }
 }
+
+
 
 
 

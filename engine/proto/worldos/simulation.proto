@@ -86,6 +86,7 @@ message UniverseSnapshot {
   string metrics_json = 6;
   double sci = 7;
   double instability_gradient = 8;
+  string global_fields_json = 9;
 }
 
 message BatchAdvanceRequest {

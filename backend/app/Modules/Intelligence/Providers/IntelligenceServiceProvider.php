@@ -48,10 +48,32 @@ class IntelligenceServiceProvider extends ServiceProvider
 
         $this->app->singleton(\App\Modules\Intelligence\Services\ActorEvolutionService::class);
         $this->app->singleton(\App\Modules\Intelligence\Services\AgentAutonomyService::class);
+        $this->app->singleton(\App\Modules\Intelligence\Services\AI\AnalyticalAiService::class);
+        $this->app->singleton(\App\Modules\Intelligence\Services\AI\SearchAiService::class);
     }
 
     public function boot(): void
     {
-        // Future: Register event listeners or routes
+        $this->loadRoutesFrom(__DIR__ . '/../routes/api.php');
+
+        $events = $this->app->make(\Illuminate\Contracts\Events\Dispatcher::class);
+        $events->listen(
+            \App\Modules\Simulation\Core\Events\ActorBornEvent::class,
+            \App\Modules\Intelligence\Listeners\ActorBornEventListener::class
+        );
+        $events->listen(
+            \App\Modules\Simulation\Core\Events\ActorDiedEvent::class,
+            \App\Modules\Intelligence\Listeners\ActorDiedEventListener::class
+        );
+
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                \App\Modules\Intelligence\Console\Commands\ArenaRunCommand::class,
+                \App\Modules\Intelligence\Console\Commands\ArenaSimulateCommand::class,
+                \App\Modules\Intelligence\Console\Commands\DiscoveryRunGenerationCommand::class,
+                \App\Modules\Intelligence\Console\Commands\RunAiAnalysis::class,
+                \App\Modules\Intelligence\Console\Commands\KafkaActorStateConsumeCommand::class,
+            ]);
+        }
     }
 }

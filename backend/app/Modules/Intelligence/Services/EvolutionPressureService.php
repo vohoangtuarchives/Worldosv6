@@ -2,7 +2,7 @@
 
 namespace App\Modules\Intelligence\Services;
 
-use App\Models\Universe;
+use App\Modules\Simulation\Models\Universe;
 
 /**
  * Computes environment pressure vector from universe state (zones).
@@ -131,3 +131,4 @@ class EvolutionPressureService
         return 'S' . substr(md5(json_encode($vals)), 0, 8);
     }
 }
+

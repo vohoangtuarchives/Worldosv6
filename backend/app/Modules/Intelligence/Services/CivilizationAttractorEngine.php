@@ -2,7 +2,7 @@
 
 namespace App\Modules\Intelligence\Services;
 
-use App\Models\UniverseSnapshot;
+use App\Modules\Simulation\Models\UniverseSnapshot;
 use App\Modules\Intelligence\Entities\Contracts\ActorArchetypeInterface;
 
 /**
@@ -111,3 +111,4 @@ class CivilizationAttractorEngine
         ];
     }
 }
+

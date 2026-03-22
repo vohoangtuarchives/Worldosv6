@@ -219,7 +219,12 @@ export function buildNarrativeFacts(params: {
     }
   }
 
-  const chronicleFacts: NarrativeFact[] = chronicles.slice(0, 6).map((chronicle) => ({
+  const validChronicles = chronicles.filter((c) => {
+    const text = chronicleDescription(c);
+    return !text?.includes("[Merged into Loom Output]");
+  });
+
+  const chronicleFacts: NarrativeFact[] = validChronicles.slice(0, 6).map((chronicle) => ({
     id: `chronicle-${chronicle.id}`,
     tick: chronicleTick(chronicle),
     title: chronicle.event_type ? titleCase(chronicle.event_type) : "Sự kiện thế giới",

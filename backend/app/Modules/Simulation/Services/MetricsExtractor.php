@@ -2,7 +2,7 @@
 
 namespace App\Modules\Simulation\Services;
 
-use App\Models\UniverseSnapshot;
+use App\Modules\Simulation\Models\UniverseSnapshot;
 
 class MetricsExtractor
 {
@@ -28,4 +28,5 @@ class MetricsExtractor
         ];
     }
 }
+
 

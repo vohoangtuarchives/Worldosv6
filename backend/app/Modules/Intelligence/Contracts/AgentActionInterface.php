@@ -2,7 +2,7 @@
 
 namespace App\Modules\Intelligence\Contracts;
 
-use App\Models\Universe;
+use App\Modules\Simulation\Models\Universe;
 use App\Modules\Intelligence\Domain\Policy\ActionResult;
 use App\Modules\Intelligence\Domain\Policy\UniverseContext;
 use App\Modules\Intelligence\Entities\ActorEntity;
@@ -26,3 +26,4 @@ interface AgentActionInterface
         int             $tick,
     ): ActionResult;
 }
+

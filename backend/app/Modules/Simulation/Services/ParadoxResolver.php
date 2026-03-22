@@ -2,8 +2,8 @@
 
 namespace App\Modules\Simulation\Services;
 
-use App\Models\Universe;
-use App\Models\Chronicle;
+use App\Modules\Simulation\Models\Universe;
+use App\Modules\Narrative\Models\Chronicle;
 use App\Services\Narrative\NarrativeAiService;
 use Illuminate\Support\Facades\Log;
 
@@ -51,4 +51,5 @@ class ParadoxResolver
         ];
     }
 }
+
 

@@ -107,4 +107,23 @@ final class TraitVector
     {
         return new self(array_fill(0, 17, 0.5));
     }
+
+    /**
+     * Lai ghép 2 TraitVector với nhiễu đột biến (Mutation Noise).
+     *
+     * @param TraitVector $other Đối tác lai ghép.
+     * @param float $noise Độ lệch ngẫu nhiên (ví dụ -0.1 đến 0.1).
+     * @return self
+     */
+    public function blend(self $other, float $noise): self
+    {
+        $newTraits = [];
+        for ($i = 0; $i < 17; $i++) {
+            // Trung bình cộng + nhiễu
+            $val = ($this->get($i) + $other->get($i)) / 2 + $noise;
+            $newTraits[$i] = (float) max(0.0, min(1.0, $val));
+        }
+
+        return new self($newTraits);
+    }
 }

@@ -30,19 +30,48 @@ async def psychologist_agent(state: NarrativeState, config: Dict[str, Any] = Non
     """
     print("--- RUNNING AGENT: THE PSYCHOLOGIST ---")
     
-    outline = state.get("historical_outline", "")
+    outline_data = state.get("historical_outline", {})
+    if isinstance(outline_data, dict):
+        import json
+        outline = json.dumps(outline_data, ensure_ascii=False, indent=2)
+    else:
+        outline = str(outline_data)
+        
+    chronicles = state.get("raw_chronicles", [])
     
-    # 1. Quét tìm các Character ID tiềm năng từ Outline (Giả sử sử dụng Regex hoặc NER để lấy danh sách Agent id, ở đây dùng placeholder flow)
-    # Trong thực tế, Historian nên return một mảng "involved_agents" trong JSON
-    # Hiện tại chúng ta giả lập data hoặc gọi thử 1 ID tùy ý
-    
-    # GỌI API WORLDOS: /api/loom/v1/narrative/characters/{id}
-    # backend_url = os.getenv("WORLDOS_API_URL", "http://backend:9000/api")
-    # fetched_profiles = {}
-    # async with httpx.AsyncClient() as client:
-    #    ... fetch ...
-    
-    fetched_profiles = {"mocked": "Character data will be injected here using API"}
+    # Trích xuất dữ liệu tâm lý học (Numerical 18D Vectors & World State) từ raw_payload
+    fetched_profiles = {}
+    for c in chronicles:
+        raw = c.get("raw_payload") or {}
+        if isinstance(raw, str):
+            try:
+                import json
+                raw = json.loads(raw)
+            except:
+                raw = {}
+                
+        if isinstance(raw, dict) and "context" in raw:
+            ctx = raw.get("context", {})
+            if "vm_state" in ctx:
+                tick = c.get("from_tick", "unknown")
+                archetype = ctx.get("archetype", "unknown_actor")
+                
+                # Bác sĩ tâm lý được quyền "nhìn thấu" toàn bộ chỉ số toán học
+                fetched_profiles[f"Tick_{tick}_{archetype}"] = {
+                    "traits_18d_vector": ctx["vm_state"].get("traits"),
+                    "metrics": {
+                        "energy": ctx["vm_state"].get("energy"),
+                        "starving": ctx["vm_state"].get("starving"),
+                        "is_heroic": ctx["vm_state"].get("is_heroic")
+                    },
+                    "environmental_pressure": {
+                        "collapse_active": ctx["vm_state"].get("collapse_active"),
+                        "causal_integrity": ctx["vm_state"].get("causal_integrity")
+                    }
+                }
+                
+    if not fetched_profiles:
+        fetched_profiles = {"warning": "Không tìm thấy dữ liệu số học bên trong raw_payload. Có thể các event này tạo ra từ phiên bản engine cũ."}
     
     # 2. Xử lý thông qua LLM
     provider = "local" # Default The Psychologist uses Anthropic for better analytical reasoning

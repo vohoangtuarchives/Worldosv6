@@ -3,11 +3,11 @@
 namespace App\Modules\Simulation\Services;
 
 use App\Contracts\SimulationEngineClientInterface;
-use App\Models\Universe;
-use App\Models\BranchEvent;
-use App\Repositories\UniverseSnapshotRepository;
+use App\Modules\Simulation\Models\Universe;
+use App\Modules\Simulation\Models\BranchEvent;
+use App\Modules\Simulation\Repositories\UniverseSnapshotRepository;
 use App\Modules\Simulation\Services\CultureDiffusionService;
-use App\Simulation\Engines\Meta\DecisionEngine;
+use App\Modules\Simulation\Core\Engines\Meta\DecisionEngine;
 use App\Modules\Simulation\Services\InstitutionalEngine;
 
 class UniverseRuntimeService
@@ -21,11 +21,11 @@ class UniverseRuntimeService
         protected ?InstitutionalEngine $institutionalEngine = null,
         protected ?MultiverseInteractionService $multiverseInteraction = null,
         protected ?AutonomyEngine $autonomyEngine = null,
-        protected ?\App\Actions\Simulation\SocialContractEvolutionAction $evolutionAction = null,
+        protected ?\App\Modules\Intelligence\Actions\SocialContractEvolutionAction $evolutionAction = null,
         protected ?GreatFilterEngine $greatFilter = null,
         protected ?WorldWillEngine $worldWill = null,
-        protected ?\App\Actions\Simulation\AscensionAction $ascensionAction = null,
-        protected ?\App\Actions\Simulation\CelestialEngineeringAction $celestialEngineering = null,
+        protected ?\App\Modules\Narrative\Actions\AscensionAction $ascensionAction = null,
+        protected ?\App\Modules\Narrative\Actions\CelestialEngineeringAction $celestialEngineering = null,
         protected ?ConvergenceEngine $convergenceEngine = null
     ) {}
 
@@ -34,7 +34,7 @@ class UniverseRuntimeService
      */
     public function advance(int $universeId, int $ticks): array
     {
-        return app(\App\Actions\Simulation\AdvanceSimulationAction::class)->execute($universeId, $ticks);
+        return app(\App\Modules\Simulation\Actions\AdvanceSimulationAction::class)->execute($universeId, $ticks);
     }
 
     /**
@@ -65,5 +65,8 @@ class UniverseRuntimeService
         ]);
     }
 }
+
+
+
 
 

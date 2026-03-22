@@ -2,11 +2,11 @@
 
 namespace App\Modules\Simulation\Services;
 
-use App\Models\Universe;
-use App\Models\BranchEvent;
-use App\Models\Chronicle;
+use App\Modules\Simulation\Models\Universe;
+use App\Modules\Simulation\Models\BranchEvent;
+use App\Modules\Narrative\Models\Chronicle;
 use App\Modules\Simulation\Services\RuleEngine\RuleVmService;
-use App\Simulation\Runtime\State\WorldState;
+use App\Modules\Simulation\Core\Runtime\State\WorldState;
 use Illuminate\Support\Facades\Log;
 use function resource_path;
 use function file_get_contents;
@@ -27,7 +27,7 @@ class AnomalyGeneratorService
         protected RuleVmService $ruleVm
     ) {}
 
-    public function runWithState(\App\Simulation\Runtime\State\WorldState $state, int $tick): void
+    public function runWithState(\App\Modules\Simulation\Core\Runtime\State\WorldState $state, int $tick): void
     {
         $this->ruleVm->evaluateAndApplyWithState($state, 'simulation/anomalies', $tick);
         Log::debug("AnomalyGeneratorService: Universe {$state->get('universe_id')} anomalies evaluated at tick {$tick}");
@@ -214,6 +214,8 @@ class AnomalyGeneratorService
         ]);
     }
 }
+
+
 
 
 

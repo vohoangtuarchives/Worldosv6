@@ -2,7 +2,7 @@
 
 namespace App\Modules\Simulation\Services;
 
-use App\Models\UniverseSnapshot;
+use App\Modules\Simulation\Models\UniverseSnapshot;
 
 /**
  * Computes simulation health metrics from snapshot state (doc 21 §4c).
@@ -133,4 +133,5 @@ final class SimulationMetricsLogger
         return array_sum($sqDiffs) / count($values);
     }
 }
+
 

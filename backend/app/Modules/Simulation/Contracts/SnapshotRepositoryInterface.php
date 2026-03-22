@@ -2,7 +2,7 @@
 
 namespace App\Modules\Simulation\Contracts;
 
-use App\Models\Universe;
+use App\Modules\Simulation\Models\Universe;
 use App\Modules\Simulation\Entities\SnapshotEntity;
 
 /**
@@ -30,3 +30,4 @@ interface SnapshotRepositoryInterface
      */
     public function create(array $attributes): SnapshotEntity;
 }
+

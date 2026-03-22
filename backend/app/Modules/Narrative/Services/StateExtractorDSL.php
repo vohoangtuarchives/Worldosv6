@@ -2,7 +2,7 @@
 
 namespace App\Modules\Narrative\Services;
 
-use App\Simulation\Support\RuleEngine;
+use App\Modules\Simulation\Core\Support\RuleEngine;
 
 /**
  * Encapsulates the logic to extract "Narrative Tokens" from raw simulation data.
@@ -85,3 +85,4 @@ class StateExtractorDSL
         ];
     }
 }
+

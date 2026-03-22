@@ -2,13 +2,13 @@
 
 namespace App\Modules\Intelligence\Actions;
 
-use App\Models\Universe;
+use App\Modules\Simulation\Models\Universe;
 use App\Modules\Intelligence\Contracts\AgentActionInterface;
 use App\Modules\Intelligence\Domain\Policy\ActionResult;
 use App\Modules\Intelligence\Domain\Policy\UniverseContext;
 use App\Modules\Intelligence\Entities\ActorEntity;
 use App\Modules\Intelligence\Contracts\ActorRepositoryInterface;
-use App\Models\SocialContract;
+use App\Modules\SocialGraph\Models\SocialContract;
 
 class FormContractAction implements AgentActionInterface
 {
@@ -66,3 +66,4 @@ class FormContractAction implements AgentActionInterface
         );
     }
 }
+

@@ -3,7 +3,7 @@
 namespace App\Modules\Simulation\Services;
 
 use App\Modules\Intelligence\Entities\ActorEntity;
-use App\Simulation\Runtime\State\WorldState;
+use App\Modules\Simulation\Core\Runtime\State\WorldState;
 use App\Modules\Simulation\Services\RuleEngine\RuleVmService;
 use App\Modules\Simulation\Services\VocationEngine;
 use App\Modules\Simulation\Services\RuleMutationService;
@@ -89,7 +89,7 @@ class VocationActionEngine
                 
                 // Emit Discovery Event
                 try {
-                    \App\Models\ActorEvent::create([
+                    \App\Modules\Intelligence\Models\ActorEvent::create([
                         'actor_id'   => $actor->id,
                         'tick'       => $tick,
                         'event_type' => 'skill_discovery',
@@ -154,3 +154,5 @@ class VocationActionEngine
         return $mutatedDsl;
     }
 }
+
+

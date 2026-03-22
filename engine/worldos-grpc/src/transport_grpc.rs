@@ -26,8 +26,7 @@ impl SimulationEngine for EngineService {
     ) -> Result<Response<AdvanceResponse>, Status> {
         let req = request.into_inner();
         let state_input = req.state_input.as_slice();
-        match engine::run_advance(req.universe_id, req.ticks, state_input, req.world_config) {
-            Ok((tick, state_vector_json, entropy, stability_index, metrics_json, sci, instability_gradient, _)) => {
+            Ok((tick, state_vector_json, entropy, stability_index, metrics_json, sci, instability_gradient, global_fields_json)) => {
                 let snapshot = UniverseSnapshot {
                     universe_id: req.universe_id,
                     tick,
@@ -37,6 +36,7 @@ impl SimulationEngine for EngineService {
                     metrics_json,
                     sci,
                     instability_gradient,
+                    global_fields_json,
                 };
                 Ok(Response::new(AdvanceResponse {
                     ok: true,
@@ -54,7 +54,7 @@ impl SimulationEngine for EngineService {
     ) -> Result<Response<MergeResponse>, Status> {
         let req = request.into_inner();
         match engine::run_merge(&req.state_a, &req.state_b) {
-            Ok((tick, state_vector_json, entropy, stability_index, metrics_json, sci, instability_gradient, _)) => {
+            Ok((tick, state_vector_json, entropy, stability_index, metrics_json, sci, instability_gradient, global_fields_json)) => {
                 let snapshot = UniverseSnapshot {
                     universe_id: 0,
                     tick,
@@ -64,6 +64,7 @@ impl SimulationEngine for EngineService {
                     metrics_json,
                     sci,
                     instability_gradient,
+                    global_fields_json,
                 };
                 Ok(Response::new(MergeResponse {
                     ok: true,
@@ -113,7 +114,7 @@ impl SimulationEngine for EngineService {
             .map(|r| {
                 let state_input = r.state_input.as_slice();
                 match engine::run_advance(r.universe_id, r.ticks, state_input, r.world_config) {
-                    Ok((tick, state_vector_json, entropy, stability_index, metrics_json, sci, instability_gradient, _)) => {
+                    Ok((tick, state_vector_json, entropy, stability_index, metrics_json, sci, instability_gradient, global_fields_json)) => {
                         AdvanceResponse {
                             ok: true,
                             error_message: String::new(),
@@ -126,6 +127,7 @@ impl SimulationEngine for EngineService {
                                 metrics_json,
                                 sci,
                                 instability_gradient,
+                                global_fields_json,
                             }),
                         }
                     }

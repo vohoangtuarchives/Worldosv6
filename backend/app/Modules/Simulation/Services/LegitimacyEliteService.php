@@ -3,9 +3,9 @@
 namespace App\Modules\Simulation\Services;
 
 use App\Contracts\Repositories\UniverseRepositoryInterface;
-use App\Models\Actor;
-use App\Models\InstitutionalEntity;
-use App\Models\Universe;
+use App\Modules\Intelligence\Models\Actor;
+use App\Modules\SocialGraph\Models\InstitutionalEntity;
+use App\Modules\Simulation\Models\Universe;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -19,7 +19,7 @@ class LegitimacyEliteService
         protected UniverseRepositoryInterface $universeRepository
     ) {}
 
-    public function runWithState(\App\Simulation\Runtime\State\WorldState $state, int $currentTick): void
+    public function runWithState(\App\Modules\Simulation\Core\Runtime\State\WorldState $state, int $currentTick): void
     {
         $interval = (int) config('worldos.intelligence.politics_tick_interval', 25);
         if ($interval <= 0 || $currentTick % $interval !== 0) {
@@ -81,3 +81,5 @@ class LegitimacyEliteService
         return is_array($sv) ? $sv : [];
     }
 }
+
+

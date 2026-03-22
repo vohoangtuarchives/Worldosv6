@@ -80,6 +80,11 @@ export function EventTimelineStrip({
   const items = useMemo((): TimelineItem[] => {
     const list: TimelineItem[] = [];
     chronicles.forEach((c) => {
+      // Bỏ qua các sự kiện đã được gộp để hiển thị timeline sạch sẽ
+      if (c.content && c.content.includes("[Merged into Loom Output]")) {
+        return;
+      }
+
       list.push({
         kind: "chronicle",
         tick: c.from_tick,

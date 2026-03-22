@@ -13,6 +13,8 @@ pub mod universe;
 pub mod vocation;
 pub mod ruleset;
 pub mod ecological_engine;
+pub mod macro_fields;
+pub mod potential_fields;
 
 
 pub use agent::{Agent, TraitVector};
@@ -21,6 +23,8 @@ pub use mass_behavior::MassBehaviorEngine;
 pub use emotion_field::EmotionFieldEngine;
 pub use social_layers::{BeliefSystemEngine, PowerStructureEngine};
 pub use ecological_engine::EcologicalEngine;
+pub use macro_fields::MacroFieldEngine;
+pub use potential_fields::PotentialFieldEngine;
 pub use cascade::{tick_with_cascade, SimEvent};
 pub use constants::{COLLAPSE_THRESHOLD, K1_ENTROPY_PER_STRUCTURED};
 pub use memory::{ActorId as MemoryActorId, SocialGraphCsr, ZoneActorIndex, ZoneIndex};

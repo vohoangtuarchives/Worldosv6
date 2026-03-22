@@ -2,8 +2,8 @@
 
 namespace App\Modules\Simulation\Services;
 
-use App\Models\Universe;
-use App\Models\UniverseBridge;
+use App\Modules\Simulation\Models\Universe;
+use App\Modules\Simulation\Models\UniverseBridge;
 use Illuminate\Support\Facades\Log;
 
 class CollapsePropagatonService
@@ -57,4 +57,5 @@ class CollapsePropagatonService
         return $propagations;
     }
 }
+
 

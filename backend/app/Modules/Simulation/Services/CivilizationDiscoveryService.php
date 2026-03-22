@@ -3,8 +3,8 @@
 namespace App\Modules\Simulation\Services;
 
 use App\Contracts\Repositories\UniverseRepositoryInterface;
-use App\Models\Universe;
-use App\Models\UniverseSnapshot;
+use App\Modules\Simulation\Models\Universe;
+use App\Modules\Simulation\Models\UniverseSnapshot;
 use App\Services\Orchestrator\ImplicitOrchestratorService;
 use Illuminate\Support\Facades\Log;
 
@@ -215,4 +215,5 @@ final class CivilizationDiscoveryService
         return is_array($sv) ? $sv : [];
     }
 }
+
 

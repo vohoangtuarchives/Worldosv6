@@ -2,9 +2,9 @@
 
 namespace App\Modules\Intelligence\Entities;
 
-use App\Models\World;
-use App\Models\Universe;
-use App\Models\UniverseSnapshot;
+use App\Modules\Simulation\Models\World;
+use App\Modules\Simulation\Models\Universe;
+use App\Modules\Simulation\Models\UniverseSnapshot;
 use App\Modules\Intelligence\Entities\Contracts\ActorArchetypeInterface;
 
 abstract class BaseArchetype implements ActorArchetypeInterface
@@ -52,3 +52,4 @@ abstract class BaseArchetype implements ActorArchetypeInterface
      */
     abstract public function applyImpact(Universe $universe, UniverseSnapshot $snapshot, array $winnerAgent): array;
 }
+

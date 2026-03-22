@@ -2,9 +2,9 @@
 
 namespace App\Modules\Intelligence\Entities\Archetypes;
 
-use App\Models\World;
-use App\Models\Universe;
-use App\Models\UniverseSnapshot;
+use App\Modules\Simulation\Models\World;
+use App\Modules\Simulation\Models\Universe;
+use App\Modules\Simulation\Models\UniverseSnapshot;
 use App\Modules\Intelligence\Entities\BaseArchetype;
 
 class RogueAI extends BaseArchetype
@@ -43,3 +43,4 @@ class RogueAI extends BaseArchetype
         ];
     }
 }
+

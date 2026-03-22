@@ -2,7 +2,7 @@
 
 namespace App\Modules\Intelligence\Services;
 
-use App\Models\Universe;
+use App\Modules\Simulation\Models\Universe;
 use App\Modules\Intelligence\Entities\ActorEntity;
 use App\Modules\Intelligence\Contracts\ActorRepositoryInterface;
 use Illuminate\Support\Facades\Log;
@@ -101,3 +101,4 @@ class DynastyEngine
         return rand(0, 1000) / 1000.0 < $awakeningChance;
     }
 }
+

@@ -2,7 +2,7 @@
 
 namespace App\Modules\Intelligence\Listeners;
 
-use App\Events\Simulation\UniverseSimulationPulsed;
+use App\Modules\Simulation\Events\UniverseSimulationPulsed;
 use App\Modules\Intelligence\Actions\SpawnFromEventsAction;
 
 class ProcessIntelligenceEvolution
@@ -29,3 +29,4 @@ class ProcessIntelligenceEvolution
         // 4. Survival: chạy trong AdvanceSimulationAction (cùng process) để đảm bảo lưu DB, không gọi lại ở đây
     }
 }
+

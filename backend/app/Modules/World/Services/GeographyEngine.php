@@ -2,11 +2,11 @@
 
 namespace App\Modules\World\Services;
 
-use App\Simulation\Concerns\DefaultSimulationEnginePhase;
-use App\Simulation\Contracts\SimulationEngine;
-use App\Simulation\Domain\EngineResult;
-use App\Simulation\Domain\TickContext;
-use App\Simulation\Runtime\State\WorldState;
+use App\Modules\Simulation\Core\Concerns\DefaultSimulationEnginePhase;
+use App\Modules\Simulation\Core\Contracts\SimulationEngine;
+use App\Modules\Simulation\Core\Domain\EngineResult;
+use App\Modules\Simulation\Core\Domain\TickContext;
+use App\Modules\Simulation\Core\Runtime\State\WorldState;
 
 /**
  * World layer (Physical): geography / planet-level placeholder (doc §17).
@@ -41,3 +41,4 @@ final class GeographyEngine implements SimulationEngine
         return EngineResult::empty();
     }
 }
+

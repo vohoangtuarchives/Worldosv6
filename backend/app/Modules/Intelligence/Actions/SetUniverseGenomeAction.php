@@ -2,7 +2,7 @@
 
 namespace App\Modules\Intelligence\Actions;
 
-use App\Models\Universe;
+use App\Modules\Simulation\Models\Universe;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -31,3 +31,4 @@ class SetUniverseGenomeAction
         Log::info("GENOME: Manual override applied to target_genome for Universe #{$universe->id}.");
     }
 }
+

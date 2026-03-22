@@ -2,7 +2,7 @@
 
 namespace App\Modules\Simulation\Services;
 
-use App\Models\Universe;
+use App\Modules\Simulation\Models\Universe;
 
 /**
  * KernelMutationService – Quản lý "Genotype" của Thiên Đạo (Universe Kernel)
@@ -80,4 +80,5 @@ class KernelMutationService
         return round($score, 4);
     }
 }
+
 

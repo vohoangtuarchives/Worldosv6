@@ -44,7 +44,7 @@ impl BeliefEngine {
                 
                 // 2. Natural Decay or Strengthening
                 // If fit is positive, alignment increases. If negative, it decreases.
-                let mut updated_val = current_val + fit_delta;
+                let updated_val = current_val + fit_delta;
                 
                 // TODO: Add social contagion influence here in future iterations
                 

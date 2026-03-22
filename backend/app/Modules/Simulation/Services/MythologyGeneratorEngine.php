@@ -2,11 +2,11 @@
 
 namespace App\Modules\Simulation\Services;
 
-use App\Models\Chronicle;
-use App\Models\Universe;
-use App\Services\Narrative\MythologyEngine;
-use App\Services\Narrative\NarrativeAiService;
-use App\Services\Narrative\NarrativeScheduler;
+use App\Modules\Narrative\Models\Chronicle;
+use App\Modules\Simulation\Models\Universe;
+use App\Modules\Narrative\Services\MythologyEngine;
+use App\Modules\Narrative\Services\NarrativeAiService;
+use App\Modules\Narrative\Services\NarrativeQueueManager as NarrativeScheduler;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -79,3 +79,4 @@ class MythologyGeneratorEngine
         return $this->civilizationMemory->getMemory($universe, $fromTick, $toTick);
     }
 }
+

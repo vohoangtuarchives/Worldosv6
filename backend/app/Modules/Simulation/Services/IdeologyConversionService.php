@@ -2,7 +2,7 @@
 
 namespace App\Modules\Simulation\Services;
 
-use App\Models\Universe;
+use App\Modules\Simulation\Models\Universe;
 use function resource_path;
 use function file_get_contents;
 use function abs;
@@ -25,7 +25,7 @@ final class IdeologyConversionService
         protected \App\Modules\Simulation\Services\RuleEngine\RuleVmService $ruleVm
     ) {}
 
-    use \App\Simulation\Concerns\HasProductTypes; // Just placeholder if needed or just functions
+    use \App\Modules\Simulation\Core\Concerns\HasProductTypes; // Just placeholder if needed or just functions
 
     /**
      * Compute probability per tick that population/institutions shift toward target ideology.
@@ -91,4 +91,6 @@ final class IdeologyConversionService
         return is_array($sv) ? $sv : [];
     }
 }
+
+
 

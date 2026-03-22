@@ -2,7 +2,7 @@
 
 namespace App\Modules\Intelligence\Services;
 
-use App\Models\Universe;
+use App\Modules\Simulation\Models\Universe;
 use App\Modules\Intelligence\Domain\Phase\PhaseScore;
 
 /**
@@ -77,3 +77,4 @@ class SocietyMetricsCalculator
                abs($recent->fragmented - $older->fragmented);
     }
 }
+

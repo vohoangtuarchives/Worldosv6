@@ -3,7 +3,7 @@
 namespace App\Modules\Intelligence\Actions;
 
 use App\Modules\Intelligence\Contracts\ActorRepositoryInterface;
-use App\Models\Universe;
+use App\Modules\Simulation\Models\Universe;
 use Illuminate\Support\Facades\Log;
 
 class ProcessActorSurvivalAction
@@ -14,7 +14,7 @@ class ProcessActorSurvivalAction
         private \App\Modules\Intelligence\Services\EvolutionPressureService $evolutionPressure
     ) {}
 
-    public function runWithState(\App\Simulation\Runtime\State\WorldState $state, array $simulationResponse): void
+    public function runWithState(\App\Modules\Simulation\Core\Runtime\State\WorldState $state, array $simulationResponse): void
     {
         $actors = $state->getActorEntities();
         $universeId = (int) $state->get('universe_id');
@@ -113,3 +113,5 @@ class ProcessActorSurvivalAction
         // Deprecated
     }
 }
+
+

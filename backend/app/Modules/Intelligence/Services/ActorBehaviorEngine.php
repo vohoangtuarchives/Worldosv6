@@ -5,7 +5,7 @@ namespace App\Modules\Intelligence\Services;
 use App\Contracts\Repositories\UniverseRepositoryInterface;
 use App\Modules\Intelligence\Contracts\ActorRepositoryInterface;
 use App\Modules\Intelligence\Entities\ActorEntity;
-use App\Models\Universe;
+use App\Modules\Simulation\Models\Universe;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -50,7 +50,7 @@ class ActorBehaviorEngine
         protected ActorRepositoryInterface $actorRepository,
         protected UniverseRepositoryInterface $universeRepository,
         protected \App\Services\Narrative\TraitMapper $traitMapper,
-        protected \App\Simulation\Engines\Meta\ActorDecisionEngine $decisionEngine,
+        protected \App\Modules\Simulation\Core\Engines\Meta\ActorDecisionEngine $decisionEngine,
         protected RuleVmService $ruleVm,
         protected \App\Modules\Simulation\Services\VocationActionEngine $vocationActionEngine
     ) {}
@@ -58,7 +58,7 @@ class ActorBehaviorEngine
     /**
      * Run behavior decision for actors this tick using standardized WorldState.
      */
-    public function runWithState(\App\Simulation\Runtime\State\WorldState $state, int $currentTick): void
+    public function runWithState(\App\Modules\Simulation\Core\Runtime\State\WorldState $state, int $currentTick): void
     {
         $interval = (int) config('worldos.intelligence.behavior_tick_interval', 1);
         if ($interval <= 0 || $currentTick % $interval !== 0) {
@@ -97,7 +97,7 @@ class ActorBehaviorEngine
 
     private function decideAndApplyWithState(
         ActorEntity $actor,
-        \App\Simulation\Runtime\State\WorldState $state,
+        \App\Modules\Simulation\Core\Runtime\State\WorldState $state,
         int $tick,
         bool $collapseActive,
         int $seed
@@ -203,7 +203,7 @@ class ActorBehaviorEngine
         $this->vocationActionEngine->process($actor, $state, $tick);
 
         // 4. Update Actor Metrics
-        $monologue = $this->traitMapper->generateMonologueSeed($traits, $archetype);
+        $intentTag = $this->traitMapper->getIntentTag($traits);
         
         $metrics['behavior_state'] = $action;
         $metrics['needs'] = [
@@ -212,19 +212,21 @@ class ActorBehaviorEngine
             self::NEED_REPRODUCTION => (float) ($finalState['reproduction'] ?? 0.2),
             self::NEED_SOCIAL => (float) ($finalState['social_need'] ?? 0.5),
         ];
-        $metrics['reasoning'] = $monologue;
+        $metrics['reasoning'] = $intentTag;
         $metrics['last_behavior_tick'] = $tick;
         $actor->metrics = $metrics;
 
         // Trace
-        \App\Models\ActorEvent::create([
+        \App\Modules\Intelligence\Models\ActorEvent::create([
             'actor_id'   => $actor->id,
             'tick'       => $tick,
             'event_type' => 'behavior_decision',
             'context'    => [
                 'action'    => $action,
-                'reasoning' => $monologue,
-                'scores'    => $scores
+                'intent'    => $intentTag,
+                'archetype' => $archetype,
+                'scores'    => $scores,
+                'vm_state'  => $vmState // FULL SNAPSHOT OF THE WORLD/ACTOR FOR NARRATIVE AI
             ]
         ]);
     }
@@ -285,6 +287,8 @@ class ActorBehaviorEngine
         return is_array($sv) ? $sv : [];
     }
 }
+
+
 
 
 

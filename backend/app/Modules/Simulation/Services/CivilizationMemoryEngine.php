@@ -2,9 +2,9 @@
 
 namespace App\Modules\Simulation\Services;
 
-use App\Models\BranchEvent;
-use App\Models\Chronicle;
-use App\Models\Universe;
+use App\Modules\Simulation\Models\BranchEvent;
+use App\Modules\Narrative\Models\Chronicle;
+use App\Modules\Simulation\Models\Universe;
 use Illuminate\Support\Collection;
 
 /**
@@ -131,3 +131,4 @@ class CivilizationMemoryEngine
         return $hints;
     }
 }
+

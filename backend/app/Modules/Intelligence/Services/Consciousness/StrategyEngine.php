@@ -2,7 +2,7 @@
 
 namespace App\Modules\Intelligence\Services\Consciousness;
 
-use App\Models\CivilizationAttractor;
+use App\Modules\SocialGraph\Models\CivilizationAttractor;
 
 /**
  * Derives optimal strategies (which attractors to activate) to avoid predicted risks.
@@ -72,3 +72,4 @@ class StrategyEngine
         return $best;
     }
 }
+

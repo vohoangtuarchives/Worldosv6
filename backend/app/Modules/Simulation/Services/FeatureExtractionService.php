@@ -2,8 +2,8 @@
 
 namespace App\Modules\Simulation\Services;
 
-use App\Models\Universe;
-use App\Models\UniverseSnapshot;
+use App\Modules\Simulation\Models\Universe;
+use App\Modules\Simulation\Models\UniverseSnapshot;
 
 /**
  * Doc §29: Extract numeric feature vector from universe/snapshot for AI policy-simulation.
@@ -63,4 +63,5 @@ final class FeatureExtractionService
         return is_array($sv) ? $sv : [];
     }
 }
+
 

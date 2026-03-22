@@ -2,7 +2,7 @@
 
 namespace App\Modules\Intelligence\Services;
 
-use App\Models\Universe;
+use App\Modules\Simulation\Models\Universe;
 use App\Modules\Simulation\Services\RuleEngine\RuleVmService;
 use function resource_path;
 use function file_get_contents;
@@ -27,7 +27,7 @@ class InnovationEngine
     /**
      * Run the engine using the standardized WorldState DTO.
      */
-    public function runWithState(\App\Simulation\Runtime\State\WorldState $state, int $tick): void
+    public function runWithState(\App\Modules\Simulation\Core\Runtime\State\WorldState $state, int $tick): void
     {
         $path = \resource_path('worldos_rules/innovation/collective.dsl');
         if (!file_exists($path)) {
@@ -86,6 +86,8 @@ class InnovationEngine
         return max(0.1, 1.0 - $stagnation);
     }
 }
+
+
 
 
 

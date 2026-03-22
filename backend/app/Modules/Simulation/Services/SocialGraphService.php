@@ -3,8 +3,8 @@
 namespace App\Modules\Simulation\Services;
 
 use App\Contracts\Repositories\UniverseRepositoryInterface;
-use App\Models\InstitutionalEntity;
-use App\Models\Universe;
+use App\Modules\SocialGraph\Models\InstitutionalEntity;
+use App\Modules\Simulation\Models\Universe;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -81,3 +81,4 @@ class SocialGraphService
         return is_array($sv) ? $sv : [];
     }
 }
+

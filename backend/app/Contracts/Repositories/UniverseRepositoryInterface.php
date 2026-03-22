@@ -2,7 +2,7 @@
 
 namespace App\Contracts\Repositories;
 
-use App\Models\Universe;
+use App\Modules\Simulation\Models\Universe;
 
 interface UniverseRepositoryInterface
 {
@@ -26,3 +26,4 @@ interface UniverseRepositoryInterface
      */
     public function fork(Universe $parent, int $tick, array $newParams): Universe;
 }
+

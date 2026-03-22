@@ -2,7 +2,7 @@
 
 namespace App\Modules\Simulation\Repositories;
 
-use App\Models\CausalTrajectory as TrajectoryModel;
+use App\Modules\Simulation\Models\CausalTrajectory as TrajectoryModel;
 use App\Modules\Simulation\Contracts\TrajectoryRepositoryInterface;
 use App\Modules\Simulation\Entities\TrajectoryEntity;
 use Illuminate\Support\Collection;
@@ -48,3 +48,4 @@ class TrajectoryEloquentRepository implements TrajectoryRepositoryInterface
         );
     }
 }
+

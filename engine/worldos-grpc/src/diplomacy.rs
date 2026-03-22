@@ -11,7 +11,7 @@ pub struct DiplomacyEngine {
 }
 
 impl DiplomacyEngine {
-    pub fn new(relations_list: Vec<crate::simulation::FactionRelation>) -> Self {
+    pub fn new(relations_list: Vec<crate::worldos::simulation::FactionRelation>) -> Self {
         let mut map = HashMap::new();
         for r in relations_list {
             map.insert((r.faction_a, r.faction_b), r.tension);

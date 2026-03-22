@@ -2,7 +2,7 @@
 
 namespace App\Modules\Simulation\Services;
 
-use App\Simulation\Runtime\State\WorldState;
+use App\Modules\Simulation\Core\Runtime\State\WorldState;
 use App\Modules\Simulation\Entities\UniverseEntity;
 use App\Modules\Simulation\Actions\WavefunctionCollapseAction;
 use App\Modules\Simulation\Services\RuleEngine\RuleVmService;
@@ -27,7 +27,7 @@ class ObservationInterferenceEngine
         // Legacy bridge
     }
 
-    public function runWithState(\App\Simulation\Runtime\State\WorldState $state, int $tick): void
+    public function runWithState(\App\Modules\Simulation\Core\Runtime\State\WorldState $state, int $tick): void
     {
         $isObserved = $state->isObserved();
         
@@ -62,6 +62,7 @@ class ObservationInterferenceEngine
         Log::debug("ObservationInterferenceEngine: Processed quantum state for Universe {$state->get('universe_id')} at tick {$tick}");
     }
 }
+
 
 
 
