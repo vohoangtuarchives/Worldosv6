@@ -1436,18 +1436,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "worldos-ffi"
-version = "0.1.0"
-dependencies = [
- "libc",
- "rand",
- "rayon",
- "serde_json",
- "worldos-core",
- "worldos-rules",
-]
-
-[[package]]
 name = "worldos-grpc"
 version = "0.1.0"
 dependencies = [
