@@ -5,7 +5,8 @@ namespace App\Modules\Narrative\Actions;
 use App\Modules\Simulation\Models\Universe;
 use App\Modules\SocialGraph\Models\InstitutionalEntity;
 use App\Modules\Intelligence\Models\SupremeEntity;
-use App\Modules\Narrative\Models\Chronicle;
+use App\Modules\Narrative\Contracts\ChronicleRepositoryInterface;
+use App\Modules\Narrative\Entities\ChronicleEntity;
 use App\Modules\Simulation\Core\Engines\Meta\WorldWillEngine;
 
 /**
@@ -13,7 +14,10 @@ use App\Modules\Simulation\Core\Engines\Meta\WorldWillEngine;
  */
 class AscensionAction
 {
-    public function __construct(protected WorldWillEngine $willEngine) {}
+    public function __construct(
+        protected WorldWillEngine $willEngine,
+        protected ChronicleRepositoryInterface $chronicleRepository
+    ) {}
 
     /**
      * Scan candidate institutions and actors for ascension.
@@ -63,16 +67,19 @@ class AscensionAction
             'ascended_at_tick' => $tick,
         ]);
 
-        Chronicle::create([
+        $chronicleEntity = ChronicleEntity::create([
             'universe_id' => $inst->universe_id,
             'from_tick' => $tick,
             'to_tick' => $tick,
             'type' => 'ascension_event',
+            'content' => "SỰ THĂNG HOA TỐI CAO: Định chế {$inst->name} đã vượt ngưỡng phàm trần, trở thành {$supreme->name} cai quản cõi {$supreme->domain}.",
+            'importance' => 1.0,
             'raw_payload' => [
                 'action' => 'legacy_event',
                 'description' => "SỰ THĂNG HOA TỐI CAO: Định chế {$inst->name} đã vượt ngưỡng phàm trần, trở thành {$supreme->name} cai quản cõi {$supreme->domain}."
             ],
         ]);
+        $this->chronicleRepository->save($chronicleEntity);
 
         // Consume origin institution? Or mark as "Divine Presence"
         // Let's keep the institution but boost its capacity as a "temple/base"

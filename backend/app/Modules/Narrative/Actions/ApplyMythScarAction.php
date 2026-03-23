@@ -2,7 +2,8 @@
 
 namespace App\Modules\Narrative\Actions;
 
-use App\Modules\Narrative\Models\MythScar;
+use App\Modules\Narrative\Contracts\MythScarRepositoryInterface;
+use App\Modules\Narrative\Entities\MythScarEntity;
 use App\Modules\Simulation\Models\Universe;
 use App\Modules\Simulation\Models\UniverseSnapshot;
 
@@ -10,7 +11,8 @@ class ApplyMythScarAction
 {
     public function __construct(
         protected \App\Contracts\GraphProviderInterface $graphProvider,
-        protected \App\Modules\Simulation\Services\RuleEngine\RuleVmService $ruleVm
+        protected \App\Modules\Simulation\Services\RuleEngine\RuleVmService $ruleVm,
+        protected MythScarRepositoryInterface $mythScarRepository
     ) {}
 
     /**
@@ -27,7 +29,7 @@ class ApplyMythScarAction
             'event_intensity' => $intensity,
             'causal_integrity_debt' => $causalDebt,
             'field_knowledge_field' => (float) ($savedSnapshot->state_vector['fields']['knowledge_field'] ?? 0.5),
-            'current_scars_count' => MythScar::where('universe_id', $universe->id)->whereNull('resolved_at_tick')->count(),
+            'current_scars_count' => $this->mythScarRepository->countUnresolved($universe->id),
         ];
 
         $dslFile = \resource_path('worldos_rules/legend/chronicles.dsl');
@@ -48,19 +50,21 @@ class ApplyMythScarAction
 
     private function createMythScar(Universe $universe, array $data): void
     {
-        $scar = MythScar::create([
+        $scarEntity = MythScarEntity::create([
             'universe_id'      => $universe->id,
             'zone_id'          => 'Global',
-            'name'             => $data['type'] . " Scar",
+            'name'             => ($data['type'] ?? 'Unknown') . " Scar",
             'description'      => "Dấu ấn lịch sử: " . ($data['type'] ?? 'Unknown'),
             'severity'         => (float) ($data['weight'] ?? 0.5),
             'decay_rate'       => 0.005,
             'created_at_tick'  => $universe->current_tick,
         ]);
 
+        $savedEntity = $this->mythScarRepository->save($scarEntity);
+
         $this->graphProvider->sync($universe->id, [
             'type' => 'MythScar',
-            'model' => $scar
+            'model' => $savedEntity->toArray()
         ]);
     }
 }

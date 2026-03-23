@@ -29,6 +29,7 @@ class SimulationServiceProvider extends ServiceProvider
         $this->app->bind(UniverseRepositoryInterface::class, UniverseEloquentRepository::class);
         $this->app->bind(\App\Modules\Simulation\Contracts\WorldRepositoryInterface::class, \App\Modules\Simulation\Repositories\WorldEloquentRepository::class);
         $this->app->bind(\App\Modules\Simulation\Contracts\SnapshotRepositoryInterface::class, \App\Modules\Simulation\Repositories\SnapshotEloquentRepository::class);
+        $this->app->bind(\App\Modules\Simulation\Contracts\BranchEventRepositoryInterface::class, \App\Modules\Simulation\Repositories\BranchEventRepository::class);
 
         // Vocation V1 Repository Bindings
         $this->app->bind(VocationRepositoryInterface::class, VocationEloquentRepository::class);

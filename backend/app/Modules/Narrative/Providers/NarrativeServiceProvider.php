@@ -24,7 +24,10 @@ class NarrativeServiceProvider extends ServiceProvider
         $this->app->singleton(ChronicleSynthesisEngine::class);
         $this->app->singleton(UniverseHistoryGenerator::class);
         
-        $this->app->bind(LlmNarrativeClientInterface::class, OpenAINarrativeService::class);
+        $this->app->singleton(\App\Modules\Narrative\Contracts\ArtifactRepositoryInterface::class, \App\Modules\Narrative\Repositories\ArtifactEloquentRepository::class);
+        $this->app->singleton(\App\Modules\Narrative\Contracts\ChronicleRepositoryInterface::class, \App\Modules\Narrative\Repositories\ChronicleEloquentRepository::class);
+        $this->app->singleton(\App\Modules\Narrative\Contracts\MythScarRepositoryInterface::class, \App\Modules\Narrative\Repositories\MythScarEloquentRepository::class);
+        $this->app->singleton(\App\Modules\Narrative\Contracts\DemiurgeRepositoryInterface::class, \App\Modules\Narrative\Repositories\DemiurgeEloquentRepository::class);
 
         $this->app->singleton(NarrativeEngine::class);
 

@@ -3,7 +3,8 @@
 namespace App\Modules\Narrative\Actions;
 
 use App\Modules\Intelligence\Models\LegendaryAgent;
-use App\Modules\Narrative\Models\Chronicle;
+use App\Modules\Narrative\Contracts\ChronicleRepositoryInterface;
+use App\Modules\Narrative\Entities\ChronicleEntity;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -12,6 +13,10 @@ use Illuminate\Support\Facades\Log;
  */
 class GrantFavorAction
 {
+    public function __construct(
+        protected ChronicleRepositoryInterface $chronicleRepository
+    ) {}
+
     /**
      * Grant divine favor to a legendary agent.
      */
@@ -27,16 +32,19 @@ class GrantFavorAction
                 $tags[] = 'divine_favor';
                 Log::warning("FAVOR: The Architect has focused their gaze on [{$legend->name}].");
                 
-                Chronicle::create([
+                $chronicleEntity = ChronicleEntity::create([
                     'universe_id' => $legend->universe_id,
                     'from_tick' => $legend->universe->current_tick,
                     'to_tick' => $legend->universe->current_tick,
                     'type' => 'divine_favor',
+                    'content' => "ÂN ĐIỂN THIÊN THỂ: Legend [{$legend->name}] đã nhận được Sự Ưu Ái của Kiến trúc sư. Một hào quang rực rỡ bao phủ lấy họ.",
+                    'importance' => 0.8,
                     'raw_payload' => [
-                'action' => 'legacy_event',
-                'description' => "ÂN ĐIỂN THIÊN THỂ: Legend [{$legend->name}] đã nhận được Sự Ưu Ái của Kiến trúc sư. Một hào quang rực rỡ bao phủ lấy họ."
-            ],
+                        'action' => 'legacy_event',
+                        'description' => "ÂN ĐIỂN THIÊN THỂ: Legend [{$legend->name}] đã nhận được Sự Ưu Ái của Kiến trúc sư. Một hào quang rực rỡ bao phủ lấy họ."
+                    ],
                 ]);
+                $this->chronicleRepository->save($chronicleEntity);
             }
         } else {
             $tags = array_diff($tags, ['divine_favor']);

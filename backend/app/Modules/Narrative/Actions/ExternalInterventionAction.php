@@ -3,7 +3,6 @@
 namespace App\Modules\Narrative\Actions;
 
 use App\Modules\Simulation\Models\World;
-use App\Modules\Narrative\Models\Chronicle;
 use App\Modules\Narrative\Services\OmenIntegrationService;
 use App\Modules\Narrative\Actions\CelestialEngineeringAction;
 use Illuminate\Support\Facades\Log;

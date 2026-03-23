@@ -2,9 +2,11 @@
 
 namespace App\Modules\Narrative\Actions;
 
-use App\Modules\Narrative\Models\Demiurge;
+use App\Modules\Narrative\Entities\DemiurgeEntity;
+use App\Modules\Narrative\Contracts\DemiurgeRepositoryInterface;
 use App\Modules\Simulation\Models\Universe;
-use App\Modules\Narrative\Models\Chronicle;
+use App\Modules\Narrative\Contracts\ChronicleRepositoryInterface;
+use App\Modules\Narrative\Entities\ChronicleEntity;
 use App\Modules\Narrative\Actions\CelestialEngineeringAction;
 use Illuminate\Support\Facades\Log;
 
@@ -15,18 +17,20 @@ use Illuminate\Support\Facades\Log;
 class DivineMiracleAction
 {
     public function __construct(
-        protected CelestialEngineeringAction $engineering
+        protected CelestialEngineeringAction $engineering,
+        protected ChronicleRepositoryInterface $chronicleRepository,
+        protected DemiurgeRepositoryInterface $demiurgeRepository
     ) {}
 
     /**
      * Execute a miracle if the Demiurge has enough essence.
      */
-    public function execute(Demiurge $demiurge, Universe $universe, string $type): void
+    public function execute(DemiurgeEntity $demiurge, Universe $universe, string $type): void
     {
         // Deprecated or Bridge if needed
     }
 
-    public function executeWithState(Demiurge $demiurge, \App\Modules\Simulation\Core\Runtime\State\WorldState $state, string $type, int $tick): void
+    public function executeWithState(DemiurgeEntity $demiurge, \App\Modules\Simulation\Core\Runtime\State\WorldState $state, string $type, int $tick): void
     {
         $cost = $this->getMiracleCost($type);
 
@@ -35,11 +39,11 @@ class DivineMiracleAction
             return;
         }
 
-        $demiurge->decrement('essence_pool', $cost);
+        $this->demiurgeRepository->decrementEssence($demiurge->id, $cost);
         $this->manifestToState($demiurge, $state, $type, $tick);
     }
 
-    protected function manifestToState(Demiurge $demiurge, \App\Modules\Simulation\Core\Runtime\State\WorldState $state, string $type, int $tick): void
+    protected function manifestToState(DemiurgeEntity $demiurge, \App\Modules\Simulation\Core\Runtime\State\WorldState $state, string $type, int $tick): void
     {
         Log::warning("MIRACLE: Demiurge [{$demiurge->name}] has manifested [{$type}] in Universe #{$state->get('universe_id')} via Manifold!");
 
@@ -73,7 +77,7 @@ class DivineMiracleAction
         ]);
     }
 
-    protected function manifest(Demiurge $demiurge, Universe $universe, string $type): void
+    protected function manifest(DemiurgeEntity $demiurge, Universe $universe, string $type): void
     {
         Log::warning("MIRACLE: Demiurge [{$demiurge->name}] has manifested [{$type}] in Universe #{$universe->id}!");
 
@@ -101,16 +105,19 @@ class DivineMiracleAction
 
         $this->engineering->executeMacro($universe->world_id, 'macro_edict', $payload, $universe);
 
-        Chronicle::create([
+        $chronicleEntity = ChronicleEntity::create([
             'universe_id' => $universe->id,
             'from_tick' => $universe->current_tick,
             'to_tick' => $universe->current_tick,
             'type' => 'divine_miracle',
+            'content' => "PHÉP MÀU THIÊN THỂ: {$demiurge->name} đã thi triển [{$type}], đảo lộn quy luật tự nhiên của thực tại.",
+            'importance' => 1.0,
             'raw_payload' => [
                 'action' => 'legacy_event',
                 'description' => "PHÉP MÀU THIÊN THỂ: {$demiurge->name} đã thi triển [{$type}], đảo lộn quy luật tự nhiên của thực tại."
             ],
         ]);
+        $this->chronicleRepository->save($chronicleEntity);
     }
 
     protected function getMiracleCost(string $type): float

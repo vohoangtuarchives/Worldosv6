@@ -9,5 +9,6 @@ return [
     App\Modules\Psychology\Providers\PsychologyServiceProvider::class,
     App\Modules\SocialGraph\Providers\SocialGraphServiceProvider::class,
     App\Modules\World\Providers\WorldServiceProvider::class,
+    App\Modules\WorldOS\Providers\WorldOSServiceProvider::class,
     Laravel\Sanctum\SanctumServiceProvider::class,
 ];

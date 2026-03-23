@@ -47,16 +47,19 @@ class CorrectionAction
         $this->axiomAction->execute($world, $shocks);
 
         // Ghi lại vào biên niên sử
-        \App\Modules\Narrative\Models\Chronicle::create([
+        $chronicleEntity = \App\Modules\Narrative\Entities\ChronicleEntity::create([
             'universe_id' => $universe->id,
             'from_tick' => $universe->current_tick,
             'to_tick' => $universe->current_tick,
             'type' => 'myth',
+            'content' => $message,
+            'importance' => 0.6,
             'raw_payload' => [
-            'action' => 'legacy_event',
-            'description' => $message
-        ]
+                'action' => 'legacy_event',
+                'description' => $message
+            ]
         ]);
+        app(\App\Modules\Narrative\Contracts\ChronicleRepositoryInterface::class)->save($chronicleEntity);
     }
 }
 

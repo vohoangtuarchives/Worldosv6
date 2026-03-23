@@ -2,7 +2,7 @@
 
 namespace App\Modules\Narrative\Services;
 
-use App\Modules\Narrative\Models\Chronicle;
+use App\Modules\Narrative\Contracts\ChronicleRepositoryInterface;
 use App\Modules\Simulation\Models\Era;
 use App\Modules\Narrative\Models\Legend;
 use App\Modules\SocialGraph\Models\Religion;
@@ -22,7 +22,8 @@ class UniverseHistoryGenerator
 
     public function __construct(
         protected LlmNarrativeClientInterface $llmClient,
-        protected ChronicleSynthesisEngine $synthesisEngine
+        protected ChronicleSynthesisEngine $synthesisEngine,
+        protected ChronicleRepositoryInterface $chronicleRepository
     ) {}
 
     /**
@@ -76,12 +77,10 @@ class UniverseHistoryGenerator
         }
 
         // 2. Chronicles
-        $chronicles = Chronicle::where('universe_id', $universeId)
-            ->whereBetween('from_tick', [$fromTick, $toTick])
-            ->orderBy('id', 'desc')
-            ->limit(50)
-            ->pluck('content')
-            ->toArray();
+        $chronicles = array_map(
+            fn($e) => $e->content,
+            $this->chronicleRepository->findByUniverse($universeId, 50)
+        );
 
         if (!empty($chronicles)) {
             $parts[] = "BIÊN NIÊN SỬ:\n" . implode("\n", $chronicles);

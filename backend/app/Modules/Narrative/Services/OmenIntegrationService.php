@@ -3,7 +3,7 @@
 namespace App\Modules\Narrative\Services;
 
 use App\Modules\Simulation\Models\Universe;
-use App\Modules\Narrative\Models\Chronicle;
+use App\Modules\Narrative\Contracts\ChronicleRepositoryInterface;
 use App\Modules\Simulation\Repositories\UniverseSnapshotRepository;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use Illuminate\Support\Facades\Log;
@@ -18,7 +18,8 @@ class OmenIntegrationService
     public function __construct(
         protected AnalyticalAiService $analyticalAi,
         protected UniverseSnapshotRepository $snapshotRepository,
-        protected CacheRepository $cache
+        protected CacheRepository $cache,
+        protected ChronicleRepositoryInterface $chronicleRepository
     ) {}
 
     /**
@@ -86,11 +87,14 @@ class OmenIntegrationService
     {
         $snapshot = $this->snapshotRepository->getLatest($universe->id);
         
-        $chronicles = Chronicle::where('universe_id', $universe->id)
-            ->orderBy('from_tick', 'desc')
-            ->limit(5)
-            ->get(['from_tick', 'type', 'raw_payload'])
-            ->toArray();
+        $chronicles = array_map(
+            fn($e) => [
+                'from_tick' => $e->from_tick,
+                'type' => $e->type,
+                'raw_payload' => $e->raw_payload
+            ],
+            $this->chronicleRepository->findByUniverse($universe->id, 5)
+        );
             
         return [
             'universe_id' => $universe->id,

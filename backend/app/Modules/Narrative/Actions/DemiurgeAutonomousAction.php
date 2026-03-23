@@ -2,7 +2,8 @@
 
 namespace App\Modules\Narrative\Actions;
 
-use App\Modules\Narrative\Models\Demiurge;
+use App\Modules\Narrative\Entities\DemiurgeEntity;
+use App\Modules\Narrative\Contracts\DemiurgeRepositoryInterface;
 use App\Modules\Simulation\Models\Universe;
 use App\Services\AI\DemiurgeRegistry;
 use App\Modules\Narrative\Actions\CelestialEngineeringAction;
@@ -18,7 +19,8 @@ class DemiurgeAutonomousAction
     public function __construct(
         protected DemiurgeRegistry $registry,
         protected CelestialEngineeringAction $engineering,
-        protected DivineInquisitionAction $inquisition
+        protected DivineInquisitionAction $inquisition,
+        protected DemiurgeRepositoryInterface $demiurgeRepository
     ) {}
 
     /**
@@ -37,12 +39,13 @@ class DemiurgeAutonomousAction
 
         if ($universes->isEmpty()) return;
 
-        foreach ($rivals as $demiurge) {
+        foreach ($rivals as $demiurgeData) {
+            $demiurge = DemiurgeEntity::create($demiurgeData->toArray());
             $this->processDemiurgeWill($demiurge, $universes);
         }
     }
 
-    protected function processDemiurgeWill(Demiurge $demiurge, $universes): void
+    protected function processDemiurgeWill(DemiurgeEntity $demiurge, $universes): void
     {
         // Pick a universe to inspect (could be random or targeted)
         $target = $universes->random();
@@ -66,7 +69,7 @@ class DemiurgeAutonomousAction
         }
     }
 
-    protected function issueAutonomousEdict(Demiurge $demiurge, Universe $universe, float $sciDiff, float $entropyDiff): void
+    protected function issueAutonomousEdict(DemiurgeEntity $demiurge, Universe $universe, float $sciDiff, float $entropyDiff): void
     {
         Log::info("MYTHOS: Demiurge [{$demiurge->name}] is acting upon Universe #{$universe->id}.");
 

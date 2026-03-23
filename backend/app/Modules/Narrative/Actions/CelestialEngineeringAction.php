@@ -5,14 +5,16 @@ namespace App\Modules\Narrative\Actions;
 use App\Modules\Simulation\Models\World;
 use App\Modules\Simulation\Models\Universe;
 use App\Modules\Simulation\Models\BranchEvent;
-use App\Modules\Narrative\Models\Chronicle;
+use App\Modules\Narrative\Contracts\ChronicleRepositoryInterface;
+use App\Modules\Narrative\Entities\ChronicleEntity;
 use App\Modules\Narrative\Services\OmenIntegrationService;
 use Illuminate\Support\Facades\Log;
 
 class CelestialEngineeringAction
 {
     public function __construct(
-        protected OmenIntegrationService $omenService
+        protected OmenIntegrationService $omenService,
+        protected ChronicleRepositoryInterface $chronicleRepository
     ) {}
 
     /**
@@ -160,16 +162,19 @@ class CelestialEngineeringAction
         $universe->structural_coherence = max(0.0, $universe->structural_coherence - 0.05);
         $universe->update(['state_vector' => $vec]);
 
-        Chronicle::create([
+        $chronicleEntity = ChronicleEntity::create([
             'universe_id' => $universe->id,
             'from_tick' => $universe->current_tick,
             'to_tick' => $universe->current_tick,
             'type' => 'mythic_scar',
+            'content' => "VẾT SẸO HUYỀN THOẠI: Chiến tranh thần thánh nổ ra. {$reason}",
+            'importance' => 0.8,
             'raw_payload' => [
                 'action' => 'legacy_event',
                 'description' => "VẾT SẸO HUYỀN THOẠI: Chiến tranh thần thánh nổ ra. {$reason}"
             ],
         ]);
+        $this->chronicleRepository->save($chronicleEntity);
     }
 
     protected function reverseEntropy(Universe $universe, int $tick): void
@@ -182,16 +187,19 @@ class CelestialEngineeringAction
 
         $universe->update(['state_vector' => $vec]);
 
-        Chronicle::create([
+        $chronicleEntity = ChronicleEntity::create([
             'universe_id' => $universe->id,
             'from_tick' => $tick,
             'to_tick' => $tick,
             'type' => 'celestial_engineering',
+            'content' => "KỸ NGHỆ THIÊN THỂ: Đảo ngược entropy thành công từ {$oldEntropy} xuống {$vec['entropy']}.",
+            'importance' => 0.9,
             'raw_payload' => [
                 'action' => 'legacy_event',
                 'description' => "KỸ NGHỆ THIÊN THỂ: Đảo ngược entropy thành công từ {$oldEntropy} xuống {$vec['entropy']}."
             ],
         ]);
+        $this->chronicleRepository->save($chronicleEntity);
     }
 }
 

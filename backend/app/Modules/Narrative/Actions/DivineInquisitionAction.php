@@ -2,10 +2,12 @@
 
 namespace App\Modules\Narrative\Actions;
 
-use App\Modules\Narrative\Models\Demiurge;
+use App\Modules\Narrative\Entities\DemiurgeEntity;
+use App\Modules\Narrative\Contracts\DemiurgeRepositoryInterface;
 use App\Modules\Intelligence\Models\LegendaryAgent;
 use App\Modules\Simulation\Models\Universe;
-use App\Modules\Narrative\Models\Chronicle;
+use App\Modules\Narrative\Contracts\ChronicleRepositoryInterface;
+use App\Modules\Narrative\Entities\ChronicleEntity;
 use App\Modules\Simulation\Core\Engines\Biological\CelestialAntibodyEngine;
 use Illuminate\Support\Facades\Log;
 
@@ -16,13 +18,15 @@ use Illuminate\Support\Facades\Log;
 class DivineInquisitionAction
 {
     public function __construct(
-        protected CelestialAntibodyEngine $antibodyEngine
+        protected CelestialAntibodyEngine $antibodyEngine,
+        protected ChronicleRepositoryInterface $chronicleRepository,
+        protected DemiurgeRepositoryInterface $demiurgeRepository
     ) {}
 
     /**
      * Demiurge expends Essence to force an Inquisition in a world.
      */
-    public function execute(Universe $universe, Demiurge $demiurge): void
+    public function execute(Universe $universe, DemiurgeEntity $demiurge): void
     {
         $cost = 50.0; // Essence cost to trigger a targeted inquisition
 
@@ -32,7 +36,7 @@ class DivineInquisitionAction
         }
 
         // Consume Essence
-        $demiurge->decrement('essence_pool', $cost);
+        $this->demiurgeRepository->decrementEssence($demiurge->id, $cost);
 
         // Find targets (agents with heresy > 0, doesn't need to be critical yet)
         $targets = LegendaryAgent::where('universe_id', $universe->id)
@@ -41,16 +45,19 @@ class DivineInquisitionAction
 
         if ($targets->isEmpty()) {
             // Wasted effort
-            Chronicle::create([
+            $chronicleEntity = ChronicleEntity::create([
                 'universe_id' => $universe->id,
                 'from_tick' => $universe->current_tick,
                 'to_tick' => $universe->current_tick,
                 'type' => 'divine_inquisition',
+                'content' => "TÒA ÁN TỐI CAO: Demiurge [{$demiurge->name}] đã càn quét vũ trụ nhưng không tìm thấy mầm mống dị giáo nào.",
+                'importance' => 0.5,
                 'raw_payload' => [
-                'action' => 'legacy_event',
-                'description' => "TÒA ÁN TỐI CAO: Demiurge [{$demiurge->name}] đã càn quét vũ trụ nhưng không tìm thấy mầm mống dị giáo nào."
-            ],
+                    'action' => 'legacy_event',
+                    'description' => "TÒA ÁN TỐI CAO: Demiurge [{$demiurge->name}] đã càn quét vũ trụ nhưng không tìm thấy mầm mống dị giáo nào."
+                ],
             ]);
+            $this->chronicleRepository->save($chronicleEntity);
             return;
         }
 
@@ -58,16 +65,19 @@ class DivineInquisitionAction
             // Forcefully spike their heresy to critical levels to trigger the Antibody Engine immediately
             $target->update(['heresy_score' => 1.0]);
             
-            Chronicle::create([
+            $chronicleEntity = ChronicleEntity::create([
                 'universe_id' => $universe->id,
                 'from_tick' => $universe->current_tick,
                 'to_tick' => $universe->current_tick,
                 'type' => 'divine_inquisition',
+                'content' => "TÒA ÁN TỐI CAO: Demiurge [{$demiurge->name}] đã chỉ đích danh [{$target->name}] là Dị giáo. Ánh sáng Trừng phạt bắt đầu giáng xuống.",
+                'importance' => 0.7,
                 'raw_payload' => [
-                'action' => 'legacy_event',
-                'description' => "TÒA ÁN TỐI CAO: Demiurge [{$demiurge->name}] đã chỉ đích danh [{$target->name}] là Dị giáo. Ánh sáng Trừng phạt bắt đầu giáng xuống."
-            ],
+                    'action' => 'legacy_event',
+                    'description' => "TÒA ÁN TỐI CAO: Demiurge [{$demiurge->name}] đã chỉ đích danh [{$target->name}] là Dị giáo. Ánh sáng Trừng phạt bắt đầu giáng xuống."
+                ],
             ]);
+            $this->chronicleRepository->save($chronicleEntity);
 
             // Immediately call the Purge
             $this->antibodyEngine->execute($universe);

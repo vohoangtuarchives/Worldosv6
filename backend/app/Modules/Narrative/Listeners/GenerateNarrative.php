@@ -3,7 +3,7 @@
 namespace App\Modules\Narrative\Listeners;
 
 use App\Modules\Simulation\Events\UniverseSimulationPulsed;
-use App\Modules\Narrative\Models\Chronicle;
+use App\Modules\Narrative\Contracts\ChronicleRepositoryInterface;
 use App\Services\Narrative\NarrativeScheduler;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Log;
@@ -11,7 +11,8 @@ use Illuminate\Support\Facades\Log;
 class GenerateNarrative implements ShouldQueue
 {
     public function __construct(
-        protected NarrativeScheduler $narrativeScheduler
+        protected \App\Services\Narrative\NarrativeScheduler $narrativeScheduler,
+        protected ChronicleRepositoryInterface $chronicleRepository
     ) {}
 
     public function handle(UniverseSimulationPulsed $event): void
@@ -30,20 +31,18 @@ class GenerateNarrative implements ShouldQueue
             return;
         }
 
-        $chronicleIds = Chronicle::where('universe_id', $universe->id)
-            ->whereNull('content')
-            ->whereNotNull('raw_payload')
-            ->where(function ($q) use ($fromTick, $toTick) {
-                $q->whereBetween('from_tick', [$fromTick, $toTick])
-                    ->orWhereBetween('to_tick', [$fromTick, $toTick]);
-            })
-            ->limit(100)
-            ->pluck('id')
-            ->all();
+        $chronicleIds = $this->chronicleRepository->findUnprocessedForTicks(
+            $universe->id,
+            $fromTick,
+            $toTick,
+            100
+        );
 
-        if (!empty($chronicleIds)) {
+        $ids = array_map(fn($e) => $e->id, $chronicleIds);
+
+        if (!empty($ids)) {
             try {
-                $this->narrativeScheduler->scheduleEvent($universe->id, $chronicleIds, 1);
+                $this->narrativeScheduler->scheduleEvent($universe->id, $ids, 1);
             } catch (\Throwable $e) {
                 Log::error("GenerateNarrative: schedule event failed: " . $e->getMessage());
             }

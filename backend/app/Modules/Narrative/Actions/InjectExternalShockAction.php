@@ -2,15 +2,17 @@
 
 namespace App\Modules\Narrative\Actions;
 
+use App\Modules\Narrative\Contracts\ChronicleRepositoryInterface;
+use App\Modules\Narrative\Entities\ChronicleEntity;
 use App\Modules\Simulation\Models\Universe;
-use App\Modules\Narrative\Models\Chronicle;
 use App\Modules\Simulation\Models\BranchEvent;
 use App\Modules\Institutions\Services\WorldEdictEngine;
 
 class InjectExternalShockAction
 {
     public function __construct(
-        protected WorldEdictEngine $edictEngine
+        protected WorldEdictEngine $edictEngine,
+        protected ChronicleRepositoryInterface $chronicleRepository
     ) {}
 
     /**
@@ -29,16 +31,19 @@ class InjectExternalShockAction
         $this->edictEngine->activateEdict($universe, $tick, $metrics, $shockType['edict'], 'Ngoại Lực');
 
         // 2. Record the shock in Chronicle
-        Chronicle::create([
+        $chronicleEntity = ChronicleEntity::create([
             'universe_id' => $universe->id,
             'from_tick' => $tick,
             'to_tick' => $tick,
             'type' => 'external_shock',
+            'content' => "CÚ SỐC NGOẠI LỰC: Một biến cố chấn động xảy ra ngay tại điểm phân tách. {$shockType['description']}",
+            'importance' => 0.9,
             'raw_payload' => [
                 'action' => 'legacy_event',
                 'description' => "CÚ SỐC NGOẠI LỰC: Một biến cố chấn động xảy ra ngay tại điểm phân tách. {$shockType['description']}"
             ],
         ]);
+        $this->chronicleRepository->save($chronicleEntity);
 
         // 3. Mark the branch event with the shock info
         BranchEvent::where('universe_id', $universe->id)

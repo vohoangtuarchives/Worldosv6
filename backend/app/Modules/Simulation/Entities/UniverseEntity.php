@@ -20,6 +20,44 @@ class UniverseEntity
         public float $fitnessScore = 0.0
     ) {}
 
+    public static function create(array $data): self
+    {
+        return new self(
+            id: (int) $data['id'],
+            worldId: (int) $data['world_id'],
+            name: $data['name'],
+            currentTick: (int) $data['current_tick'],
+            entropy: (float) $data['entropy'],
+            stabilityIndex: (float) $data['stability_index'],
+            observationLoad: (float) $data['observation_load'],
+            stateVector: $data['state_vector'] ?? [],
+            kernelGenome: $data['kernel_genome'] ?? [],
+            status: $data['status'] ?? 'active',
+            structuralCoherence: (float) ($data['structural_coherence'] ?? 1.0),
+            observerBonus: (float) ($data['observer_bonus'] ?? 0.0),
+            fitnessScore: (float) ($data['fitness_score'] ?? 0.0)
+        );
+    }
+
+    public function toArray(): array
+    {
+        return [
+            'id' => $this->id,
+            'world_id' => $this->worldId,
+            'name' => $this->name,
+            'current_tick' => $this->currentTick,
+            'entropy' => $this->entropy,
+            'stability_index' => $this->stabilityIndex,
+            'observation_load' => $this->observationLoad,
+            'state_vector' => $this->stateVector,
+            'kernel_genome' => $this->kernelGenome,
+            'status' => $this->status,
+            'structural_coherence' => $this->structuralCoherence,
+            'observer_bonus' => $this->observerBonus,
+            'fitness_score' => $this->fitnessScore,
+        ];
+    }
+
     public function applyObservationInterference(float $intensity): void
     {
         $this->observationLoad += $intensity;

@@ -2,7 +2,7 @@
 
 namespace App\Modules\Narrative\Services;
 
-use App\Modules\Narrative\Models\Chronicle;
+use App\Modules\Narrative\Contracts\ChronicleRepositoryInterface;
 use App\Modules\Simulation\Models\Universe;
 use Illuminate\Support\Facades\Log;
 
@@ -12,16 +12,17 @@ use Illuminate\Support\Facades\Log;
  */
 class EtherealOmenService
 {
+    public function __construct(
+        protected ChronicleRepositoryInterface $chronicleRepository
+    ) {}
     /**
      * Generate an Omen based on the 'Historical Weight' of a universe.
      */
     public function generateInternalOmen(Universe $universe): array
     {
         // Analyze recent chronicles to find a theme
-        $recent = Chronicle::where('universe_id', $universe->id)
-            ->orderByDesc('to_tick')
-            ->limit(5)
-            ->get();
+        $recent = $this->chronicleRepository->findByUniverse($universe->id, 5);
+        $recent = collect($recent);
         
         $warCount = $recent->filter(fn($c) => str_contains(strtolower($c->content), 'war') || str_contains(strtolower($c->content), 'conflict'))->count();
         $miracleCount = $recent->filter(fn($c) => $c->type === 'divine_miracle')->count();
