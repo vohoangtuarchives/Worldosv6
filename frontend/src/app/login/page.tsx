@@ -22,7 +22,10 @@ export default function LoginPage() {
           setError("Phản hồi đăng nhập không có token.");
           return;
         }
-        document.cookie = `auth_token=${encodeURIComponent(token)}; path=/; max-age=86400; SameSite=Lax`;
+        const secure = window.location.protocol === "https:" ? "; Secure" : "";
+        document.cookie = `auth_token=${encodeURIComponent(token)}; path=/; max-age=86400; SameSite=None${secure}`;
+        try { localStorage.setItem("auth_token", token); } catch {}
+
         const params = new URLSearchParams(window.location.search);
         const to = params.get("redirect") || "/dashboard";
         window.location.href = to;

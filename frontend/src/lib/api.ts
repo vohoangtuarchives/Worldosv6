@@ -26,7 +26,8 @@ async function publicFetch(path: string, init: RequestInit = {}) {
 function getToken(): string | null {
   if (typeof document === "undefined") return null;
   const match = document.cookie.match(/(?:^|; )auth_token=([^;]+)/);
-  return match ? decodeURIComponent(match[1]) : null;
+  if (match) return decodeURIComponent(match[1]);
+  try { return localStorage.getItem("auth_token"); } catch { return null; }
 }
 
 async function apiFetch(path: string, init: RequestInit = {}) {
