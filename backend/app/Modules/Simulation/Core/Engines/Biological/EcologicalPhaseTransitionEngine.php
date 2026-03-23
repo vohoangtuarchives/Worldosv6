@@ -164,6 +164,12 @@ class EcologicalPhaseTransitionEngine
         $toFactor = (float) ($factors[$to] ?? $factors['grassland'] ?? 1.0);
         return $fromFactor * (1.0 - $progress) + $toFactor * $progress;
     }
+
+    public function handle(\App\Modules\Simulation\Core\Runtime\State\WorldState $state, \App\Modules\Simulation\Core\Domain\TickContext $ctx): \App\Modules\Simulation\Core\Engines\EngineResult
+    {
+        $this->runWithState($state, $ctx->getTick());
+        return \App\Modules\Simulation\Core\Engines\EngineResult::empty();
+    }
 }
 
 

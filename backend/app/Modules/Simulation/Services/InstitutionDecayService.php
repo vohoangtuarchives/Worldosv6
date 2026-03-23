@@ -6,7 +6,7 @@ use App\Modules\Narrative\Models\Chronicle;
 use App\Modules\SocialGraph\Models\Civilization;
 use App\Modules\SocialGraph\Models\InstitutionalEntity;
 use App\Modules\Simulation\Models\Universe;
-use App\Services\Narrative\NarrativeScheduler;
+use App\Modules\Narrative\Services\NarrativeScheduler;
 
 /**
  * InstitutionDecayService — Phase 5.

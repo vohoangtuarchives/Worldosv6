@@ -79,7 +79,7 @@ final class SimulationKernel
                         continue;
                     }
 
-                    $fiber = new \Fiber(function () use ($engine, $readOnlyState, $ctx): \App\Modules\Simulation\Core\Domain\EngineResult {
+                    $fiber = new \Fiber(function () use ($engine, $readOnlyState, $ctx): \App\Modules\Simulation\Core\Engines\EngineResult {
                         $eStart = microtime(true);
                         $res = $engine->handle($readOnlyState, $ctx);
                         $res->metrics['_kernel_elapsed_ms'] = (microtime(true) - $eStart) * 1000;

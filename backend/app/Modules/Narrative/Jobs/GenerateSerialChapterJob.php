@@ -3,7 +3,7 @@
 namespace App\Modules\Narrative\Jobs;
 
 use App\Modules\Narrative\Models\NarrativeSeries;
-use App\Services\IpFactory\SerialStoryService;
+use App\Modules\Narrative\Services\SerialStoryService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;

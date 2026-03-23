@@ -4,10 +4,10 @@ namespace App\Modules\Simulation\Core\Engines\Meta;
 
 use App\Modules\Simulation\Core\Concerns\DefaultSimulationEnginePhase;
 use App\Modules\Simulation\Core\Contracts\SimulationEngine;
-use App\Modules\Simulation\Core\Domain\EngineResult;
+use App\Modules\Simulation\Core\Engines\EngineResult;
 use App\Modules\Simulation\Core\Domain\TickContext;
 use App\Modules\Simulation\Core\Runtime\State\WorldState;
-use App\Modules\Simulation\Services\RuleEngine\RuleVmService;
+use App\Modules\Simulation\Core\Runtime\RuleVM\RuleVmService;
 use App\Modules\Simulation\Core\Effects\WorldRulesUpdateEffect;
 use function resource_path;
 use function file_get_contents;

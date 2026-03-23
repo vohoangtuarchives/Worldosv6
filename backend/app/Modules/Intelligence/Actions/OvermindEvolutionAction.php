@@ -4,7 +4,7 @@ namespace App\Modules\Intelligence\Actions;
 
 use App\Modules\Simulation\Models\Universe;
 use App\Modules\Institutions\Services\WorldEdictEngine;
-use App\Services\AI\AnalyticalAiService;
+use App\Modules\Intelligence\Services\AI\AnalyticalAiService;
 use Illuminate\Support\Facades\Log;
 
 /**

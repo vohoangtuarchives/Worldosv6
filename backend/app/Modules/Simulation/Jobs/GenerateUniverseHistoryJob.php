@@ -3,7 +3,7 @@
 namespace App\Modules\Simulation\Jobs;
 
 use App\Modules\Simulation\Models\Universe;
-use App\Services\Narrative\UniverseHistoryGenerator;
+use App\Modules\Narrative\Services\UniverseHistoryGenerator;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;

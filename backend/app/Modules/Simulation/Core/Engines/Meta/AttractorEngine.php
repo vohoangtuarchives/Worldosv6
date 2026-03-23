@@ -6,7 +6,7 @@ use App\Modules\Simulation\Models\Universe;
 use App\Modules\Simulation\Models\UniverseSnapshot;
 use App\Modules\Simulation\Repositories\UniverseRepository;
 use App\Modules\Simulation\Core\Support\RuleEngine;
-use App\Services\Narrative\EventTriggerMapper;
+use App\Modules\Narrative\Services\EventTriggerMapper;
 use Illuminate\Support\Facades\DB;
 
 /**

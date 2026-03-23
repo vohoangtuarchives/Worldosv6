@@ -22,7 +22,7 @@ final class IdeologyConversionService
     private const IDEOLOGY_KEYS = ['tradition', 'innovation', 'trust', 'violence', 'respect', 'myth'];
 
     public function __construct(
-        protected \App\Modules\Simulation\Services\RuleEngine\RuleVmService $ruleVm
+        protected \App\Modules\Simulation\Core\Runtime\RuleVM\RuleVmService $ruleVm
     ) {}
 
     use \App\Modules\Simulation\Core\Concerns\HasProductTypes; // Just placeholder if needed or just functions

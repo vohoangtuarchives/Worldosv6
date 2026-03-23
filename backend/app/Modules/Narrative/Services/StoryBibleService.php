@@ -5,7 +5,7 @@ namespace App\Modules\Narrative\Services;
 use App\Modules\Narrative\Models\SerialChapter;
 use App\Modules\Narrative\Models\NarrativeSeries;
 use App\Modules\Narrative\Models\StoryBible;
-use App\Services\AI\AnalyticalAiService;
+use App\Modules\Intelligence\Services\AI\AnalyticalAiService;
 use Illuminate\Support\Facades\Log;
 
 class StoryBibleService

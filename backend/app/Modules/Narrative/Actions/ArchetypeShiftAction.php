@@ -4,8 +4,8 @@ namespace App\Modules\Narrative\Actions;
 
 use App\Modules\Simulation\Models\Universe;
 use App\Modules\Intelligence\Models\LegendaryAgent;
-use App\Services\Narrative\TraitMapper;
-use App\Services\AI\HeroImageService;
+use App\Modules\Narrative\Services\TraitMapper;
+use App\Modules\Narrative\Services\HeroImageService;
 use App\Modules\Narrative\Actions\ApplyVisualMutationAction;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;

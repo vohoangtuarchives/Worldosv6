@@ -5,9 +5,9 @@ namespace App\Modules\Simulation\Core\Runtime\Stages;
 use App\Modules\Simulation\Models\Universe;
 use App\Modules\Simulation\Models\UniverseSnapshot;
 use App\Modules\Simulation\Core\Runtime\Contracts\SimulationStageInterface;
-use App\Modules\Simulation\Core\Engines\Social\EcologicalCollapseEngine;
+use App\Modules\Simulation\Core\Engines\Biological\EcologicalCollapseEngine;
 use App\Modules\Simulation\Core\Engines\Physics\ClimateEngine;
-use App\Modules\Simulation\Core\Engines\Social\EcologicalPhaseTransitionEngine;
+use App\Modules\Simulation\Core\Engines\Biological\EcologicalPhaseTransitionEngine;
 use App\Modules\Simulation\Core\Engines\Physics\GeologicalEngine;
 use App\Modules\Simulation\Core\Domain\TickContext;
 

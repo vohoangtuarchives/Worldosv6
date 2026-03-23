@@ -6,7 +6,7 @@ use App\Modules\Simulation\Models\Universe;
 use App\Modules\Simulation\Models\UniverseSnapshot;
 use App\Modules\Narrative\Models\Chronicle;
 use App\Modules\Intelligence\Models\SupremeEntity;
-use App\Modules\Simulation\Services\RuleEngine\RuleVmService;
+use App\Modules\Simulation\Core\Runtime\RuleVM\RuleVmService;
 use Illuminate\Support\Facades\Log;
 use function resource_path;
 use function file_get_contents;

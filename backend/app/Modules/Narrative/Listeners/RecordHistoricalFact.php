@@ -4,7 +4,7 @@ namespace App\Modules\Narrative\Listeners;
 
 use App\Modules\Simulation\Events\SimulationEventOccurred;
 use App\Modules\Simulation\Models\UniverseSnapshot;
-use App\Services\Narrative\HistoricalFactEngine;
+use App\Modules\Narrative\Services\HistoricalFactEngine;
 use App\Modules\Simulation\Core\Events\WorldEvent;
 use Illuminate\Support\Facades\DB;
 

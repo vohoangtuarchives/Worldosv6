@@ -45,6 +45,8 @@ class VectorizedActorStage implements SimulationStageInterface
         $heroicTypes = [];
         $lineageIds = [];
         $memes = [];
+        $archetypes = [];
+        $traitsMatrix = [];
 
         foreach ($alive as $actor) {
             $m = $actor->metrics ?? [];
@@ -56,7 +58,15 @@ class VectorizedActorStage implements SimulationStageInterface
             $trauma[] = (float)($m['trauma'] ?? 0.0); // Persistent memory trait
             $heroicTypes[] = (int)($actor->isHeroic ? 1 : 0);
             $lineageIds[] = (int)($actor->lineage_id ?? 0);
-            $memes[] = 0; // Placeholder for simplified culture
+            $memes[] = (int) ($m['meme_mask'] ?? 0);
+            $archetypes[] = $actor->archetype ?? 'Commoner';
+            // 17-element trait vector per actor
+            $tv = data_get($m, 'trait_vector');
+            if (is_array($tv) && count($tv) === 17) {
+                foreach ($tv as $v) { $traitsMatrix[] = (float) $v; }
+            } else {
+                for ($i = 0; $i < 17; $i++) { $traitsMatrix[] = 0.5; }
+            }
         }
 
         // 2. Execute Parallel Rust FFI (Zenith Logic)
@@ -71,7 +81,11 @@ class VectorizedActorStage implements SimulationStageInterface
                 $trauma,
                 $heroicTypes,
                 $lineageIds,
-                $memes
+                $memes,
+                $traitsMatrix,
+                [],
+                [],
+                $archetypes
             );
 
             // 3. Update State Manifold back from vectorized results

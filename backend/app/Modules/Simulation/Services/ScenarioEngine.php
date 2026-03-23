@@ -7,7 +7,7 @@ use App\Modules\Simulation\Models\UniverseSnapshot;
 use App\Modules\Narrative\Models\Chronicle;
 use App\Modules\Simulation\Models\BranchEvent;
 use App\Modules\Institutions\Services\WorldEdictEngine;
-use App\Services\Narrative\NarrativeAiService;
+use App\Modules\Narrative\Services\NarrativeAiService;
 
 /**
  * Scenario Engine: Orchestrates complex multi-layer interventions.

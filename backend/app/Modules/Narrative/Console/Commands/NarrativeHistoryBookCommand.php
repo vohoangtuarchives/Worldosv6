@@ -4,7 +4,7 @@ namespace App\Modules\Narrative\Console\Commands;
 
 use App\Modules\Simulation\Jobs\GenerateUniverseHistoryJob;
 use App\Modules\Simulation\Models\Universe;
-use App\Services\Narrative\UniverseHistoryGenerator;
+use App\Modules\Narrative\Services\UniverseHistoryGenerator;
 use Illuminate\Console\Command;
 
 class NarrativeHistoryBookCommand extends Command

@@ -3,11 +3,11 @@
 namespace App\Modules\Simulation\Core\Engines\Meta;
 
 use App\Modules\Simulation\Core\Contracts\SimulationEngine;
-use App\Modules\Simulation\Core\Runtime\State\ReadOnlyWorldState;
+use App\Modules\Simulation\Core\Runtime\State\WorldState;
 use App\Modules\Simulation\Core\Domain\TickContext;
-use App\Modules\Simulation\Core\Domain\EngineResult;
+use App\Modules\Simulation\Core\Engines\EngineResult;
 use App\Modules\Simulation\Core\Effects\WorldStateUpdateEffect;
-use App\Services\AI\NarrativeCompiler;
+use App\Modules\Narrative\Services\NarrativeCompiler;
 use App\Modules\Narrative\Models\Narrative;
 use Illuminate\Support\Facades\Log;
 
@@ -31,7 +31,7 @@ class NarrativeInterpretationEngine implements SimulationEngine
     public function tickRate(): int { return 1; }
     public function isParallelSafe(): bool { return false; }
 
-    public function handle(ReadOnlyWorldState $state, TickContext $ctx): EngineResult
+    public function handle(WorldState $state, TickContext $ctx): EngineResult
     {
         $effects = [];
         $events = [];

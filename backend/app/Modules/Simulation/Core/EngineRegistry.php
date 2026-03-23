@@ -3,6 +3,7 @@
 namespace App\Modules\Simulation\Core;
 
 use App\Modules\Simulation\Core\Contracts\SimulationEngine;
+use App\Modules\Simulation\Core\Engines\EngineInterface;
 
 /**
  * Registry of simulation engines, sorted by phase then priority for Tick Pipeline (doc §3, Doc 21 §6).

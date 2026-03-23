@@ -5,7 +5,7 @@ namespace App\Modules\Simulation\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Modules\Narrative\Models\NarrativeSeries;
 use App\Modules\Narrative\Models\SerialChapter;
-use App\Services\IpFactory\SerialStoryService;
+use App\Modules\Narrative\Services\SerialStoryService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 

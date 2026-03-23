@@ -4,7 +4,7 @@ namespace App\Modules\Intelligence\Services\AI;
 
 use App\Modules\Simulation\Models\Universe;
 use App\Modules\Simulation\Models\DiscoveredAxiom;
-use App\Services\Narrative\PerceivedArchiveBuilder;
+use App\Modules\Narrative\Services\PerceivedArchiveBuilder;
 use Illuminate\Support\Facades\Log;
 
 /**

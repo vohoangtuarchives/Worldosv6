@@ -30,6 +30,7 @@ class SimulationServiceProvider extends ServiceProvider
         $this->app->bind(\App\Modules\Simulation\Contracts\WorldRepositoryInterface::class, \App\Modules\Simulation\Repositories\WorldEloquentRepository::class);
         $this->app->bind(\App\Modules\Simulation\Contracts\SnapshotRepositoryInterface::class, \App\Modules\Simulation\Repositories\SnapshotEloquentRepository::class);
         $this->app->bind(\App\Modules\Simulation\Contracts\BranchEventRepositoryInterface::class, \App\Modules\Simulation\Repositories\BranchEventRepository::class);
+        $this->app->bind(\App\Contracts\Repositories\BranchEventRepositoryInterface::class, \App\Modules\Simulation\Repositories\BranchEventRepository::class);
 
         // Vocation V1 Repository Bindings
         $this->app->bind(VocationRepositoryInterface::class, VocationEloquentRepository::class);
@@ -120,39 +121,20 @@ class SimulationServiceProvider extends ServiceProvider
         $this->app->singleton(\App\Modules\Simulation\Core\Services\CosmicSignalCollector::class);
         $this->app->singleton(\App\Modules\Simulation\Core\Services\PhasePressureCalculator::class);
         $this->app->singleton(\App\Modules\Simulation\Core\Engines\Physics\PotentialFieldEngine::class);
-        $this->app->singleton(\App\Modules\Simulation\Core\Engines\Physics\CosmicPressureEngine::class);
-        $this->app->singleton(\App\Modules\Simulation\Core\Engines\Social\ZoneConflictEngine::class);
         $this->app->singleton(\App\Modules\Simulation\Core\Engines\Physics\StructuralDecayEngine::class);
+        $this->app->singleton(\App\Modules\Simulation\Core\Engines\Physics\MetabolicEngine::class);
         $this->app->singleton(\App\Modules\Simulation\Core\Engines\Meta\LawEvolutionEngine::class);
-        $this->app->singleton(\App\Modules\Simulation\Core\Engines\Social\CulturalDriftEngine::class);
-        $this->app->singleton(\App\Modules\Simulation\Core\Engines\Physics\AdaptiveTopologyEngine::class);
         $this->app->singleton(\App\Modules\Simulation\Core\Engines\Meta\CausalityEngine::class);
-        $this->app->singleton(\App\Modules\Simulation\Core\Engines\Physics\ClimateEngine::class);
         $this->app->singleton(\App\Modules\Simulation\Core\Engines\Social\AgricultureEngine::class);
         $this->app->singleton(\App\Modules\Simulation\Core\Engines\Social\PopulationEngine::class);
-        $this->app->singleton(\App\Modules\Simulation\Core\Engines\Social\MigrationEngine::class);
         $this->app->singleton(\App\Modules\Simulation\Core\Engines\Social\DiseaseEngine::class);
-        $this->app->singleton(\App\Modules\Simulation\Core\Engines\Social\CivilizationFormationEngine::class);
-        $this->app->singleton(\App\Modules\Simulation\Core\Engines\Social\CitySimulationEngine::class);
-        $this->app->singleton(\App\Modules\Simulation\Core\Engines\Social\GovernanceEngine::class);
-        $this->app->singleton(\App\Modules\Simulation\Core\Engines\Social\TradeEngine::class);
-        $this->app->singleton(\App\Modules\Simulation\Core\Engines\Social\KnowledgePropagationEngine::class);
-        $this->app->singleton(\App\Modules\Simulation\Core\Engines\Social\TechEvolutionEngine::class);
-        $this->app->singleton(\App\Modules\Simulation\Core\Engines\Social\ReligionEngine::class);
-        $this->app->singleton(\App\Modules\Simulation\Core\Engines\Social\ArtCultureEngine::class);
-        $this->app->singleton(\App\Modules\Simulation\Core\Engines\Social\PsychologyEngine::class);
-        $this->app->singleton(\App\Modules\Simulation\Core\Engines\Social\GlobalEconomyEngine::class);
-        $this->app->singleton(\App\Modules\Simulation\Core\Engines\Social\MarketEngine::class);
-        $this->app->singleton(\App\Modules\Simulation\Core\Engines\Social\InequalityEngine::class);
-        $this->app->singleton(\App\Modules\Simulation\Core\Engines\Social\PoliticsEngine::class);
-        $this->app->singleton(\App\Modules\Simulation\Core\Engines\Social\LegitimacyEliteEngine::class);
-        $this->app->singleton(\App\Modules\Simulation\Core\Engines\Social\WarEngine::class);
-        $this->app->singleton(\App\Modules\Simulation\Core\Engines\Social\EcologicalCollapseEngine::class);
-        $this->app->singleton(\App\Modules\Simulation\Core\Engines\Social\EcologicalPhaseTransitionEngine::class);
-        $this->app->singleton(\App\Modules\Simulation\Core\Engines\Physics\GeologicalEngine::class);
+        $this->app->singleton(\App\Modules\Simulation\Core\Engines\Social\CivilizationFieldTheoryEngine::class);
+        $this->app->singleton(\App\Modules\Simulation\Core\Engines\Biological\EcologicalCollapseEngine::class);
+        $this->app->singleton(\App\Modules\Simulation\Core\Engines\Biological\EcologicalPhaseTransitionEngine::class);
+        $this->app->singleton(\App\Modules\Simulation\Core\Engines\Biological\AutopoieticEvolutionEngine::class);
+        $this->app->singleton(\App\Modules\Simulation\Core\Engines\Biological\CelestialAntibodyEngine::class);
         $this->app->singleton(\App\Modules\Simulation\Core\Engines\Meta\MultiverseOsmosisEngine::class);
         $this->app->singleton(\App\Modules\Simulation\Core\Engines\Meta\MetaAttractorEngine::class);
-        $this->app->singleton(\App\Modules\Simulation\Core\Engines\Social\CivilizationPhysicsEngine::class);
         $this->app->singleton(\App\Modules\Simulation\Core\Engines\Meta\CausalHistoryEngine::class);
         $this->app->singleton(\App\Modules\Simulation\Core\Engines\Meta\OmegaConvergenceEngine::class);
         $this->app->singleton(\App\Modules\Simulation\Core\Engines\Meta\CausalBridgeEngine::class);
@@ -160,7 +142,6 @@ class SimulationServiceProvider extends ServiceProvider
         $this->app->singleton(\App\Modules\Simulation\Services\ObserverSpectrumService::class);
         $this->app->singleton(\App\Modules\Simulation\Core\Engines\Meta\ResonanceBleedingEngine::class);
         $this->app->singleton(\App\Modules\Simulation\Core\Engines\Meta\DynamicLawEngine::class);
-        $this->app->singleton(\App\Modules\Simulation\Core\Engines\Physics\RealityAnchorEngine::class);
         $this->app->singleton(\App\Modules\Simulation\Core\Engines\Meta\DeepTimeMemoryEngine::class);
         $this->app->singleton(\App\Modules\Simulation\Core\Engines\Meta\HigherDimensionalEngine::class);
         $this->app->singleton(\App\Modules\Simulation\Core\Engines\Meta\InfiniteRecursionEngine::class);
@@ -215,7 +196,6 @@ class SimulationServiceProvider extends ServiceProvider
         // Batch 6: Rule & DSL Engines
         $this->app->singleton(\App\Modules\Simulation\Core\Runtime\RuleVM\EffectExecutor::class);
         $this->app->singleton(\App\Modules\Simulation\Core\Runtime\RuleVM\RuleVmService::class);
-        $this->app->alias(\App\Modules\Simulation\Core\Runtime\RuleVM\RuleVmService::class, \App\Modules\Simulation\Services\RuleEngine\RuleVmService::class);
         
         $this->app->singleton(\App\Modules\Simulation\Services\RuleEngine\FfiRuleEngine::class);
         $this->app->singleton(\App\Modules\Simulation\Core\Runtime\RuleVM\RuleGraphService::class);
@@ -347,7 +327,7 @@ class SimulationServiceProvider extends ServiceProvider
             $kernel->registerSystem(
                 \App\Modules\Simulation\Core\Runtime\WorldKernel::PHASE_SOCIAL,
                 \App\Modules\Simulation\Core\Runtime\WorldKernel::RULE_ATTRACTION,
-                new \App\Modules\Simulation\Core\Runtime\Systems\EngineSystemAdapter($app->make(\App\Modules\Simulation\Core\Engines\Social\CulturalAttractorEngine::class))
+                new \App\Modules\Simulation\Core\Runtime\Systems\EngineSystemAdapter($app->make(\App\Modules\Simulation\Core\Engines\Meta\CulturalInfluenceEngine::class))
             );
             $kernel->registerSystem(
                 \App\Modules\Simulation\Core\Runtime\WorldKernel::PHASE_SOCIAL,
@@ -502,7 +482,7 @@ class SimulationServiceProvider extends ServiceProvider
         // Advanced V10 Engines
         $this->app->singleton(\App\Modules\Simulation\Core\Engines\Meta\InformationPropagationEngine::class);
         $this->app->singleton(\App\Modules\Simulation\Core\Engines\Meta\PowerStructureEngine::class);
-        $this->app->singleton(\App\Modules\Simulation\Core\Engines\Social\CulturalAttractorEngine::class);
+        $this->app->singleton(\App\Modules\Simulation\Core\Engines\Meta\CulturalInfluenceEngine::class);
         $this->app->singleton(\App\Modules\Simulation\Core\Engines\Meta\MythogenesisEngine::class);
         $this->app->singleton(\App\Modules\Simulation\Core\Engines\Meta\MeaningEngine::class);
         $this->app->singleton(\App\Modules\Simulation\Core\Engines\Meta\KnowledgeEvolutionEngine::class);
@@ -518,7 +498,7 @@ class SimulationServiceProvider extends ServiceProvider
         $this->app->singleton(\App\Modules\Simulation\Services\ReasoningService::class);
 
         // AdvanceSimulationAction (Legacy facade, keep until fully replaced by WorldKernel)
-        $this->app->singleton(\App\Modules\Simulation\Core\Engines\Social\CivilizationCollapseEngine::class);
+        $this->app->singleton(\App\Modules\Intelligence\Services\CivilizationCollapseEngine::class);
         $this->app->tag(config('worldos.engine_registry.engines', []), 'simulation_engine');
         $this->app->singleton(\App\Modules\Simulation\Core\EngineRegistry::class, function ($app) {
             $registry = new \App\Modules\Simulation\Core\EngineRegistry();
@@ -595,7 +575,7 @@ class SimulationServiceProvider extends ServiceProvider
                 $app->make(\App\Modules\Simulation\Services\RuleMutationService::class),
                 $app->make(\App\Modules\Simulation\Core\Engines\Meta\InformationPropagationEngine::class),
                 $app->make(\App\Modules\Simulation\Core\Engines\Meta\PowerStructureEngine::class),
-                $app->make(\App\Modules\Simulation\Core\Engines\Social\CulturalAttractorEngine::class),
+                $app->make(\App\Modules\Simulation\Core\Engines\Meta\CulturalInfluenceEngine::class),
                 $app->make(\App\Modules\Simulation\Core\Engines\Meta\MythogenesisEngine::class),
                 $app->make(\App\Modules\Simulation\Core\Engines\Meta\MeaningEngine::class),
                 $app->make(\App\Modules\Simulation\Core\Engines\Meta\KnowledgeEvolutionEngine::class),

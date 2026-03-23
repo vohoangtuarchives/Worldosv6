@@ -4,14 +4,14 @@ namespace App\Modules\Narrative\Listeners;
 
 use App\Modules\Simulation\Events\UniverseSimulationPulsed;
 use App\Modules\Narrative\Contracts\ChronicleRepositoryInterface;
-use App\Services\Narrative\NarrativeScheduler;
+use App\Modules\Narrative\Services\NarrativeScheduler;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Log;
 
 class GenerateNarrative implements ShouldQueue
 {
     public function __construct(
-        protected \App\Services\Narrative\NarrativeScheduler $narrativeScheduler,
+        protected \App\Modules\Narrative\Services\NarrativeScheduler $narrativeScheduler,
         protected ChronicleRepositoryInterface $chronicleRepository
     ) {}
 

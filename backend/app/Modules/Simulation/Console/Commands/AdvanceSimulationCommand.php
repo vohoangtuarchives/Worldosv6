@@ -2,7 +2,7 @@
 
 namespace App\Modules\Simulation\Console\Commands;
 
-use App\Services\Orchestrator\ImplicitOrchestratorService;
+use App\Modules\Simulation\Services\ImplicitOrchestratorService;
 use Illuminate\Console\Command;
 
 class AdvanceSimulationCommand extends Command
@@ -13,7 +13,7 @@ class AdvanceSimulationCommand extends Command
 
     protected $description = 'Advance saga universe(s) by N ticks (WorldOS V6)';
 
-    public function handle(\App\Services\Orchestrator\ImplicitOrchestratorService $orchestrator): int
+    public function handle(\App\Modules\Simulation\Services\ImplicitOrchestratorService $orchestrator): int
     {
         $ticks = (int) $this->option('ticks');
         $sagaId = $this->option('saga');

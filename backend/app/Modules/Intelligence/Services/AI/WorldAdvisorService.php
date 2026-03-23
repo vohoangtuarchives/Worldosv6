@@ -3,10 +3,10 @@
 namespace App\Modules\Intelligence\Services\AI;
 
 use App\Modules\Simulation\Models\Universe;
-use App\Services\AI\AnalyticalAiService;
-use App\Services\AI\TheorySynthesisService;
-use App\Services\AIResearch\MaterialSynthesisService;
-use App\Services\Material\MaterialMutationDag;
+use App\Modules\Intelligence\Services\AI\AnalyticalAiService;
+use App\Modules\Intelligence\Services\AI\TheorySynthesisService;
+use App\Modules\Intelligence\Services\Lab\MaterialSynthesisService;
+use App\Modules\World\Services\MaterialMutationDag;
 use Illuminate\Support\Facades\Log;
 
 /**

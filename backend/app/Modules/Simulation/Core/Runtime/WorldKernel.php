@@ -274,7 +274,7 @@ class WorldKernel
             
             $heroicTypes[] = $this->mapArchetypeToTypeId($actor->archetype);
             $lineageIds[]  = (int) data_get($actor->metrics, 'lineage_id', 0);
-            $memes[] = [];
+            $memes[] = (int) data_get($actor->metrics, 'meme_mask', 0);
             
             $archetypes[] = $actor->archetype ?? 'Commoner';
             $behaviorStates[] = (int) data_get($actor->metrics, 'behavior_state', 0);
@@ -299,9 +299,10 @@ class WorldKernel
                 $actorTechLevels[] = (float) ($actorTechs[$def['id']] ?? 0.0);
             }
 
-            $primaryFaction = $actor->factions->first();
-            $factionIdsList[] = $primaryFaction ? (int) $primaryFaction->id : 0;
-            $factionLoyaltyList[] = $primaryFaction ? (float) $primaryFaction->pivot->loyalty : 0.5;
+            $factionsCollection = is_array($actor->factions) ? collect($actor->factions) : $actor->factions;
+            $primaryFaction = $factionsCollection->first();
+            $factionIdsList[] = $primaryFaction ? (int) ($primaryFaction->id ?? $primaryFaction['id'] ?? 0) : 0;
+            $factionLoyaltyList[] = $primaryFaction ? (float) ($primaryFaction->pivot->loyalty ?? $primaryFaction['loyalty'] ?? 0.5) : 0.5;
 
             $actorTraitsValues = null;
             if ($actor->traits instanceof \App\Modules\Psychology\ValueObjects\TraitVector) {

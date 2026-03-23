@@ -2,7 +2,7 @@
 
 namespace App\Modules\Simulation\Core\Contracts;
 
-use App\Modules\Simulation\Core\Domain\EngineResult;
+use App\Modules\Simulation\Core\Engines\EngineResult;
 use App\Modules\Simulation\Core\Domain\TickContext;
 use App\Modules\Simulation\Core\Runtime\State\WorldState;
 

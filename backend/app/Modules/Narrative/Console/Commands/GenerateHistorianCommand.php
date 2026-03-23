@@ -3,7 +3,7 @@
 namespace App\Modules\Narrative\Console\Commands;
 
 use App\Modules\Simulation\Models\Universe;
-use App\Services\Narrative\HistorianAgentService;
+use App\Modules\Narrative\Services\HistorianAgentService;
 use Illuminate\Console\Command;
 
 class GenerateHistorianCommand extends Command

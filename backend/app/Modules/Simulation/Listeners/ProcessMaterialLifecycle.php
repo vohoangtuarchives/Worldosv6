@@ -3,7 +3,7 @@
 namespace App\Modules\Simulation\Listeners;
 
 use App\Modules\Simulation\Events\UniverseSimulationPulsed;
-use App\Services\Material\MaterialLifecycleEngine;
+use App\Modules\World\Services\MaterialLifecycleEngine;
 use App\Modules\Simulation\Core\Engines\Physics\MaterialEvolutionEngine;
 use App\Modules\Simulation\Core\Engines\Meta\OmegaEngine;
 use App\Modules\Simulation\Core\Engines\Meta\AscensionEngine;

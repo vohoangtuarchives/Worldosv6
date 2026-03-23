@@ -5,7 +5,7 @@ namespace App\Modules\Narrative\Actions;
 use App\Modules\Narrative\Entities\DemiurgeEntity;
 use App\Modules\Narrative\Contracts\DemiurgeRepositoryInterface;
 use App\Modules\Simulation\Models\Universe;
-use App\Services\AI\DemiurgeRegistry;
+use App\Modules\Intelligence\Services\DemiurgeRegistry;
 use App\Modules\Narrative\Actions\CelestialEngineeringAction;
 use App\Modules\Narrative\Actions\DivineInquisitionAction;
 use Illuminate\Support\Facades\Log;

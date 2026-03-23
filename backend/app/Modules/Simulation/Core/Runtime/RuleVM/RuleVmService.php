@@ -4,7 +4,7 @@ namespace App\Modules\Simulation\Core\Runtime\RuleVM;
 
 use App\Contracts\SimulationEngineClientInterface;
 use App\Modules\Simulation\Core\Runtime\State\WorldState;
-use App\Modules\Simulation\Core\Domain\EngineResult;
+use App\Modules\Simulation\Core\Engines\EngineResult;
 use App\Modules\Simulation\Core\Effects\WorldStateUpdateEffect;
 use App\Modules\Simulation\Services\RuleMutationService;
 use App\Modules\Simulation\Services\CausalCacheService;
@@ -36,11 +36,23 @@ class RuleVmService
         if (!$state) return;
 
         $tick = (int) ($snapshot ? $snapshot->tick : $universe->current_tick);
-        $dsl = $rulesDsl ?? $this->resolveDslContent(Config::get('worldos.rule_engine.rules_path'));
+        $rulesPath = Config::get('worldos.rule_engine.rules_path');
+        $dsl = $rulesDsl ?? ($rulesPath ? $this->resolveDslContent($rulesPath) : '');
+        if (empty($dsl)) return;
 
         $result = $this->evaluate($state, $dsl, $tick);
         
         $this->executor->execute((int)$universe->id, $tick, $result, $state);
+    }
+
+    public function evaluateAndApplyWithState(WorldState $state, string $dsl, int $tick): void
+    {
+        if (empty($dsl)) return;
+        $result = $this->evaluate($state, $dsl, $tick);
+        $universeId = (int) $state->get('universe_id');
+        if ($universeId && $state instanceof \App\Modules\Simulation\Core\Runtime\State\WorldStateMutable) {
+            $this->executor->execute($universeId, $tick, $result, $state);
+        }
     }
 
     /**
@@ -50,6 +62,13 @@ class RuleVmService
     {
         $outputs = $this->evaluateWithResults($state, $dslOrPath, $tick, $context);
         return $this->mapOutputsToResults($outputs, (int)$state->get('universe_id'), $tick, $state);
+    }
+
+    public function evaluateRawState(array $rawState, string $dsl): array
+    {
+        if (empty($dsl)) return ['ok' => false, 'state' => [], 'error_message' => 'empty DSL'];
+        $result = $this->engine->evaluateRules($rawState, $dsl);
+        return $result ?? ['ok' => false, 'state' => []];
     }
 
     public function evaluateWithResults(WorldState $state, string $dslOrPath, int $tick, array $context = []): array

@@ -103,7 +103,13 @@ class ActorEntity
         public ?string $heroicType = null,
         public ?string $vocationId = null,
         public ?int $factionId = null,
-        public float $loyalty = 0.5
+        public float $loyalty = 0.5,
+        public ?int $zone_id = null,
+        public float $hunger = 0.5,
+        public float $energy = 100.0,
+        public float $fear = 0.0,
+        public float $trauma = 0.0,
+        public array $factions = []
     ) {}
 
     /**
@@ -112,6 +118,26 @@ class ActorEntity
     public function incrementInfluence(float $delta = 0.1): void
     {
         $this->metrics['influence'] = ($this->metrics['influence'] ?? 0) + $delta;
+    }
+
+    public function isAlive(): bool
+    {
+        return $this->isAlive;
+    }
+
+    public function consumeEnergy(float $amount): void
+    {
+        $current = (float) ($this->metrics['energy'] ?? 100.0);
+        $this->metrics['energy'] = max(0.0, $current - $amount);
+    }
+
+    public function evolve(array $params = []): void
+    {
+    }
+
+    public function getMotivationProfile(): array
+    {
+        return $this->metrics['motivation'] ?? [];
     }
 
     /**

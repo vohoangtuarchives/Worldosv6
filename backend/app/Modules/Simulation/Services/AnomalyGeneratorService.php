@@ -5,7 +5,7 @@ namespace App\Modules\Simulation\Services;
 use App\Modules\Simulation\Models\Universe;
 use App\Modules\Simulation\Models\BranchEvent;
 use App\Modules\Narrative\Models\Chronicle;
-use App\Modules\Simulation\Services\RuleEngine\RuleVmService;
+use App\Modules\Simulation\Core\Runtime\RuleVM\RuleVmService;
 use App\Modules\Simulation\Core\Runtime\State\WorldState;
 use Illuminate\Support\Facades\Log;
 use function resource_path;

@@ -4,7 +4,7 @@ namespace App\Modules\Simulation\Core\Engines\Meta;
 
 use App\Modules\Simulation\Core\Concerns\DefaultSimulationEnginePhase;
 use App\Modules\Simulation\Core\Contracts\SimulationEngine;
-use App\Modules\Simulation\Core\Domain\EngineResult;
+use App\Modules\Simulation\Core\Engines\EngineResult;
 use App\Modules\Simulation\Core\Domain\TickContext;
 use App\Modules\Simulation\Core\Runtime\State\WorldState;
 use Illuminate\Support\Facades\Log;
@@ -21,7 +21,7 @@ class MythogenesisEngine implements SimulationEngine
     use DefaultSimulationEnginePhase;
 
     public function __construct(
-        private readonly \App\Modules\Simulation\Services\RuleEngine\RuleVmService $ruleVm
+        private readonly \App\Modules\Simulation\Core\Runtime\RuleVM\RuleVmService $ruleVm
     ) {}
 
     public function name(): string

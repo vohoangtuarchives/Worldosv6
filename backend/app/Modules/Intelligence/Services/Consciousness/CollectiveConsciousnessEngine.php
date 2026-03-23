@@ -3,7 +3,7 @@
 namespace App\Modules\Intelligence\Services\Consciousness;
 
 use App\Modules\Simulation\Core\Runtime\State\WorldState;
-use App\Modules\Simulation\Services\RuleEngine\RuleVmService;
+use App\Modules\Simulation\Core\Runtime\RuleVM\RuleVmService;
 use App\Modules\Simulation\Core\SimulationEventBus;
 use Illuminate\Support\Facades\Log;
 

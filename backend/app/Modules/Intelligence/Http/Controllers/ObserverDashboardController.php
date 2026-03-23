@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Modules\Narrative\Models\Demiurge;
 use App\Modules\Intelligence\Models\LegendaryAgent;
 use App\Modules\Simulation\Models\Universe;
-use App\Services\AI\EtherealOmenService;
+use App\Modules\Narrative\Services\EtherealOmenService;
 use Illuminate\Http\JsonResponse;
 
 /**

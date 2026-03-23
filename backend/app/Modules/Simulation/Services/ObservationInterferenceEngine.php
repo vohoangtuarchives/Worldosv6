@@ -5,7 +5,7 @@ namespace App\Modules\Simulation\Services;
 use App\Modules\Simulation\Core\Runtime\State\WorldState;
 use App\Modules\Simulation\Entities\UniverseEntity;
 use App\Modules\Simulation\Actions\WavefunctionCollapseAction;
-use App\Modules\Simulation\Services\RuleEngine\RuleVmService;
+use App\Modules\Simulation\Core\Runtime\RuleVM\RuleVmService;
 use Illuminate\Support\Facades\Log;
 use function resource_path;
 use function file_exists;

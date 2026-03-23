@@ -21,12 +21,12 @@ class LifecycleService
     /**
      * Kiểm tra cái chết và bắn event nếu cần.
      */
-    public function checkDeath(Agent $agent, int $universeId, int $tick): bool
+    public function checkDeath(object $agent, int $universeId, int $tick): bool
     {
         if (!$agent->isAlive()) {
             $this->events->dispatch(new ActorDiedEvent($universeId, $tick, [
                 'actor_id' => $agent->id,
-                'location' => ['x' => $agent->x, 'y' => $agent->y]
+                'location' => ['x' => $agent->x ?? 0, 'y' => $agent->y ?? 0]
             ]));
             return true;
         }

@@ -3,7 +3,7 @@
 namespace App\Modules\Institutions\Services;
 
 use App\Modules\Simulation\Core\Runtime\Domain\UniverseState;
-use App\Modules\Simulation\Services\RuleEngine\RuleVmService;
+use App\Modules\Simulation\Core\Runtime\RuleVM\RuleVmService;
 use function resource_path;
 
 /**

@@ -70,5 +70,10 @@ class CivilizationCollapseEngine
             Log::warning("MULTIVERSE: Universe #{$universe->id} has COLLAPSED at tick {$tick}. Legacy archived.");
         });
     }
+
+    public function evaluate(\App\Modules\Simulation\Models\Universe $universe, \App\Modules\Simulation\Models\UniverseSnapshot $snapshot): void
+    {
+        $this->checkAndExecute($universe, (int) $snapshot->tick);
+    }
 }
 

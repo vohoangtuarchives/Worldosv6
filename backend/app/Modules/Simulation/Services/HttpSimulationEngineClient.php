@@ -214,43 +214,82 @@ class HttpSimulationEngineClient implements SimulationEngineClientInterface
         ];
     }
 
-    public function processActorsSoa(int $tick, array $ids, array $zoneIds, array $hunger, array $energy, array $fear, array $trauma, array $heroicTypes, array $lineageIds, array $memes): array
+    public function processActorsSoa(int $tick, array $ids, array $zoneIds, array $hunger, array $energy, array $fear, array $trauma, array $heroicTypes, array $lineageIds, array $memes, array $traitsMatrix = [], array $behaviorStates = [], array $behaviorGraphs = [], array $archetypes = [], array $socialGraph = [], array $activeSagas = [], array $factionIds = [], array $factionLoyalty = []): array
     {
         $url = rtrim($this->baseUrl, '/').'/process-actors-soa';
-        $payload = compact('tick', 'ids', 'zoneIds', 'hunger', 'energy', 'fear', 'trauma', 'heroicTypes', 'lineageIds', 'memes');
-        $response = Http::post($url, $payload);
-        return $response->json() ?: [];
+        $payload = [
+            'tick'            => $tick,
+            'ids'             => $ids,
+            'zone_ids'        => $zoneIds,
+            'hunger'          => $hunger,
+            'energy'          => $energy,
+            'fear'            => $fear,
+            'trauma'          => $trauma,
+            'heroic_types'    => $heroicTypes,
+            'lineage_ids'     => $lineageIds,
+            'memes'           => $memes,
+            'traits_matrix'   => $traitsMatrix,
+            'behavior_states' => $behaviorStates,
+            'behavior_graphs' => [],
+            'archetypes'      => $archetypes,
+            'social_graph'    => $socialGraph,
+            'active_sagas'    => $activeSagas,
+            'faction_ids'     => $factionIds,
+            'faction_loyalty' => $factionLoyalty,
+        ];
+        try {
+            $response = Http::timeout(30)->post($url, $payload);
+            return $response->json() ?: [];
+        } catch (\Throwable $e) {
+            return [];
+        }
     }
 
     public function processFieldsV7(array $fields, array $neighborCounts, array $neighborOffsets, array $neighbors, float $diffusionRate, float $preservationRate): array
     {
         $url = rtrim($this->baseUrl, '/').'/process-fields';
-        $payload = compact('fields', 'neighborCounts', 'neighborOffsets', 'neighbors', 'diffusionRate', 'preservationRate');
-        $response = Http::post($url, $payload);
-        return $response->json() ?: $fields;
+        $payload = ['fields' => $fields, 'neighbor_counts' => $neighborCounts, 'neighbor_offsets' => $neighborOffsets, 'neighbors' => $neighbors, 'diffusion_rate' => $diffusionRate, 'preservation_rate' => $preservationRate];
+        try {
+            $response = Http::timeout(30)->post($url, $payload);
+            return $response->json() ?: $fields;
+        } catch (\Throwable $e) {
+            return $fields;
+        }
     }
 
     public function computeMetabolismGrid(array $populations, array $biomasses, array $industries, float $efficiency, float $baseEnergy): array
     {
         $url = rtrim($this->baseUrl, '/').'/compute-metabolism';
         $payload = compact('populations', 'biomasses', 'industries', 'efficiency', 'baseEnergy');
-        $response = Http::post($url, $payload);
-        return $response->json() ?: ['total_waste' => 0.0, 'net_energies' => []];
+        try {
+            $response = Http::timeout(30)->post($url, $payload);
+            return $response->json() ?: ['total_waste' => 0.0, 'net_energies' => []];
+        } catch (\Throwable $e) {
+            return ['total_waste' => 0.0, 'net_energies' => []];
+        }
     }
 
     public function calculateVocationAlignment(array $actorMotivation, array $targetProfile): float
     {
         $url = rtrim($this->baseUrl, '/').'/calculate-vocation-alignment';
         $payload = compact('actorMotivation', 'targetProfile');
-        $response = Http::post($url, $payload);
-        return (float) ($response->json()['alignment'] ?? 0.0);
+        try {
+            $response = Http::timeout(15)->post($url, $payload);
+            return (float) ($response->json()['alignment'] ?? 0.0);
+        } catch (\Throwable $e) {
+            return 0.0;
+        }
     }
 
     public function getCombinedGravity(array $rulesets): float
     {
         $url = rtrim($this->baseUrl, '/').'/get-combined-gravity';
         $payload = compact('rulesets');
-        $response = Http::post($url, $payload);
-        return (float) ($response->json()['gravity'] ?? 1.0);
+        try {
+            $response = Http::timeout(15)->post($url, $payload);
+            return (float) ($response->json()['gravity'] ?? 1.0);
+        } catch (\Throwable $e) {
+            return 1.0;
+        }
     }
 }

@@ -9,14 +9,21 @@ use Illuminate\Support\Facades\Log;
 
 class Neo4jSocialSyncer
 {
-    protected ClientInterface $client;
+    protected ?ClientInterface $client = null;
 
     public function __construct()
     {
-        $uri = config('worldos.graph.uri', 'bolt://neo4j:worldos_secret@neo4j:7687');
-        $this->client = ClientBuilder::create()
-            ->withDriver('bolt', $uri)
-            ->build();
+    }
+
+    protected function getClient(): ClientInterface
+    {
+        if ($this->client === null) {
+            $uri = config('worldos.graph.uri', 'bolt://neo4j:worldos_secret@neo4j:7687');
+            $this->client = ClientBuilder::create()
+                ->withDriver('bolt', $uri)
+                ->build();
+        }
+        return $this->client;
     }
 
     /**
@@ -35,7 +42,7 @@ class Neo4jSocialSyncer
      */
     protected function syncActorNode(Actor $actor): void
     {
-        $this->client->run(<<<'CYPHER'
+        $this->getClient()->run(<<<'CYPHER'
             MERGE (a:Actor {id: $id})
             SET a.name = $name,
                 a.archetype = $archetype,
@@ -58,7 +65,7 @@ class Neo4jSocialSyncer
         $relations = data_get($actor->metrics, 'social_relations', []);
         
         foreach ($relations as $targetId => $rel) {
-            $this->client->run(<<<'CYPHER'
+            $this->getClient()->run(<<<'CYPHER'
                 MATCH (a:Actor {id: $source_id})
                 MATCH (b:Actor {id: $target_id})
                 MERGE (a)-[r:RELATION]->(b)
@@ -79,7 +86,7 @@ class Neo4jSocialSyncer
      */
     public function createActorNode(string $id, string $name, string $archetype, int $universe_id): void
     {
-        $this->client->run(<<<'CYPHER'
+        $this->getClient()->run(<<<'CYPHER'
             MERGE (a:Actor {id: $id})
             SET a.name = $name,
                 a.archetype = $archetype,
@@ -98,7 +105,7 @@ class Neo4jSocialSyncer
      */
     public function createParentChildRelation(string $parentId, string $childId): void
     {
-        $this->client->run(<<<'CYPHER'
+        $this->getClient()->run(<<<'CYPHER'
             MATCH (p:Actor {id: $pId})
             MATCH (c:Actor {id: $cId})
             MERGE (p)-[r:PARENT_OF]->(c)
@@ -114,7 +121,7 @@ class Neo4jSocialSyncer
      */
     public function markActorDeceased(string $id): void
     {
-        $this->client->run(<<<'CYPHER'
+        $this->getClient()->run(<<<'CYPHER'
             MATCH (a:Actor {id: $id})
             SET a.is_alive = false
         CYPHER, ['id' => $id]);
@@ -126,7 +133,7 @@ class Neo4jSocialSyncer
     public function findAnomalousCliques(int $universeId): array
     {
         // Example: Find dense clusters of Fear
-        $result = $this->client->run(<<<'CYPHER'
+        $result = $this->getClient()->run(<<<'CYPHER'
             MATCH (a:Actor)-[r:RELATION]->(b:Actor)
             WHERE a.universe_id = $universe_id AND r.fear > 0.7
             WITH a, count(r) as fear_connections

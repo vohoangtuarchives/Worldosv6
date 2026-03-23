@@ -15,7 +15,7 @@ use function file_get_contents;
 class TheDreamingService
 {
     public function __construct(
-        protected \App\Modules\Simulation\Services\RuleEngine\RuleVmService $ruleVm
+        protected \App\Modules\Simulation\Core\Runtime\RuleVM\RuleVmService $ruleVm
     ) {}
 
     /**

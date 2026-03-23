@@ -4,7 +4,7 @@ namespace App\Modules\Simulation\Core\Supervisor\Handlers;
 
 use App\Modules\Simulation\Models\Universe;
 use App\Modules\Simulation\Models\UniverseSnapshot;
-use App\Services\Simulation\HolographicCompressionService;
+use App\Modules\Simulation\Services\HolographicCompressionService;
 use App\Modules\Simulation\Core\Supervisor\Contracts\PostSnapshotHandlerInterface;
 
 /**

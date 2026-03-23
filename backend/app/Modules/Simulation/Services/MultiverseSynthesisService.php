@@ -14,7 +14,7 @@ class MultiverseSynthesisService
     const MERGE_THRESHOLD = 0.85;
 
     public function __construct(
-        protected \App\Services\AIResearch\AnalyticalAiService $analyticalAi
+        protected \App\Modules\Intelligence\Services\AI\AnalyticalAiService $analyticalAi
     ) {}
 
     /**

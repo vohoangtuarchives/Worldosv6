@@ -2,7 +2,7 @@
 
 namespace App\Modules\Narrative\Actions;
 
-use App\Services\AI\VectorSearchService;
+use App\Modules\Intelligence\Services\AI\VectorSearchService;
 
 class SearchChronicleAction
 {

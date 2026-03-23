@@ -5,7 +5,7 @@ namespace App\Providers;
 use App\Contracts\LlmNarrativeClientInterface;
 use App\Contracts\SimulationEngineClientInterface;
 use App\Contracts\UniverseEvaluatorInterface;
-use App\Services\Narrative\OpenAINarrativeService;
+use App\Modules\Narrative\Services\OpenAINarrativeService;
 use App\Modules\Simulation\Repositories\UniverseSnapshotRepository;
 use App\Modules\Simulation\Services\HttpSimulationEngineClient;
 use App\Modules\Simulation\Services\StubSimulationEngineClient;
@@ -47,16 +47,16 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(LlmNarrativeClientInterface::class, OpenAINarrativeService::class);
 
         // Narrative Engine: Strategy registry + pipeline (Event Aggregator → PromptBuilder → Generator → Writer)
-        $this->app->singleton(\App\Services\Narrative\NarrativeStrategyRegistry::class, function ($app) {
-            $registry = new \App\Services\Narrative\NarrativeStrategyRegistry();
-            $registry->register($app->make(\App\Services\Narrative\Strategies\DeathNarrativeStrategy::class));
-            $registry->register($app->make(\App\Services\Narrative\Strategies\RebirthNarrativeStrategy::class));
-            $registry->register($app->make(\App\Services\Narrative\Strategies\ParadoxNarrativeStrategy::class));
-            $registry->register($app->make(\App\Services\Narrative\Strategies\AnomalyNarrativeStrategy::class));
-            $registry->register($app->make(\App\Services\Narrative\Strategies\LegacyNarrativeStrategy::class));
+        $this->app->singleton(\App\Modules\Narrative\Services\NarrativeStrategyRegistry::class, function ($app) {
+            $registry = new \App\Modules\Narrative\Services\NarrativeStrategyRegistry();
+            $registry->register($app->make(\App\Modules\Narrative\Services\Strategies\DeathNarrativeStrategy::class));
+            $registry->register($app->make(\App\Modules\Narrative\Services\Strategies\RebirthNarrativeStrategy::class));
+            $registry->register($app->make(\App\Modules\Narrative\Services\Strategies\ParadoxNarrativeStrategy::class));
+            $registry->register($app->make(\App\Modules\Narrative\Services\Strategies\AnomalyNarrativeStrategy::class));
+            $registry->register($app->make(\App\Modules\Narrative\Services\Strategies\LegacyNarrativeStrategy::class));
             return $registry;
         });
-        $this->app->singleton(\App\Services\Narrative\NarrativeCache::class);
+        $this->app->singleton(\App\Modules\Narrative\Services\NarrativeCache::class);
     }
 
     /**

@@ -13,7 +13,7 @@ class ChronicleEntity
         public readonly int $fromTick,
         public readonly int $toTick,
         public readonly string $type,
-        public readonly string $content,
+        public readonly ?string $content,
         public readonly float $importance,
         public readonly array $perceivedArchiveSnapshot = [],
         public readonly array $rawPayload = []

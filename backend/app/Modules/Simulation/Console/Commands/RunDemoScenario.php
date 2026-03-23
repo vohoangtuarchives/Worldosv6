@@ -7,8 +7,8 @@ use App\Modules\Simulation\Models\Multiverse;
 use App\Modules\Simulation\Models\World;
 use App\Modules\Simulation\Models\Universe;
 use App\Modules\Simulation\Actions\AdvanceSimulationAction;
-use App\Services\Orchestrator\ImplicitOrchestratorService;
-use App\Services\Narrative\NarrativeAiService;
+use App\Modules\Simulation\Services\ImplicitOrchestratorService;
+use App\Modules\Narrative\Services\NarrativeAiService;
 
 class RunDemoScenario extends Command
 {

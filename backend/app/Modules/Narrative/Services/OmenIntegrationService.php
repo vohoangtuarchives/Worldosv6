@@ -89,9 +89,9 @@ class OmenIntegrationService
         
         $chronicles = array_map(
             fn($e) => [
-                'from_tick' => $e->from_tick,
+                'from_tick' => $e->fromTick,
                 'type' => $e->type,
-                'raw_payload' => $e->raw_payload
+                'raw_payload' => $e->rawPayload
             ],
             $this->chronicleRepository->findByUniverse($universe->id, 5)
         );

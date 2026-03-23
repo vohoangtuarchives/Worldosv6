@@ -3,9 +3,9 @@
 namespace App\Modules\Simulation\Core\Engines\Meta;
 
 use App\Modules\Simulation\Core\Contracts\SimulationEngine;
-use App\Modules\Simulation\Core\Runtime\State\ReadOnlyWorldState;
+use App\Modules\Simulation\Core\Runtime\State\WorldState;
 use App\Modules\Simulation\Core\Domain\TickContext;
-use App\Modules\Simulation\Core\Domain\EngineResult;
+use App\Modules\Simulation\Core\Engines\EngineResult;
 use App\Modules\Narrative\Models\Narrative;
 
 /**
@@ -24,7 +24,7 @@ class NarrativeConflictEngine implements SimulationEngine
     public function tickRate(): int { return 2; } // Runs every 2 ticks
     public function isParallelSafe(): bool { return true; }
 
-    public function handle(ReadOnlyWorldState $state, TickContext $ctx): EngineResult
+    public function handle(WorldState $state, TickContext $ctx): EngineResult
     {
         $universeId = $ctx->getUniverseId();
         $narratives = Narrative::where('universe_id', $universeId)

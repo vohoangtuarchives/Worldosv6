@@ -5,7 +5,7 @@ namespace App\Modules\Simulation\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Modules\Simulation\Core\Runtime\State\StateManager;
 use App\Modules\Simulation\Services\ZenithMetricsService;
-use App\Services\Narrative\MeaningSeedService;
+use App\Modules\Narrative\Services\MeaningSeedService;
 use App\Modules\Simulation\Services\RuleMutationService;
 use App\Modules\Simulation\Models\UniverseSnapshot;
 use Illuminate\Http\JsonResponse;

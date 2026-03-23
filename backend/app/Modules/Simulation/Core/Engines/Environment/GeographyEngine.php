@@ -2,10 +2,10 @@
 
 namespace App\Modules\Simulation\Core\Engines\Environment;
 
-use App\Modules\Simulation\Core\Context\SimulationContext;
+use App\Modules\Simulation\Core\Domain\TickContext;
 use App\Modules\Simulation\Core\Engines\EngineInterface;
 use App\Modules\Simulation\Core\Engines\EngineResult;
-use App\Modules\Simulation\Core\State\WorldState;
+use App\Modules\Simulation\Core\Runtime\State\WorldState;
 use App\Modules\Geography\Services\EnvironmentTickService;
 use App\Modules\Geography\ValueObjects\Tile;
 use App\Modules\Geography\ValueObjects\Weather;
@@ -49,7 +49,7 @@ class GeographyEngine implements EngineInterface
         return 'GeographyEngine';
     }
 
-    public function handle(WorldState $state, SimulationContext $ctx): EngineResult
+    public function handle(WorldState $state, TickContext $ctx): EngineResult
     {
         $result = new EngineResult();
         $universeId = (int) $state->get('universe_id', 1);

@@ -6,7 +6,7 @@ use App\Modules\Simulation\Models\Universe;
 use App\Modules\Simulation\Models\UniverseInteraction;
 use App\Modules\Narrative\Models\Chronicle;
 use App\Modules\Simulation\Actions\MergeUniverseAction;
-use App\Modules\Simulation\Services\RuleEngine\RuleVmService;
+use App\Modules\Simulation\Core\Runtime\RuleVM\RuleVmService;
 use function config;
 use function app;
 use function now;

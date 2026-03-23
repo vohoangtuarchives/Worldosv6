@@ -4,7 +4,7 @@ namespace App\Modules\Simulation\Services;
 
 use App\Modules\Narrative\Models\Demiurge;
 use App\Modules\Simulation\Models\Universe;
-use App\Services\Orchestrator\ImplicitOrchestratorService;
+use App\Modules\Simulation\Services\ImplicitOrchestratorService;
 use Illuminate\Support\Facades\Log;
 
 /**

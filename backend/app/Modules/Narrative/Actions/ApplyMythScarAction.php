@@ -11,7 +11,7 @@ class ApplyMythScarAction
 {
     public function __construct(
         protected \App\Contracts\GraphProviderInterface $graphProvider,
-        protected \App\Modules\Simulation\Services\RuleEngine\RuleVmService $ruleVm,
+        protected \App\Modules\Simulation\Core\Runtime\RuleVM\RuleVmService $ruleVm,
         protected MythScarRepositoryInterface $mythScarRepository
     ) {}
 

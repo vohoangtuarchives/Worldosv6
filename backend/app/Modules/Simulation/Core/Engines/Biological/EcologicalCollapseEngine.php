@@ -7,7 +7,7 @@ use App\Modules\Narrative\Models\Chronicle;
 use App\Modules\Simulation\Models\Universe;
 use App\Modules\Intelligence\Services\EcosystemMetricsService;
 use App\Modules\Simulation\Core\SimulationEventBus;
-use App\Modules\Simulation\Services\RuleEngine\RuleVmService;
+use App\Modules\Simulation\Core\Runtime\RuleVM\RuleVmService;
 use Illuminate\Support\Facades\Log;
 use function resource_path;
 use function config;
@@ -60,6 +60,12 @@ class EcologicalCollapseEngine
             $sv = json_decode($sv, true) ?? [];
         }
         return is_array($sv) ? $sv : [];
+    }
+
+    public function handle(\App\Modules\Simulation\Core\Runtime\State\WorldState $state, \App\Modules\Simulation\Core\Domain\TickContext $ctx): \App\Modules\Simulation\Core\Engines\EngineResult
+    {
+        $this->runWithState($state, $ctx->getTick());
+        return \App\Modules\Simulation\Core\Engines\EngineResult::empty();
     }
 }
 

@@ -22,7 +22,7 @@ final class EconomyStage implements SimulationStageInterface
         protected InequalityEngine $inequalityEngine,
         protected TradeEngine $tradeEngine,
         protected \App\Modules\Simulation\Core\Runtime\State\StateManager $stateManager,
-        protected \App\Modules\Simulation\Services\RuleEngine\RuleVmService $ruleVm
+        protected \App\Modules\Simulation\Core\Runtime\RuleVM\RuleVmService $ruleVm
     ) {}
 
     public function run(Universe $universe, int $tick, ?UniverseSnapshot $savedSnapshot = null, array $context = []): void

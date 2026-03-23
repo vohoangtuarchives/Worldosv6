@@ -9,6 +9,7 @@ use Illuminate\Support\Str;
 
 use App\Modules\Intelligence\Services\ActorRegistry;
 use App\Modules\Intelligence\Services\CivilizationAttractorEngine;
+use App\Modules\Narrative\Actions\ApplyMythScarAction;
 
 class RunMicroModeAction
 {

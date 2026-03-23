@@ -5,7 +5,7 @@ namespace App\Modules\Simulation\Core\Supervisor\Handlers;
 use App\Modules\Simulation\Models\Universe;
 use App\Modules\Simulation\Models\UniverseSnapshot;
 use App\Modules\Simulation\Core\Supervisor\Contracts\PostSnapshotHandlerInterface;
-use App\Modules\Simulation\Core\Engines\Social\CivilizationCollapseEngine;
+use App\Modules\Intelligence\Services\CivilizationCollapseEngine;
 
 final class CollapsePostSnapshotHandler implements PostSnapshotHandlerInterface
 {

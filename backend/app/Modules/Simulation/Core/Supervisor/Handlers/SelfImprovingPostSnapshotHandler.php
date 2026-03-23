@@ -5,7 +5,7 @@ namespace App\Modules\Simulation\Core\Supervisor\Handlers;
 use App\Modules\Simulation\Models\Universe;
 use App\Modules\Simulation\Models\UniverseSnapshot;
 use App\Modules\Simulation\Core\Supervisor\Contracts\PostSnapshotHandlerInterface;
-use App\Modules\Simulation\Services\RuleEngine\RuleVmService;
+use App\Modules\Simulation\Core\Runtime\RuleVM\RuleVmService;
 use App\Modules\Simulation\Services\SelfImprovingSimulationService;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Event;

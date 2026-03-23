@@ -36,7 +36,7 @@ class GreatFilterEngine
     const CRISIS_RESOURCE_WAR = 'total_resource_war';
 
     public function __construct(
-        protected \App\Modules\Simulation\Services\RuleEngine\RuleVmService $ruleVm
+        protected \App\Modules\Simulation\Core\Runtime\RuleVM\RuleVmService $ruleVm
     ) {}
 
     /**

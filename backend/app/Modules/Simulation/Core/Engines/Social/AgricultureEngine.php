@@ -7,7 +7,7 @@ use App\Modules\Simulation\Core\Engines\EngineInterface;
 use App\Modules\Simulation\Core\Engines\EngineResult;
 use App\Modules\Simulation\Core\Domain\TickContext;
 use App\Modules\Simulation\Core\Runtime\State\WorldState;
-use App\Modules\Simulation\Services\RuleEngine\RuleVmService;
+use App\Modules\Simulation\Core\Runtime\RuleVM\RuleVmService;
 use App\Modules\Simulation\Core\Events\WorldEvent;
 use App\Modules\Simulation\Core\Events\WorldEventType;
 use Illuminate\Support\Facades\Log;

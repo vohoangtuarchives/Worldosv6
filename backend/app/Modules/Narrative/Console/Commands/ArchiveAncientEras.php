@@ -6,7 +6,7 @@ use Illuminate\Console\Command;
 use App\Modules\Simulation\Models\Universe;
 use App\Modules\Simulation\Models\UniverseSnapshot;
 use App\Modules\Narrative\Models\Chronicle;
-use App\Services\Narrative\NarrativeAiService;
+use App\Modules\Narrative\Services\NarrativeAiService;
 
 class ArchiveAncientEras extends Command
 {

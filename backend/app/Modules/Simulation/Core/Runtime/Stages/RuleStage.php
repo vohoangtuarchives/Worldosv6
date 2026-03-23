@@ -5,7 +5,7 @@ namespace App\Modules\Simulation\Core\Runtime\Stages;
 use App\Modules\Simulation\Models\Universe;
 use App\Modules\Simulation\Models\UniverseSnapshot;
 use App\Modules\Simulation\Core\Runtime\Contracts\SimulationStageInterface;
-use App\Modules\Simulation\Services\RuleEngine\RuleVmService;
+use App\Modules\Simulation\Core\Runtime\RuleVM\RuleVmService;
 use App\Modules\Simulation\Core\Runtime\State\StateManager;
 use function resource_path;
 use function file_get_contents;

@@ -1,10 +1,6 @@
 <?php
 namespace App\Modules\Simulation\Core\Engines;
 
-use App\Modules\Simulation\Core\Context\SimulationContext;
-use App\Modules\Simulation\Core\State\WorldState;
+use App\Modules\Simulation\Core\Contracts\SimulationEngine;
 
-interface EngineInterface {
-    public function name(): string;
-    public function handle(WorldState $state, SimulationContext $ctx): EngineResult;
-}
+interface EngineInterface extends SimulationEngine {}

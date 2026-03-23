@@ -4,7 +4,7 @@ namespace App\Modules\Simulation\Services;
 
 use App\Modules\Intelligence\Entities\ActorEntity;
 use App\Modules\Simulation\Core\Runtime\State\WorldState;
-use App\Modules\Simulation\Services\RuleEngine\RuleVmService;
+use App\Modules\Simulation\Core\Runtime\RuleVM\RuleVmService;
 use App\Modules\Simulation\Services\VocationEngine;
 use App\Modules\Simulation\Services\RuleMutationService;
 use Illuminate\Support\Facades\Log;

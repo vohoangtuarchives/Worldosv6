@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Log;
  * execution state (idle, eating, fleeing, mating, exploring). Cognitive modeling via DSL.
  * Stagger tick (actor_id % N === tick % N) for performance.
  */
-use App\Modules\Simulation\Services\RuleEngine\RuleVmService;
+use App\Modules\Simulation\Core\Runtime\RuleVM\RuleVmService;
 use function resource_path;
 use function app;
 use function config;
@@ -49,7 +49,7 @@ class ActorBehaviorEngine
     public function __construct(
         protected ActorRepositoryInterface $actorRepository,
         protected UniverseRepositoryInterface $universeRepository,
-        protected \App\Services\Narrative\TraitMapper $traitMapper,
+        protected \App\Modules\Narrative\Services\TraitMapper $traitMapper,
         protected \App\Modules\Simulation\Core\Engines\Meta\ActorDecisionEngine $decisionEngine,
         protected RuleVmService $ruleVm,
         protected \App\Modules\Simulation\Services\VocationActionEngine $vocationActionEngine
@@ -217,6 +217,7 @@ class ActorBehaviorEngine
         $actor->metrics = $metrics;
 
         // Trace
+        if (!$actor->id) return;
         \App\Modules\Intelligence\Models\ActorEvent::create([
             'actor_id'   => $actor->id,
             'tick'       => $tick,

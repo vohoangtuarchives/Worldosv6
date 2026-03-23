@@ -5,7 +5,7 @@ namespace App\Modules\Simulation\Core\Domain\Actions;
 use App\Modules\Simulation\Contracts\WorldRepositoryInterface;
 use App\Modules\Simulation\Entities\WorldEntity;
 use App\Modules\Simulation\Services\AxiomaticUniverseCreator;
-use App\Services\Orchestrator\ImplicitOrchestratorService;
+use App\Modules\Simulation\Services\ImplicitOrchestratorService;
 use Illuminate\Support\Facades\Log;
 
 /**

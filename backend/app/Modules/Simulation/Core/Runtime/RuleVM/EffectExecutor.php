@@ -2,7 +2,7 @@
 
 namespace App\Modules\Simulation\Core\Runtime\RuleVM;
 
-use App\Modules\Simulation\Core\Domain\EngineResult;
+use App\Modules\Simulation\Core\Engines\EngineResult;
 use App\Modules\Simulation\Core\Runtime\State\WorldStateMutable;
 use App\Modules\Simulation\Events\SimulationEventOccurred;
 use Illuminate\Support\Facades\Log;

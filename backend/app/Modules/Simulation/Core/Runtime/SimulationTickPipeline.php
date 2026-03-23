@@ -25,7 +25,7 @@ final class SimulationTickPipeline
         protected \App\Modules\Simulation\Services\RuleMutationService $mutationService,
         protected \App\Modules\Simulation\Core\Engines\Meta\InformationPropagationEngine $infoEngine,
         protected \App\Modules\Simulation\Core\Engines\Meta\PowerStructureEngine $powerEngine,
-        protected \App\Modules\Simulation\Core\Engines\Social\CulturalAttractorEngine $cultureEngine,
+        protected \App\Modules\Simulation\Core\Engines\Meta\CulturalInfluenceEngine $cultureEngine,
         protected \App\Modules\Simulation\Core\Engines\Meta\MythogenesisEngine $mythEngine,
         protected \App\Modules\Simulation\Core\Engines\Meta\MeaningEngine $meaningEngine,
         protected \App\Modules\Simulation\Core\Engines\Meta\KnowledgeEvolutionEngine $knowledgeEngine,
