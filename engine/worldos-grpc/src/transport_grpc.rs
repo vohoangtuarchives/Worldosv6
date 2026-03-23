@@ -26,6 +26,7 @@ impl SimulationEngine for EngineService {
     ) -> Result<Response<AdvanceResponse>, Status> {
         let req = request.into_inner();
         let state_input = req.state_input.as_slice();
+        match engine::run_advance(req.universe_id, req.ticks, state_input, req.world_config) {
             Ok((tick, state_vector_json, entropy, stability_index, metrics_json, sci, instability_gradient, global_fields_json)) => {
                 let snapshot = UniverseSnapshot {
                     universe_id: req.universe_id,
@@ -82,7 +83,7 @@ impl SimulationEngine for EngineService {
     ) -> Result<Response<ObserveResponse>, Status> {
         let req = request.into_inner();
         match engine::run_observe(req.universe_id, req.zone_index, req.intensity, &req.state_input) {
-            Ok((tick, state_vector_json, entropy, stability_index, metrics_json, sci, instability_gradient, _)) => {
+            Ok((tick, state_vector_json, entropy, stability_index, metrics_json, sci, instability_gradient, global_fields_json)) => {
                 let snapshot = UniverseSnapshot {
                     universe_id: req.universe_id,
                     tick,
@@ -92,6 +93,7 @@ impl SimulationEngine for EngineService {
                     metrics_json,
                     sci,
                     instability_gradient,
+                    global_fields_json,
                 };
                 Ok(Response::new(ObserveResponse {
                     ok: true,
