@@ -24,7 +24,7 @@ export default function LoginPage() {
         }
         document.cookie = `auth_token=${encodeURIComponent(token)}; path=/; max-age=86400; SameSite=Lax`;
         const params = new URLSearchParams(window.location.search);
-        const to = params.get("redirect") || "/dashboard/cosmologic";
+        const to = params.get("redirect") || "/dashboard";
         window.location.href = to;
       })
       .catch((err: unknown) => {
