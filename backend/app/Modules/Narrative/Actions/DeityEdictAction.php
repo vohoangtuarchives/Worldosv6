@@ -2,8 +2,8 @@
 
 namespace App\Modules\Narrative\Actions;
 
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Simulation\Models\BranchEvent;
+use App\Models\Universe;
+use App\Models\BranchEvent;
 use Illuminate\Support\Facades\Log;
 
 class DeityEdictAction

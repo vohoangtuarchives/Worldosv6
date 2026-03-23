@@ -2,7 +2,7 @@
 
 namespace App\Modules\Narrative\Services;
 
-use App\Modules\Simulation\Models\Universe;
+use App\Models\Universe;
 
 /**
  * EraDetector: Detect and create era boundaries for narrative.

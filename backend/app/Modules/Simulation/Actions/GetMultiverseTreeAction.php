@@ -2,8 +2,8 @@
 
 namespace App\Modules\Simulation\Actions;
 
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Simulation\Models\World;
+use App\Models\Universe;
+use App\Models\World;
 
 class GetMultiverseTreeAction
 {
@@ -17,13 +17,13 @@ class GetMultiverseTreeAction
             ->get();
 
         // Fetch shocks from branch events
-        $shocks = \App\Modules\Simulation\Models\BranchEvent::whereIn('universe_id', $universes->pluck('id'))
+        $shocks = \App\Models\BranchEvent::whereIn('universe_id', $universes->pluck('id'))
             ->where('event_type', 'fork')
             ->get()
             ->pluck('payload.external_shock', 'universe_id');
 
         // Fetch interactions (resonance, convergence)
-        $interactions = \App\Modules\Simulation\Models\UniverseInteraction::whereIn('universe_a_id', $universes->pluck('id'))
+        $interactions = \App\Models\UniverseInteraction::whereIn('universe_a_id', $universes->pluck('id'))
             ->orWhereIn('universe_b_id', $universes->pluck('id'))
             ->get(['id', 'universe_a_id', 'universe_b_id', 'interaction_type', 'payload']);
 

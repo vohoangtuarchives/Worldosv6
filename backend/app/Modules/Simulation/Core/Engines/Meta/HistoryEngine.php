@@ -2,8 +2,8 @@
 
 namespace App\Modules\Simulation\Core\Engines\Meta;
 
-use App\Modules\Narrative\Models\Chronicle;
-use App\Modules\Simulation\Models\Universe;
+use App\Models\Chronicle;
+use App\Models\Universe;
 
 /**
  * History Engine (Tier 13).

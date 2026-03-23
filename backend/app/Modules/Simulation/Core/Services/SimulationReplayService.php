@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Modules\Simulation\Core\Services;
 
-use App\Modules\Simulation\Models\TickManifest;
-use App\Modules\Simulation\Models\UniverseSnapshot;
+use App\Models\TickManifest;
+use App\Models\UniverseSnapshot;
 use App\Modules\Simulation\Core\Domain\TickContext;
 use App\Modules\Simulation\Core\SimulationKernel;
 use App\Modules\Simulation\Core\Runtime\State\WorldState;

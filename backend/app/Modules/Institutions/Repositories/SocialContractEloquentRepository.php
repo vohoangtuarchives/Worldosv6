@@ -2,7 +2,7 @@
 
 namespace App\Modules\Institutions\Repositories;
 
-use App\Modules\SocialGraph\Models\SocialContract as SocialContractModel;
+use App\Models\SocialContract as SocialContractModel;
 use App\Modules\Institutions\Contracts\SocialContractRepositoryInterface;
 use App\Modules\Institutions\Entities\SocialContractEntity;
 

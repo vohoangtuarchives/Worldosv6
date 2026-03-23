@@ -2,7 +2,7 @@
 
 namespace App\Modules\Intelligence\Services\AI;
 
-use App\Modules\Simulation\Models\UniverseSnapshot;
+use App\Models\UniverseSnapshot;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 

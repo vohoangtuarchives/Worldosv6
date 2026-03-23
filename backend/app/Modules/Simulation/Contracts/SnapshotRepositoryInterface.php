@@ -2,7 +2,7 @@
 
 namespace App\Modules\Simulation\Contracts;
 
-use App\Modules\Simulation\Models\Universe;
+use App\Models\Universe;
 use App\Modules\Simulation\Entities\SnapshotEntity;
 
 /**

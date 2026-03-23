@@ -2,7 +2,7 @@
 
 namespace App\Modules\Intelligence\Services\Dashboard;
 
-use App\Modules\SocialGraph\Models\CivilizationAttractor;
+use App\Models\CivilizationAttractor;
 
 class RiskMetricsService
 {

@@ -4,7 +4,7 @@ namespace App\Modules\SocialGraph\Services;
 
 use Laudis\Neo4j\ClientBuilder;
 use Laudis\Neo4j\Contracts\ClientInterface;
-use App\Modules\Intelligence\Models\Actor;
+use App\Models\Actor;
 use Illuminate\Support\Facades\Log;
 
 class Neo4jSocialSyncer

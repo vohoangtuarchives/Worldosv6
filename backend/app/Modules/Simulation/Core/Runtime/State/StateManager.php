@@ -2,8 +2,8 @@
 
 namespace App\Modules\Simulation\Core\Runtime\State;
 
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Simulation\Models\UniverseSnapshot;
+use App\Models\Universe;
+use App\Models\UniverseSnapshot;
 use App\Modules\World\Entities\ResourceEntity;
 use App\Modules\Intelligence\Entities\IdeaEntity;
 use Illuminate\Support\Facades\Log;
@@ -58,7 +58,7 @@ class StateManager
         $this->currentState->setIdeaEntities($ideas);
 
         // Phase 47: Load historical weight (recent chronicles)
-        $chronicles = \App\Modules\Narrative\Models\Chronicle::where('universe_id', $universe->id)
+        $chronicles = \App\Models\Chronicle::where('universe_id', $universe->id)
             ->orderByDesc('to_tick')
             ->limit(10)
             ->get()
@@ -75,7 +75,7 @@ class StateManager
         ]);
 
         // Phase 48: Load Supreme Entities (Causal Overlords)
-        $supremes = \App\Modules\Intelligence\Models\SupremeEntity::where('universe_id', $universe->id)->get()->all();
+        $supremes = \App\Models\SupremeEntity::where('universe_id', $universe->id)->get()->all();
         $this->currentState->setSupremeEntities($supremes);
 
         // Phase 49: Quantum Observer State

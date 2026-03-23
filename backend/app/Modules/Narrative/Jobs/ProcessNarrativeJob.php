@@ -2,14 +2,14 @@
 
 namespace App\Modules\Narrative\Jobs;
 
-use App\Modules\Narrative\Models\Chronicle;
-use App\Modules\SocialGraph\Models\Civilization;
-use App\Modules\Simulation\Models\Era;
-use App\Modules\Narrative\Models\Myth;
-use App\Modules\Narrative\Models\NarrativeJob;
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Simulation\Models\UniverseSnapshot;
-use App\Modules\Intelligence\Models\LegendaryAgent;
+use App\Models\Chronicle;
+use App\Models\Civilization;
+use App\Models\Era;
+use App\Models\Myth;
+use App\Models\NarrativeJob;
+use App\Models\Universe;
+use App\Models\UniverseSnapshot;
+use App\Models\LegendaryAgent;
 use App\Modules\Narrative\Services\CivilizationChronicleEngine;
 use App\Modules\Narrative\Services\EraNarrativeEngine;
 use App\Modules\Narrative\Services\NarrativeEngine;

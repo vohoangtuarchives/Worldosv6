@@ -3,7 +3,7 @@
 namespace App\Modules\Simulation\Console\Commands;
 
 use App\Modules\Simulation\Actions\AdvanceSimulationAction;
-use App\Modules\Simulation\Models\Universe;
+use App\Models\Universe;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
 

@@ -2,9 +2,9 @@
 
 namespace App\Modules\Simulation\Actions;
 
-use App\Modules\Simulation\Models\BranchEvent;
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Simulation\Models\UniverseSnapshot;
+use App\Models\BranchEvent;
+use App\Models\Universe;
+use App\Models\UniverseSnapshot;
 use Illuminate\Support\Str;
 
 use App\Modules\Intelligence\Services\ActorRegistry;

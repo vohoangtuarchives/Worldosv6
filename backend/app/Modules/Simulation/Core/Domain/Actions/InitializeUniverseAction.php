@@ -40,7 +40,7 @@ final class InitializeUniverseAction
         Log::info("InitializeUniverseAction: World resolved", ['world_id' => $world->id]);
 
         // 2. Spawn Universe qua Orchestrator
-        $worldModel = \App\Modules\Simulation\Models\World::findOrFail($world->id);
+        $worldModel = \App\Models\World::findOrFail($world->id);
         $universe = $this->orchestrator->spawnUniverse($worldModel);
         Log::info("InitializeUniverseAction: Universe spawned", ['universe_id' => $universe->id]);
 

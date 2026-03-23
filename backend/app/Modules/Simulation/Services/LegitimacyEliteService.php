@@ -3,9 +3,9 @@
 namespace App\Modules\Simulation\Services;
 
 use App\Contracts\Repositories\UniverseRepositoryInterface;
-use App\Modules\Intelligence\Models\Actor;
-use App\Modules\SocialGraph\Models\InstitutionalEntity;
-use App\Modules\Simulation\Models\Universe;
+use App\Models\Actor;
+use App\Models\InstitutionalEntity;
+use App\Models\Universe;
 use Illuminate\Support\Facades\Log;
 
 /**

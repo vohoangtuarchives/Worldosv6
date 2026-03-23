@@ -2,7 +2,7 @@
 
 namespace App\Modules\Institutions\Repositories;
 
-use App\Modules\Intelligence\Models\SupremeEntity as SupremeEntityModel;
+use App\Models\SupremeEntity as SupremeEntityModel;
 use App\Modules\Institutions\Contracts\SupremeEntityRepositoryInterface;
 use App\Modules\Institutions\Entities\SupremeEntity;
 

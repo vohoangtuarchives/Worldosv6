@@ -2,8 +2,8 @@
 
 namespace App\Modules\Narrative\Actions;
 
-use App\Modules\Simulation\Models\World;
-use App\Modules\Simulation\Models\Universe;
+use App\Models\World;
+use App\Models\Universe;
 use App\Modules\Simulation\Actions\WorldAxiomAction;
 use Illuminate\Support\Facades\Log;
 

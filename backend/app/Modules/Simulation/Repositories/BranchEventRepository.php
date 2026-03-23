@@ -4,7 +4,7 @@ namespace App\Modules\Simulation\Repositories;
 
 use App\Modules\Simulation\Contracts\BranchEventRepositoryInterface;
 use App\Modules\Simulation\Entities\BranchEventEntity;
-use App\Modules\Simulation\Models\BranchEvent as BranchEventModel;
+use App\Models\BranchEvent as BranchEventModel;
 
 class BranchEventRepository implements BranchEventRepositoryInterface
 {

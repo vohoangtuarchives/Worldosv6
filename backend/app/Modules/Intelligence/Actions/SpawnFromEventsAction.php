@@ -2,8 +2,8 @@
 
 namespace App\Modules\Intelligence\Actions;
 
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Simulation\Models\BranchEvent;
+use App\Models\Universe;
+use App\Models\BranchEvent;
 use App\Modules\Intelligence\Contracts\ActorRepositoryInterface;
 use App\Modules\Intelligence\Services\ArchetypeResolverService;
 

@@ -2,7 +2,7 @@
 
 namespace App\Modules\Simulation\Vocation\Repositories;
 
-use App\Modules\Intelligence\Models\Skill as SkillModel;
+use App\Models\Skill as SkillModel;
 use App\Modules\Simulation\Vocation\Contracts\SkillRepositoryInterface;
 use App\Modules\Simulation\Vocation\Entities\SkillEntity;
 

@@ -2,8 +2,8 @@
 
 namespace App\Modules\Simulation\Core\Domain\Pipelines;
 
-use App\Modules\Simulation\Models\World;
-use App\Modules\Simulation\Models\Universe;
+use App\Models\World;
+use App\Models\Universe;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 

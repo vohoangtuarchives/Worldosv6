@@ -2,8 +2,8 @@
 
 namespace App\Modules\Simulation\Core\Engines\Meta;
 
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Narrative\Models\Chronicle;
+use App\Models\Universe;
+use App\Models\Chronicle;
 use App\Modules\Institutions\Services\WorldEdictEngine;
 use Illuminate\Support\Facades\Log;
 use App\Modules\Simulation\Services\TheDreamingService;

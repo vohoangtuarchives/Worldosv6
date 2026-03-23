@@ -2,8 +2,8 @@
 
 namespace App\Modules\Simulation\Core\Runtime\Core;
 
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Simulation\Models\UniverseSnapshot;
+use App\Models\Universe;
+use App\Models\UniverseSnapshot;
 use App\Modules\Simulation\Core\Runtime\Domain\UniverseState;
 use App\Modules\Institutions\Services\CivilizationComplexityEngine;
 use App\Modules\Institutions\Services\EntropyEngine;

@@ -2,7 +2,7 @@
 
 namespace App\Contracts;
 
-use App\Modules\Simulation\Models\UniverseSnapshot;
+use App\Models\UniverseSnapshot;
 
 /**
  * doc §13: merge when similarity between two universes > threshold.

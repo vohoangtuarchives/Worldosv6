@@ -3,7 +3,7 @@
 namespace App\Modules\Simulation\Console\Commands;
 
 use App\Contracts\SimulationEngineClientInterface;
-use App\Modules\Simulation\Models\Universe;
+use App\Models\Universe;
 use App\Modules\Simulation\Repositories\UniverseSnapshotRepository;
 use App\Modules\Simulation\Core\EngineRegistry;
 use Illuminate\Console\Command;

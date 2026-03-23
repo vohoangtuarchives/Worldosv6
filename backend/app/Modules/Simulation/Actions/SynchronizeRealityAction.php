@@ -2,9 +2,9 @@
 
 namespace App\Modules\Simulation\Actions;
 
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Narrative\Models\Chronicle;
-use App\Modules\Simulation\Models\BranchEvent;
+use App\Models\Universe;
+use App\Models\Chronicle;
+use App\Models\BranchEvent;
 use Illuminate\Support\Facades\Log;
 
 class SynchronizeRealityAction

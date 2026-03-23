@@ -9,8 +9,8 @@ use Illuminate\Support\Facades\DB;
 use function resource_path;
 use function file_get_contents;
 use function config;
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Simulation\Models\UniverseSnapshot;
+use App\Models\Universe;
+use App\Models\UniverseSnapshot;
 use App\Modules\Simulation\Core\Runtime\Contracts\SimulationStageInterface;
 use App\Modules\Simulation\Services\ResonanceAuditorService;
 use App\Modules\Simulation\Services\MultiverseSovereigntyService;
@@ -142,7 +142,7 @@ final class MetaCosmicStage implements SimulationStageInterface
 
     private function triggerManifoldMiracles(\App\Modules\Simulation\Core\Runtime\State\WorldState $state, int $tick): void
     {
-        $rivals = \App\Modules\Narrative\Models\Demiurge::where('is_active', true)->get();
+        $rivals = \App\Models\Demiurge::where('is_active', true)->get();
         $rng = new \App\Modules\Simulation\Services\SimulationPRNG($state->get('seed', 0) + $tick);
         
         foreach ($rivals as $demiurge) {
@@ -171,7 +171,7 @@ final class MetaCosmicStage implements SimulationStageInterface
 
     private function processAlignments(Universe $universe, \App\Modules\Simulation\Services\SimulationPRNG $rng): void
     {
-        $legends = \App\Modules\Intelligence\Models\LegendaryAgent::where('universe_id', $universe->id)->get();
+        $legends = \App\Models\LegendaryAgent::where('universe_id', $universe->id)->get();
         foreach ($legends as $legend) {
             $favored = is_array($legend->fate_tags) && in_array('divine_favor', $legend->fate_tags);
             $growthMod = $favored ? 1.5 : 1.0;
@@ -186,7 +186,7 @@ final class MetaCosmicStage implements SimulationStageInterface
 
     private function triggerRandomMiracles(Universe $universe, \App\Modules\Simulation\Services\SimulationPRNG $rng): void
     {
-        $rivals = \App\Modules\Narrative\Models\Demiurge::where('is_active', true)->get();
+        $rivals = \App\Models\Demiurge::where('is_active', true)->get();
         $omen = $this->etherOmen->generateInternalOmen($universe);
         foreach ($rivals as $demiurge) {
             $chance = ($demiurge->will_power / 2000) + ($omen['sci_impact'] ?? 0);
@@ -197,7 +197,7 @@ final class MetaCosmicStage implements SimulationStageInterface
         }
     }
 
-    private function spawnHeir(\App\Modules\Simulation\Models\Universe $universe, \App\Modules\Intelligence\Entities\ActorState $parentState): void
+    private function spawnHeir(\App\Models\Universe $universe, \App\Modules\Intelligence\Entities\ActorState $parentState): void
     {
         // Simple logic for personification: spawn one child for the dead hero
         $childId = 1000 + $parentState->id; // Mock/Temporal ID

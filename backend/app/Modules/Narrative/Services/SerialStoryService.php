@@ -2,10 +2,10 @@
 
 namespace App\Modules\Narrative\Services;
 
-use App\Modules\Narrative\Models\NarrativeSeries;
-use App\Modules\Narrative\Models\SerialChapter;
-use App\Modules\Narrative\Models\StoryBible;
-use App\Modules\Narrative\Models\MythScar;
+use App\Models\NarrativeSeries;
+use App\Models\SerialChapter;
+use App\Models\StoryBible;
+use App\Models\MythScar;
 use App\Modules\Narrative\Services\NarrativeAiService;
 use App\Modules\Narrative\Services\StoryBibleService;
 use Illuminate\Support\Facades\Http;
@@ -83,7 +83,7 @@ class SerialStoryService
             $content = $result['final_prose'] ?? 'Không thể tổng hợp nội dung chương truyện.';
             
             // Tạo Chronicle để mapping
-            $chronicle = \App\Modules\Narrative\Models\Chronicle::create([
+            $chronicle = \App\Models\Chronicle::create([
                 'universe_id' => $universe->id,
                 'from_tick'   => $fromTick,
                 'to_tick'     => $toTick,
@@ -105,7 +105,7 @@ class SerialStoryService
 
         $chapterTitle = $this->generateChapterTitle($series, $chapterIndex, $content);
 
-        $chapter = \App\Modules\Narrative\Models\SerialChapter::create([
+        $chapter = \App\Models\SerialChapter::create([
             'series_id'     => $series->id,
             'chronicle_id'  => $chronicle?->id,
             'book_index'    => $series->current_book_index,

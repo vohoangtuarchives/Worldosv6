@@ -2,11 +2,11 @@
 
 namespace App\Modules\Simulation\Services;
 
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Simulation\Models\UniverseSnapshot;
-use App\Modules\Intelligence\Models\Actor;
-use App\Modules\SocialGraph\Models\InstitutionalEntity;
-use App\Modules\Narrative\Models\Chronicle;
+use App\Models\Universe;
+use App\Models\UniverseSnapshot;
+use App\Models\Actor;
+use App\Models\InstitutionalEntity;
+use App\Models\Chronicle;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 

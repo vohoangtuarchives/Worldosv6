@@ -4,7 +4,7 @@ namespace App\Modules\Simulation\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Modules\Simulation\Models\Universe;
+use App\Models\Universe;
 use App\Modules\Simulation\Core\Services\CausalExportService;
 
 class CausalityController extends Controller

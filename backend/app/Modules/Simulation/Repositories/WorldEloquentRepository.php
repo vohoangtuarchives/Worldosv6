@@ -2,7 +2,7 @@
 
 namespace App\Modules\Simulation\Repositories;
 
-use App\Modules\Simulation\Models\World as WorldModel;
+use App\Models\World as WorldModel;
 use App\Modules\Simulation\Contracts\WorldRepositoryInterface;
 use App\Modules\Simulation\Entities\WorldEntity;
 

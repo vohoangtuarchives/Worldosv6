@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Simulation\Http\Controllers;
 
-use App\Modules\Simulation\Models\TickManifest;
+use App\Models\TickManifest;
 use App\Modules\Simulation\Core\Services\SimulationReplayService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;

@@ -2,10 +2,10 @@
 
 namespace App\Modules\Simulation\Services;
 
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Simulation\Models\UniverseSnapshot;
-use App\Modules\Narrative\Models\Chronicle;
-use App\Modules\Intelligence\Models\SupremeEntity;
+use App\Models\Universe;
+use App\Models\UniverseSnapshot;
+use App\Models\Chronicle;
+use App\Models\SupremeEntity;
 use App\Modules\Simulation\Core\Runtime\RuleVM\RuleVmService;
 use Illuminate\Support\Facades\Log;
 use function resource_path;

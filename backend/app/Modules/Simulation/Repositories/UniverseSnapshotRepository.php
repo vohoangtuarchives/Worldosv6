@@ -2,8 +2,8 @@
 
 namespace App\Modules\Simulation\Repositories;
 
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Simulation\Models\UniverseSnapshot;
+use App\Models\Universe;
+use App\Models\UniverseSnapshot;
 use App\Modules\Simulation\Services\ObserverService;
 
 class UniverseSnapshotRepository

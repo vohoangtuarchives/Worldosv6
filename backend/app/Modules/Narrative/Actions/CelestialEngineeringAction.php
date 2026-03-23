@@ -2,9 +2,9 @@
 
 namespace App\Modules\Narrative\Actions;
 
-use App\Modules\Simulation\Models\World;
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Simulation\Models\BranchEvent;
+use App\Models\World;
+use App\Models\Universe;
+use App\Models\BranchEvent;
 use App\Modules\Narrative\Contracts\ChronicleRepositoryInterface;
 use App\Modules\Narrative\Entities\ChronicleEntity;
 use App\Modules\Narrative\Services\OmenIntegrationService;

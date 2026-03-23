@@ -3,7 +3,7 @@
 namespace App\Modules\Simulation\Repositories;
 
 use App\Contracts\Repositories\UniverseRepositoryInterface;
-use App\Modules\Simulation\Models\Universe;
+use App\Models\Universe;
 
 class UniverseRepository implements UniverseRepositoryInterface
 {

@@ -3,7 +3,7 @@
 namespace App\Modules\Narrative\Console\Commands;
 
 use App\Modules\Simulation\Jobs\GenerateUniverseHistoryJob;
-use App\Modules\Simulation\Models\Universe;
+use App\Models\Universe;
 use App\Modules\Narrative\Services\UniverseHistoryGenerator;
 use Illuminate\Console\Command;
 

@@ -2,8 +2,8 @@
 
 namespace App\Modules\Simulation\Console\Commands;
 
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Simulation\Models\World;
+use App\Models\Universe;
+use App\Models\World;
 use App\Modules\Simulation\Services\CivilizationMemoryEngine;
 use App\Modules\Simulation\Services\GreatPersonEngine;
 use App\Modules\Simulation\Services\IdeologyEvolutionEngine;

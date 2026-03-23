@@ -2,7 +2,7 @@
 
 namespace App\Modules\Simulation\Services;
 
-use App\Modules\Simulation\Models\Universe;
+use App\Models\Universe;
 use function resource_path;
 use function file_get_contents;
 use function abs;

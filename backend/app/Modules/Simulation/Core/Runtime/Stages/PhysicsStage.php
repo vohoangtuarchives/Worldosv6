@@ -2,8 +2,8 @@
 
 namespace App\Modules\Simulation\Core\Runtime\Stages;
 
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Simulation\Models\UniverseSnapshot;
+use App\Models\Universe;
+use App\Models\UniverseSnapshot;
 use App\Modules\Simulation\Core\Runtime\Contracts\SimulationStageInterface;
 use App\Modules\Simulation\Core\Engines\Physics\CosmicPressureEngine;
 
@@ -17,7 +17,7 @@ final class PhysicsStage implements SimulationStageInterface
         protected \App\Modules\Simulation\Core\Runtime\State\StateManager $stateManager
     ) {}
 
-    public function run(\App\Modules\Simulation\Models\Universe $universe, int $tick, ?\App\Modules\Simulation\Models\UniverseSnapshot $savedSnapshot = null, array $context = []): void
+    public function run(\App\Models\Universe $universe, int $tick, ?\App\Models\UniverseSnapshot $savedSnapshot = null, array $context = []): void
     {
         $state = $this->stateManager->get();
         if (!$state) {

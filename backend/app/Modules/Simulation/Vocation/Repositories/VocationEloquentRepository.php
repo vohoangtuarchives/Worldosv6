@@ -2,7 +2,7 @@
 
 namespace App\Modules\Simulation\Vocation\Repositories;
 
-use App\Modules\Simulation\Models\VocationDefinition as VocationModel;
+use App\Models\VocationDefinition as VocationModel;
 use App\Modules\Simulation\Vocation\Contracts\VocationRepositoryInterface;
 use App\Modules\Simulation\Vocation\Entities\VocationEntity;
 

@@ -99,7 +99,7 @@ class KnowledgeEvolutionEngine implements SimulationEngine
         $knownNames = array_column($graph, 'name');
         foreach ($potentialNodes as $name) {
             if (!in_array($name, $knownNames)) {
-                $idea = \App\Modules\Intelligence\Models\Idea::create([
+                $idea = \App\Models\Idea::create([
                     'universe_id' => $universeId,
                     'theme' => $name,
                     'info_type' => 'science',

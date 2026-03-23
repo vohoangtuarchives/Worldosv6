@@ -4,8 +4,8 @@ namespace App\Modules\Narrative\Actions;
 
 use App\Modules\Narrative\Contracts\MythScarRepositoryInterface;
 use App\Modules\Narrative\Entities\MythScarEntity;
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Simulation\Models\UniverseSnapshot;
+use App\Models\Universe;
+use App\Models\UniverseSnapshot;
 
 class ApplyMythScarAction
 {

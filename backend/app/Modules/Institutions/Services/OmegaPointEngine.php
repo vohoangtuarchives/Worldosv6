@@ -2,8 +2,8 @@
 
 namespace App\Modules\Institutions\Services;
 
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Simulation\Models\UniverseSnapshot;
+use App\Models\Universe;
+use App\Models\UniverseSnapshot;
 use App\Modules\Simulation\Contracts\UniverseRepositoryInterface;
 use Illuminate\Support\Facades\Log;
 
@@ -47,7 +47,7 @@ class OmegaPointEngine
         ]);
 
         // Tạo sự kiện vĩ mô
-        \App\Modules\Narrative\Models\Chronicle::create([
+        \App\Models\Chronicle::create([
             'universe_id' => $universe->id,
             'from_tick' => $snapshot->tick,
             'to_tick' => $snapshot->tick,

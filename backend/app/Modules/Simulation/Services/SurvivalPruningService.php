@@ -2,7 +2,7 @@
 
 namespace App\Modules\Simulation\Services;
 
-use App\Modules\Simulation\Models\Universe;
+use App\Models\Universe;
 use Illuminate\Support\Facades\Log;
 
 /**

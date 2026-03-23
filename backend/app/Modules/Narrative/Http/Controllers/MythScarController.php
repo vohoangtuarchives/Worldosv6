@@ -3,7 +3,7 @@
 namespace App\Modules\Narrative\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Modules\Narrative\Models\MythScar;
+use App\Models\MythScar;
 use Illuminate\Http\JsonResponse;
 
 class MythScarController extends Controller

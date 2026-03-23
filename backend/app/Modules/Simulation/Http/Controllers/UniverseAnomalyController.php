@@ -3,8 +3,8 @@
 namespace App\Modules\Simulation\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Modules\Simulation\Models\UniverseSnapshot;
-use App\Modules\Simulation\Models\Universe;
+use App\Models\UniverseSnapshot;
+use App\Models\Universe;
 use Illuminate\Http\JsonResponse;
 
 class UniverseAnomalyController extends Controller

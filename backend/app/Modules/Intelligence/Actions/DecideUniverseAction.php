@@ -2,7 +2,7 @@
 
 namespace App\Modules\Intelligence\Actions;
 
-use App\Modules\Simulation\Models\UniverseSnapshot;
+use App\Models\UniverseSnapshot;
 
 class DecideUniverseAction
 {

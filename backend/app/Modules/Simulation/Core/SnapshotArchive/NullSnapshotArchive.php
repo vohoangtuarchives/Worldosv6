@@ -2,8 +2,8 @@
 
 namespace App\Modules\Simulation\Core\SnapshotArchive;
 
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Simulation\Models\UniverseSnapshot;
+use App\Models\Universe;
+use App\Models\UniverseSnapshot;
 use App\Modules\Simulation\Core\Contracts\SnapshotArchiveInterface;
 
 final class NullSnapshotArchive implements SnapshotArchiveInterface

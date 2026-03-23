@@ -3,7 +3,7 @@
 namespace App\Modules\Narrative\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Modules\Simulation\Models\Universe;
+use App\Models\Universe;
 use App\Modules\Simulation\Services\ZenithMetricsService;
 use App\Modules\Simulation\Core\Runtime\State\StateManager;
 use Illuminate\Http\JsonResponse;

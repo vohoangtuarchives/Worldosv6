@@ -89,7 +89,7 @@ class VocationActionEngine
                 
                 // Emit Discovery Event
                 try {
-                    \App\Modules\Intelligence\Models\ActorEvent::create([
+                    \App\Models\ActorEvent::create([
                         'actor_id'   => $actor->id,
                         'tick'       => $tick,
                         'event_type' => 'skill_discovery',

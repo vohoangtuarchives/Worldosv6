@@ -2,8 +2,8 @@
 
 namespace App\Modules\Intelligence\Services\Analysis;
 
-use App\Modules\SocialGraph\Models\CivilizationAttractor;
-use App\Modules\Intelligence\Models\AiMemory;
+use App\Models\CivilizationAttractor;
+use App\Models\AiMemory;
 
 /**
  * Phase 3 Self-Reflection Engine.

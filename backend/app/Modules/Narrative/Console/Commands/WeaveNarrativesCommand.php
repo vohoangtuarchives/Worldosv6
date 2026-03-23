@@ -3,7 +3,7 @@
 namespace App\Modules\Narrative\Console\Commands;
 
 use Illuminate\Console\Command;
-use App\Modules\Narrative\Models\Chronicle;
+use App\Models\Chronicle;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\DB;

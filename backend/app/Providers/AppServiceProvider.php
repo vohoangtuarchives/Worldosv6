@@ -10,6 +10,7 @@ use App\Modules\Simulation\Repositories\UniverseSnapshotRepository;
 use App\Modules\Simulation\Services\HttpSimulationEngineClient;
 use App\Modules\Simulation\Services\StubSimulationEngineClient;
 use App\Modules\Simulation\Services\GrpcSimulationEngineClient;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\ServiceProvider;
 use App\Broadcasting\CentrifugoBroadcaster;
@@ -29,8 +30,14 @@ class AppServiceProvider extends ServiceProvider
             if ($url !== '') {
                 if (str_starts_with($url, 'grpc://')) {
                     $hostname = str_replace('grpc://', '', $url);
-                    return new GrpcSimulationEngineClient($hostname);
+                    // Chỉ khởi tạo GrpcClient nếu extension đã được cài đặt
+                    if (class_exists(\Grpc\ChannelCredentials::class)) {
+                        return new GrpcSimulationEngineClient($hostname);
+                    }
+                    Log::error("gRPC extension is not installed. Falling back to HTTP.");
+                    $url = 'http://' . $hostname . ':50052';
                 }
+                
                 if (str_starts_with($url, 'http://') || str_starts_with($url, 'https://')) {
                     return new HttpSimulationEngineClient($url);
                 }

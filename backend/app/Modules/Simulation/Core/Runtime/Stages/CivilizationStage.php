@@ -2,8 +2,8 @@
 
 namespace App\Modules\Simulation\Core\Runtime\Stages;
 
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Simulation\Models\UniverseSnapshot;
+use App\Models\Universe;
+use App\Models\UniverseSnapshot;
 use App\Modules\Simulation\Core\Runtime\Contracts\SimulationStageInterface;
 use App\Modules\Simulation\Core\Engines\Social\CivilizationSettlementEngine;
 

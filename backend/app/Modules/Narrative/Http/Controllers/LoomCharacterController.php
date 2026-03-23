@@ -4,7 +4,7 @@ namespace App\Modules\Narrative\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Modules\Intelligence\Models\LegendaryAgent;
+use App\Models\LegendaryAgent;
 use Illuminate\Http\JsonResponse;
 
 class LoomCharacterController extends Controller

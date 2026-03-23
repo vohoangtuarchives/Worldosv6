@@ -2,9 +2,9 @@
 
 namespace App\Modules\Intelligence\Actions;
 
-use App\Modules\Intelligence\Models\LegendaryAgent;
-use App\Modules\Narrative\Models\Chronicle;
-use App\Modules\Simulation\Models\Universe;
+use App\Models\LegendaryAgent;
+use App\Models\Chronicle;
+use App\Models\Universe;
 use Illuminate\Support\Facades\Log;
 
 /**

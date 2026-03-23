@@ -3,7 +3,7 @@
 namespace App\Modules\Simulation\Core\Supervisor;
 
 use App\Contracts\Repositories\UniverseRepositoryInterface;
-use App\Modules\Simulation\Models\Universe;
+use App\Models\Universe;
 use App\Modules\Simulation\Services\TemporalSyncService;
 use App\Modules\Simulation\Core\Contracts\StateCacheInterface;
 
@@ -26,14 +26,14 @@ final class StateSynchronizer
         if ($world) {
             // Chúng ta vẫn cần Model cho TemporalSyncService nếu nó chưa được refactor.
             // Trong DDD transition, đôi khi cần fetch model tạm thời ở infrastructure layer.
-            $worldModel = \App\Modules\Simulation\Models\World::find($world->id);
+            $worldModel = \App\Models\World::find($world->id);
             if ($worldModel) {
                  $this->temporalSync->advanceGlobalClock($worldModel, $ticks);
             }
         }
         
         // Cụ thể cho Universe, TemporalSyncService:synchronize yêu cầu Model.
-        $universeModel = \App\Modules\Simulation\Models\Universe::find($universe->id);
+        $universeModel = \App\Models\Universe::find($universe->id);
         if ($universeModel) {
             $this->temporalSync->synchronize($universeModel);
         }

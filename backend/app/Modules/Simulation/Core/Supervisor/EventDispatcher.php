@@ -21,8 +21,8 @@ final class EventDispatcher
     public function dispatchPulsed(UniverseEntity $universe, SnapshotEntity $snapshot, array $engineResponse, int $ticks, float $tickDurationMsPerTick): void
     {
         // Vẫn cần Model cho Event (UniverseSimulationPulsed) nếu Event chưa refactor
-        $universeModel = \App\Modules\Simulation\Models\Universe::find($universe->id);
-        $snapshotModel = \App\Modules\Simulation\Models\UniverseSnapshot::find($snapshot->id);
+        $universeModel = \App\Models\Universe::find($universe->id);
+        $snapshotModel = \App\Models\UniverseSnapshot::find($snapshot->id);
 
         if ($universeModel && $snapshotModel) {
             event(new \App\Modules\Simulation\Events\UniverseSimulationPulsed(
@@ -48,7 +48,7 @@ final class EventDispatcher
         $universe->structuralCoherence = min(1.0, $universe->structuralCoherence + ($universe->observerBonus ?? 0));
         
         if ($universe->currentTick % 10 === 0) {
-            $universe->fitnessScore = app(\App\Modules\Simulation\Services\KernelMutationService::class)->calculateFitness(\App\Modules\Simulation\Models\Universe::find($universe->id));
+            $universe->fitnessScore = app(\App\Modules\Simulation\Services\KernelMutationService::class)->calculateFitness(\App\Models\Universe::find($universe->id));
         }
 
         $this->universeRepository->save($universe);

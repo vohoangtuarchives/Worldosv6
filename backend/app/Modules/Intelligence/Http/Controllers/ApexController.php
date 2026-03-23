@@ -3,7 +3,7 @@
 namespace App\Modules\Intelligence\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Modules\Simulation\Models\Universe;
+use App\Models\Universe;
 use App\Modules\Narrative\Actions\ApexObserverAction;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;

@@ -2,10 +2,10 @@
 
 namespace App\Modules\Intelligence\Actions;
 
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\SocialGraph\Models\SocialContract;
-use App\Modules\SocialGraph\Models\InstitutionalEntity;
-use App\Modules\Narrative\Models\Chronicle;
+use App\Models\Universe;
+use App\Models\SocialContract;
+use App\Models\InstitutionalEntity;
+use App\Models\Chronicle;
 
 class SocialContractEvolutionAction
 {

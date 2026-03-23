@@ -3,7 +3,7 @@
 namespace App\Modules\Narrative\Services;
 
 use App\Modules\Simulation\Entities\UniverseEntity;
-use App\Modules\Simulation\Models\UniverseSnapshot;
+use App\Models\UniverseSnapshot;
 use Illuminate\Support\Facades\Log;
 
 /**

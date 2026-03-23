@@ -3,9 +3,9 @@
 namespace App\Modules\Simulation\Console\Commands;
 
 use Illuminate\Console\Command;
-use App\Modules\Simulation\Models\Multiverse;
-use App\Modules\Simulation\Models\World;
-use App\Modules\Simulation\Models\Universe;
+use App\Models\Multiverse;
+use App\Models\World;
+use App\Models\Universe;
 use App\Modules\Simulation\Actions\AdvanceSimulationAction;
 use App\Modules\Simulation\Services\ImplicitOrchestratorService;
 use App\Modules\Narrative\Services\NarrativeAiService;
@@ -92,7 +92,7 @@ class RunDemoScenario extends Command
 
         // 4. The Fork
         $this->info("[4/4] The Aftermath: Checking for Forks...");
-        $forks = \App\Modules\Simulation\Models\Universe::where('parent_universe_id', $universe->id)->get();
+        $forks = \App\Models\Universe::where('parent_universe_id', $universe->id)->get();
         
         if ($forks->count() > 0) {
             $this->info("SUCCESS: System forked! Created " . $forks->count() . " new universe(s).");

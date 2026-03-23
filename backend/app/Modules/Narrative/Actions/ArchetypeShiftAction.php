@@ -2,8 +2,8 @@
 
 namespace App\Modules\Narrative\Actions;
 
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Intelligence\Models\LegendaryAgent;
+use App\Models\Universe;
+use App\Models\LegendaryAgent;
 use App\Modules\Narrative\Services\TraitMapper;
 use App\Modules\Narrative\Services\HeroImageService;
 use App\Modules\Narrative\Actions\ApplyVisualMutationAction;

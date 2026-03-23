@@ -2,7 +2,7 @@
 
 namespace App\Modules\Narrative\Actions;
 
-use App\Modules\Simulation\Models\Universe;
+use App\Models\Universe;
 use App\Modules\Simulation\Core\Runtime\State\WorldState;
 use App\Modules\Simulation\Core\Runtime\State\StateManager;
 use Illuminate\Support\Facades\Log;

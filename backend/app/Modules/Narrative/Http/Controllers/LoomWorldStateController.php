@@ -4,7 +4,7 @@ namespace App\Modules\Narrative\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Modules\Simulation\Models\World;
+use App\Models\World;
 use Illuminate\Http\JsonResponse;
 
 class LoomWorldStateController extends Controller
@@ -31,7 +31,7 @@ class LoomWorldStateController extends Controller
                 'structural_coherence' => $universe->structural_coherence,
                 'is_chaotic' => (bool)$universe->is_chaotic,
                 'observer_effect_intensity' => $universe->observer_effect_intensity,
-                'active_demiurges' => \App\Modules\Narrative\Models\Demiurge::where('universe_id', $universe->id)->count(),
+                'active_demiurges' => \App\Models\Demiurge::where('universe_id', $universe->id)->count(),
                 'state_vector_summary' => [
                     'zones_count' => count(($universe->state_vector ?? [])['zones'] ?? []),
                     'axioms' => count(($universe->state_vector ?? [])['axioms'] ?? []),

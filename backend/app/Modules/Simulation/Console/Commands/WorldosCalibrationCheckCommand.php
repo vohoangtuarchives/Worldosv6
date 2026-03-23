@@ -2,7 +2,7 @@
 
 namespace App\Modules\Simulation\Console\Commands;
 
-use App\Modules\Simulation\Models\Universe;
+use App\Models\Universe;
 use App\Modules\Simulation\Repositories\UniverseSnapshotRepository;
 use App\Modules\Simulation\Services\RealityCalibrationService;
 use Illuminate\Console\Command;

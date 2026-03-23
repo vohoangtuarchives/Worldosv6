@@ -2,7 +2,7 @@
 
 namespace App\Modules\Intelligence\Events;
 
-use App\Modules\Simulation\Models\Universe;
+use App\Models\Universe;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 

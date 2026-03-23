@@ -2,9 +2,9 @@
 
 namespace App\Modules\Intelligence\Console\Commands;
 
-use App\Modules\Intelligence\Models\FitnessSnapshot;
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Simulation\Models\UniverseDecisionModel;
+use App\Models\FitnessSnapshot;
+use App\Models\Universe;
+use App\Models\UniverseDecisionModel;
 use App\Modules\Intelligence\Domain\Policy\DecisionModel;
 use App\Modules\Intelligence\Domain\Policy\ModelType;
 use App\Modules\Intelligence\Domain\Policy\UniverseContext;

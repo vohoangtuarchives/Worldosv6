@@ -2,9 +2,9 @@
 
 namespace App\Modules\Simulation\Services;
 
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Simulation\Models\UniverseInteraction;
-use App\Modules\Narrative\Models\Chronicle;
+use App\Models\Universe;
+use App\Models\UniverseInteraction;
+use App\Models\Chronicle;
 use App\Modules\Simulation\Actions\MergeUniverseAction;
 use App\Modules\Simulation\Core\Runtime\RuleVM\RuleVmService;
 use function config;

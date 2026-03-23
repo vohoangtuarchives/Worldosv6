@@ -2,7 +2,7 @@
 
 namespace App\Modules\Simulation\Core\Engines\Meta;
 
-use App\Modules\Intelligence\Models\Actor;
+use App\Models\Actor;
 
 /**
  * CapabilityEngine — Phase 1.

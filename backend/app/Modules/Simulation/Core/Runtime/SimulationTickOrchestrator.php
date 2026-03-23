@@ -2,8 +2,8 @@
 
 namespace App\Modules\Simulation\Core\Runtime;
 
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Simulation\Models\UniverseSnapshot;
+use App\Models\Universe;
+use App\Models\UniverseSnapshot;
 
 /**
  * Orchestrates the tick pipeline after engine advance + state sync.

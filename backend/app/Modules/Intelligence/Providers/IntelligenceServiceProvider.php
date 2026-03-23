@@ -3,6 +3,7 @@
 namespace App\Modules\Intelligence\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\Route;
 use App\Modules\Intelligence\Contracts\ActorRepositoryInterface;
 use App\Modules\Intelligence\Repositories\ActorEloquentRepository;
 use App\Modules\Intelligence\Contracts\AgentDecisionRepositoryInterface;
@@ -54,7 +55,12 @@ class IntelligenceServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        $this->loadRoutesFrom(__DIR__ . '/../routes/api.php');
+        Route::group([
+            'prefix' => 'api',
+            'middleware' => 'api',
+        ], function () {
+            $this->loadRoutesFrom(__DIR__ . '/../routes/api.php');
+        });
 
         $events = $this->app->make(\Illuminate\Contracts\Events\Dispatcher::class);
         $events->listen(

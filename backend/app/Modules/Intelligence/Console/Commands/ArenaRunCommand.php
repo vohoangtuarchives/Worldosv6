@@ -2,10 +2,10 @@
 
 namespace App\Modules\Intelligence\Console\Commands;
 
-use App\Modules\Simulation\Models\ArenaBatch;
-use App\Modules\SocialGraph\Models\CivilizationPolicy;
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Simulation\Models\UniverseDecisionModel;
+use App\Models\ArenaBatch;
+use App\Models\CivilizationPolicy;
+use App\Models\Universe;
+use App\Models\UniverseDecisionModel;
 use App\Modules\Intelligence\Domain\Policy\DecisionModel;
 use App\Modules\Intelligence\Domain\Policy\FitnessScore;
 use App\Modules\Intelligence\Services\FitnessEvaluator;

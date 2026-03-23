@@ -2,7 +2,7 @@
 
 namespace App\Modules\Simulation\Services;
 
-use App\Modules\Simulation\Models\UniverseSnapshot;
+use App\Models\UniverseSnapshot;
 
 /**
  * Computes simulation health metrics from snapshot state (doc 21 §4c).

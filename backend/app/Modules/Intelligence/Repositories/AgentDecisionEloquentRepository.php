@@ -2,7 +2,7 @@
 
 namespace App\Modules\Intelligence\Repositories;
 
-use App\Modules\Intelligence\Models\AgentDecision as AgentDecisionModel;
+use App\Models\AgentDecision as AgentDecisionModel;
 use App\Modules\Intelligence\Contracts\AgentDecisionRepositoryInterface;
 use App\Modules\Intelligence\Entities\AgentDecisionEntity;
 

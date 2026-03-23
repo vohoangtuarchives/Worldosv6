@@ -3,7 +3,7 @@
 namespace App\Modules\SocialGraph\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Modules\SocialGraph\Models\InstitutionalEntity;
+use App\Models\InstitutionalEntity;
 use Illuminate\Http\JsonResponse;
 
 class UniverseInstitutionController extends Controller

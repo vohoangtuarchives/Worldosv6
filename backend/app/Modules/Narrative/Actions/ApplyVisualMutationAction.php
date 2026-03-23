@@ -2,9 +2,9 @@
 
 namespace App\Modules\Narrative\Actions;
 
-use App\Modules\Intelligence\Models\LegendaryAgent;
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Simulation\Models\VisualBranch;
+use App\Models\LegendaryAgent;
+use App\Models\Universe;
+use App\Models\VisualBranch;
 use App\Modules\Intelligence\Services\AI\VisualDnaEngine;
 use App\Modules\Simulation\Services\ImplicitOrchestratorService;
 use Illuminate\Support\Facades\Log;

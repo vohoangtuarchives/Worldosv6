@@ -2,8 +2,8 @@
 
 namespace App\Modules\Simulation\Services;
 
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Simulation\Models\World;
+use App\Models\Universe;
+use App\Models\World;
 use App\Modules\Intelligence\Actions\OvermindEvolutionAction;
 use App\Modules\Simulation\Services\CosmogenesisService;
 use App\Modules\Simulation\Services\SurvivalPruningService;

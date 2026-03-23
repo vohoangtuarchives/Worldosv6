@@ -127,7 +127,7 @@ class ThermodynamicPhaseEngine implements SimulationEngine
     {
         if (empty($rules)) return;
 
-        $universe = \App\Modules\Simulation\Models\Universe::find($universeId);
+        $universe = \App\Models\Universe::find($universeId);
         if ($universe) {
             $axioms = $universe->axioms ?? [];
             $universe->axioms = array_merge($axioms, $rules);

@@ -3,7 +3,7 @@
 namespace App\Modules\Intelligence\Console\Commands;
 
 use Illuminate\Console\Command;
-use App\Modules\Simulation\Models\Universe;
+use App\Models\Universe;
 use App\Modules\Intelligence\Services\AI\WorldAdvisorService;
 
 class RunAiAnalysis extends Command

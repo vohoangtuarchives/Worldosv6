@@ -3,7 +3,7 @@
 namespace App\Modules\Simulation\Listeners;
 
 use App\Modules\Simulation\Events\RuleProposed;
-use App\Modules\Simulation\Models\RuleProposal;
+use App\Models\RuleProposal;
 
 /**
  * Persist rule proposal to rule_proposals table when sandbox test succeeds (Phase 3 rule versioning).

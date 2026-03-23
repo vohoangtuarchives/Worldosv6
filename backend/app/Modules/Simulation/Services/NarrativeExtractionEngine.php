@@ -2,9 +2,9 @@
 
 namespace App\Modules\Simulation\Services;
 
-use App\Modules\Narrative\Models\Chronicle;
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Simulation\Models\World;
+use App\Models\Chronicle;
+use App\Models\Universe;
+use App\Models\World;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 

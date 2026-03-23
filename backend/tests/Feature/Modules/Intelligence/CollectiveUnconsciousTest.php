@@ -49,6 +49,7 @@ class CollectiveUnconsciousTest extends TestCase
         Actor::create([
             'universe_id' => $this->universe->id,
             'name' => 'Survivor',
+            'archetype' => 'commoner',
             'traits' => ['Resilience' => 0.9, 'Solidarity' => 0.8, 'Curiosity' => 0.1],
             'is_alive' => true,
         ]);
@@ -57,6 +58,7 @@ class CollectiveUnconsciousTest extends TestCase
         Actor::create([
             'universe_id' => $this->universe->id,
             'name' => 'Scholar',
+            'archetype' => 'scholar',
             'traits' => ['Resilience' => 0.1, 'Solidarity' => 0.2, 'Curiosity' => 0.9, 'Pragmatism' => 0.8],
             'is_alive' => true,
         ]);
@@ -88,6 +90,7 @@ class CollectiveUnconsciousTest extends TestCase
         Actor::create([
             'universe_id' => $this->universe->id,
             'name' => 'Neutral',
+            'archetype' => 'commoner',
             'traits' => ['Resilience' => 0.5],
             'is_alive' => true,
         ]);
@@ -99,6 +102,7 @@ class CollectiveUnconsciousTest extends TestCase
         Actor::create([
             'universe_id' => $this->universe->id,
             'name' => 'The Conqueror',
+            'archetype' => 'leader',
             'traits' => ['Dominance' => 1.0, 'Pride' => 1.0], // High Power/Status
             'is_heroic' => true,
             'metrics' => ['influence' => 0.5], // High weight: 0.5 * 10 = 5.0 vs 1.0 for neutral

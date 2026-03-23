@@ -3,8 +3,8 @@
 namespace App\Modules\Narrative\Console\Commands;
 
 use Illuminate\Console\Command;
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Simulation\Models\UniverseSnapshot;
+use App\Models\Universe;
+use App\Models\UniverseSnapshot;
 use App\Modules\Simulation\Core\Runtime\SimulationTickOrchestrator;
 use App\Modules\Simulation\Core\Runtime\State\StateManager;
 use App\Modules\Simulation\Services\ZenithMetricsService;

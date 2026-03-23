@@ -3,8 +3,8 @@
 namespace App\Modules\Simulation\Core\Engines\Meta;
 
 use App\Contracts\UniverseEvaluatorInterface;
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Simulation\Models\UniverseSnapshot;
+use App\Models\Universe;
+use App\Models\UniverseSnapshot;
 use Illuminate\Support\Facades\DB;
 
 /**

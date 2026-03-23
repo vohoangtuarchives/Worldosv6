@@ -2,9 +2,9 @@
 
 namespace App\Modules\Intelligence\Services\AI;
 
-use App\Modules\Intelligence\Models\LegendaryAgent;
-use App\Modules\Narrative\Models\Demiurge;
-use App\Modules\Narrative\Models\Chronicle;
+use App\Models\LegendaryAgent;
+use App\Models\Demiurge;
+use App\Models\Chronicle;
 use Illuminate\Support\Facades\Log;
 
 /**

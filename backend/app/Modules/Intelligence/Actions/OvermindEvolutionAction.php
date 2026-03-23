@@ -2,7 +2,7 @@
 
 namespace App\Modules\Intelligence\Actions;
 
-use App\Modules\Simulation\Models\Universe;
+use App\Models\Universe;
 use App\Modules\Institutions\Services\WorldEdictEngine;
 use App\Modules\Intelligence\Services\AI\AnalyticalAiService;
 use Illuminate\Support\Facades\Log;
@@ -40,7 +40,7 @@ class OvermindEvolutionAction
         }
     }
 
-    protected function issueCorrectionEdicts(Universe $universe, \App\Modules\Simulation\Models\UniverseSnapshot $snapshot, float $sci, float $entropy): void
+    protected function issueCorrectionEdicts(Universe $universe, \App\Models\UniverseSnapshot $snapshot, float $sci, float $entropy): void
     {
         Log::info("OVERMIND: Issuing correction edicts for Universe #{$universe->id}");
 

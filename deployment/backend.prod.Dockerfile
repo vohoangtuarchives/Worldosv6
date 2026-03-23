@@ -1,7 +1,7 @@
 # Stage 2: PHP Application
 FROM php:8.4-fpm
 
-# Install dependencies, including gRPC build deps
+# Install dependencies, minimal for PHP
 RUN apt-get update && apt-get install -y \
     git \
     unzip \
@@ -10,11 +10,8 @@ RUN apt-get update && apt-get install -y \
     libonig-dev \
     libxml2-dev \
     zlib1g-dev \
-    g++ \
-    make \
-    cmake \
-    && MAKEFLAGS="-j2" pecl install redis grpc protobuf \
-    && docker-php-ext-enable redis grpc protobuf \
+    && pecl install redis \
+    && docker-php-ext-enable redis \
     && docker-php-ext-install pdo pdo_pgsql pgsql zip opcache pcntl bcmath sockets
 
 # Clear cache

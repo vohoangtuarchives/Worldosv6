@@ -3,7 +3,7 @@
 namespace App\Modules\Intelligence\Actions;
 
 use App\Contracts\UniverseEvaluatorInterface;
-use App\Modules\Simulation\Models\UniverseSnapshot;
+use App\Models\UniverseSnapshot;
 
 class EvaluateUniverseAction
 {

@@ -3,8 +3,8 @@
 namespace App\Modules\Simulation\Services;
 
 use App\Contracts\Repositories\UniverseRepositoryInterface;
-use App\Modules\Intelligence\Models\Idea;
-use App\Modules\Simulation\Models\Universe;
+use App\Models\Idea;
+use App\Models\Universe;
 use Illuminate\Support\Facades\Log;
 
 /**

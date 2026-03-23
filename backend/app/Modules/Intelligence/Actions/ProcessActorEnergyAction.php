@@ -6,7 +6,7 @@ use App\Contracts\Repositories\UniverseRepositoryInterface;
 use App\Modules\Intelligence\Contracts\ActorRepositoryInterface;
 use App\Modules\Intelligence\Entities\ActorEntity;
 use App\Modules\Intelligence\Domain\Rng\SimulationRng;
-use App\Modules\Simulation\Models\Universe;
+use App\Models\Universe;
 use Illuminate\Support\Facades\Log;
 
 /**

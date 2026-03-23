@@ -2,9 +2,9 @@
 
 namespace App\Modules\Intelligence\Services\Dashboard;
 
-use App\Modules\Simulation\Models\UniverseSnapshot;
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\SocialGraph\Models\InstitutionalEntity;
+use App\Models\UniverseSnapshot;
+use App\Models\Universe;
+use App\Models\InstitutionalEntity;
 use App\Modules\Intelligence\Services\AI\EpistemicService;
 
 class StateMetricsService
@@ -64,7 +64,7 @@ class StateMetricsService
         $spirituality = min(1.0, ($mythCount * 0.25) + ($meaningCount * 0.1));
 
         // 3. Institutional
-        $instCount = \App\Modules\SocialGraph\Models\InstitutionalEntity::where('universe_id', $latest->universe_id)
+        $instCount = \App\Models\InstitutionalEntity::where('universe_id', $latest->universe_id)
             ->whereNull('collapsed_at_tick')
             ->count();
         $institutional = min(1.0, $instCount / 10.0);

@@ -6,7 +6,7 @@ use App\Modules\Simulation\Core\Runtime\Contracts\WorldSystemInterface;
 use App\Modules\Simulation\Core\Runtime\WorldKernel;
 use App\Modules\Simulation\Core\Runtime\Causality\ImpactReport;
 use App\Modules\Simulation\Core\Runtime\Causality\CausalLink;
-use App\Modules\Simulation\Models\Universe;
+use App\Models\Universe;
 use App\Modules\Intelligence\Actions\UpdateCollectiveUnconsciousAction;
 
 /**

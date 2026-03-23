@@ -8,7 +8,7 @@ use App\Modules\Simulation\Core\Domain\TickContext;
 use App\Modules\Simulation\Core\Engines\EngineResult;
 use App\Modules\Simulation\Core\Effects\WorldStateUpdateEffect;
 use App\Modules\Narrative\Services\NarrativeCompiler;
-use App\Modules\Narrative\Models\Narrative;
+use App\Models\Narrative;
 use Illuminate\Support\Facades\Log;
 
 /**

@@ -16,7 +16,7 @@ class InheritAxiomsStep implements SpawnStepInterface
         $branchPayload = $context['branch_payload'];
 
         if ($parentUniverseId && $universe && !empty($branchPayload['inherit_axioms'])) {
-            $axioms = \App\Modules\Simulation\Models\DiscoveredAxiom::where('universe_id', $parentUniverseId)
+            $axioms = \App\Models\DiscoveredAxiom::where('universe_id', $parentUniverseId)
                 ->where('status', 'confirmed')
                 ->get();
 

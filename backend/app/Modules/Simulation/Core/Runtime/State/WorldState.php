@@ -21,10 +21,10 @@ class WorldState
     /** @var \App\Modules\Intelligence\Entities\IdeaEntity[] */
     protected array $ideaEntities = [];
 
-    /** @var \App\Modules\Narrative\Models\Chronicle[] */
+    /** @var \App\Models\Chronicle[] */
     protected array $recentChronicles = [];
 
-    /** @var \App\Modules\Intelligence\Models\SupremeEntity[] */
+    /** @var \App\Models\SupremeEntity[] */
     protected array $supremeEntities = [];
 
     /** @var bool */
@@ -212,16 +212,16 @@ class WorldState
     /** @param \App\Modules\Intelligence\Entities\IdeaEntity[] $entities */
     public function setIdeaEntities(array $entities): void { $this->ideaEntities = $entities; }
 
-    /** @return \App\Modules\Narrative\Models\Chronicle[] */
+    /** @return \App\Models\Chronicle[] */
     public function getRecentChronicles(): array { return $this->recentChronicles; }
 
-    /** @param \App\Modules\Narrative\Models\Chronicle[] $chronicles */
+    /** @param \App\Models\Chronicle[] $chronicles */
     public function setRecentChronicles(array $chronicles): void { $this->recentChronicles = $chronicles; }
 
-    /** @return \App\Modules\Intelligence\Models\SupremeEntity[] */
+    /** @return \App\Models\SupremeEntity[] */
     public function getSupremeEntities(): array { return $this->supremeEntities; }
 
-    /** @param \App\Modules\Intelligence\Models\SupremeEntity[] $entities */
+    /** @param \App\Models\SupremeEntity[] $entities */
     public function setSupremeEntities(array $entities): void { $this->supremeEntities = $entities; }
 
     public function getTick(): int { return (int)$this->get('tick', 0); }

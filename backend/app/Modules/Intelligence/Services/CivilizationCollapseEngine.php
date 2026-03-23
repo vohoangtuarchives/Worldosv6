@@ -2,8 +2,8 @@
 
 namespace App\Modules\Intelligence\Services;
 
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Narrative\Models\LegacyVault;
+use App\Models\Universe;
+use App\Models\LegacyVault;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -71,7 +71,7 @@ class CivilizationCollapseEngine
         });
     }
 
-    public function evaluate(\App\Modules\Simulation\Models\Universe $universe, \App\Modules\Simulation\Models\UniverseSnapshot $snapshot): void
+    public function evaluate(\App\Models\Universe $universe, \App\Models\UniverseSnapshot $snapshot): void
     {
         $this->checkAndExecute($universe, (int) $snapshot->tick);
     }

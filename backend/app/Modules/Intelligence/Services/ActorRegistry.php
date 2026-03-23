@@ -2,7 +2,7 @@
 
 namespace App\Modules\Intelligence\Services;
 
-use App\Modules\Simulation\Models\World;
+use App\Models\World;
 use App\Modules\Intelligence\Entities\Contracts\ActorArchetypeInterface;
 
 class ActorRegistry

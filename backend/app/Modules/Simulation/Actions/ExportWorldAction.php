@@ -2,8 +2,8 @@
 
 namespace App\Modules\Simulation\Actions;
 
-use App\Modules\Simulation\Models\World;
-use App\Modules\Simulation\Models\Universe;
+use App\Models\World;
+use App\Models\Universe;
 
 class ExportWorldAction
 {

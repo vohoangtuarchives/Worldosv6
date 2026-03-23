@@ -4,8 +4,8 @@ namespace App\Modules\SocialGraph\Console\Commands;
 
 use Illuminate\Console\Command;
 use App\Modules\SocialGraph\Services\Neo4jSocialSyncer;
-use App\Modules\Intelligence\Models\Actor;
-use App\Modules\Simulation\Models\Universe;
+use App\Models\Actor;
+use App\Models\Universe;
 
 class Neo4jSyncCommand extends Command
 {

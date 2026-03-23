@@ -2,9 +2,9 @@
 
 namespace App\Modules\Simulation\Services;
 
-use App\Modules\Intelligence\Models\Actor;
-use App\Modules\Narrative\Models\Chronicle;
-use App\Modules\Simulation\Models\Universe;
+use App\Models\Actor;
+use App\Models\Chronicle;
+use App\Models\Universe;
 
 /**
  * HeroLifecycleService — Phase 7.
@@ -42,7 +42,7 @@ class HeroLifecycleService
 
                 $newStage = $stage;
                 if ($stage === 'latent') {
-                    $hasArtifact = \App\Modules\Intelligence\Models\ActorEvent::where('actor_id', $actor->id)->where('event_type', 'artifact_created')->exists();
+                    $hasArtifact = \App\Models\ActorEvent::where('actor_id', $actor->id)->where('event_type', 'artifact_created')->exists();
                     if ($hasArtifact) {
                         $newStage = 'awakening';
                         $this->chronicleStage($actor->universe_id, $actor->id, $tick, 'hero_awakening');

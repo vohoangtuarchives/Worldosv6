@@ -2,10 +2,10 @@
 
 namespace App\Modules\Simulation\Actions;
 
-use App\Modules\Simulation\Models\World;
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Simulation\Models\UniverseSnapshot;
-use App\Modules\Narrative\Models\Chronicle;
+use App\Models\World;
+use App\Models\Universe;
+use App\Models\UniverseSnapshot;
+use App\Models\Chronicle;
 use App\Modules\Simulation\Services\UniverseRuntimeService;
 use App\Modules\Simulation\Services\TemporalSyncService;
 use App\Modules\Simulation\Services\AnomalyGeneratorService;

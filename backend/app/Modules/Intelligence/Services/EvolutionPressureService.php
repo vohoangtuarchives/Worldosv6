@@ -2,7 +2,7 @@
 
 namespace App\Modules\Intelligence\Services;
 
-use App\Modules\Simulation\Models\Universe;
+use App\Models\Universe;
 
 /**
  * Computes environment pressure vector from universe state (zones).

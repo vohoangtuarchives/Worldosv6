@@ -2,8 +2,8 @@
 
 namespace App\Modules\Simulation\Core\Domain\Pipelines\Steps;
 
-use App\Modules\Simulation\Models\World;
-use App\Modules\Simulation\Models\Universe;
+use App\Models\World;
+use App\Models\Universe;
 
 /**
  * Interface cho các bước trong SpawnPipeline.

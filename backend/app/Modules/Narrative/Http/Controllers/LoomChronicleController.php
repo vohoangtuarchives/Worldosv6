@@ -4,7 +4,7 @@ namespace App\Modules\Narrative\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Modules\Narrative\Models\Chronicle;
+use App\Models\Chronicle;
 use Illuminate\Http\JsonResponse;
 
 class LoomChronicleController extends Controller

@@ -4,7 +4,7 @@ namespace App\Modules\Narrative\Repositories;
 
 use App\Modules\Narrative\Contracts\ArtifactRepositoryInterface;
 use App\Modules\Narrative\Entities\ArtifactEntity;
-use App\Modules\Narrative\Models\Artifact as ArtifactModel;
+use App\Models\Artifact as ArtifactModel;
 
 class ArtifactEloquentRepository implements ArtifactRepositoryInterface
 {

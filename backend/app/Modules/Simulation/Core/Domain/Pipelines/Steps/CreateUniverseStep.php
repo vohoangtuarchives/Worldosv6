@@ -21,7 +21,7 @@ class CreateUniverseStep implements SpawnStepInterface
         $branchLabel = $parentUniverseId ? 'Branch' : 'Genesis';
         $name = $world->name . ' - ' . $branchLabel . ' (' . now()->format('H:i:s') . ')';
 
-        $context['universe'] = \App\Modules\Simulation\Models\Universe::create([
+        $context['universe'] = \App\Models\Universe::create([
             'name' => $name,
             'world_id' => $world->id,
             'multiverse_id' => $world->multiverse_id,

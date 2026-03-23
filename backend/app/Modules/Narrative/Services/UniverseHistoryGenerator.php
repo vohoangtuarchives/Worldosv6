@@ -3,13 +3,13 @@
 namespace App\Modules\Narrative\Services;
 
 use App\Modules\Narrative\Contracts\ChronicleRepositoryInterface;
-use App\Modules\Simulation\Models\Era;
-use App\Modules\Narrative\Models\Legend;
-use App\Modules\SocialGraph\Models\Religion;
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Simulation\Models\UniverseHistory;
-use App\Modules\SocialGraph\Models\CivilizationHistory;
-use App\Modules\SocialGraph\Models\Civilization;
+use App\Models\Era;
+use App\Models\Legend;
+use App\Models\Religion;
+use App\Models\Universe;
+use App\Models\UniverseHistory;
+use App\Models\CivilizationHistory;
+use App\Models\Civilization;
 use App\Contracts\LlmNarrativeClientInterface;
 use Illuminate\Support\Facades\Log;
 

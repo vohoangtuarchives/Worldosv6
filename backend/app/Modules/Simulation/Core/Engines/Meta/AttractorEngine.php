@@ -2,8 +2,8 @@
 
 namespace App\Modules\Simulation\Core\Engines\Meta;
 
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Simulation\Models\UniverseSnapshot;
+use App\Models\Universe;
+use App\Models\UniverseSnapshot;
 use App\Modules\Simulation\Repositories\UniverseRepository;
 use App\Modules\Simulation\Core\Support\RuleEngine;
 use App\Modules\Narrative\Services\EventTriggerMapper;

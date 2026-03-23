@@ -3,8 +3,8 @@
 namespace App\Modules\Simulation\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Simulation\Models\UniverseBridge;
+use App\Models\Universe;
+use App\Models\UniverseBridge;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 

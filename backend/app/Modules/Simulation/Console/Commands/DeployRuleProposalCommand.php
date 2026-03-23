@@ -2,7 +2,7 @@
 
 namespace App\Modules\Simulation\Console\Commands;
 
-use App\Modules\Simulation\Models\RuleProposal;
+use App\Models\RuleProposal;
 use App\Modules\Simulation\Services\RuleEngine\DeployRuleProposalService;
 use Illuminate\Console\Command;
 

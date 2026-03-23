@@ -19,7 +19,7 @@ use App\Modules\Simulation\Services\EpochEngine;
 use App\Modules\Simulation\Services\ObservationInterferenceEngine;
 use App\Modules\Simulation\Services\TrajectoryModelingEngine;
 use App\Modules\Simulation\Core\Support\SimulationRandom;
-use App\Modules\Simulation\Models\UniverseSnapshot;
+use App\Models\UniverseSnapshot;
 use App\Modules\Simulation\Core\Runtime\Domain\UniverseState;
 use App\Modules\Simulation\Services\CosmicEnergyPoolService;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -303,7 +303,7 @@ class EvaluateSimulationResult
             return;
         }
 
-        $activeCount = \App\Modules\Simulation\Models\Universe::where($saga->id)
+        $activeCount = \App\Models\Universe::where($saga->id)
             ->where('status', 'active')
             ->count();
 
@@ -377,7 +377,7 @@ class EvaluateSimulationResult
 
         // Snapshot ảo (chưa lưu DB): cập nhật metrics vào bản ghi snapshot mới nhất để dashboard có số liệu gần đúng.
         if (!$snapshot->exists) {
-            $latest = \App\Modules\Simulation\Models\UniverseSnapshot::where('universe_id', $universe->id)
+            $latest = \App\Models\UniverseSnapshot::where('universe_id', $universe->id)
                 ->orderByDesc('tick')
                 ->first();
             if ($latest) {
@@ -448,7 +448,7 @@ class EvaluateSimulationResult
         $historicalBlock = null;
         $fact = null;
         if (config('worldos.narrative_v2.enable_fact_first_chronicle', true)) {
-            $fact = \App\Modules\Narrative\Models\HistoricalFact::where('universe_id', $universe->id)
+            $fact = \App\Models\HistoricalFact::where('universe_id', $universe->id)
                 ->where('tick', $snapshot->tick)
                 ->latest()
                 ->first();
@@ -490,7 +490,7 @@ class EvaluateSimulationResult
             $rawPayload['historical_block'] = $historicalBlock;
         }
 
-        $chronicle = \App\Modules\Narrative\Models\Chronicle::create([
+        $chronicle = \App\Models\Chronicle::create([
             'universe_id' => $universe->id,
             'parent_id' => $fact?->parent_id,
             'world_event_id' => $worldEventId,
@@ -523,7 +523,7 @@ class EvaluateSimulationResult
     /**
      * Run narrative interval jobs: era (every era_interval), religion spread, causal_trajectory, legend.
      */
-    protected function runNarrativeIntervals(\App\Modules\Simulation\Models\Universe $universe, $snapshot): void
+    protected function runNarrativeIntervals(\App\Models\Universe $universe, $snapshot): void
     {
         $tick = (int) $snapshot->tick;
         $eraInterval = (int) config('worldos.narrative.era_interval', 200);
@@ -562,7 +562,7 @@ class EvaluateSimulationResult
 
         if ($legendInterval > 0 && $this->adaptiveScheduler->shouldRun('legend', $universe, $snapshot)) {
             try {
-                $agent = \App\Modules\Intelligence\Models\LegendaryAgent::where('universe_id', $universe->id)->inRandomOrder()->first();
+                $agent = \App\Models\LegendaryAgent::where('universe_id', $universe->id)->inRandomOrder()->first();
                 if ($agent !== null) {
                     $this->narrativeScheduler->scheduleLegend($universe->id, null, $agent->id);
                 }
@@ -575,15 +575,15 @@ class EvaluateSimulationResult
     /**
      * Build belief context for ActorDecisionEngine: religion, causal_trajectory belief, legend level.
      */
-    protected function getBeliefContextForActor(\App\Modules\Intelligence\Models\Actor $actor): array
+    protected function getBeliefContextForActor(\App\Models\Actor $actor): array
     {
         $hasReligion = $actor->religions()->exists();
         $hasCausalTrajectoryBelief = $actor->causal_trajectoryBeliefs()->exists();
         $legendLevel = (int) $actor->legends()->max('legend_level');
         if ($legendLevel === 0 && $actor->supremeEntity) {
-            $legendaryAgent = \App\Modules\Intelligence\Models\LegendaryAgent::where('original_agent_id', $actor->id)->first();
+            $legendaryAgent = \App\Models\LegendaryAgent::where('original_agent_id', $actor->id)->first();
             if ($legendaryAgent) {
-                $leg = \App\Modules\Narrative\Models\Legend::where('legendary_agent_id', $legendaryAgent->id)->orderByDesc('legend_level')->first();
+                $leg = \App\Models\Legend::where('legendary_agent_id', $legendaryAgent->id)->orderByDesc('legend_level')->first();
                 $legendLevel = $leg ? (int) $leg->legend_level : 0;
             }
         }
@@ -601,7 +601,7 @@ class EvaluateSimulationResult
     {
         $maxActors = (int) config('worldos.actor_decision.max_actors_per_pulse', 50);
 
-        $keyActors = \App\Modules\Intelligence\Models\Actor::query()
+        $keyActors = \App\Models\Actor::query()
             ->where('universe_id', $universe->id)
             ->where('is_alive', true)
             ->whereHas('supremeEntity')
@@ -628,7 +628,7 @@ class EvaluateSimulationResult
             $environment['belief'] = $belief;
             $dist = $this->actorDecisionEngine->getActionDistribution($traits, $capabilities, $environment, $tick, $birthTick);
             $action = $this->actorDecisionEngine->rollAction($dist, $rng);
-            \App\Modules\Intelligence\Models\ActorEvent::create([
+            \App\Models\ActorEvent::create([
                 'actor_id' => $actor->id,
                 'tick' => $tick,
                 'event_type' => $action,

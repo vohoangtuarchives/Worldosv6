@@ -2,10 +2,10 @@
 
 namespace App\Modules\Simulation\Actions;
 
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Intelligence\Models\SupremeEntity;
-use App\Modules\Narrative\Models\Chronicle;
-use App\Modules\Simulation\Models\BranchEvent;
+use App\Models\Universe;
+use App\Models\SupremeEntity;
+use App\Models\Chronicle;
+use App\Models\BranchEvent;
 use Illuminate\Support\Facades\Log;
 
 class TriggerScourgeAction

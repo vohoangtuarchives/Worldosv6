@@ -7,8 +7,8 @@ use App\Modules\Simulation\Core\Contracts\SimulationEngine;
 use App\Modules\Simulation\Core\Engines\EngineResult;
 use App\Modules\Simulation\Core\Domain\TickContext;
 use App\Modules\Simulation\Core\Runtime\State\WorldState;
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Simulation\Models\UniverseInteraction;
+use App\Models\Universe;
+use App\Models\UniverseInteraction;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 

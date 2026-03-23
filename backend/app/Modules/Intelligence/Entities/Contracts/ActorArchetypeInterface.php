@@ -2,9 +2,9 @@
 
 namespace App\Modules\Intelligence\Entities\Contracts;
 
-use App\Modules\Simulation\Models\World;
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Simulation\Models\UniverseSnapshot;
+use App\Models\World;
+use App\Models\Universe;
+use App\Models\UniverseSnapshot;
 
 interface ActorArchetypeInterface
 {

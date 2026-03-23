@@ -1,3 +1,20 @@
 <?php
+
 namespace App\Models;
-class HistorianProfile extends \App\Modules\Narrative\Models\HistorianProfile {}
+
+use Illuminate\Database\Eloquent\Model;
+
+class HistorianProfile extends Model
+{
+    protected $fillable = [
+        'name',
+        'personality',
+        'bias',
+        'writing_style',
+        'config',
+    ];
+
+    protected $casts = [
+        'config' => 'array',
+    ];
+}

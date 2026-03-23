@@ -2,9 +2,9 @@
 
 namespace App\Modules\Simulation\Core\Engines\Meta;
 
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Simulation\Models\UniverseSnapshot;
-use App\Modules\Simulation\Models\UniverseInteraction;
+use App\Models\Universe;
+use App\Models\UniverseSnapshot;
+use App\Models\UniverseInteraction;
 use Illuminate\Support\Facades\Log;
 
 class ConvergenceEngine

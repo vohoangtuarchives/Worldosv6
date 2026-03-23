@@ -2,8 +2,8 @@
 
 namespace App\Modules\Simulation\Services;
 
-use App\Modules\Narrative\Models\Chronicle;
-use App\Modules\Simulation\Models\Universe;
+use App\Models\Chronicle;
+use App\Models\Universe;
 use Illuminate\Support\Collection;
 
 /**

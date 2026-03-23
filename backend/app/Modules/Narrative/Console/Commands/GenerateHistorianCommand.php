@@ -2,7 +2,7 @@
 
 namespace App\Modules\Narrative\Console\Commands;
 
-use App\Modules\Simulation\Models\Universe;
+use App\Models\Universe;
 use App\Modules\Narrative\Services\HistorianAgentService;
 use Illuminate\Console\Command;
 

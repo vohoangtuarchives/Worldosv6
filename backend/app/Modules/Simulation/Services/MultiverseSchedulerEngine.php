@@ -2,8 +2,8 @@
 
 namespace App\Modules\Simulation\Services;
 
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Simulation\Models\World;
+use App\Models\Universe;
+use App\Models\World;
 use App\Modules\Simulation\Core\Runtime\RuleVM\RuleVmService;
 use Illuminate\Support\Collection;
 use function resource_path;

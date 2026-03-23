@@ -198,8 +198,8 @@ class WorldKernel
         $universeId = (int) $state->get('universe_id', 0);
         
         // 1. Fetch pending narrative feedback signals and Universe axioms
-        $universe = \App\Modules\Simulation\Models\Universe::find($universeId);
-        $signals = \App\Modules\Narrative\Models\NarrativeFeedbackSignal::pendingForTick($universeId, $tick)->get();
+        $universe = \App\Models\Universe::find($universeId);
+        $signals = \App\Models\NarrativeFeedbackSignal::pendingForTick($universeId, $tick)->get();
         // Note: axioms/signals are currently handled at the evaluating rules step.
 
         // 2. Sharding & Batch processing (Phase 9)
@@ -213,8 +213,8 @@ class WorldKernel
         
         $isObserved = (float) $universe->observation_load > 0.5;
         
-        $factionRelations = \App\Modules\SocialGraph\Models\FactionRelation::all()->toArray();
-        $beliefDefinitions = \App\Modules\Intelligence\Models\Belief::all()->map(function($b) {
+        $factionRelations = \App\Models\FactionRelation::all()->toArray();
+        $beliefDefinitions = \App\Models\Belief::all()->map(function($b) {
             return [
                 'id' => $b->id,
                 'name' => $b->name,
@@ -223,7 +223,7 @@ class WorldKernel
             ];
         })->toArray();
         
-        $techDefinitions = \App\Modules\SocialGraph\Models\Technology::all()->map(function($t) {
+        $techDefinitions = \App\Models\Technology::all()->map(function($t) {
             return [
                 'id' => $t->id,
                 'name' => $t->name,
@@ -364,7 +364,7 @@ class WorldKernel
                 // 5. Record Scars (Events)
                 if (!empty($result['scars'])) {
                     foreach ($result['scars'] as $scar) {
-                        \App\Modules\Narrative\Models\Chronicle::create([
+                        \App\Models\Chronicle::create([
                             'universe_id' => $universeId,
                             'actor_id' => $scar['actor_id'] ?: null,
                             'from_tick' => (int)($scar['tick'] ?? $tick),
@@ -385,7 +385,7 @@ class WorldKernel
                 // Phase 15: Handle Emergent Calamities (The Great Filter)
                 if (!empty($result['calamities'])) {
                     foreach ($result['calamities'] as $calamity) {
-                        \App\Modules\Narrative\Models\Chronicle::create([
+                        \App\Models\Chronicle::create([
                             'universe_id' => $universeId,
                             'actor_id' => null, // Global event
                             'from_tick' => $tick,
@@ -431,11 +431,11 @@ class WorldKernel
                 if (!empty($result['spawned_actors'])) {
                     foreach ($result['spawned_actors'] as $spawn) {
                         $parentId = $spawn['parent_id'];
-                        $parent = \App\Modules\Intelligence\Models\Actor::find($parentId);
+                        $parent = \App\Models\Actor::find($parentId);
                         $generation = $parent ? $parent->generation + 1 : 1;
                         $familyName = $parent ? ($parent->name) : "Family $parentId";
                         
-                        $child = \App\Modules\Intelligence\Models\Actor::create([
+                        $child = \App\Models\Actor::create([
                             'universe_id' => $universeId,
                             'name' => "Descendant of " . ($parent ? $parent->name : $parentId),
                             'archetype' => $spawn['archetype'] ?? 'Commoner',
@@ -463,13 +463,13 @@ class WorldKernel
 
                         // Heritage Logic: Ancestral Memory
                         if ($parent) {
-                            $recentTrauma = \App\Modules\Narrative\Models\Chronicle::where('actor_id', $parentId)
+                            $recentTrauma = \App\Models\Chronicle::where('actor_id', $parentId)
                                 ->where('type', 'TRAUMA')
                                 ->where('from_tick', '>', $tick - 500)
                                 ->exists();
 
                             if ($recentTrauma) {
-                                \App\Modules\Narrative\Models\Chronicle::create([
+                                \App\Models\Chronicle::create([
                                     'universe_id' => $universeId,
                                     'actor_id' => $child->id,
                                     'from_tick' => $tick,

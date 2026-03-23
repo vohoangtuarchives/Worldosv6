@@ -4,7 +4,7 @@ namespace App\Modules\Narrative\Repositories;
 
 use App\Modules\Narrative\Contracts\DemiurgeRepositoryInterface;
 use App\Modules\Narrative\Entities\DemiurgeEntity;
-use App\Modules\Narrative\Models\Demiurge as DemiurgeModel;
+use App\Models\Demiurge as DemiurgeModel;
 
 class DemiurgeEloquentRepository implements DemiurgeRepositoryInterface
 {

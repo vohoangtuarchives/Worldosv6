@@ -2,7 +2,7 @@
 
 namespace App\Modules\Simulation\Console\Commands;
 
-use App\Modules\Simulation\Models\Universe;
+use App\Models\Universe;
 use App\Modules\Intelligence\Services\BiologyMetricsService;
 use App\Modules\Intelligence\Services\EcosystemMetricsService;
 use Illuminate\Console\Command;

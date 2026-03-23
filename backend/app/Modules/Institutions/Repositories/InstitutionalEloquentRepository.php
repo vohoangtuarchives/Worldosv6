@@ -2,7 +2,7 @@
 
 namespace App\Modules\Institutions\Repositories;
 
-use App\Modules\SocialGraph\Models\InstitutionalEntity as InstitutionalModel;
+use App\Models\InstitutionalEntity as InstitutionalModel;
 use App\Modules\Institutions\Contracts\InstitutionalRepositoryInterface;
 use App\Modules\Institutions\Entities\InstitutionalEntity;
 

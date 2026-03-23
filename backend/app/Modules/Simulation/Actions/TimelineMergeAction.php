@@ -2,10 +2,10 @@
 
 namespace App\Modules\Simulation\Actions;
 
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Simulation\Models\UniverseSnapshot;
-use App\Modules\Simulation\Models\UniverseInteraction;
-use App\Modules\Simulation\Models\BranchEvent;
+use App\Models\Universe;
+use App\Models\UniverseSnapshot;
+use App\Models\UniverseInteraction;
+use App\Models\BranchEvent;
 use App\Contracts\SimulationEngineClientInterface;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;

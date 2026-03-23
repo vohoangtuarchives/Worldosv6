@@ -3,10 +3,10 @@
 namespace App\Modules\Simulation\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Modules\Simulation\Models\Material;
-use App\Modules\Simulation\Models\MaterialInstance;
-use App\Modules\Simulation\Models\MaterialMutation;
-use App\Modules\Simulation\Models\Universe;
+use App\Models\Material;
+use App\Models\MaterialInstance;
+use App\Models\MaterialMutation;
+use App\Models\Universe;
 use Illuminate\Http\Request;
 
 class MaterialMutationController extends Controller

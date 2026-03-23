@@ -2,7 +2,7 @@
 
 namespace App\Modules\Intelligence\Services\AI;
 
-use App\Modules\Intelligence\Models\AiMemory;
+use App\Models\AiMemory;
 use Illuminate\Support\Facades\DB;
 
 class MemoryService
@@ -16,7 +16,7 @@ class MemoryService
     {
         // Apply distortion if noise is high and we have a universe context
         if ($universeId) {
-            $universe = \App\Modules\Simulation\Models\Universe::find($universeId);
+            $universe = \App\Models\Universe::find($universeId);
             if ($universe) {
                 $noise = $this->epistemicService->calculateNoise($universe, (float)(($universe->state_vector ?? [])['entropy'] ?? 0));
                 if ($noise > 0.3) {

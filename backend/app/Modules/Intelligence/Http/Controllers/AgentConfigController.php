@@ -2,7 +2,7 @@
 
 namespace App\Modules\Intelligence\Http\Controllers;
 
-use App\Modules\Intelligence\Models\AgentConfig;
+use App\Models\AgentConfig;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 

@@ -2,7 +2,7 @@
 
 namespace App\Contracts\Simulation;
 
-use App\Modules\Simulation\Models\Universe;
+use App\Models\Universe;
 
 interface SeederInterface
 {

@@ -3,10 +3,10 @@
 namespace App\Modules\Simulation\Services\Seeders;
 
 use App\Contracts\Simulation\SeederInterface;
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Simulation\Models\Material;
-use App\Modules\Simulation\Models\MaterialInstance;
-use App\Modules\Narrative\Models\Chronicle;
+use App\Models\Universe;
+use App\Models\Material;
+use App\Models\MaterialInstance;
+use App\Models\Chronicle;
 
 class VoidBornSeeder implements SeederInterface
 {

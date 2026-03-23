@@ -2,9 +2,9 @@
 
 namespace App\Modules\Narrative\Services;
 
-use App\Modules\Narrative\Models\SerialChapter;
-use App\Modules\Narrative\Models\NarrativeSeries;
-use App\Modules\Narrative\Models\StoryBible;
+use App\Models\SerialChapter;
+use App\Models\NarrativeSeries;
+use App\Models\StoryBible;
 use App\Modules\Intelligence\Services\AI\AnalyticalAiService;
 use Illuminate\Support\Facades\Log;
 

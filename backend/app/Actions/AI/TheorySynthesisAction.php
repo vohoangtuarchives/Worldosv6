@@ -2,7 +2,7 @@
 
 namespace App\Actions\AI;
 
-use App\Modules\Simulation\Models\Universe;
+use App\Models\Universe;
 use App\Modules\Intelligence\Services\AI\TheorySynthesisService;
 use Illuminate\Support\Facades\Log;
 

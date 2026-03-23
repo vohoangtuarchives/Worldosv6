@@ -2,8 +2,8 @@
 
 namespace App\Modules\Simulation\Core\Contracts;
 
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Simulation\Models\UniverseSnapshot;
+use App\Models\Universe;
+use App\Models\UniverseSnapshot;
 
 /**
  * Archive snapshot blob to cold storage (S3/MinIO). Doc §10, RÀ_SOÁT_TMP mục 7.

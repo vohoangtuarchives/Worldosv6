@@ -2,7 +2,7 @@
 
 namespace App\Modules\Simulation\Vocation\Repositories;
 
-use App\Modules\Intelligence\Models\ActorMastery as MasteryModel;
+use App\Models\ActorMastery as MasteryModel;
 use App\Modules\Simulation\Vocation\Contracts\ActorMasteryRepositoryInterface;
 use App\Modules\Simulation\Vocation\Entities\ActorMasteryEntity;
 

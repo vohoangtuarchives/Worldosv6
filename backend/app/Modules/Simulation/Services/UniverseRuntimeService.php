@@ -3,8 +3,8 @@
 namespace App\Modules\Simulation\Services;
 
 use App\Contracts\SimulationEngineClientInterface;
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Simulation\Models\BranchEvent;
+use App\Models\Universe;
+use App\Models\BranchEvent;
 use App\Modules\Simulation\Repositories\UniverseSnapshotRepository;
 use App\Modules\Simulation\Services\CultureDiffusionService;
 use App\Modules\Simulation\Core\Engines\Meta\DecisionEngine;

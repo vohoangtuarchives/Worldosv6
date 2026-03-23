@@ -12,9 +12,9 @@ use Illuminate\Support\Facades\Log;
  */
 class NarrativeCompiler
 {
-    protected ?\App\Modules\Simulation\Models\Universe $universe = null;
+    protected ?\App\Models\Universe $universe = null;
 
-    public function setUniverse(\App\Modules\Simulation\Models\Universe $universe): self
+    public function setUniverse(\App\Models\Universe $universe): self
     {
         $this->universe = $universe;
         return $this;

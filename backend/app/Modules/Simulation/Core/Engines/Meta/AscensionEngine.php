@@ -2,9 +2,9 @@
 
 namespace App\Modules\Simulation\Core\Engines\Meta;
 
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\SocialGraph\Models\InstitutionalEntity;
-use App\Modules\Narrative\Models\Chronicle;
+use App\Models\Universe;
+use App\Models\InstitutionalEntity;
+use App\Models\Chronicle;
 use Illuminate\Support\Facades\Log;
 use App\Modules\Simulation\Services\WorldTemplateManager;
 

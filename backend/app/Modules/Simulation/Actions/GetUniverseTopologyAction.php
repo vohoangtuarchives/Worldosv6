@@ -2,8 +2,8 @@
 
 namespace App\Modules\Simulation\Actions;
 
-use App\Modules\Simulation\Models\UniverseSnapshot;
-use App\Modules\Simulation\Models\Universe;
+use App\Models\UniverseSnapshot;
+use App\Models\Universe;
 
 class GetUniverseTopologyAction
 {
@@ -47,7 +47,7 @@ class GetUniverseTopologyAction
         }
 
         $topologyData = [];
-        $institutions = \App\Modules\SocialGraph\Models\InstitutionalEntity::where('universe_id', $universeId)
+        $institutions = \App\Models\InstitutionalEntity::where('universe_id', $universeId)
             ->whereNull('collapsed_at_tick')
             ->get();
 

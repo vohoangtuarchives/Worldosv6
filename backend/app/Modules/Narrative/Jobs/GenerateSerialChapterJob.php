@@ -2,7 +2,7 @@
 
 namespace App\Modules\Narrative\Jobs;
 
-use App\Modules\Narrative\Models\NarrativeSeries;
+use App\Models\NarrativeSeries;
 use App\Modules\Narrative\Services\SerialStoryService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;

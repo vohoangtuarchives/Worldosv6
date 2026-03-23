@@ -2,7 +2,7 @@
 
 namespace App\Modules\Simulation\Services;
 
-use App\Modules\Simulation\Models\UniverseSnapshot;
+use App\Models\UniverseSnapshot;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 

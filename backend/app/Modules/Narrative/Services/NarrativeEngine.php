@@ -3,12 +3,12 @@
 namespace App\Modules\Narrative\Services;
 
 use App\Modules\Simulation\Entities\UniverseEntity;
-use App\Modules\Simulation\Models\UniverseSnapshot;
+use App\Models\UniverseSnapshot;
 use App\Contracts\LlmNarrativeClientInterface;
 use App\Modules\Narrative\Repositories\ChronicleMemoryRepository;
 use App\Modules\Narrative\Dto\NarrativeProjection;
 use App\Modules\Narrative\Dto\NarrativeMeaning;
-use App\Modules\Narrative\Models\NarrativeState;
+use App\Models\NarrativeState;
 use Illuminate\Support\Facades\Log;
 
 /**

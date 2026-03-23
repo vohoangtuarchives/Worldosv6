@@ -19,6 +19,7 @@ Tài liệu này dành cho các AI Agent (Antigravity, Cursor, etc.) để hiể
 ## 3. Giao tiếp (Communication)
 - **Ngôn ngữ:** Trình bày bằng **Tiếng Việt**.
 - **Phong cách:** Proactive (chủ động) nhưng phải Cautious (thận trọng) với Docker volume. Luôn kiểm tra file trước khi sửa.
+- **Duy trì Ngữ cảnh:** Mọi phiên làm việc phải kết thúc bằng việc cập nhật trạng thái vào file `.dev_status.md` ở thư mục gốc để hỗ trợ làm việc trên nhiều máy.
 
 ## 4. Cấu trúc thư mục chính
 - `backend/`: **Orchestrator** (Laravel).

@@ -2,7 +2,7 @@
 
 namespace App\Modules\Simulation\Core;
 
-use App\Modules\Simulation\Models\TickManifest;
+use App\Models\TickManifest;
 use App\Modules\Simulation\Core\Contracts\Effect;
 use App\Modules\Simulation\Core\Contracts\WorldEventBusInterface;
 use App\Modules\Simulation\Core\Domain\TickContext;

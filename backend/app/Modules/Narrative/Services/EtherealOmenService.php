@@ -3,7 +3,7 @@
 namespace App\Modules\Narrative\Services;
 
 use App\Modules\Narrative\Contracts\ChronicleRepositoryInterface;
-use App\Modules\Simulation\Models\Universe;
+use App\Models\Universe;
 use Illuminate\Support\Facades\Log;
 
 /**

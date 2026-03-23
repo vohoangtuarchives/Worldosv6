@@ -2,9 +2,9 @@
 
 namespace App\Modules\Institutions\Services;
 
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Simulation\Models\UniverseSnapshot;
-use App\Modules\Simulation\Models\MaterialInstance;
+use App\Models\Universe;
+use App\Models\UniverseSnapshot;
+use App\Models\MaterialInstance;
 use App\Modules\Simulation\Core\Runtime\RuleVM\RuleVmService;
 use Illuminate\Support\Facades\Log;
 use function resource_path;
@@ -110,8 +110,8 @@ class SocialDynamicsEngine
 
         $activeMaterials = MaterialInstance::where('universe_id', $universe->id)
             ->whereHas('material', function($query) {
-                $query->where('ontology', \App\Modules\Simulation\Models\Material::ONTOLOGY_SYMBOLIC)
-                      ->orWhere('ontology', \App\Modules\Simulation\Models\Material::ONTOLOGY_INSTITUTIONAL);
+                $query->where('ontology', \App\Models\Material::ONTOLOGY_SYMBOLIC)
+                      ->orWhere('ontology', \App\Models\Material::ONTOLOGY_INSTITUTIONAL);
             })
             ->with('material')
             ->get();

@@ -2,9 +2,9 @@
 
 namespace App\Modules\Intelligence\Services\AI;
 
-use App\Modules\Intelligence\Models\LegendaryAgent;
-use App\Modules\Simulation\Models\VisualBranch;
-use App\Modules\Simulation\Models\VisualMutation;
+use App\Models\LegendaryAgent;
+use App\Models\VisualBranch;
+use App\Models\VisualMutation;
 use Illuminate\Support\Facades\Log;
 
 /**

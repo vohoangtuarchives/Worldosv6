@@ -2,7 +2,7 @@
 
 namespace App\Modules\Narrative\Events;
 
-use App\Modules\Narrative\Models\Chronicle;
+use App\Models\Chronicle;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 

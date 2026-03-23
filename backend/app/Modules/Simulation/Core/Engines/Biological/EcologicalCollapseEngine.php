@@ -3,8 +3,8 @@
 namespace App\Modules\Simulation\Core\Engines\Biological;
 
 use App\Contracts\Repositories\UniverseRepositoryInterface;
-use App\Modules\Narrative\Models\Chronicle;
-use App\Modules\Simulation\Models\Universe;
+use App\Models\Chronicle;
+use App\Models\Universe;
 use App\Modules\Intelligence\Services\EcosystemMetricsService;
 use App\Modules\Simulation\Core\SimulationEventBus;
 use App\Modules\Simulation\Core\Runtime\RuleVM\RuleVmService;

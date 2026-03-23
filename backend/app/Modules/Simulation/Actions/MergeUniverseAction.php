@@ -2,11 +2,11 @@
 
 namespace App\Modules\Simulation\Actions;
 
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Intelligence\Models\Actor;
-use App\Modules\SocialGraph\Models\InstitutionalEntity;
-use App\Modules\Intelligence\Models\SupremeEntity;
-use App\Modules\Narrative\Models\Chronicle;
+use App\Models\Universe;
+use App\Models\Actor;
+use App\Models\InstitutionalEntity;
+use App\Models\SupremeEntity;
+use App\Models\Chronicle;
 use App\Modules\Simulation\Services\ImplicitOrchestratorService;
 
 /**

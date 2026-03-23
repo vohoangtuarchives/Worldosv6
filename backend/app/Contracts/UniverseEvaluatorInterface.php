@@ -2,7 +2,7 @@
 
 namespace App\Contracts;
 
-use App\Modules\Simulation\Models\UniverseSnapshot;
+use App\Models\UniverseSnapshot;
 
 interface UniverseEvaluatorInterface
 {

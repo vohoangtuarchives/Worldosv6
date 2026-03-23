@@ -30,7 +30,7 @@ class RuleVmService
     /**
      * Legacy support: Evaluate and apply effects immediately.
      */
-    public function evaluateAndApply(\App\Modules\Simulation\Models\Universe $universe, ?\App\Modules\Simulation\Models\UniverseSnapshot $snapshot = null, ?string $rulesDsl = null): void
+    public function evaluateAndApply(\App\Models\Universe $universe, ?\App\Models\UniverseSnapshot $snapshot = null, ?string $rulesDsl = null): void
     {
         $state = app(\App\Modules\Simulation\Core\Runtime\State\StateManager::class)->get();
         if (!$state) return;

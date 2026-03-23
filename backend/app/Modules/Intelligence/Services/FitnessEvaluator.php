@@ -2,8 +2,8 @@
 
 namespace App\Modules\Intelligence\Services;
 
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Intelligence\Models\AgentDecision;
+use App\Models\Universe;
+use App\Models\AgentDecision;
 use App\Modules\Intelligence\Domain\Policy\FitnessScore;
 use App\Modules\Intelligence\Entities\ActorEntity;
 use App\Modules\Intelligence\Contracts\ActorRepositoryInterface;

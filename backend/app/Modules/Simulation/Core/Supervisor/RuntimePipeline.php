@@ -21,8 +21,8 @@ final class RuntimePipeline
     public function run(UniverseEntity $universe, int $tick, SnapshotEntity $snapshot, array $engineResponse, int $ticks): void
     {
         // Vẫn cần Eloquent models cho các sub-systems chưa refactor
-        $universeModel = \App\Modules\Simulation\Models\Universe::find($universe->id);
-        $snapshotModel = \App\Modules\Simulation\Models\UniverseSnapshot::find($snapshot->id);
+        $universeModel = \App\Models\Universe::find($universe->id);
+        $snapshotModel = \App\Models\UniverseSnapshot::find($snapshot->id);
 
         if ($universeModel && $snapshotModel) {
             $this->tickOrchestrator->run(

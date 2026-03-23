@@ -81,7 +81,7 @@ class MeaningEngine implements SimulationEngine
 
     private function spawnReligion(int $universeId, array $myth, int $tick, array &$meaningSystems): void
     {
-        $religion = \App\Modules\SocialGraph\Models\Religion::create([
+        $religion = \App\Models\Religion::create([
             'universe_id' => $universeId,
             'name' => "Tín ngưỡng " . $myth['archetype'],
             'origin_myth_id' => $myth['id'],
@@ -103,7 +103,7 @@ class MeaningEngine implements SimulationEngine
 
     private function spawnIdea(int $universeId, array $myth, int $tick, array &$meaningSystems): void
     {
-        $idea = \App\Modules\Intelligence\Models\Idea::create([
+        $idea = \App\Models\Idea::create([
             'universe_id' => $universeId,
             'theme' => "Triết học " . $myth['archetype'],
             'info_type' => 'religion', // Sử dụng religion type cho ideologies

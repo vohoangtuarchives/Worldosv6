@@ -2,8 +2,8 @@
 
 namespace App\Modules\Simulation\Services;
 
-use App\Modules\Narrative\Models\Chronicle;
-use App\Modules\Simulation\Models\Universe;
+use App\Models\Chronicle;
+use App\Models\Universe;
 use App\Modules\Narrative\Services\MythologyEngine;
 use App\Modules\Narrative\Services\NarrativeAiService;
 use App\Modules\Narrative\Services\NarrativeQueueManager as NarrativeScheduler;

@@ -3,7 +3,7 @@
 namespace App\Modules\Simulation\Core\Supervisor;
 
 use App\Contracts\SimulationEngineClientInterface;
-use App\Modules\Simulation\Models\Universe;
+use App\Models\Universe;
 use App\Modules\Simulation\Services\GeographyResourceService;
 use App\Modules\Simulation\Core\Contracts\StateCacheInterface;
 
@@ -73,7 +73,7 @@ final class EngineDriver
             }
         }
 
-        $institutions = \App\Modules\SocialGraph\Models\InstitutionalEntity::where('universe_id', $universe->id)
+        $institutions = \App\Models\InstitutionalEntity::where('universe_id', $universe->id)
             ->whereNull('collapsed_at_tick')
             ->get();
 

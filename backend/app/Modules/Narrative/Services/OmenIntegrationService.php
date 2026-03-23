@@ -2,7 +2,7 @@
 
 namespace App\Modules\Narrative\Services;
 
-use App\Modules\Simulation\Models\Universe;
+use App\Models\Universe;
 use App\Modules\Narrative\Contracts\ChronicleRepositoryInterface;
 use App\Modules\Simulation\Repositories\UniverseSnapshotRepository;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;

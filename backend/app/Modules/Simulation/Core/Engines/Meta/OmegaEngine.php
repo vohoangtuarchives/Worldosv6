@@ -2,8 +2,8 @@
 
 namespace App\Modules\Simulation\Core\Engines\Meta;
 
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Simulation\Models\BranchEvent;
+use App\Models\Universe;
+use App\Models\BranchEvent;
 use Illuminate\Support\Facades\Log;
 
 class OmegaEngine

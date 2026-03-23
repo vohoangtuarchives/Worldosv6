@@ -2,9 +2,9 @@
 
 namespace App\Modules\Intelligence\Actions;
 
-use App\Modules\Simulation\Models\BranchEvent;
-use App\Modules\Narrative\Models\Chronicle;
-use App\Modules\Simulation\Models\Universe;
+use App\Models\BranchEvent;
+use App\Models\Chronicle;
+use App\Models\Universe;
 use Illuminate\Support\Collection;
 
 class GetUniverseActorsAction
@@ -15,7 +15,7 @@ class GetUniverseActorsAction
      */
     public function execute(int $universeId): Collection
     {
-        return \App\Modules\Intelligence\Models\Actor::with('supremeEntity')
+        return \App\Models\Actor::with('supremeEntity')
             ->where('universe_id', $universeId)
             ->orderBy('is_alive', 'desc') // Alive first
             ->orderBy('id', 'desc')

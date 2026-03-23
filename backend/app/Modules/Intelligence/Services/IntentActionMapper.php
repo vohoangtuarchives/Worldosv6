@@ -2,7 +2,7 @@
 
 namespace App\Modules\Intelligence\Services;
 
-use App\Modules\Simulation\Models\Universe;
+use App\Models\Universe;
 use App\Modules\Intelligence\Actions\FormContractAction;
 use App\Modules\Intelligence\Actions\MigrateAction;
 use App\Modules\Intelligence\Actions\PropagateMythAction;
@@ -85,7 +85,7 @@ class IntentActionMapper
         $ids   = array_map(fn($o) => $o->id, $others);
         $ids[] = $actor->id;
 
-        \App\Modules\SocialGraph\Models\SocialContract::create([
+        \App\Models\SocialContract::create([
             'universe_id'     => $universe->id,
             'type'            => 'mutual_defense',
             'participants'    => $ids,

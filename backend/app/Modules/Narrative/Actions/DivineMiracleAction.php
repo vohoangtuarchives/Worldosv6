@@ -4,7 +4,7 @@ namespace App\Modules\Narrative\Actions;
 
 use App\Modules\Narrative\Entities\DemiurgeEntity;
 use App\Modules\Narrative\Contracts\DemiurgeRepositoryInterface;
-use App\Modules\Simulation\Models\Universe;
+use App\Models\Universe;
 use App\Modules\Narrative\Contracts\ChronicleRepositoryInterface;
 use App\Modules\Narrative\Entities\ChronicleEntity;
 use App\Modules\Narrative\Actions\CelestialEngineeringAction;

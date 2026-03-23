@@ -2,7 +2,7 @@
 
 namespace App\Modules\Simulation\Services;
 
-use App\Modules\Simulation\Models\Universe;
+use App\Models\Universe;
 
 /**
  * KernelMutationService – Quản lý "Genotype" của Thiên Đạo (Universe Kernel)

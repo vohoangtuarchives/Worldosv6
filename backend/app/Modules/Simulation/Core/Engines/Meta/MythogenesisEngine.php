@@ -56,7 +56,7 @@ class MythogenesisEngine implements SimulationEngine
 
         // 1. Lấy các sự kiện gần đây (Chronicles) từ state hoặc DB
         // Chúng ta giả định HistoricalFact chứa các sự kiện quan trọng
-        $recentFacts = \App\Modules\Narrative\Models\HistoricalFact::where('universe_id', $universeId)
+        $recentFacts = \App\Models\HistoricalFact::where('universe_id', $universeId)
             ->where('tick', $tick)
             ->get();
 
@@ -74,7 +74,7 @@ class MythogenesisEngine implements SimulationEngine
             // Nếu tác động vượt ngưỡng, bắt đầu quá trình thần thoại hóa
             if ($impact > 0.75) {
                 $archetype = $this->determineArchetype($fact, $rng);
-                $myth = \App\Modules\Narrative\Models\Myth::create([
+                $myth = \App\Models\Myth::create([
                     'universe_id' => $universeId,
                     'myth_type' => $archetype,
                     'story' => $this->generateStory($fact, $archetype),
@@ -113,7 +113,7 @@ class MythogenesisEngine implements SimulationEngine
         return new EngineResult([], [], []);
     }
 
-    private function calculateImpact(\App\Modules\Narrative\Models\HistoricalFact $fact): float
+    private function calculateImpact(\App\Models\HistoricalFact $fact): float
     {
         // Impact dựa trên số lượng actor bị ảnh hưởng và danh mục sự kiện
         $actorCount = count($fact->actors ?? []);
@@ -128,7 +128,7 @@ class MythogenesisEngine implements SimulationEngine
         return min(1.0, $baseImpact + ($actorCount / 1000));
     }
 
-    private function determineArchetype(\App\Modules\Narrative\Models\HistoricalFact $fact, $rng): string
+    private function determineArchetype(\App\Models\HistoricalFact $fact, $rng): string
     {
         $archetypes = ['HERO', 'MARTYR', 'CREATOR', 'DESTROYER', 'OIKOS'];
         
@@ -138,18 +138,18 @@ class MythogenesisEngine implements SimulationEngine
         return $archetypes[$rng->nextInt(0, count($archetypes) - 1)];
     }
 
-    private function generateStory(\App\Modules\Narrative\Models\HistoricalFact $fact, string $archetype): string
+    private function generateStory(\App\Models\HistoricalFact $fact, string $archetype): string
     {
         // Placeholder cho việc generate story (Sau này có thể tích hợp AI)
         return "Huyền thoại về một {$archetype} xuất hiện từ sự kiện {$fact->category} tại Tick #{$fact->tick}.";
     }
 
-    private function generateCulturalArtifact(\App\Modules\Narrative\Models\HistoricalFact $fact, $rng): void
+    private function generateCulturalArtifact(\App\Models\HistoricalFact $fact, $rng): void
     {
         $type = $fact->category === 'WAR' ? 'EPIC' : 'IDEOLOGY';
         $name = $this->generateTitle($fact, $type, $rng);
 
-        \App\Modules\Narrative\Models\CulturalArtifact::create([
+        \App\Models\CulturalArtifact::create([
             'universe_id' => $fact->universe_id,
             'author_id' => $fact->actors[0] ?? null, // Khớp với model
             'type' => $type,
@@ -167,14 +167,14 @@ class MythogenesisEngine implements SimulationEngine
         Log::alert("CULTURAL LEGACY: A new {$type} titled '{$name}' has been written!");
     }
 
-    private function generateTitle(\App\Modules\Narrative\Models\HistoricalFact $fact, string $type, $rng): string
+    private function generateTitle(\App\Models\HistoricalFact $fact, string $type, $rng): string
     {
         $prefixes = ['Sử thi', 'Khải huyền', 'Bản thảo', 'Hệ tư tưởng'];
         $core = $fact->category;
         return $prefixes[$rng->nextInt(0, 3)] . " về " . $core . " tại " . $fact->location;
     }
 
-    private function generateContent(\App\Modules\Narrative\Models\HistoricalFact $fact, string $type): string
+    private function generateContent(\App\Models\HistoricalFact $fact, string $type): string
     {
         return "Tác phẩm này ghi lại sự kiện {$fact->category} diễn ra tại Tick {$fact->tick}, nó sẽ được truyền tụng qua nhiều kỷ nguyên.";
     }

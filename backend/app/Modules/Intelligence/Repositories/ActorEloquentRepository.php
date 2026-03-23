@@ -2,7 +2,7 @@
 
 namespace App\Modules\Intelligence\Repositories;
 
-use App\Modules\Intelligence\Models\Actor as ActorModel;
+use App\Models\Actor as ActorModel;
 use App\Modules\Intelligence\Contracts\ActorRepositoryInterface;
 use App\Modules\Intelligence\Entities\ActorEntity;
 

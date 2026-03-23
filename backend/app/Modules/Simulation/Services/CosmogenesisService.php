@@ -2,8 +2,8 @@
 
 namespace App\Modules\Simulation\Services;
 
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Simulation\Models\BranchEvent;
+use App\Models\Universe;
+use App\Models\BranchEvent;
 use App\Modules\Simulation\Actions\ForkUniverseAction;
 use Illuminate\Support\Facades\Log;
 

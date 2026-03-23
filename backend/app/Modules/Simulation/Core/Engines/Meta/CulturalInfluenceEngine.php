@@ -2,8 +2,8 @@
 
 namespace App\Modules\Simulation\Core\Engines\Meta;
 
-use App\Modules\Narrative\Models\CulturalArtifact;
-use App\Modules\Simulation\Models\Universe;
+use App\Models\CulturalArtifact;
+use App\Models\Universe;
 use App\Modules\Simulation\Core\Contracts\SimulationEngine;
 use App\Modules\Simulation\Core\Engines\EngineResult;
 use App\Modules\Simulation\Core\Domain\TickContext;

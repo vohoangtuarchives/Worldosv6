@@ -3,6 +3,7 @@
 namespace App\Modules\Narrative\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\Route;
 use App\Modules\Narrative\Services\NarrativeEngine;
 use App\Modules\Narrative\Services\StateExtractorDSL;
 use App\Modules\Narrative\Services\SignalExtractor;
@@ -60,7 +61,12 @@ class NarrativeServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        $this->loadRoutesFrom(__DIR__ . '/../routes/api.php');
+        Route::group([
+            'prefix' => 'api',
+            'middleware' => 'api',
+        ], function () {
+            $this->loadRoutesFrom(__DIR__ . '/../routes/api.php');
+        });
 
         $events = $this->app->make(\Illuminate\Contracts\Events\Dispatcher::class);
         $events->listen(

@@ -2,8 +2,8 @@
 
 namespace App\Modules\Intelligence\Services;
 
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Intelligence\Models\Actor;
+use App\Models\Universe;
+use App\Models\Actor;
 use App\Modules\Intelligence\Entities\ActorState;
 use Illuminate\Support\Facades\Log;
 

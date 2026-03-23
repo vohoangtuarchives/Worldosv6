@@ -2,9 +2,9 @@
 
 namespace App\Modules\Simulation\Core\Engines\Meta;
 
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Intelligence\Models\Actor;
-use App\Modules\SocialGraph\Models\InstitutionalEntity;
+use App\Models\Universe;
+use App\Models\Actor;
+use App\Models\InstitutionalEntity;
 
 /**
  * World-Will Engine: Calculates global ideological alignment (Celestial Intent).

@@ -3,7 +3,7 @@
 namespace App\Modules\Simulation\Services;
 
 use App\Contracts\UniverseSimilarityServiceInterface;
-use App\Modules\Simulation\Models\UniverseSnapshot;
+use App\Models\UniverseSnapshot;
 
 /**
  * Stub: never suggests merge. Implement real logic (e.g. compare state_vector with siblings) for merge support.

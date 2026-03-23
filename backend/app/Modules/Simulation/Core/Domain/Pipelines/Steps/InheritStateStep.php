@@ -2,7 +2,7 @@
 
 namespace App\Modules\Simulation\Core\Domain\Pipelines\Steps;
 
-use App\Modules\Simulation\Models\Universe;
+use App\Models\Universe;
 // use App\Modules\Simulation\Core\Domain\Pipelines\SpawnStepInterface;
 
 /**

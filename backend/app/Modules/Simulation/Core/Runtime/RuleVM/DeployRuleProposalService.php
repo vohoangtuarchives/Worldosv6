@@ -2,7 +2,7 @@
 
 namespace App\Modules\Simulation\Core\Runtime\RuleVM;
 
-use App\Modules\Simulation\Models\RuleProposal;
+use App\Models\RuleProposal;
 use App\Modules\Simulation\Core\EngineRegistry;
 use Illuminate\Support\Facades\Log;
 

@@ -2,8 +2,8 @@
 
 namespace App\Modules\Simulation\Core\Supervisor;
 
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Simulation\Models\UniverseSnapshot;
+use App\Models\Universe;
+use App\Models\UniverseSnapshot;
 use App\Modules\Simulation\Repositories\UniverseSnapshotRepository;
 use App\Modules\Simulation\Core\Contracts\SnapshotArchiveInterface;
 use App\Modules\Simulation\Core\EngineRegistry;

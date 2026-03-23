@@ -2,8 +2,8 @@
 
 namespace App\Modules\Intelligence\Services;
 
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Intelligence\Models\AgentConfig;
+use App\Models\Universe;
+use App\Models\AgentConfig;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 

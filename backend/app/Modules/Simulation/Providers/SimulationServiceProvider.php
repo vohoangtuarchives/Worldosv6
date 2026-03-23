@@ -3,6 +3,7 @@
 namespace App\Modules\Simulation\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\Route;
 use App\Modules\Simulation\Contracts\RelicRepositoryInterface;
 use App\Modules\Simulation\Repositories\RelicEloquentRepository;
 use App\Modules\Simulation\Contracts\TrajectoryRepositoryInterface;
@@ -642,7 +643,12 @@ class SimulationServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        $this->loadRoutesFrom(__DIR__ . '/../routes/api.php');
+        Route::group([
+            'prefix' => 'api',
+            'middleware' => 'api',
+        ], function () {
+            $this->loadRoutesFrom(__DIR__ . '/../routes/api.php');
+        });
 
         if ($this->app->runningInConsole()) {
             $this->commands([

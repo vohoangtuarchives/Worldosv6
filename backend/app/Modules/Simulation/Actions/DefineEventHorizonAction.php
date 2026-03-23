@@ -5,7 +5,7 @@ namespace App\Modules\Simulation\Actions;
 use App\Modules\Simulation\Entities\UniverseEntity;
 use App\Modules\Simulation\Entities\TrajectoryEntity;
 use App\Modules\Simulation\Contracts\TrajectoryRepositoryInterface;
-use App\Modules\Narrative\Models\Chronicle;
+use App\Models\Chronicle;
 use Illuminate\Support\Facades\Log;
 
 class DefineEventHorizonAction

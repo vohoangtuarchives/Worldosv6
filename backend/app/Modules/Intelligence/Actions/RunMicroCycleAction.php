@@ -2,7 +2,7 @@
 
 namespace App\Modules\Intelligence\Actions;
 
-use App\Modules\Simulation\Models\Universe;
+use App\Models\Universe;
 use App\Modules\Intelligence\Domain\Rng\SimulationRng;
 use App\Modules\Intelligence\Domain\Entropy\EntropyBudget;
 use App\Modules\Intelligence\Domain\Society\SocialFieldCalculator;

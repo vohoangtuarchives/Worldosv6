@@ -2,8 +2,8 @@
 
 namespace App\Modules\Simulation\Core\Supervisor\Contracts;
 
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Simulation\Models\UniverseSnapshot;
+use App\Models\Universe;
+use App\Models\UniverseSnapshot;
 
 /**
  * Handler run after snapshot is persisted (LEVEL 7: cognitive, collapse, social, demographic, knowledge, civilization discovery, self-improving, rule VM).

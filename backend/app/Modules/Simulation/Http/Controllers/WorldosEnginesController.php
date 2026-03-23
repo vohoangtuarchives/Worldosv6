@@ -3,8 +3,8 @@
 namespace App\Modules\Simulation\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Simulation\Models\World;
+use App\Models\Universe;
+use App\Models\World;
 use App\Modules\Simulation\Core\EngineProductMapping;
 use App\Modules\Simulation\Core\EngineRegistry;
 use App\Modules\Simulation\Services\SimulationMetricsExporter;

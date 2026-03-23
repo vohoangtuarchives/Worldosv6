@@ -27,7 +27,7 @@ class UniverseState
     /**
      * Create state from Universe and Snapshot models.
      */
-    public static function fromModels(\App\Modules\Simulation\Models\Universe $universe, \App\Modules\Simulation\Models\UniverseSnapshot $snapshot): self
+    public static function fromModels(\App\Models\Universe $universe, \App\Models\UniverseSnapshot $snapshot): self
     {
         $metrics = $snapshot->metrics ?? [];
         $stateVector = $snapshot->state_vector ?? [];

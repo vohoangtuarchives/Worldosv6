@@ -2,7 +2,7 @@
 
 namespace App\Modules\Narrative\Services;
 
-use App\Modules\Intelligence\Models\LegendaryAgent;
+use App\Models\LegendaryAgent;
 use Illuminate\Support\Facades\Log;
 use App\Modules\Intelligence\Services\AI\VisualDnaEngine;
 

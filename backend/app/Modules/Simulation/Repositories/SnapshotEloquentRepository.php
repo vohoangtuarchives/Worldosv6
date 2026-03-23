@@ -2,7 +2,7 @@
 
 namespace App\Modules\Simulation\Repositories;
 
-use App\Modules\Simulation\Models\UniverseSnapshot;
+use App\Models\UniverseSnapshot;
 use App\Modules\Simulation\Contracts\SnapshotRepositoryInterface;
 use App\Modules\Simulation\Entities\SnapshotEntity;
 

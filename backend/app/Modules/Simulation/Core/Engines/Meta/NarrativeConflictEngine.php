@@ -6,7 +6,7 @@ use App\Modules\Simulation\Core\Contracts\SimulationEngine;
 use App\Modules\Simulation\Core\Runtime\State\WorldState;
 use App\Modules\Simulation\Core\Domain\TickContext;
 use App\Modules\Simulation\Core\Engines\EngineResult;
-use App\Modules\Narrative\Models\Narrative;
+use App\Models\Narrative;
 
 /**
  * NarrativeConflictEngine – Handles competition between different narratives.

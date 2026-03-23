@@ -2,7 +2,7 @@
 
 namespace App\Modules\Simulation\Core\Engines\Physics;
 
-use App\Modules\Simulation\Models\Universe;
+use App\Models\Universe;
 use App\Modules\Simulation\Core\Concerns\DefaultSimulationEnginePhase;
 use App\Modules\Simulation\Core\Engines\EngineInterface;
 use App\Modules\Simulation\Core\Engines\EngineResult;

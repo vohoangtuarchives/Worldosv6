@@ -2,8 +2,8 @@
 
 namespace App\Modules\Simulation\Actions;
 
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Narrative\Models\Chronicle;
+use App\Models\Universe;
+use App\Models\Chronicle;
 use App\Modules\Simulation\Services\ParadoxResolver;
 use App\Modules\Simulation\Services\SoulAnchorService;
 use App\Modules\Simulation\Services\MultiverseInteractionService;
@@ -69,20 +69,20 @@ class MergeUniversesAction
         $essence = ($universe->structural_coherence + $universe->entropy) * 10;
         
         // Find demiurges aligned with legends in this universe
-        $alignments = \App\Modules\Intelligence\Models\LegendaryAgent::where('universe_id', $universe->id)
+        $alignments = \App\Models\LegendaryAgent::where('universe_id', $universe->id)
             ->whereNotNull('alignment_id')
             ->pluck('alignment_id')
             ->unique();
 
         if ($alignments->isEmpty()) {
             // Distribute to all active demiurges as cosmic background radiation
-            $rivals = \App\Modules\Narrative\Models\Demiurge::where('is_active', true)->get();
+            $rivals = \App\Models\Demiurge::where('is_active', true)->get();
             $share = $essence / max(1, $rivals->count());
             foreach ($rivals as $r) $r->increment('essence_pool', $share);
         } else {
             $share = $essence / $alignments->count();
             foreach ($alignments as $id) {
-                \App\Modules\Narrative\Models\Demiurge::find($id)?->increment('essence_pool', $share);
+                \App\Models\Demiurge::find($id)?->increment('essence_pool', $share);
             }
         }
 

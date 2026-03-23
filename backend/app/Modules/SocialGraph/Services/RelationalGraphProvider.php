@@ -3,9 +3,9 @@
 namespace App\Modules\SocialGraph\Services;
 
 use App\Contracts\GraphProviderInterface;
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Simulation\Models\UniverseSnapshot;
-use App\Modules\Simulation\Models\BranchEvent;
+use App\Models\Universe;
+use App\Models\UniverseSnapshot;
+use App\Models\BranchEvent;
 use Illuminate\Support\Facades\Log;
 
 class RelationalGraphProvider implements GraphProviderInterface
@@ -48,7 +48,7 @@ class RelationalGraphProvider implements GraphProviderInterface
         }
 
         // 3. Myth Scars as Nodes
-        $scars = \App\Modules\Narrative\Models\MythScar::where('universe_id', $universeId)->get();
+        $scars = \App\Models\MythScar::where('universe_id', $universeId)->get();
         foreach ($scars as $scar) {
             $nodes[] = [
                 'id' => "scar_{$scar->id}",
@@ -79,7 +79,7 @@ class RelationalGraphProvider implements GraphProviderInterface
         }
 
         // 5. Actors (Heroic or High Influence ones first)
-        $actors = \App\Modules\Intelligence\Models\Actor::where('universe_id', $universeId)
+        $actors = \App\Models\Actor::where('universe_id', $universeId)
             ->where('is_alive', true)
             ->orderByDesc('metrics->influence')
             ->limit(40)
@@ -128,7 +128,7 @@ class RelationalGraphProvider implements GraphProviderInterface
         }
 
         // 2. Myth Scar Relations
-        $scars = \App\Modules\Narrative\Models\MythScar::where('universe_id', $universeId)->get();
+        $scars = \App\Models\MythScar::where('universe_id', $universeId)->get();
         foreach ($scars as $scar) {
             // Find snapshots near the tick it was created
             $snapshot = UniverseSnapshot::where('universe_id', $universeId)

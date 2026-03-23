@@ -3,7 +3,7 @@
 namespace App\Modules\Narrative\Actions;
 
 use App\Modules\Narrative\Contracts\DemiurgeRepositoryInterface;
-use App\Modules\Intelligence\Models\LegendaryAgent;
+use App\Models\LegendaryAgent;
 use Illuminate\Support\Facades\Log;
 
 /**

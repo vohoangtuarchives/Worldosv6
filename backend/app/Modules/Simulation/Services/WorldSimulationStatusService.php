@@ -2,14 +2,14 @@
 
 namespace App\Modules\Simulation\Services;
 
-use App\Modules\Simulation\Models\World;
+use App\Models\World;
 use App\Modules\Simulation\Services\MultiverseSchedulerEngine;
 
 class WorldSimulationStatusService
 {
     public function getPayload(World $world, MultiverseSchedulerEngine $scheduler): array
     {
-        $universes = \App\Modules\Simulation\Models\Universe::where('world_id', $world->id)
+        $universes = \App\Models\Universe::where('world_id', $world->id)
             ->whereIn('status', ['active', 'running', 'halted', 'restarting'])
             ->get();
 
@@ -51,7 +51,7 @@ class WorldSimulationStatusService
         ];
 
         $universeIds = $universes->pluck('id')->toArray();
-        $latestSnapshots = \App\Modules\Simulation\Models\UniverseSnapshot::whereIn('universe_id', $universeIds)
+        $latestSnapshots = \App\Models\UniverseSnapshot::whereIn('universe_id', $universeIds)
             ->orderByDesc('tick')
             ->get()
             ->groupBy('universe_id')

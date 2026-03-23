@@ -4,7 +4,7 @@ namespace App\Modules\Simulation\Actions;
 
 use App\Modules\Simulation\Entities\UniverseEntity;
 use App\Modules\Simulation\Contracts\UniverseRepositoryInterface;
-use App\Modules\Narrative\Models\Chronicle;
+use App\Models\Chronicle;
 use App\Modules\Simulation\Core\Runtime\State\WorldState;
 use Illuminate\Support\Facades\Log;
 

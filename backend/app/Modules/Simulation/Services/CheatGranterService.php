@@ -2,7 +2,7 @@
 
 namespace App\Modules\Simulation\Services;
 
-use App\Modules\Intelligence\Models\LegendaryAgent;
+use App\Models\LegendaryAgent;
 
 /**
  * CheatGranterService: Provides "Golden Fingers" to Isekai agents (§V26).

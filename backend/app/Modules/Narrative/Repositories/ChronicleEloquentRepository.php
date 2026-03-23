@@ -4,7 +4,7 @@ namespace App\Modules\Narrative\Repositories;
 
 use App\Modules\Narrative\Contracts\ChronicleRepositoryInterface;
 use App\Modules\Narrative\Entities\ChronicleEntity;
-use App\Modules\Narrative\Models\Chronicle as ChronicleModel;
+use App\Models\Chronicle as ChronicleModel;
 
 class ChronicleEloquentRepository implements ChronicleRepositoryInterface
 {

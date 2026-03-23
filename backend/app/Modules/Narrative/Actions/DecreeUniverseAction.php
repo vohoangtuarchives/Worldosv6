@@ -2,8 +2,8 @@
 
 namespace App\Modules\Narrative\Actions;
 
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Simulation\Models\UniverseSnapshot;
+use App\Models\Universe;
+use App\Models\UniverseSnapshot;
 use App\Modules\Institutions\Services\WorldEdictEngine;
 
 class DecreeUniverseAction

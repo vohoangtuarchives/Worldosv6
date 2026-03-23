@@ -2,7 +2,7 @@
 
 namespace App\Modules\Narrative\Actions;
 
-use App\Modules\Intelligence\Models\LegendaryAgent;
+use App\Models\LegendaryAgent;
 use App\Modules\Narrative\Contracts\ChronicleRepositoryInterface;
 use App\Modules\Narrative\Entities\ChronicleEntity;
 use Illuminate\Support\Facades\Log;

@@ -3,8 +3,8 @@
 namespace App\Modules\Narrative\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Modules\Narrative\Models\NarrativeSeries;
-use App\Modules\Narrative\Models\SerialChapter;
+use App\Models\NarrativeSeries;
+use App\Models\SerialChapter;
 use Illuminate\Http\JsonResponse;
 
 class PublicSeriesController extends Controller

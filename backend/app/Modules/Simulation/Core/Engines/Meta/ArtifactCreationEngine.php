@@ -2,11 +2,11 @@
 
 namespace App\Modules\Simulation\Core\Engines\Meta;
 
-use App\Modules\Intelligence\Models\Actor;
-use App\Modules\Intelligence\Models\ActorEvent;
-use App\Modules\Narrative\Models\Artifact;
-use App\Modules\Narrative\Models\Chronicle;
-use App\Modules\Simulation\Models\Universe;
+use App\Models\Actor;
+use App\Models\ActorEvent;
+use App\Models\Artifact;
+use App\Models\Chronicle;
+use App\Models\Universe;
 use App\Modules\Simulation\Core\Support\SimulationRandom;
 
 /**

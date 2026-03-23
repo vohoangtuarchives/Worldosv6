@@ -6,8 +6,8 @@ use App\Modules\Simulation\Core\Runtime\Contracts\WorldSystemInterface;
 use App\Modules\Simulation\Core\Runtime\Contracts\SimulationStageInterface;
 use App\Modules\Simulation\Core\Runtime\State\WorldState;
 use App\Modules\Simulation\Core\Runtime\Causality\ImpactReport;
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Simulation\Models\UniverseSnapshot;
+use App\Models\Universe;
+use App\Models\UniverseSnapshot;
 
 /**
  * StageSystemAdapter – Wraps Simulation Stages to run as World Systems.

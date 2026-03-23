@@ -3,8 +3,8 @@
 namespace App\Modules\Simulation\Console\Commands;
 
 use App\Modules\Simulation\Actions\AdvanceSimulationAction;
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Simulation\Models\UniverseSnapshot;
+use App\Models\Universe;
+use App\Models\UniverseSnapshot;
 use App\Modules\Simulation\Services\SimulationMetricsLogger;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;

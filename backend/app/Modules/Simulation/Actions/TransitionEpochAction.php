@@ -3,11 +3,11 @@
 namespace App\Modules\Simulation\Actions;
 
 use App\Modules\Simulation\Entities\UniverseEntity;
-use App\Modules\Simulation\Models\Universe as UniverseModel;
-use App\Modules\Simulation\Models\Epoch;
-use App\Modules\Narrative\Models\Chronicle;
-use App\Modules\Simulation\Models\BranchEvent;
-use App\Modules\Simulation\Models\World;
+use App\Models\Universe as UniverseModel;
+use App\Models\Epoch;
+use App\Models\Chronicle;
+use App\Models\BranchEvent;
+use App\Models\World;
 use Illuminate\Support\Facades\Log;
 
 class TransitionEpochAction

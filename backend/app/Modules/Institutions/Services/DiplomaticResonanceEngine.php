@@ -2,9 +2,9 @@
 
 namespace App\Modules\Institutions\Services;
 
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Simulation\Models\UniverseSnapshot;
-use App\Modules\Narrative\Models\Chronicle;
+use App\Models\Universe;
+use App\Models\UniverseSnapshot;
+use App\Models\Chronicle;
 use App\Modules\Institutions\Contracts\InstitutionalRepositoryInterface;
 use App\Modules\Institutions\Entities\InstitutionalEntity;
 use Illuminate\Support\Facades\Log;

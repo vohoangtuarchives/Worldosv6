@@ -3,9 +3,9 @@
 namespace App\Modules\Narrative\Console\Commands;
 
 use Illuminate\Console\Command;
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Simulation\Models\UniverseSnapshot;
-use App\Modules\Narrative\Models\Chronicle;
+use App\Models\Universe;
+use App\Models\UniverseSnapshot;
+use App\Models\Chronicle;
 use App\Modules\Narrative\Services\NarrativeAiService;
 
 class ArchiveAncientEras extends Command

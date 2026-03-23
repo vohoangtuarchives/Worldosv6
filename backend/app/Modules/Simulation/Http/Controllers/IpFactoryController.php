@@ -3,8 +3,8 @@
 namespace App\Modules\Simulation\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Modules\Narrative\Models\NarrativeSeries;
-use App\Modules\Narrative\Models\SerialChapter;
+use App\Models\NarrativeSeries;
+use App\Models\SerialChapter;
 use App\Modules\Narrative\Services\SerialStoryService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;

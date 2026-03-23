@@ -2,9 +2,9 @@
 
 namespace App\Modules\Simulation\Core\Runtime\RuleVM;
 
-use App\Modules\Simulation\Models\BranchEvent;
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Simulation\Models\UniverseSnapshot;
+use App\Models\BranchEvent;
+use App\Models\Universe;
+use App\Models\UniverseSnapshot;
 use App\Modules\Simulation\Repositories\UniverseRepository;
 use App\Modules\Simulation\Core\Support\RuleEngine;
 use App\Modules\Simulation\Core\Support\SimulationRandom;

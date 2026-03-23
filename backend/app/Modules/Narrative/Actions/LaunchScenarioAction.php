@@ -2,7 +2,7 @@
 
 namespace App\Modules\Narrative\Actions;
 
-use App\Modules\Simulation\Models\Universe;
+use App\Models\Universe;
 use App\Modules\Simulation\Services\ScenarioEngine;
 
 class LaunchScenarioAction

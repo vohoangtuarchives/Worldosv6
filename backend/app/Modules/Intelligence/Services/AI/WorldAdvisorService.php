@@ -2,7 +2,7 @@
 
 namespace App\Modules\Intelligence\Services\AI;
 
-use App\Modules\Simulation\Models\Universe;
+use App\Models\Universe;
 use App\Modules\Intelligence\Services\AI\AnalyticalAiService;
 use App\Modules\Intelligence\Services\AI\TheorySynthesisService;
 use App\Modules\Intelligence\Services\Lab\MaterialSynthesisService;
@@ -75,7 +75,7 @@ class WorldAdvisorService
         try {
             $latest   = $universe->snapshots()->orderByDesc('tick')->first();
             $scars    = (array) (($latest?->state_vector ?? [])['scars'] ?? []);
-            $matNames = \App\Modules\Simulation\Models\MaterialInstance::where('universe_id', $universe->id)
+            $matNames = \App\Models\MaterialInstance::where('universe_id', $universe->id)
                 ->where('lifecycle', 'active')
                 ->with('material')
                 ->get()
@@ -85,7 +85,7 @@ class WorldAdvisorService
             if (!empty($matNames)) {
                 $newMaterialData = $this->materialSynthesis->synthesize($universe, $matNames, $scars);
                 if ($newMaterialData) {
-                    $parent = \App\Modules\Simulation\Models\Material::where('name', $newMaterialData['parent_material_name'] ?? '')->first();
+                    $parent = \App\Models\Material::where('name', $newMaterialData['parent_material_name'] ?? '')->first();
                     $newMaterial = $this->mutationDag->injectSynthesizedMaterial($newMaterialData, $parent);
                     $results['synthesized_material'] = $newMaterial->only(['id', 'name', 'ontology']);
                 }

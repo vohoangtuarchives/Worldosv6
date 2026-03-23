@@ -2,7 +2,7 @@
 
 namespace App\Modules\Institutions\Actions;
 
-use App\Modules\Narrative\Models\MythScar;
+use App\Models\MythScar;
 use App\Modules\Institutions\Contracts\InstitutionalRepositoryInterface;
 use App\Modules\Institutions\Entities\InstitutionalEntity;
 

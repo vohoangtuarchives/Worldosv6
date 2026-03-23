@@ -22,7 +22,3 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
-
-# Laravel Cache
-/bootstrap/cache/*.php
-!/bootstrap/cache/.gitignore

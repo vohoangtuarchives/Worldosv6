@@ -2,9 +2,9 @@
 
 namespace App\Modules\Narrative\Actions;
 
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\SocialGraph\Models\InstitutionalEntity;
-use App\Modules\Intelligence\Models\SupremeEntity;
+use App\Models\Universe;
+use App\Models\InstitutionalEntity;
+use App\Models\SupremeEntity;
 use App\Modules\Narrative\Contracts\ChronicleRepositoryInterface;
 use App\Modules\Narrative\Entities\ChronicleEntity;
 use App\Modules\Simulation\Core\Engines\Meta\WorldWillEngine;

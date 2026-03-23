@@ -2,8 +2,8 @@
 
 namespace App\Modules\Intelligence\Actions;
 
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Simulation\Models\UniverseSnapshot;
+use App\Models\Universe;
+use App\Models\UniverseSnapshot;
 use App\Modules\Simulation\Repositories\UniverseRepositoryInterface;
 use App\Modules\Intelligence\Services\UniverseMutationAction;
 use Illuminate\Support\Facades\DB;

@@ -2,7 +2,7 @@
 
 namespace App\Modules\Narrative\Services;
 
-use App\Modules\Narrative\Models\NarrativeFeedbackSignal;
+use App\Models\NarrativeFeedbackSignal;
 use Illuminate\Support\Facades\Log;
 
 /**

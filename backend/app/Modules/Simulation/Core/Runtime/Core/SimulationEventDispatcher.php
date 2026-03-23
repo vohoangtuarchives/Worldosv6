@@ -3,7 +3,7 @@
 namespace App\Modules\Simulation\Core\Runtime\Core;
 
 use App\Modules\Simulation\Core\Runtime\Contracts\SimulationEvent;
-use App\Modules\Simulation\Models\Universe;
+use App\Models\Universe;
 use App\Modules\Simulation\Core\Runtime\Projectors\AscensionProjector;
 use App\Modules\Simulation\Core\Runtime\Projectors\EschatonProjector;
 

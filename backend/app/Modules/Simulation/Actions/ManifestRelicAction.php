@@ -5,8 +5,8 @@ namespace App\Modules\Simulation\Actions;
 use App\Modules\Simulation\Entities\UniverseEntity;
 use App\Modules\Simulation\Entities\RelicEntity;
 use App\Modules\Simulation\Contracts\RelicRepositoryInterface;
-use App\Modules\Narrative\Models\Chronicle;
-use App\Modules\Simulation\Models\BranchEvent;
+use App\Models\Chronicle;
+use App\Models\BranchEvent;
 use Illuminate\Support\Facades\Log;
 
 class ManifestRelicAction

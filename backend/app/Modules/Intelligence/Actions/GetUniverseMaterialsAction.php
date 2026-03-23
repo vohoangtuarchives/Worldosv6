@@ -2,7 +2,7 @@
 
 namespace App\Modules\Intelligence\Actions;
 
-use App\Modules\Simulation\Models\MaterialInstance;
+use App\Models\MaterialInstance;
 use Illuminate\Support\Collection;
 
 class GetUniverseMaterialsAction

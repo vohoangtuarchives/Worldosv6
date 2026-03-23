@@ -2,8 +2,8 @@
 
 namespace App\Modules\Narrative\Services;
 
-use App\Modules\Narrative\Models\HistoricalFact;
-use App\Modules\Simulation\Models\UniverseSnapshot;
+use App\Models\HistoricalFact;
+use App\Models\UniverseSnapshot;
 use App\Modules\Simulation\Core\Events\WorldEvent;
 
 /**

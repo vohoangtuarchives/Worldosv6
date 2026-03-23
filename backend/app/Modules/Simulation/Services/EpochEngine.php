@@ -3,9 +3,9 @@
 namespace App\Modules\Simulation\Services;
 
 use App\Modules\Simulation\Entities\UniverseEntity;
-use App\Modules\Simulation\Models\Universe as UniverseModel;
-use App\Modules\Simulation\Models\UniverseSnapshot;
-use App\Modules\Simulation\Models\Epoch;
+use App\Models\Universe as UniverseModel;
+use App\Models\UniverseSnapshot;
+use App\Models\Epoch;
 use App\Modules\Simulation\Core\Runtime\RuleVM\RuleVmService;
 use App\Modules\Simulation\Actions\TransitionEpochAction;
 use App\Modules\Simulation\Core\Runtime\State\WorldState;

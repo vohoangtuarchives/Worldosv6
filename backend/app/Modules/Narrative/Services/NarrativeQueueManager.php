@@ -3,10 +3,10 @@
 namespace App\Modules\Narrative\Services;
 
 use App\Modules\Narrative\Jobs\ProcessNarrativeJob;
-use App\Modules\Narrative\Models\NarrativeJob;
+use App\Models\NarrativeJob;
 use App\Modules\Narrative\Services\AdaptivePulseScheduler;
 use App\Modules\Simulation\Entities\UniverseEntity;
-use App\Modules\Simulation\Models\UniverseSnapshot;
+use App\Models\UniverseSnapshot;
 
 /**
  * NarrativeQueueManager: Schedulers queue/LLM tasks (event/era/civilization/legend/...).

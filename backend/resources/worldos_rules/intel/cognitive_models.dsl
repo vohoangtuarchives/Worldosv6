@@ -33,7 +33,7 @@ rule Homeostatic_Regulation
       end
     end
     
-    set social_need 0.5
+    set belonging_need 0.5
 
 # --- 2. Personality Manifold ---
 

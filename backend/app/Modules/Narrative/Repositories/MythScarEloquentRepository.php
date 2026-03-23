@@ -4,7 +4,7 @@ namespace App\Modules\Narrative\Repositories;
 
 use App\Modules\Narrative\Contracts\MythScarRepositoryInterface;
 use App\Modules\Narrative\Entities\MythScarEntity;
-use App\Modules\Narrative\Models\MythScar as MythScarModel;
+use App\Models\MythScar as MythScarModel;
 
 class MythScarEloquentRepository implements MythScarRepositoryInterface
 {

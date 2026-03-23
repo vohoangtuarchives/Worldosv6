@@ -1,3 +1,26 @@
 <?php
+
 namespace App\Models;
-class Belief extends \App\Modules\Intelligence\Models\Belief {}
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+
+class Belief extends Model
+{
+    protected $fillable = [
+        'name',
+        'type',
+        'trait_weights',
+    ];
+
+    protected $casts = [
+        'trait_weights' => 'array',
+    ];
+
+    public function actors(): BelongsToMany
+    {
+        return $this->belongsToMany(Actor::class, 'actor_beliefs')
+            ->withPivot('alignment')
+            ->withTimestamps();
+    }
+}

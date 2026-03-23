@@ -2,7 +2,7 @@
 
 namespace App\Modules\Simulation\Events;
 
-use App\Modules\Simulation\Models\Universe;
+use App\Models\Universe;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;

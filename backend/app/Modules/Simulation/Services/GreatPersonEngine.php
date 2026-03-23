@@ -2,10 +2,10 @@
 
 namespace App\Modules\Simulation\Services;
 
-use App\Modules\Simulation\Models\BranchEvent;
-use App\Modules\SocialGraph\Models\InstitutionalEntity;
-use App\Modules\Intelligence\Models\SupremeEntity as SupremeEntityModel;
-use App\Modules\Simulation\Models\Universe;
+use App\Models\BranchEvent;
+use App\Models\InstitutionalEntity;
+use App\Models\SupremeEntity as SupremeEntityModel;
+use App\Models\Universe;
 use App\Modules\Institutions\Actions\SpawnSupremeEntityAction;
 use App\Modules\Institutions\Entities\SupremeEntity;
 use Illuminate\Support\Facades\Log;

@@ -2,8 +2,8 @@
 
 namespace App\Modules\Simulation\Core\Runtime;
 
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Simulation\Models\UniverseSnapshot;
+use App\Models\Universe;
+use App\Models\UniverseSnapshot;
 use App\Modules\Simulation\Services\SimulationTracer;
 use App\Modules\Simulation\Core\Runtime\Contracts\SimulationStageInterface;
 use App\Modules\Simulation\Core\Runtime\Contracts\TickSchedulerInterface;
@@ -64,8 +64,8 @@ final class SimulationTickPipeline
 
         // Phase 80: Narrative Integration (Rewrite)
         // 1 Tick = 1 LLM Call. Pulse the Narrative Engine after state persistence.
-        $universeModel = \App\Modules\Simulation\Models\Universe::find($universe->id);
-        $snapshotModel = $savedSnapshot ?? \App\Modules\Simulation\Models\UniverseSnapshot::where('universe_id', $universe->id)->where('tick', $tick)->first();
+        $universeModel = \App\Models\Universe::find($universe->id);
+        $snapshotModel = $savedSnapshot ?? \App\Models\UniverseSnapshot::where('universe_id', $universe->id)->where('tick', $tick)->first();
         
         if ($universeModel && $snapshotModel) {
             $universeEntity = app(\App\Modules\Simulation\Contracts\UniverseRepositoryInterface::class)->findById($universe->id);

@@ -3,9 +3,9 @@
 namespace App\Modules\Simulation\Core\Runtime\Projectors;
 
 use App\Modules\Simulation\Core\Runtime\Events\AscensionEvent;
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Narrative\Models\Chronicle;
-use App\Modules\Simulation\Models\BranchEvent;
+use App\Models\Universe;
+use App\Models\Chronicle;
+use App\Models\BranchEvent;
 use Illuminate\Support\Facades\DB;
 
 class AscensionProjector

@@ -2,8 +2,8 @@
 
 namespace App\Modules\Simulation\Core\Domain\Services;
 
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Narrative\Models\Chronicle;
+use App\Models\Universe;
+use App\Models\Chronicle;
 use App\Contracts\Repositories\UniverseRepositoryInterface;
 use App\Modules\Simulation\Repositories\UniverseSnapshotRepository;
 use Illuminate\Support\Facades\Log;

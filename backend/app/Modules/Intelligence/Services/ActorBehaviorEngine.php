@@ -5,7 +5,7 @@ namespace App\Modules\Intelligence\Services;
 use App\Contracts\Repositories\UniverseRepositoryInterface;
 use App\Modules\Intelligence\Contracts\ActorRepositoryInterface;
 use App\Modules\Intelligence\Entities\ActorEntity;
-use App\Modules\Simulation\Models\Universe;
+use App\Models\Universe;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -31,10 +31,14 @@ use function in_array;
 
 class ActorBehaviorEngine
 {
-    public const NEED_HUNGER = 'hunger';
-    public const NEED_SAFETY = 'safety';
+    public const NEED_SURVIVAL     = 'survival';
     public const NEED_REPRODUCTION = 'reproduction';
-    public const NEED_SOCIAL = 'social';
+    public const NEED_WEALTH       = 'wealth';
+    public const NEED_POWER        = 'power';
+    public const NEED_KNOWLEDGE    = 'knowledge';
+    public const NEED_MEANING      = 'meaning';
+    public const NEED_STATUS       = 'status';
+    public const NEED_BELONGING    = 'belonging';
 
     public const ACTION_IDLE = 'idle';
     public const ACTION_EAT = 'eating';
@@ -207,18 +211,24 @@ class ActorBehaviorEngine
         
         $metrics['behavior_state'] = $action;
         $metrics['needs'] = [
-            self::NEED_HUNGER => (float) ($finalState['hunger'] ?? 0.5),
-            self::NEED_SAFETY => (float) ($finalState['safety'] ?? 0.8),
-            self::NEED_REPRODUCTION => (float) ($finalState['reproduction'] ?? 0.2),
-            self::NEED_SOCIAL => (float) ($finalState['social_need'] ?? 0.5),
+            self::NEED_SURVIVAL     => (float) ($finalState['mSurvival'] ?? $finalState['hunger'] ?? 0.5),
+            self::NEED_REPRODUCTION => (float) ($finalState['mRepro'] ?? $finalState['reproduction'] ?? 0.2),
+            self::NEED_WEALTH       => (float) ($finalState['mWealth'] ?? 0.5),
+            self::NEED_POWER        => (float) ($finalState['mPower'] ?? 0.5),
+            self::NEED_KNOWLEDGE    => (float) ($finalState['mKnowledge'] ?? 0.5),
+            self::NEED_MEANING      => (float) ($finalState['mMeaning'] ?? 0.5),
+            self::NEED_STATUS       => (float) ($finalState['mStatus'] ?? 0.5),
+            self::NEED_BELONGING    => (float) ($finalState['mBelonging'] ?? $finalState['belonging_need'] ?? 0.5),
         ];
+        // Đồng bộ motivation profile để frontend đọc trực tiếp
+        $metrics['motivation'] = $metrics['needs'];
         $metrics['reasoning'] = $intentTag;
         $metrics['last_behavior_tick'] = $tick;
         $actor->metrics = $metrics;
 
         // Trace
         if (!$actor->id) return;
-        \App\Modules\Intelligence\Models\ActorEvent::create([
+        \App\Models\ActorEvent::create([
             'actor_id'   => $actor->id,
             'tick'       => $tick,
             'event_type' => 'behavior_decision',

@@ -4,7 +4,7 @@ namespace App\Modules\Simulation\Listeners;
 
 use App\Modules\Simulation\Events\UniverseSimulationPulsed;
 use App\Modules\Narrative\Actions\CorrectionAction;
-use App\Modules\Simulation\Models\UniverseSnapshot;
+use App\Models\UniverseSnapshot;
 use Illuminate\Support\Facades\Log;
 
 class StagnationDetectorListener

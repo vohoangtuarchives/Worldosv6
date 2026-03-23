@@ -14,7 +14,7 @@ Trước khi bắt đầu, hãy đảm bảo máy tính của bạn đã cài đ
 
 Các tệp cấu hình Docker nằm trong thư mục `deployment/`:
 
--   `docker-compose.dev.yml`: Cấu hình cho môi trường phát triển (Development).
+-   `docker-compose.prod.yml`: Cấu hình cho môi trường phát triển (Development).
 -   `backend.prod.Dockerfile`: Dockerfile cho backend (Laravel/PHP).
 -   `engine.prod.Dockerfile`: Dockerfile cho engine mô phỏng (Rust).
 -   `nginx/`: Cấu hình Nginx reverse proxy.
@@ -24,7 +24,7 @@ Các tệp cấu hình Docker nằm trong thư mục `deployment/`:
 Để khởi chạy toàn bộ hệ thống, mở terminal tại thư mục gốc của dự án (`c:\projects\IPFactory`) và chạy lệnh sau:
 
 ```powershell
-docker compose -f deployment/docker-compose.dev.yml up -d --build
+docker compose -f deployment/docker-compose.prod.yml up -d --build
 ```
 
 Lệnh này sẽ:
@@ -44,7 +44,7 @@ Container `backend` được cấu hình để tự động thực hiện các b
 Bạn có thể theo dõi quá trình này bằng lệnh logs:
 
 ```powershell
-docker compose -f deployment/docker-compose.dev.yml logs -f backend
+docker compose -f deployment/docker-compose.prod.yml logs -f backend
 ```
 
 ## 4. Các dịch vụ chính
@@ -69,7 +69,7 @@ Nếu dùng `deployment/docker-compose.prod.yml`, hệ thống có thêm service
 Để chạy các lệnh `php artisan` hoặc `composer`, bạn nên truy cập vào shell của container `backend`:
 
 ```powershell
-docker compose -f deployment/docker-compose.dev.yml exec backend bash
+docker compose -f deployment/docker-compose.prod.yml exec backend bash
 ```
 
 Sau khi vào shell, bạn có thể chạy:
@@ -85,12 +85,12 @@ php artisan make:migration create_new_table
 
 Xem logs của tất cả các dịch vụ:
 ```powershell
-docker compose -f deployment/docker-compose.dev.yml logs -f
+docker compose -f deployment/docker-compose.prod.yml logs -f
 ```
 
 Xem logs của một dịch vụ cụ thể (ví dụ `engine`):
 ```powershell
-docker compose -f deployment/docker-compose.dev.yml logs -f engine
+docker compose -f deployment/docker-compose.prod.yml logs -f engine
 ```
 
 ### Reset Database
@@ -99,7 +99,7 @@ Nếu muốn xóa sạch dữ liệu và khởi tạo lại từ đầu:
 
 1.  Truy cập shell backend:
     ```powershell
-    docker compose -f deployment/docker-compose.dev.yml exec backend bash
+    docker compose -f deployment/docker-compose.prod.yml exec backend bash
     ```
 2.  Chạy lệnh reset và seed lại:
     ```bash
@@ -113,13 +113,13 @@ Nếu muốn xóa sạch dữ liệu và khởi tạo lại từ đầu:
 Để dừng và xóa các container (dữ liệu trong volume vẫn được giữ lại):
 
 ```powershell
-docker compose -f deployment/docker-compose.dev.yml down
+docker compose -f deployment/docker-compose.prod.yml down
 ```
 
 Để dừng và **xóa sạch dữ liệu** (volumes):
 
 ```powershell
-docker compose -f deployment/docker-compose.dev.yml down -v
+docker compose -f deployment/docker-compose.prod.yml down -v
 ```
 
 ## 6. Xử lý sự cố (Troubleshooting)

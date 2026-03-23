@@ -2,7 +2,7 @@
 
 namespace App\Modules\Intelligence\Services;
 
-use App\Modules\Narrative\Models\Demiurge;
+use App\Models\Demiurge;
 use Illuminate\Support\Facades\Log;
 
 /**

@@ -2,8 +2,8 @@
 
 namespace App\Modules\Simulation\Actions;
 
-use App\Modules\Simulation\Models\World;
-use App\Modules\Simulation\Models\BranchEvent;
+use App\Models\World;
+use App\Models\BranchEvent;
 use Illuminate\Support\Facades\DB;
 
 class WorldAxiomAction
@@ -35,7 +35,7 @@ class WorldAxiomAction
                 ]);
 
                 // Ghi nhận vào Chronicle để AI Narrative nhận biết
-                \App\Modules\Narrative\Models\Chronicle::create([
+                \App\Models\Chronicle::create([
                     'universe_id' => $universe->id,
                     'from_tick' => $universe->current_tick,
                     'to_tick' => $universe->current_tick,

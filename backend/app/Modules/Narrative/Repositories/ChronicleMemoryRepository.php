@@ -2,7 +2,7 @@
 
 namespace App\Modules\Narrative\Repositories;
 
-use App\Modules\Narrative\Models\Chronicle;
+use App\Models\Chronicle;
 use Illuminate\Support\Facades\Log;
 
 /**

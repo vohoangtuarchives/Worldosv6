@@ -8,7 +8,7 @@ use App\Modules\Simulation\Core\Engines\EngineResult;
 use App\Modules\Simulation\Core\Domain\TickContext;
 use App\Modules\Simulation\Core\Runtime\State\WorldState;
 use Illuminate\Support\Facades\Log;
-use App\Modules\Simulation\Models\UniverseBridge;
+use App\Models\UniverseBridge;
 use App\Modules\Simulation\Core\Effects\WorldStateUpdateEffect;
 use App\Modules\Simulation\Core\Events\WorldEvent;
 

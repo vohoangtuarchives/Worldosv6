@@ -2,8 +2,8 @@
 
 namespace App\Modules\Simulation\Core\Engines\Social;
 
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Simulation\Models\UniverseSnapshot;
+use App\Models\Universe;
+use App\Models\UniverseSnapshot;
 use Illuminate\Support\Facades\Log;
 use App\Modules\Simulation\Core\Engines\Meta\WorldWillEngine;
 

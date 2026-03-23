@@ -20,7 +20,7 @@ class MutateGenomeStep implements SpawnStepInterface
         $parentUniverseId = $context['parent_universe_id'];
 
         if ($parentUniverseId) {
-            $parent = \App\Modules\Simulation\Models\Universe::find($parentUniverseId);
+            $parent = \App\Models\Universe::find($parentUniverseId);
             $context['genome'] = $this->mutationService->mutate($parentGenome, $parent);
         }
 

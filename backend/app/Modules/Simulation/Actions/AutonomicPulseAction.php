@@ -18,7 +18,7 @@ class AutonomicPulseAction
      */
     public function execute(int $ticksPerPulse = 10): array
     {
-        $activeWorlds = \App\Modules\Simulation\Models\World::where('is_autonomic', true)->get();
+        $activeWorlds = \App\Models\World::where('is_autonomic', true)->get();
         $results = [];
 
         foreach ($activeWorlds as $world) {

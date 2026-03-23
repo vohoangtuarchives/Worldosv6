@@ -2,7 +2,7 @@
 
 namespace App\Modules\Intelligence\Services\AI;
 
-use App\Modules\Simulation\Models\Universe;
+use App\Models\Universe;
 
 /**
  * Epistemic Service: Implements the "Huyền Nguyên" (Obscure Origin) philosophy.

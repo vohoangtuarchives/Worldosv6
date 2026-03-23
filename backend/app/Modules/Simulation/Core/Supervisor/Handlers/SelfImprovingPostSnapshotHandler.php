@@ -2,8 +2,8 @@
 
 namespace App\Modules\Simulation\Core\Supervisor\Handlers;
 
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Simulation\Models\UniverseSnapshot;
+use App\Models\Universe;
+use App\Models\UniverseSnapshot;
 use App\Modules\Simulation\Core\Supervisor\Contracts\PostSnapshotHandlerInterface;
 use App\Modules\Simulation\Core\Runtime\RuleVM\RuleVmService;
 use App\Modules\Simulation\Services\SelfImprovingSimulationService;

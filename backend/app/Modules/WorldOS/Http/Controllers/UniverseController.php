@@ -3,11 +3,11 @@
 namespace App\Modules\WorldOS\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Simulation\Models\World;
-use App\Modules\Simulation\Models\BranchEvent;
-use App\Modules\Simulation\Models\MaterialInstance;
-use App\Modules\Simulation\Models\Material;
+use App\Models\Universe;
+use App\Models\World;
+use App\Models\BranchEvent;
+use App\Models\MaterialInstance;
+use App\Models\Material;
 use App\Modules\Simulation\Repositories\UniverseSnapshotRepository;
 use App\Modules\Simulation\Services\ImplicitOrchestratorService;
 use App\Modules\Simulation\Actions\AdvanceSimulationAction;
@@ -53,7 +53,7 @@ class UniverseController extends Controller
     {
         $limit = (int) request()->query('limit', 50);
         $limit = $limit > 0 && $limit <= 500 ? $limit : 50;
-        $rows = \App\Modules\Simulation\Models\UniverseSnapshot::where('universe_id', (int) $id)
+        $rows = \App\Models\UniverseSnapshot::where('universe_id', (int) $id)
             ->orderByDesc('tick')
             ->limit($limit)
             ->get(['id', 'universe_id', 'tick', 'entropy', 'stability_index', 'metrics'])

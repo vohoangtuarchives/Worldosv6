@@ -7,7 +7,7 @@ use App\Modules\Simulation\Core\Runtime\State\WorldState;
 use App\Modules\Simulation\Core\Domain\TickContext;
 use App\Modules\Simulation\Core\Engines\EngineResult;
 use App\Modules\Simulation\Core\Effects\WorldStateUpdateEffect;
-use App\Modules\Narrative\Models\Narrative;
+use App\Models\Narrative;
 
 /**
  * NarrativePropagationEngine – Manages the spread of narratives across zones.

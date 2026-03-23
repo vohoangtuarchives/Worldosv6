@@ -4,8 +4,8 @@ namespace App\Modules\Simulation\Actions;
 
 use App\Contracts\Repositories\BranchEventRepositoryInterface;
 use App\Contracts\Repositories\UniverseRepositoryInterface;
-use App\Modules\Simulation\Models\BranchEvent;
-use App\Modules\Simulation\Models\Universe;
+use App\Models\BranchEvent;
+use App\Models\Universe;
 use App\Modules\Simulation\Services\ImplicitOrchestratorService;
 use App\Modules\Simulation\Core\Runtime\RuleVM\RuleVmService;
 use Illuminate\Support\Collection;

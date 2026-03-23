@@ -2,7 +2,7 @@
 
 namespace App\Contracts\Repositories;
 
-use App\Modules\Simulation\Models\Universe;
+use App\Models\Universe;
 
 interface UniverseRepositoryInterface
 {

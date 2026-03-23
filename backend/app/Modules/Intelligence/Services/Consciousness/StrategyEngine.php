@@ -2,7 +2,7 @@
 
 namespace App\Modules\Intelligence\Services\Consciousness;
 
-use App\Modules\SocialGraph\Models\CivilizationAttractor;
+use App\Models\CivilizationAttractor;
 
 /**
  * Derives optimal strategies (which attractors to activate) to avoid predicted risks.

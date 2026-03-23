@@ -3,8 +3,8 @@
 namespace App\Modules\Simulation\Services;
 
 use App\Contracts\UniverseSimilarityServiceInterface;
-use App\Modules\Simulation\Models\Universe;
-use App\Modules\Simulation\Models\UniverseSnapshot;
+use App\Models\Universe;
+use App\Models\UniverseSnapshot;
 
 /**
  * doc §13: merge when similarity between two universes > threshold.
