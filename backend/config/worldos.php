@@ -232,7 +232,7 @@ return [
     */
     'graph' => [
         'enabled' => env('WORLDOS_GRAPH_ENABLED', false),
-        'uri' => env('WORLDOS_GRAPH_URI', 'http://localhost:7474'),
+        'uri' => env('WORLDOS_GRAPH_URI', 'bolt://localhost:7687'),
         'username' => env('WORLDOS_GRAPH_USERNAME'),
         'password' => env('WORLDOS_GRAPH_PASSWORD'),
     ],

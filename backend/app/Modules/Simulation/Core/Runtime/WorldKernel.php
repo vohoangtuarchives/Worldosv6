@@ -130,6 +130,17 @@ class WorldKernel
 
         foreach ($categories as $category => $systems) {
             foreach ($systems as $system) {
+                $systemClass = get_class($system);
+                if ($system instanceof \App\Modules\Simulation\Core\Runtime\Systems\EngineSystemAdapter) {
+                    // Try to get the underlying engine class if possible
+                    $ref = new \ReflectionClass($system);
+                    $prop = $ref->getProperty('engine');
+                    $prop->setAccessible(true);
+                    $systemClass .= " (" . get_class($prop->getValue($system)) . ")";
+                }
+                
+                Log::debug("WorldKernel: Executing Phase [{$phase}], Category [{$category}], System [{$systemClass}]");
+                
                 // systems now only receive the context for their specific phase
                 $report = $system->update($context, $tick);
                 

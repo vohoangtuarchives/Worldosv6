@@ -71,6 +71,14 @@ class RuleVmService
         return $result ?? ['ok' => false, 'state' => []];
     }
 
+    /**
+     * Alias for evaluateRawState to support legacy services.
+     */
+    public function evaluateRaw(array $rawState, string $dsl): array
+    {
+        return $this->evaluateRawState($rawState, $dsl);
+    }
+
     public function evaluateWithResults(WorldState $state, string $dslOrPath, int $tick, array $context = []): array
     {
         $dsl = $this->resolveDslContent($dslOrPath);

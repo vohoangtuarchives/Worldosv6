@@ -39,33 +39,44 @@ class MaterialEvolutionEngine implements EngineInterface
     {
         $tick = $ctx->getTick();
 
-        // Chạy mỗi 100 tick để giảm tải
-        if ($tick % 100 !== 0) {
+        // Chạy mỗi 10 tick để dễ xác minh trong giai đoạn ổn định
+        if ($tick % 10 !== 0) {
             return EngineResult::empty();
         }
 
         $zones     = $state->getZones();
         $techLevel = (float) $state->get('tech_level', 0.1);
+        $universeId = (int) $state->get('universe_id');
 
         $updatedZones = [];
         $hasChanged = false;
 
-        Log::info("MaterialEvolutionEngine: Tick {$tick}, TechLevel: {$techLevel}");
+        Log::info("[MaterialEvolutionEngine] Universe {$universeId} Tick {$tick}, TechLevel: {$techLevel}");
 
         foreach ($zones as $idx => $zone) {
             $zoneState  = $zone['state'] ?? [];
             $minerals   = (float) ($zoneState['minerals'] ?? 0.5);
-            $materials  = $zoneState['active_materials'] ?? [];
+            $materials  = $zoneState['available_materials'] ?? [];
+            $unlockedThisTick = [];
 
             foreach (self::MATERIAL_TIERS as $tier) {
                 if ($techLevel >= $tier['tech_min']) {
                     $amount = $minerals * $tier['mineral_factor'] * 10.0;
-                    $materials[$tier['name']] = round($amount, 2);
+                    $rounded = round($amount, 2);
+                    
+                    if (!isset($materials[$tier['name']])) {
+                        $unlockedThisTick[] = $tier['name'];
+                    }
+                    $materials[$tier['name']] = $rounded;
                 }
             }
 
-            if (($zoneState['active_materials'] ?? null) !== $materials) {
-                $zoneState['active_materials'] = $materials;
+            if (!empty($unlockedThisTick)) {
+                Log::info("[MaterialEvolutionEngine] Zone {$idx} unlocked: " . implode(', ', $unlockedThisTick));
+            }
+
+            if (($zoneState['available_materials'] ?? null) !== $materials) {
+                $zoneState['available_materials'] = $materials;
                 $zone['state'] = $zoneState;
                 $updatedZones[$idx] = $zone;
                 $hasChanged = true;
@@ -75,8 +86,7 @@ class MaterialEvolutionEngine implements EngineInterface
         }
 
         if ($hasChanged) {
-            Log::info("MaterialEvolutionEngine: Updated " . count($updatedZones) . " zones");
-            $state->set('zones', $updatedZones);
+            Log::info("[MaterialEvolutionEngine] Updated " . count($updatedZones) . " zones");
             return new EngineResult(['zones' => $updatedZones]);
         }
 
