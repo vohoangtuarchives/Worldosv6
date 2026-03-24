@@ -31,8 +31,8 @@ final class EnvironmentStage implements SimulationStageInterface
         // 1. Climate logic (Modern WorldState approach)
         $this->climateEngine->handle($state, $ctx);
 
-        // 2. Geological logic (Phase 40: Unified)
-        $this->geologicalEngine->runWithState($state, $tick);
+        // 2. Geological logic (Modern WorldState approach)
+        $this->geologicalEngine->handle($state, $ctx);
     }
 }
 

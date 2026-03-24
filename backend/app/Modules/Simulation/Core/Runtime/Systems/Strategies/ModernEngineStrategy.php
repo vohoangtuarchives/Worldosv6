@@ -34,7 +34,7 @@ class ModernEngineStrategy implements EngineAdapterStrategyInterface
                 $report->log('Engine', $engine->name(), 'applied_effect', 'Effect', get_class($effect));
             } elseif (is_array($effect)) {
                 foreach ($effect as $k => $v) { $state->set($k, $v); }
-                $report->log('Engine', $engine->name(), 'applied_raw_mutation', 'Array', json_encode($effect));
+                $report->log('Engine', $engine->name(), 'applied_raw_mutation', 'Array', json_encode($effect), 1.0, 1.0, ['mutation' => $effect]);
             }
         }
     }

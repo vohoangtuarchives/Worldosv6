@@ -41,6 +41,8 @@ final class ActorStage implements SimulationStageInterface
         $this->processActorEnergy->runWithState($state, $response);
         $this->processActorSurvival->runWithState($state, $response);
 
+        \Illuminate\Support\Facades\Log::debug("ActorStage: Processed survival for " . count($state->getActorEntities()) . " actors");
+
         // 2. Cognitive Dynamics (Phase 21)
         $actors = $state->getActorEntities();
         $aliveActors = array_filter($actors, fn($a) => $a->isAlive);

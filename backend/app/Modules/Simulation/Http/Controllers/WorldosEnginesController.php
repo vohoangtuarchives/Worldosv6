@@ -40,22 +40,6 @@ class WorldosEnginesController extends Controller
         ]);
     }
 
-    public function sagaTimelines(
-        string $id,
-        TimelineSelectionEngine $engine,
-        Request $request
-    ): JsonResponse {
-        $saga = Saga::find((int) $id);
-        if (! $saga) {
-            return response()->json(['message' => 'Saga not found'], 404);
-        }
-        $limit = $request->query('limit') !== null ? (int) $request->query('limit') : null;
-        $universes = $engine->selectBestForSaga($saga, $limit);
-        return response()->json([
-            'saga_id' => $saga->id,
-            'timelines' => $universes->map(fn ($u) => ['id' => $u->id, 'name' => $u->name ?? ''])->values(),
-        ]);
-    }
 
     public function worldExtractLore(
         string $id,
@@ -81,29 +65,6 @@ class WorldosEnginesController extends Controller
         ]);
     }
 
-    public function sagaExtractLore(
-        string $id,
-        NarrativeExtractionEngine $engine,
-        Request $request
-    ): JsonResponse {
-        $saga = Saga::find((int) $id);
-        if (! $saga) {
-            return response()->json(['message' => 'Saga not found'], 404);
-        }
-        $limit = $request->input('limit') ?? $request->query('limit');
-        $limit = $limit !== null ? (int) $limit : null;
-        $chronicles = $engine->extractBestFromSaga($saga, $limit);
-        return response()->json([
-            'saga_id' => $saga->id,
-            'chronicles' => $chronicles->map(fn ($c) => [
-                'id' => $c->id,
-                'universe_id' => $c->universe_id,
-                'from_tick' => $c->from_tick,
-                'to_tick' => $c->to_tick,
-                'type' => $c->type,
-            ])->values(),
-        ]);
-    }
 
     public function civilizationMemory(
         string $id,

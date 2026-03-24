@@ -203,10 +203,9 @@ class GrpcSimulationEngineClient implements SimulationEngineClientInterface
         array $archetypes = [],
         array $socialGraph = [],
         array $edicts = [],
-        array $activeSagas = [],
-        array $factionIds = [],
         array $factionLoyalty = [],
         bool $isObserved = false,
+        array $narrativeContext = [],
         array $factionRelations = [],
         array $beliefDefinitions = [],
         array $beliefAlignments = []
@@ -261,9 +260,9 @@ class GrpcSimulationEngineClient implements SimulationEngineClientInterface
             $request->setEdicts($protoEdicts);
         }
 
-        if (!empty($activeSagas) && method_exists($request, 'setActiveSagas')) {
+        if (!empty($narrativeContext) && method_exists($request, 'setActiveSagas')) {
             $protoSagas = [];
-            foreach ($activeSagas as $sagaData) {
+            foreach ($narrativeContext as $sagaData) {
                 $saga = new \Worldos\Simulation\WorldSaga();
                 $saga->setId($sagaData['id']);
                 $saga->setName($sagaData['name']);

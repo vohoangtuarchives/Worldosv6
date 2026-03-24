@@ -62,6 +62,12 @@ final class SimulationTickPipeline
         // Phase 37: Save Universal State
         $this->stateManager->save($universe);
 
+        // Sync back to snapshot if persisted, so the snapshot contains Kernel modifications
+        if ($savedSnapshot) {
+            $savedSnapshot->state_vector = $state->toArray();
+            $savedSnapshot->save();
+        }
+
         // Phase 80: Narrative Integration (Rewrite)
         // 1 Tick = 1 LLM Call. Pulse the Narrative Engine after state persistence.
         $universeModel = \App\Models\Universe::find($universe->id);

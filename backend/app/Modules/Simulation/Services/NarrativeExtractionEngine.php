@@ -64,17 +64,6 @@ class NarrativeExtractionEngine
         return $this->extractLoreForUniverses($universes);
     }
 
-    /**
-     * Select best timelines for the saga, then extract lore for each.
-     * Returns collection of Chronicles (nulls filtered out).
-     */
-    public function extractBestFromSaga(Saga $saga, ?int $limit = null): Collection
-    {
-        $limit = $limit ?? (int) config('worldos.narrative_extraction.default_limit', 5);
-        $universes = $this->timelineSelection->selectBestForSaga($saga, $limit);
-
-        return $this->extractLoreForUniverses($universes);
-    }
 
     /**
      * @param  Collection<int, Universe>  $universes

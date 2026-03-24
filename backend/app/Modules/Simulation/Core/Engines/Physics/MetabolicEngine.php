@@ -115,7 +115,12 @@ class MetabolicEngine implements EngineInterface
 
         return new EngineResult([
             'avg_net_energy' => $avgNetEnergy,
-            'total_waste' => $totalWaste
+            'total_waste' => $totalWaste,
+            'entropy' => $nextEntropy,
+            'survival_modifier' => ($avgNetEnergy < -0.5) ? 0.7 : 1.0,
+            'zones' => $isGlobal ? null : $zones,
+            'fields.population' => $isGlobal ? max(0.0, $populations[0]) : null,
+            'fields.biomass' => $isGlobal ? max(0.0, $biomasses[0]) : null,
         ], [], []);
     }
 }

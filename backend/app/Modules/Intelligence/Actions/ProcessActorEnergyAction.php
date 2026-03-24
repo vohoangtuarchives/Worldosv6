@@ -41,8 +41,12 @@ class ProcessActorEnergyAction
         $reproduceEnergyRatioChild = (float) config('worldos.intelligence.reproduce_energy_ratio_child', 0.3);
         $mutationRate = (float) config('worldos.intelligence.mutation_rate', 0.05);
         $snapshotTick = (int) (($simulationResponse['snapshot'] ?? [])['tick'] ?? $state->get('tick', 0));
-
         $zones = $state->get('zones', []);
+
+        // 0. Auto-Spawn Initial Agents if empty
+        if (count($actors) < 30) {
+            $actors = $this->spawnInitialAgents($state, $universeId, 30 - count($actors), $zones);
+        }
         $pressure = $state->get('ecosystem.pressure', []);
         if (empty($pressure)) {
             $pressure = $this->evolutionPressure->fromUniverseId($universeId);
@@ -61,30 +65,58 @@ class ProcessActorEnergyAction
         foreach ($actors as $actor) {
             if (!$actor->isAlive) continue;
 
+            // 1. Persistent Zone Binding
+            if ($actor->zone_id === null && !empty($zones)) {
+                $actor->zone_id = abs($actor->id ?? 0) % count($zones);
+            }
+
             $metrics = $actor->metrics ?? [];
             $metrics = $this->ensureEnergyMetrics($metrics, $actor->traits ?? [], $actor->metrics['physic'] ?? null, $energyMaxDefault, $metabolismBase);
 
-            // Consume metabolism
-            $metabolism = (float) ($metrics['metabolism'] ?? $metabolismBase);
-            $energy = (float) ($metrics['energy'] ?? $energyMaxDefault);
-            $maxEnergy = (float) ($metrics['max_energy'] ?? $energyMaxDefault);
-            $energy -= $metabolism * $ticks;
-
-            // Gather from zone
-            if (!empty($zones)) {
-                $zoneIndex = abs($actor->id ?? 0) % count($zones);
+            // 2. Hunger Increase (amplified by zone resource_stress)
+            $hunger = (float) ($actor->hunger ?? 0.5);
+            
+            // V10: Zone resource pressure amplifies hunger
+            $zoneStress = 0.0;
+            if ($actor->zone_id !== null && !empty($zones)) {
+                $zoneIndex = abs($actor->zone_id) % count($zones);
+                $zoneStress = (float) ($zones[$zoneIndex]['state']['resource_stress'] ?? 0);
+            }
+            $hungerGrowthRate = 0.05 + ($zoneStress * 0.08); // High stress zone = hunger 2.6x faster
+            $hunger += $hungerGrowthRate * $ticks;
+            
+            // 3. Search Food (Real Resource Depletion)
+            if ($hunger > 0.6 && !empty($zones)) {
+                $zoneIndex = $actor->zone_id % count($zones);
                 $zone = &$zones[$zoneIndex];
-                $foodKey = isset($zone['state']['food']) ? 'food' : 'resources';
+                $foodKey = isset($zone['state']['food']) ? 'food' : (isset($zone['state']['resources']) ? 'resources' : 'resource');
                 $available = (float) ($zone['state'][$foodKey] ?? 0);
-                $gather = min($gatherRate * $ticks, $available, max(0, $maxEnergy - $energy));
+                
+                $searchAmount = 0.2 * $ticks;
+                $gather = min($searchAmount, $available);
+                
                 if ($gather > 0) {
-                    $energy += $gather;
-                    if (!isset($zone['state'])) $zone['state'] = [];
+                    $hunger = max(0, $hunger - ($gather * 2.0));
                     $zone['state'][$foodKey] = max(0, $available - $gather);
                 }
             }
 
+            // 4. Energy Consumption (Metabolism)
+            $metabolism = (float) ($metrics['metabolism'] ?? $metabolismBase);
+            $energy = (float) ($metrics['energy'] ?? $energyMaxDefault);
+            $maxEnergy = (float) ($metrics['max_energy'] ?? $energyMaxDefault);
+            
+            // If still very hungry, lose extra energy
+            if ($hunger > 0.8) {
+                $energy -= $metabolism * 2.0 * $ticks * (0.9 + mt_rand(0, 200) / 1000); // Starvation stress + randomness
+            } else {
+                $energy -= $metabolism * $ticks * (0.8 + mt_rand(0, 400) / 1000); // Normal metabolism + variance
+            }
+
             $energy = max(0, min($maxEnergy, $energy));
+            $actor->hunger = $hunger;
+            $actor->energy = $energy; // Sync to property
+            $metrics['hunger'] = $hunger; // Sync to metrics for persistence
 
             // Reproduction
             if ($energy > $reproduceCost) {
@@ -133,7 +165,7 @@ class ProcessActorEnergyAction
 
             if ($energy <= 0) {
                 $actor->isAlive = false;
-                Log::info("Intelligence: Actor {$actor->name} ({$actor->id}) starved (energy <= 0) in Universe {$universeId}.");
+                Log::info("Intelligence: Actor {$actor->name} ({$actor->id}) starved to death in Universe {$universeId}.");
             }
             $actor->metrics = $metrics;
         }
@@ -153,6 +185,31 @@ class ProcessActorEnergyAction
         if (!empty($newActors)) {
             $state->setActorEntities(array_merge($state->getActorEntities(), $newActors));
         }
+    }
+
+    private function spawnInitialAgents(\App\Modules\Simulation\Core\Runtime\State\WorldState $state, int $universeId, int $count, array $zones): array
+    {
+        $actors = $state->getActorEntities();
+        Log::info("Intelligence: Spawning $count initial agents for Universe $universeId");
+        
+        for ($i = 0; $i < $count; $i++) {
+            $zoneId = !empty($zones) ? ($i % count($zones)) : null;
+            $actor = $this->spawnActorAction->handle([
+                'universe_id' => $universeId,
+                'name' => "Colonist " . (count($actors) + 1),
+                'archetype' => 'pioneer',
+                'generation' => 1,
+                'metrics' => [
+                    'energy' => mt_rand(70, 100),
+                    'hunger' => mt_rand(10, 30) / 100,
+                    'zone_id' => $zoneId
+                ]
+            ]);
+            $actors[] = $actor;
+        }
+        
+        $state->setActorEntities($actors);
+        return $actors;
     }
 
     public function handle(Universe $universe, array $simulationResponse): void

@@ -264,6 +264,33 @@ class SimulationServiceProvider extends ServiceProvider
                 $app->make(\App\Modules\Simulation\Core\Runtime\Systems\ResourceSystem::class)
             );
 
+            // Wave 1: Physics Foundation — 5 engines vật lý nền
+            $kernel->registerSystem(
+                \App\Modules\Simulation\Core\Runtime\WorldKernel::PHASE_ENVIRONMENT,
+                \App\Modules\Simulation\Core\Runtime\WorldKernel::RULE_METABOLISM,
+                new \App\Modules\Simulation\Core\Runtime\Systems\EngineSystemAdapter($app->make(\App\Modules\Simulation\Core\Engines\Physics\RealityAnchorEngine::class))
+            );
+            $kernel->registerSystem(
+                \App\Modules\Simulation\Core\Runtime\WorldKernel::PHASE_ENVIRONMENT,
+                \App\Modules\Simulation\Core\Runtime\WorldKernel::RULE_ENTROPY,
+                new \App\Modules\Simulation\Core\Runtime\Systems\EngineSystemAdapter($app->make(\App\Modules\Simulation\Core\Engines\Physics\CosmicPressureEngine::class))
+            );
+            $kernel->registerSystem(
+                \App\Modules\Simulation\Core\Runtime\WorldKernel::PHASE_ENVIRONMENT,
+                \App\Modules\Simulation\Core\Runtime\WorldKernel::RULE_EXTRACTION,
+                new \App\Modules\Simulation\Core\Runtime\Systems\EngineSystemAdapter($app->make(\App\Modules\Simulation\Core\Engines\Physics\GeologicalEngine::class))
+            );
+            $kernel->registerSystem(
+                \App\Modules\Simulation\Core\Runtime\WorldKernel::PHASE_ENVIRONMENT,
+                \App\Modules\Simulation\Core\Runtime\WorldKernel::RULE_METABOLISM,
+                new \App\Modules\Simulation\Core\Runtime\Systems\EngineSystemAdapter($app->make(\App\Modules\Simulation\Core\Engines\Physics\ClimateEngine::class))
+            );
+            $kernel->registerSystem(
+                \App\Modules\Simulation\Core\Runtime\WorldKernel::PHASE_ENVIRONMENT,
+                \App\Modules\Simulation\Core\Runtime\WorldKernel::RULE_EXTRACTION,
+                new \App\Modules\Simulation\Core\Runtime\Systems\EngineSystemAdapter($app->make(\App\Modules\Simulation\Core\Engines\Physics\MaterialEvolutionEngine::class))
+            );
+
             // Phase 2: Life
             $kernel->registerSystem(
                 \App\Modules\Simulation\Core\Runtime\WorldKernel::PHASE_LIFE,
@@ -467,6 +494,91 @@ class SimulationServiceProvider extends ServiceProvider
                 \App\Modules\Simulation\Core\Runtime\WorldKernel::RULE_METABOLISM,
                 new \App\Modules\Simulation\Core\Runtime\Systems\StageSystemAdapter($app->make(\App\Modules\Simulation\Core\Runtime\Stages\MetaCosmicStage::class))
             );
+
+
+            // ===== Wave 2: Living System =====
+            $kernel->registerSystem(
+                \App\Modules\Simulation\Core\Runtime\WorldKernel::PHASE_LIFE,
+                \App\Modules\Simulation\Core\Runtime\WorldKernel::RULE_METABOLISM,
+                new \App\Modules\Simulation\Core\Runtime\Systems\EngineSystemAdapter($app->make(\App\Modules\Simulation\Core\Engines\Environment\LivingWorldEngine::class))
+            );
+
+            // ===== Wave 3: Economy =====
+            $kernel->registerSystem(
+                \App\Modules\Simulation\Core\Runtime\WorldKernel::PHASE_SOCIAL,
+                \App\Modules\Simulation\Core\Runtime\WorldKernel::RULE_EXTRACTION,
+                new \App\Modules\Simulation\Core\Runtime\Systems\EngineSystemAdapter($app->make(\App\Modules\Simulation\Core\Engines\Social\MarketEngine::class))
+            );
+            $kernel->registerSystem(
+                \App\Modules\Simulation\Core\Runtime\WorldKernel::PHASE_SOCIAL,
+                \App\Modules\Simulation\Core\Runtime\WorldKernel::RULE_EXTRACTION,
+                new \App\Modules\Simulation\Core\Runtime\Systems\EngineSystemAdapter($app->make(\App\Modules\Simulation\Core\Engines\Social\TradeEngine::class))
+            );
+            $kernel->registerSystem(
+                \App\Modules\Simulation\Core\Runtime\WorldKernel::PHASE_SOCIAL,
+                \App\Modules\Simulation\Core\Runtime\WorldKernel::RULE_EXTRACTION,
+                new \App\Modules\Simulation\Core\Runtime\Systems\EngineSystemAdapter($app->make(\App\Modules\Simulation\Core\Engines\Social\GlobalEconomyEngine::class))
+            );
+            $kernel->registerSystem(
+                \App\Modules\Simulation\Core\Runtime\WorldKernel::PHASE_SOCIAL,
+                \App\Modules\Simulation\Core\Runtime\WorldKernel::RULE_COHESION,
+                new \App\Modules\Simulation\Core\Runtime\Systems\EngineSystemAdapter($app->make(\App\Modules\Simulation\Core\Engines\Social\InequalityEngine::class))
+            );
+
+            // ===== Wave 4: Society & Politics =====
+            $kernel->registerSystem(
+                \App\Modules\Simulation\Core\Runtime\WorldKernel::PHASE_SOCIAL,
+                \App\Modules\Simulation\Core\Runtime\WorldKernel::RULE_COHESION,
+                new \App\Modules\Simulation\Core\Runtime\Systems\EngineSystemAdapter($app->make(\App\Modules\Simulation\Core\Engines\Social\PoliticsEngine::class))
+            );
+            $kernel->registerSystem(
+                \App\Modules\Simulation\Core\Runtime\WorldKernel::PHASE_SOCIAL,
+                \App\Modules\Simulation\Core\Runtime\WorldKernel::RULE_COHESION,
+                new \App\Modules\Simulation\Core\Runtime\Systems\EngineSystemAdapter($app->make(\App\Modules\Simulation\Core\Engines\Social\LegitimacyEliteEngine::class))
+            );
+            $kernel->registerSystem(
+                \App\Modules\Simulation\Core\Runtime\WorldKernel::PHASE_SOCIAL,
+                \App\Modules\Simulation\Core\Runtime\WorldKernel::RULE_OBSERVATION,
+                new \App\Modules\Simulation\Core\Runtime\Systems\EngineSystemAdapter($app->make(\App\Modules\Simulation\Core\Engines\Social\PsychologyEngine::class))
+            );
+
+            // ===== Wave 5: Civilization =====
+            $kernel->registerSystem(
+                \App\Modules\Simulation\Core\Runtime\WorldKernel::PHASE_SOCIAL,
+                \App\Modules\Simulation\Core\Runtime\WorldKernel::RULE_COHESION,
+                new \App\Modules\Simulation\Core\Runtime\Systems\EngineSystemAdapter($app->make(\App\Modules\Simulation\Core\Engines\Social\CivilizationSettlementEngine::class))
+            );
+            $kernel->registerSystem(
+                \App\Modules\Simulation\Core\Runtime\WorldKernel::PHASE_SOCIAL,
+                \App\Modules\Simulation\Core\Runtime\WorldKernel::RULE_METABOLISM,
+                new \App\Modules\Simulation\Core\Runtime\Systems\EngineSystemAdapter($app->make(\App\Modules\Simulation\Core\Engines\Social\CivilizationPhysicsEngine::class))
+            );
+            $kernel->registerSystem(
+                \App\Modules\Simulation\Core\Runtime\WorldKernel::PHASE_SOCIAL,
+                \App\Modules\Simulation\Core\Runtime\WorldKernel::RULE_CYCLE,
+                new \App\Modules\Simulation\Core\Runtime\Systems\EngineSystemAdapter($app->make(\App\Modules\Simulation\Core\Engines\Social\CivilizationLongCycleEngine::class))
+            );
+            $kernel->registerSystem(
+                \App\Modules\Simulation\Core\Runtime\WorldKernel::PHASE_SOCIAL,
+                \App\Modules\Simulation\Core\Runtime\WorldKernel::RULE_DIFFUSION,
+                new \App\Modules\Simulation\Core\Runtime\Systems\EngineSystemAdapter($app->make(\App\Modules\Simulation\Core\Engines\Social\IdeaDiffusionEngine::class))
+            );
+
+            // ===== Wave 6: Conflict =====
+            $kernel->registerSystem(
+                \App\Modules\Simulation\Core\Runtime\WorldKernel::PHASE_META,
+                \App\Modules\Simulation\Core\Runtime\WorldKernel::RULE_CONFLICT,
+                new \App\Modules\Simulation\Core\Runtime\Systems\EngineSystemAdapter($app->make(\App\Modules\Simulation\Core\Engines\Social\WarEngine::class))
+            );
+
+            // ===== Wave 7: TODO — Activate Already-Implemented Engines =====
+            // NOTE: The following engines exist with real logic but do NOT implement
+            // SimulationEngine::handle(), run(), or update(). They need interface
+            // refactoring before they can be registered via EngineSystemAdapter.
+            // - HistoryEngine, HistoricalCycleEngine, HistoricalScarsEngine
+            // - DynamicAttractorEngine, AttractorEngine, WorldWillEngine
+            // - TransmigrationEngine, ChaosEngine, CapabilityEngine
+            // - ActionExecutionEngine
 
 
             return $kernel;

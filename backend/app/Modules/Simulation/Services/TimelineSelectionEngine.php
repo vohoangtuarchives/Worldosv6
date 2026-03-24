@@ -23,25 +23,7 @@ class TimelineSelectionEngine
     public function selectBest(World $world, ?int $limit = null): Collection
     {
         $universes = Universe::where('world_id', $world->id)->get();
-        return $this->rankAndLimit($universes, $limit);
-    }
-
-    /**
-     * Return top timelines for a saga, ordered by narrative interest (highest first).
-     *
-     * @param  int|null  $limit  Max number to return; null = use config default_limit; 0 = no limit
-     */
-    public function selectBestForSaga(Saga $saga, ?int $limit = null): Collection
-    {
-        $universes = Universe::where($saga->id)->get();
-        return $this->rankAndLimit($universes, $limit);
-    }
-
-    /**
-     * Score and sort universes by narrative interest, then apply limit.
-     */
-    protected function rankAndLimit(Collection $universes, ?int $limit = null): Collection
-    {
+        
         if ($universes->isEmpty()) {
             return collect();
         }
@@ -61,6 +43,7 @@ class TimelineSelectionEngine
 
         return $scored->pluck('universe');
     }
+
 
     /**
      * Narrative interest score from state_vector, entropy, and progress.

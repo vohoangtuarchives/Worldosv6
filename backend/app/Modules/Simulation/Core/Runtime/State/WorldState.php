@@ -45,7 +45,23 @@ class WorldState
 
     public function toArray(): array
     {
-        return $this->data;
+        $data = $this->data;
+        
+        // V6: Sync real entities back to the state vector for visibility
+        if (!empty($this->actorEntities)) {
+            $data['agents'] = array_map(fn($a) => [
+                'id' => $a->id,
+                'name' => $a->name,
+                'hunger' => round($a->hunger ?? 0.5, 2),
+                'energy' => round((float)($a->metrics['energy'] ?? $a->energy ?? 100), 2),
+                'zone_id' => $a->zone_id,
+                'is_alive' => $a->isAlive,
+            ], array_slice(array_filter($this->actorEntities, fn($a) => $a->isAlive), 0, 10));
+            
+            $data['total_population'] = count(array_filter($this->actorEntities, fn($a) => $a->isAlive));
+        }
+
+        return $data;
     }
 
     // --- COSMIC LAYER ---
@@ -84,6 +100,7 @@ class WorldState
                 'planetary' => $this->getPlanetary(),
                 'cosmic' => $this->getCosmic(),
                 'resources' => $this->getResourceEntities(),
+                'zones' => $this->getZones(),
             ],
             'pressures' => [
                 'survival_pressure' => (float)($fields['survival'] ?? 0.0),
@@ -118,6 +135,7 @@ class WorldState
                 'civilizations' => $this->get('civilizations', []),
                 'resources' => $this->getResourceEntities(), // Required by PowerSystem
                 'actors' => $this->getActorEntities(), // Required by AllianceSystem
+                'zones' => $this->getZones(),
             ],
             'pressures' => [
                 'war_pressure' => (float)($fields['power'] ?? 0.0),
@@ -241,11 +259,63 @@ class WorldState
         data_set($this->data, $key, $value);
     }
 
+    /**
+     * Compute the difference between current data and an original context array.
+     * Returns a flat array of 'dot.key' => value for scalar changes, 
+     * and special handling for zones/agents if needed.
+     */
+    public function getDiff(array $originalData): array
+    {
+        $diff = [];
+        $currentData = $this->data;
+
+        // 1. Check top-level numeric fields (entropy, stability, etc.)
+        $monitoredFields = ['entropy', 'stability_index', 'civilizationComplexity', 'logic_density'];
+        foreach ($monitoredFields as $field) {
+            $old = (float)($originalData[$field] ?? 0);
+            $new = (float)($currentData[$field] ?? 0);
+            if (abs($old - $new) > 1e-6) {
+                $diff[$field] = $new;
+            }
+        }
+
+        // 2. Check Global Fields (CFT)
+        $oldFields = $originalData['fields'] ?? [];
+        $newFields = $currentData['fields'] ?? [];
+        foreach ($newFields as $key => $val) {
+            $oldVal = $oldFields[$key] ?? null;
+            if ($oldVal !== $val) {
+                $diff["fields.{$key}"] = $val;
+            }
+        }
+
+        // 3. Check Zones (Macro-resource changes)
+        // Note: Full zone diff might be heavy, but we need it for LivingWorldEngine
+        if (isset($currentData['zones'])) {
+            $diff['zones'] = $currentData['zones'];
+        }
+
+        return $diff;
+    }
+
     public function getEntropy(): float { return (float)$this->get('entropy', 0.0); }
     public function setEntropy(float $val): void { $this->set('entropy', $val); }
 
     public function getStabilityIndex(): float { return (float)$this->get('stability_index', 1.0); }
     public function setStabilityIndex(float $val): void { $this->set('stability_index', $val); }
+
+    /**
+     * V10: Update a global field safely by adding a delta.
+     */
+    public function updateField(string $fieldName, float $delta, string $reason = ''): void
+    {
+        $fields = $this->getFields();
+        $current = (float)($fields[$fieldName] ?? 0.0);
+        $fields[$fieldName] = max(0.0, min(1.0, $current + $delta));
+        $this->setFields($fields);
+        
+        \Illuminate\Support\Facades\Log::debug("WorldState: Field '{$fieldName}' mutated by {$delta} due to: {$reason}. New value: {$fields[$fieldName]}");
+    }
 
     /**
      * Phase 4: Create an immutable snapshot copy of the current state for rollback purposes.

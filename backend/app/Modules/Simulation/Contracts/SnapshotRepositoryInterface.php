@@ -11,6 +11,11 @@ use App\Modules\Simulation\Entities\SnapshotEntity;
 interface SnapshotRepositoryInterface
 {
     /**
+     * Tìm snapshot theo ID.
+     */
+    public function findById(int $id): ?SnapshotEntity;
+
+    /**
      * Tìm snapshot mới nhất (về tick) của một universe.
      */
     public function findLatestByUniverse(int $universeId): ?SnapshotEntity;

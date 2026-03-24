@@ -214,7 +214,7 @@ class HttpSimulationEngineClient implements SimulationEngineClientInterface
         ];
     }
 
-    public function processActorsSoa(int $tick, array $ids, array $zoneIds, array $hunger, array $energy, array $fear, array $trauma, array $heroicTypes, array $lineageIds, array $memes, array $traitsMatrix = [], array $behaviorStates = [], array $behaviorGraphs = [], array $archetypes = [], array $socialGraph = [], array $activeSagas = [], array $factionIds = [], array $factionLoyalty = []): array
+    public function processActorsSoa(int $tick, array $ids, array $zoneIds, array $hunger, array $energy, array $fear, array $trauma, array $heroicTypes, array $lineageIds, array $memes, array $traitsMatrix = [], array $behaviorStates = [], array $behaviorGraphs = [], array $archetypes = [], array $socialGraph = [], array $narrativeContext = [], array $factionIds = [], array $factionLoyalty = []): array
     {
         $url = rtrim($this->baseUrl, '/').'/process-actors-soa';
         $payload = [
@@ -233,7 +233,7 @@ class HttpSimulationEngineClient implements SimulationEngineClientInterface
             'behavior_graphs' => [],
             'archetypes'      => $archetypes,
             'social_graph'    => $socialGraph,
-            'active_sagas'    => $activeSagas,
+            'narrative_context' => $narrativeContext,
             'faction_ids'     => $factionIds,
             'faction_loyalty' => $factionLoyalty,
         ];

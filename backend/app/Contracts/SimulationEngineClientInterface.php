@@ -73,7 +73,7 @@ interface SimulationEngineClientInterface
         array $behaviorGraphs = [],
         array $archetypes = [],
         array $socialGraph = [],
-        array $activeSagas = [],
+        array $narrativeContext = [],
         array $factionIds = [],
         array $factionLoyalty = []
     ): array;

@@ -26,11 +26,25 @@ class UniverseController extends Controller
 {
     public function index(): JsonResponse
     {
-        $query = Universe::with(['world:id,name,slug,current_genre,base_genre']);
+        $query = Universe::with([
+            'world:id,name,slug,current_genre,base_genre',
+            'latestSnapshot'
+        ]);
+        
         if (request()->has('world_id')) {
             $query->where('world_id', (int) request('world_id'));
         }
+        
         return response()->json($query->get());
+    }
+
+    public function toggleStatus(string $id): JsonResponse
+    {
+        $universe = Universe::findOrFail((int) $id);
+        $newStatus = $universe->status === 'active' ? 'inactive' : 'active';
+        $universe->update(['status' => $newStatus]);
+        
+        return response()->json(['ok' => true, 'new_status' => $newStatus]);
     }
 
     public function show(string $id): JsonResponse
@@ -56,25 +70,25 @@ class UniverseController extends Controller
         $rows = \App\Models\UniverseSnapshot::where('universe_id', (int) $id)
             ->orderByDesc('tick')
             ->limit($limit)
-            ->get(['id', 'universe_id', 'tick', 'entropy', 'stability_index', 'metrics'])
+            ->get(['id', 'universe_id', 'tick', 'entropy', 'stability_index', 'metrics', 'created_at'])
             ->toArray();
         return response()->json(array_reverse($rows));
     }
 
-    public function fork(string $id, ImplicitOrchestratorService $orchestrator): JsonResponse
+    public function getSnapshot(string $snapshotId): JsonResponse
+    {
+        $snapshot = \App\Models\UniverseSnapshot::findOrFail((int) $snapshotId);
+        return response()->json($snapshot);
+    }
+
+    public function fork(string $id, \App\Modules\WorldOS\Actions\ForkUniverseAction $action): JsonResponse
     {
         $tick = (int) request()->input('tick', 0);
+        $name = request()->input('name');
         $universe = Universe::findOrFail((int) $id);
         
-        // Use repository in future, for now keep original logic to ensure stability
-        BranchEvent::create([
-            'universe_id' => $universe->id,
-            'from_tick' => $tick > 0 ? $tick : (int) $universe->current_tick,
-            'event_type' => 'fork',
-            'payload' => ['manual' => true],
-        ]);
+        $child = $action->handle($universe, $tick, $name);
         
-        $child = $orchestrator->spawnUniverse($universe->world, $universe->id, $universe->saga_id);
         return response()->json(['ok' => true, 'child_universe_id' => $child->id]);
     }
 
@@ -92,5 +106,23 @@ class UniverseController extends Controller
         $universeId = (int) request()->input('universe_id', 0);
         $ticks = (int) request()->input('ticks', 1);
         return response()->json($action->execute($universeId, $ticks));
+    }
+
+    public function update(string $id, Request $request): JsonResponse
+    {
+        $universe = Universe::findOrFail((int) $id);
+        $universe->update($request->only(['name', 'status']));
+        return response()->json(['ok' => true, 'data' => $universe]);
+    }
+
+    public function destroy(string $id): JsonResponse
+    {
+        $universe = Universe::findOrFail((int) $id);
+        
+        // Cảnh báo: Việc xóa universe sẽ xóa toàn bộ dữ liệu snapshots liên quan
+        \App\Models\UniverseSnapshot::where('universe_id', $universe->id)->delete();
+        $universe->delete();
+        
+        return response()->json(['ok' => true, 'message' => 'Universe đã được xóa thành công']);
     }
 }

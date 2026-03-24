@@ -2,10 +2,7 @@
     "api_key": "api_key",
     "secret": "secret",
     "hmac_secret": "hmac_secret",
-    "allowed_origins": [
-        "http://localhost",
-        "http://127.0.0.1"
-    ],
+    "allowed_origins": ["*"],
     "namespaces": [
         {
             "name": "public",

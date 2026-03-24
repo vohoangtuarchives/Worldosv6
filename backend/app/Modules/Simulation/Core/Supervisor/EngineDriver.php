@@ -37,10 +37,23 @@ final class EngineDriver
             return $response;
         }
 
-        $snapshotData = $response['snapshot'] ?? [];
+        $snapshotData = &$response['snapshot'];
         if (! empty($snapshotData)) {
             $this->ensureEntropyFloor($snapshotData);
             $this->ensureStateVectorHasZones($snapshotData);
+
+            // Phase 2: Preserve custom fields added by Laravel engines that Rust doesn't know about
+            if (isset($snapshotData['zones']) && isset($stateInput['zones'])) {
+                foreach ($snapshotData['zones'] as &$newZone) {
+                    $zoneId = $newZone['id'] ?? null;
+                    if ($zoneId !== null) {
+                        $oldZone = collect($stateInput['zones'])->first(fn($z) => ($z['id'] ?? null) == $zoneId);
+                        if ($oldZone && isset($oldZone['state'])) {
+                            $newZone['state'] = array_merge($oldZone['state'], $newZone['state']);
+                        }
+                    }
+                }
+            }
         }
 
         return $response;
@@ -80,21 +93,21 @@ final class EngineDriver
         return [
             'universe_id' => $universe->id,
             'tick' => (int) $universe->currentTick,
-            'zones' => $zones,
+            'zones' => array_values($zones),
             'global_entropy' => (float) $globalEntropy,
             'knowledge_core' => (float) $knowledgeCore,
-            'scars' => $scars,
-            'attractors' => is_array($vec['attractors'] ?? null) ? $vec['attractors'] : [],
-            'dark_attractors' => is_array($vec['dark_attractors'] ?? null) ? $vec['dark_attractors'] : [],
-            'institutions' => $institutions->map(fn ($e) => [
+            'scars' => array_values($scars),
+            'attractors' => array_values(is_array($vec['attractors'] ?? null) ? $vec['attractors'] : []),
+            'dark_attractors' => array_values(is_array($vec['dark_attractors'] ?? null) ? $vec['dark_attractors'] : []),
+            'institutions' => array_values($institutions->map(fn ($e) => [
                 'id' => $e->id,
                 'type' => $e->entity_type,
                 'capacity' => $e->org_capacity,
                 'ideology' => $e->ideology_vector,
                 'legitimacy' => $e->legitimacy,
                 'influence' => $e->influence_map,
-            ])->toArray(),
-            'macro_agents' => is_array($vec['macro_agents'] ?? null) ? $vec['macro_agents'] : [],
+            ])->toArray()),
+            'macro_agents' => array_values(is_array($vec['macro_agents'] ?? null) ? $vec['macro_agents'] : []),
         ];
     }
 

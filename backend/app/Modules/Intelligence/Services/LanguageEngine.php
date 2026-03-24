@@ -15,10 +15,10 @@ class LanguageEngine
 {
     /** Intent (goal) to default symbol id. */
     private const INTENT_SYMBOLS = [
-        ActorBehaviorEngine::NEED_HUNGER => 'W0',
-        ActorBehaviorEngine::NEED_SAFETY => 'W1',
-        ActorBehaviorEngine::NEED_REPRODUCTION => 'W2',
-        ActorBehaviorEngine::NEED_SOCIAL => 'W3',
+        ActorBehaviorEngine::NEED_SURVIVAL => 'W0',
+        ActorBehaviorEngine::NEED_REPRODUCTION => 'W1',
+        ActorBehaviorEngine::NEED_BELONGING => 'W2',
+        ActorBehaviorEngine::NEED_KNOWLEDGE => 'W3',
     ];
 
     public function __construct(
@@ -104,7 +104,7 @@ class LanguageEngine
 
     private function encodeIntent($actor, int $seed, int $tick): string
     {
-        $goal = $actor->metrics['current_goal'] ?? ActorBehaviorEngine::NEED_HUNGER;
+        $goal = $actor->metrics['current_goal'] ?? ActorBehaviorEngine::NEED_SURVIVAL;
         $defaultSymbol = self::INTENT_SYMBOLS[$goal] ?? 'W0';
         $voc = $actor->metrics['vocabulary'] ?? [];
         if (empty($voc) || !isset($voc[$defaultSymbol])) {

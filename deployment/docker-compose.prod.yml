@@ -109,8 +109,13 @@ services:
       WORLDOS_EVENT_STREAM_KAFKA_ENABLED: ${WORLDOS_EVENT_STREAM_KAFKA_ENABLED:-false}
       WORLDOS_EVENT_STREAM_REST_PROXY_URL: ${WORLDOS_EVENT_STREAM_REST_PROXY_URL:-http://redpanda:8082}
       WORLDOS_CAUSALITY_DRIVER: redis
+      BROADCAST_DRIVER: centrifugo
+      CENTRIFUGO_URL: http://centrifugo:8000
+      CENTRIFUGO_KEY: ${CENTRIFUGO_KEY:-api_key}
+      CENTRIFUGO_SECRET: ${CENTRIFUGO_SECRET:-secret}
     volumes:
       - ../backend:/var/www
+      - /var/www/vendor
       - backend_storage:/var/www/storage
       - backend_bootstrap_cache:/var/www/bootstrap/cache
       - backend_public:/var/www/public
@@ -144,9 +149,14 @@ services:
       WORLDOS_GRAPH_USERNAME: ${WORLDOS_GRAPH_USERNAME:-neo4j}
       WORLDOS_GRAPH_PASSWORD: ${WORLDOS_GRAPH_PASSWORD:-worldos_secret}
       WORLDOS_EVENT_BUS_DRIVER: ${WORLDOS_EVENT_BUS_DRIVER:-database}
+      BROADCAST_DRIVER: centrifugo
+      CENTRIFUGO_URL: http://centrifugo:8000
+      CENTRIFUGO_KEY: ${CENTRIFUGO_KEY:-api_key}
+      CENTRIFUGO_SECRET: ${CENTRIFUGO_SECRET:-secret}
     command: php artisan schedule:work
     volumes:
       - ../backend:/var/www
+      - /var/www/vendor
       - backend_storage:/var/www/storage
       - backend_bootstrap_cache:/var/www/bootstrap/cache
     depends_on:
@@ -179,9 +189,14 @@ services:
       WORLDOS_GRAPH_USERNAME: ${WORLDOS_GRAPH_USERNAME:-neo4j}
       WORLDOS_GRAPH_PASSWORD: ${WORLDOS_GRAPH_PASSWORD:-worldos_secret}
       WORLDOS_EVENT_BUS_DRIVER: ${WORLDOS_EVENT_BUS_DRIVER:-database}
+      BROADCAST_DRIVER: centrifugo
+      CENTRIFUGO_URL: http://centrifugo:8000
+      CENTRIFUGO_KEY: ${CENTRIFUGO_KEY:-api_key}
+      CENTRIFUGO_SECRET: ${CENTRIFUGO_SECRET:-secret}
     command: php artisan queue:work
     volumes:
       - ../backend:/var/www
+      - /var/www/vendor
       - backend_storage:/var/www/storage
       - backend_bootstrap_cache:/var/www/bootstrap/cache
     depends_on:

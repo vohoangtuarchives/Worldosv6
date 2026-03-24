@@ -484,7 +484,7 @@ return [
     | priority_weights: novelty, complexity, civilization, entropy (sum to 1).
     */
     'scheduler' => [
-        'tick_budget' => (int) env('WORLDOS_SCHEDULER_TICK_BUDGET', 0),
+        'tick_budget' => (int) env('WORLDOS_SCHEDULER_TICK_BUDGET', 10),
         'priority_weights' => [
             'novelty' => (float) env('WORLDOS_SCHEDULER_WEIGHT_NOVELTY', 0.25),
             'complexity' => (float) env('WORLDOS_SCHEDULER_WEIGHT_COMPLEXITY', 0.30),

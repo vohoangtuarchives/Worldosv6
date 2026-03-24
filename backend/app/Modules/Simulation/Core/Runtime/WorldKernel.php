@@ -137,12 +137,19 @@ class WorldKernel
                     $this->tickImpacts[] = $report;
                     
                     // V81: Apply scalar mutations reported by systems (e.g. Entropy changes)
+                    $hasMutation = false;
                     foreach ($report->links as $link) {
                         if (isset($link->metadata['mutation'])) {
                             foreach ($link->metadata['mutation'] as $key => $value) {
                                 $state->set($key, $value);
+                                $hasMutation = true;
                             }
                         }
+                    }
+
+                    // Re-prepare context if state was mutated so next systems see the changes
+                    if ($hasMutation) {
+                        $context = $this->preparePhaseContext($phase, $state);
                     }
                 }
             }
@@ -235,17 +242,22 @@ class WorldKernel
         
         foreach ($actorBatches as $batchIdx => $batchActors) {
             Log::debug("WorldKernel: Processing shard " . ($batchIdx + 1) . "/{$shardCount} (" . count($batchActors) . " actors)");
-            $this->processActorBatch($universeId, $tick, $batchActors, $isObserved, $factionRelations, $beliefDefinitions, $techDefinitions);
+            $this->processActorBatch($universeId, $tick, $batchActors, $state, $isObserved, $factionRelations, $beliefDefinitions, $techDefinitions);
         }
 
         // Mark signals as applied after all batches are processed
         $signals->each(fn($s) => $s->update(['status' => 'applied']));
+
+        // V10: Entropy of Memory (Chronological Decay) every 50 ticks
+        if ($tick % 50 === 0) {
+            app(\App\Modules\Simulation\Actions\DecayScarsAction::class)->handle($universeId);
+        }
     }
 
     /**
      * Process a single batch of actors (Shard) via gRPC.
      */
-    private function processActorBatch(int $universeId, int $tick, array $actors, bool $isObserved = false, array $factionRelations = [], array $beliefDefinitions = [], array $techDefinitions = []): void
+    private function processActorBatch(int $universeId, int $tick, array $actors, WorldState $state, bool $isObserved = false, array $factionRelations = [], array $beliefDefinitions = [], array $techDefinitions = []): void
     {
         $ids = [];
         $zoneIds = [];
@@ -361,19 +373,33 @@ class WorldKernel
                     }
                 }
                 
-                // 5. Record Scars (Events)
+                // 5. Record Scars (Events) + V10: Event → Field Mutation
                 if (!empty($result['scars'])) {
+                    $entropyDelta = 0.0;
+                    $violenceDelta = 0.0;
+
+                    // V10: Scars must mutate state fields (close the feedback loop)
+                    // We apply deltas for ALL events to ensure physical feedback, 
+                    // but we only RECORD significant ones as history.
                     foreach ($result['scars'] as $scar) {
-                        \App\Models\Chronicle::create([
-                            'universe_id' => $universeId,
-                            'actor_id' => $scar['actor_id'] ?: null,
-                            'from_tick' => (int)($scar['tick'] ?? $tick),
-                            'to_tick' => (int)($scar['tick'] ?? $tick),
-                            'type' => $scar['category'] ?? 'EMERGENT_SCAR',
-                            'content' => $scar['description'] ?? 'Unnamed emergent event',
-                            'importance' => 0.8,
-                            'raw_payload' => $scar
-                        ]);
+                        $category = strtoupper($scar['category'] ?? '');
+                        match (true) {
+                            str_contains($category, 'STARV') => ($entropyDelta += 0.005),
+                            str_contains($category, 'REVOLT') || str_contains($category, 'WAR') => ($entropyDelta += 0.01) && ($violenceDelta += 0.015),
+                            str_contains($category, 'DISASTER') || str_contains($category, 'DEATH') => ($entropyDelta += 0.003),
+                            default => null
+                        };
+                    }
+
+                    // V10: Narrative Layer Distillation
+                    app(\App\Modules\Simulation\Actions\DistillScarsAction::class)->handle($universeId, $tick, $result['scars']);
+
+                    // Apply accumulated field deltas to WorldState (Event → Field Mutation)
+                    if ($entropyDelta > 0) {
+                        $state->updateField('entropy', min(0.05, $entropyDelta), 'Scar-driven entropy');
+                    }
+                    if ($violenceDelta > 0) {
+                        $state->updateField('violence', min(0.05, $violenceDelta), 'Scar-driven violence');
                     }
                 }
 

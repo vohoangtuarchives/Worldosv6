@@ -40,6 +40,9 @@ class StateManager
 
         // Phase 42: Load real-time ecosystem metrics into state
         $data['ecosystem_metrics'] = $this->ecosystemMetrics->forUniverse($universe);
+        
+        // Phase 11: Sync tech_level from Universe level (int -> float 0.0-1.0 mapping)
+        $data['tech_level'] = (float)($universe->level ?? 1) / 10.0;
 
         $this->currentState = new WorldState($data);
         
@@ -108,23 +111,33 @@ class StateManager
         $data['ideas'] = array_map(fn($i) => $i->toArray(), $this->currentState->getIdeaEntities());
 
         // Phase 70: Apply Holographic Compression (Delta-Encoding)
-        // Dựa trên originalData đã load từ đầu tick
-        $hologram = $this->compressionService->compress($data, $this->originalData);
-        
-        $universe->state_vector = $hologram;
+        // Bypassed for stability: saving full data to state_vector
+        $universe->state_vector = $data;
         $universe->save();
 
-        // Save batch of pooled actors
-        $this->actorRepository->saveBatch($this->currentState->getActorEntities());
+        // Save batch of pooled actors: alive actors updated, dead actors DELETED
+        $allActors = $this->currentState->getActorEntities();
+        $aliveActors = array_filter($allActors, fn($a) => $a->isAlive);
+        $deadActors = array_filter($allActors, fn($a) => !$a->isAlive);
+
+        // Persist alive actors
+        $this->actorRepository->saveBatch(array_values($aliveActors));
+
+        // V10: Actually delete dead actors from DB to enforce selection pressure
+        foreach ($deadActors as $dead) {
+            if ($dead->id) {
+                $this->actorRepository->delete((int) $dead->id);
+                Log::info("StateManager: Actor {$dead->name} ({$dead->id}) permanently removed from simulation.");
+            }
+        }
 
         // Phase 46: Save pooled institutions
         foreach ($this->currentState->getInstitutionalEntities() as $inst) {
             $this->institutionalRepository->save($inst);
         }
         
-        Log::debug("StateManager: Universe state (compressed), actors and institutions batch-saved", [
+        Log::debug("StateManager: Universe state, actors and institutions batch-saved", [
             'universe_id' => $universe->id,
-            'compression_perf' => $hologram['perf'] ?? 'N/A'
         ]);
     }
 

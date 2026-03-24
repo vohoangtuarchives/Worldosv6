@@ -56,7 +56,9 @@ class ActorBehaviorEngine
         protected \App\Modules\Narrative\Services\TraitMapper $traitMapper,
         protected \App\Modules\Simulation\Core\Engines\Meta\ActorDecisionEngine $decisionEngine,
         protected RuleVmService $ruleVm,
-        protected \App\Modules\Simulation\Services\VocationActionEngine $vocationActionEngine
+        protected \App\Modules\Simulation\Services\VocationActionEngine $vocationActionEngine,
+        protected \App\Modules\Intelligence\Services\GreatPersonEngine $greatPersonEngine,
+        protected \App\Modules\Institutions\Actions\SpawnSupremeEntityAction $spawnAction
     ) {}
 
     /**
@@ -240,6 +242,35 @@ class ActorBehaviorEngine
                 'vm_state'  => $vmState // FULL SNAPSHOT OF THE WORLD/ACTOR FOR NARRATIVE AI
             ]
         ]);
+
+        // 5. Great Person Crystallization (Cực hiếm)
+        if (!$actor->isHeroic && $tick % 10 === 0) {
+            $universeId = (int) $state->get('universe_id', 0);
+            $universe = \App\Models\Universe::find($universeId);
+            if ($universe) {
+                $networkDensity = (float) ($state->get('metrics.social_cohesion', 0.5));
+                $type = $this->greatPersonEngine->evaluateCrystallization(
+                    $actor->toState(),
+                    $universe,
+                    $fields,
+                    $networkDensity
+                );
+
+                if ($type) {
+                    $this->spawnAction->handle($universe, $tick, [
+                        'name' => $actor->name,
+                        'entity_type' => 'great_person_' . strtolower($type),
+                        'domain' => \App\Modules\Intelligence\Services\GreatPersonEngine::TYPES[$type] ?? $type,
+                        'description' => "Cá nhân xuất chúng đã bộc lộ thiên tư vĩ đại trong thời đại biến động.",
+                        'power_level' => 0.8,
+                    ], $actor->id);
+
+                    // Update actor status in state
+                    $actor->isHeroic = true;
+                    $actor->heroicType = $type;
+                }
+            }
+        }
     }
 
     private function getFactionBias(int $actorId, array $factions): array

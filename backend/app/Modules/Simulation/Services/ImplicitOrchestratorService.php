@@ -32,14 +32,20 @@ class ImplicitOrchestratorService
     }
 
     /**
-     * Fork universe at given tick (create child universe from parent state).
+     * Advance universes in batch for a given World.
+     * @return array<int, array> Map of universe_id => response
      */
-    public function fork(\App\Models\Universe $universe, int $fromTick): \App\Models\Universe
+    public function runBatch(\App\Models\World $world, int $ticks): array
     {
-        return $this->spawnUniverse(
-            $universe->world,
-            $universe->id
-        );
+        $advanceAction = app(\App\Modules\Simulation\Actions\AdvanceSimulationAction::class);
+        $universes = $world->universes()->where('status', 'active')->get();
+        $results = [];
+
+        foreach ($universes as $universe) {
+            $results[$universe->id] = $advanceAction->execute($universe->id, $ticks);
+        }
+
+        return $results;
     }
 }
 

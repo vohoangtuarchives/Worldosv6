@@ -4,31 +4,34 @@ namespace App\Modules\Simulation\Console\Commands;
 
 use App\Modules\Simulation\Services\ImplicitOrchestratorService;
 use Illuminate\Console\Command;
+use App\Models\World;
 
 class AdvanceSimulationCommand extends Command
 {
     protected $signature = 'simulation:advance-v3
                             {--ticks=5 : Ticks per universe}
-                            {--saga= : Saga ID (optional, runs first active saga if not set)}';
+                            {--world= : World ID (optional, runs first autonomic world if not set)}';
 
-    protected $description = 'Advance saga universe(s) by N ticks (WorldOS V6)';
+    protected $description = 'Advance world universe(s) by N ticks (WorldOS V6)';
 
-    public function handle(\App\Modules\Simulation\Services\ImplicitOrchestratorService $orchestrator): int
+    public function handle(ImplicitOrchestratorService $orchestrator): int
     {
         $ticks = (int) $this->option('ticks');
-        $sagaId = $this->option('saga');
+        $worldId = (int) $this->option('world');
 
-        $saga = $sagaId
-            ? Saga::findOrFail($sagaId)
-            : Saga::where('status', 'active')->first();
+        $world = $worldId 
+            ? World::find($worldId) 
+            : World::where('is_autonomic', true)->first();
 
-        if (! $saga) {
-            $this->error('No active saga found.');
+        if (!$world) {
+            $this->error("World not found or no autonomic worlds available.");
             return 1;
         }
 
-        $this->info("Running batch for saga {$saga->id} ({$saga->name}), ticks={$ticks}");
-        $results = $orchestrator->runBatch($saga, $ticks);
+        $this->info("Running batch for world {$world->id} ({$world->name}), ticks={$ticks}");
+        
+        $results = $orchestrator->runBatch($world, $ticks);
+        
         $rows = [];
         foreach ($results as $universeId => $r) {
             $snap = $r['snapshot'] ?? [];

@@ -75,6 +75,7 @@ class EvaluateSimulationResult
         protected \App\Modules\Narrative\Services\CausalTrajectoryFulfillment $causal_trajectoryFulfillment,
         protected CosmicEnergyPoolService $cosmicEnergyPoolService,
         protected \App\Modules\Simulation\Services\AdaptiveSchedulerService $adaptiveScheduler,
+        protected \App\Modules\Simulation\Services\HeroLifecycleService $heroLifecycleService,
     ) {}
 
     public function handle(UniverseSimulationPulsed $event): void
@@ -258,6 +259,13 @@ class EvaluateSimulationResult
                 } catch (\Throwable $e) {
                     \Illuminate\Support\Facades\Log::warning('Pulse: Great Person legacy aggregate failed: ' . $e->getMessage());
                 }
+            }
+            
+            // Phase 7: Hero Lifecycle (latent -> myth transition)
+            try {
+                $this->heroLifecycleService->process($universe, (int) $snapshot->tick);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Pulse: Hero lifecycle process failed: ' . $e->getMessage());
             }
 
         // 10. AI Narrative (Epistemic Instability)

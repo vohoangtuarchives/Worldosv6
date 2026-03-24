@@ -11,6 +11,12 @@ use App\Modules\Simulation\Entities\SnapshotEntity;
  */
 class SnapshotEloquentRepository implements SnapshotRepositoryInterface
 {
+    public function findById(int $id): ?SnapshotEntity
+    {
+        $model = UniverseSnapshot::find($id);
+        return $model ? $this->toEntity($model) : null;
+    }
+
     public function findLatestByUniverse(int $universeId): ?SnapshotEntity
     {
         $model = UniverseSnapshot::where('universe_id', $universeId)

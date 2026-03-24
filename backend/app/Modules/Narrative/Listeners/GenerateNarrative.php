@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Log;
 class GenerateNarrative implements ShouldQueue
 {
     public function __construct(
-        protected \App\Modules\Narrative\Services\NarrativeScheduler $narrativeScheduler,
+        protected \App\Modules\Narrative\Services\NarrativeQueueManager $narrativeScheduler,
         protected ChronicleRepositoryInterface $chronicleRepository
     ) {}
 

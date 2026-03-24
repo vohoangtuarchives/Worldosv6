@@ -24,7 +24,8 @@ final class CivilizationStage implements SimulationStageInterface
             return;
         }
 
-        $this->civilizationSettlementEngine->runWithState($state, $tick);
+        $ctx = new \App\Modules\Simulation\Core\Domain\TickContext((int) ($universe->id ?? 0), $tick, (int) ($universe->seed ?? 0));
+        $this->civilizationSettlementEngine->handle($state, $ctx);
     }
 }
 

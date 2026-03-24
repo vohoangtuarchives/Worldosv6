@@ -22,11 +22,17 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www
 
-# Copy code from backend folder (context is root)
+# Copy only composer files first for caching
+COPY backend/composer.json backend/composer.lock* /var/www/
+
+# Install dependencies (no dev, no scripts, no autoloader yet)
+RUN composer install --no-interaction --prefer-dist --no-dev --no-scripts --no-autoloader
+
+# Now copy the rest of the application code
 COPY backend/ /var/www
 
-# Install dependencies (no dev).
-RUN composer install --no-interaction --prefer-dist --optimize-autoloader --no-dev
+# Finalize autoloader and run scripts
+RUN composer dump-autoload --optimize --no-dev
 
 # Set permissions early for artisan commands
 RUN chown -R www-data:www-data /var/www

@@ -96,8 +96,26 @@ class StubSimulationEngineClient implements SimulationEngineClientInterface
         ];
     }
 
-    public function processActorsSoa(int $tick, array $ids, array $zoneIds, array $hunger, array $energy, array $fear, array $trauma, array $heroicTypes, array $lineageIds, array $memes): array
-    {
+    public function processActorsSoa(
+        int $tick,
+        array $ids,
+        array $zoneIds,
+        array $hunger,
+        array $energy,
+        array $fear,
+        array $trauma,
+        array $heroicTypes,
+        array $lineageIds,
+        array $memes,
+        array $traitsMatrix,
+        array $behaviorStates = [],
+        array $behaviorGraphs = [],
+        array $archetypes = [],
+        array $socialGraph = [],
+        array $narrativeContext = [],
+        array $factionIds = [],
+        array $factionLoyalty = []
+    ): array {
         return array_fill(0, count($ids), ['action_id' => 0, 'new_hunger' => 0.5, 'new_energy' => 0.5, 'new_trauma' => 0.0]);
     }
 

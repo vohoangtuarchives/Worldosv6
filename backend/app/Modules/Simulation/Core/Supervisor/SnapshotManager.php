@@ -9,6 +9,7 @@ use App\Modules\Simulation\Core\Contracts\SnapshotArchiveInterface;
 use App\Modules\Simulation\Core\EngineRegistry;
 use App\Modules\Simulation\Core\Support\SnapshotLoader;
 use App\Modules\Simulation\Core\SimulationKernel;
+use App\Modules\Simulation\Services\SimulationClock;
 
 /**
  * Persists or creates virtual snapshot; optionally runs SimulationKernel post-tick.
@@ -21,6 +22,7 @@ final class SnapshotManager
         private readonly SimulationKernel $simulationKernel,
         private readonly EngineRegistry $engineRegistry,
         private readonly SnapshotArchiveInterface $snapshotArchive,
+        private readonly SimulationClock $clock,
     ) {}
 
     public function persistOrVirtual(Universe $universe, array $snapshotData, float $tickDurationMsPerTick, ?array $engineManifest = null): UniverseSnapshot
@@ -75,6 +77,12 @@ final class SnapshotManager
             $metrics['engine_manifest'] = $engineManifest;
         }
 
+        $tick = (int) ($snapshot['tick'] ?? 0);
+        $metrics['cycle'] = (int) floor($tick / SimulationClock::TICKS_PER_CYCLE);
+        $metrics['epoch'] = (int) floor($tick / SimulationClock::TICKS_PER_EPOCH);
+        $metrics['active_phases'] = $this->clock->getEligiblePhases($tick);
+        $metrics['is_macro_tick'] = ($tick % SimulationClock::TICKS_PER_CYCLE === 0);
+
         return $this->snapshots->save($universe, [
             'tick' => $snapshot['tick'],
             'state_vector' => $stateVector,
@@ -100,6 +108,12 @@ final class SnapshotManager
         if (is_array($engineManifest)) {
             $metrics['engine_manifest'] = $engineManifest;
         }
+
+        $tick = (int) ($snapshotData['tick'] ?? 0);
+        $metrics['cycle'] = (int) floor($tick / SimulationClock::TICKS_PER_CYCLE);
+        $metrics['epoch'] = (int) floor($tick / SimulationClock::TICKS_PER_EPOCH);
+        $metrics['active_phases'] = $this->clock->getEligiblePhases($tick);
+        $metrics['is_macro_tick'] = ($tick % SimulationClock::TICKS_PER_CYCLE === 0);
 
         $snap = new UniverseSnapshot([
             'universe_id' => $universe->id,

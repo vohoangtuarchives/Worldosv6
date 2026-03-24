@@ -4,6 +4,8 @@ namespace App\Modules\Simulation\Core\Supervisor;
 
 use App\Modules\Simulation\Core\EngineRegistry;
 use Illuminate\Support\Facades\Log;
+use App\Models\Universe as UniverseModel;
+use App\Modules\Simulation\Core\Supervisor\SnapshotManager;
 
 /**
  * Orchestrates advance flow: EngineDriver → StateSynchronizer → SnapshotManager → EventDispatcher → RuntimePipeline.
@@ -37,13 +39,16 @@ final class SimulationSupervisor
             return ['ok' => false, 'error_message' => 'Universe not found, is halted, or is restarting'];
         }
 
-        // Logic advance forward
+        $universeModel = UniverseModel::find($universeId);
+        if (!$universeModel) {
+            return ['ok' => false, 'error_message' => 'Universe model not found'];
+        }
+
         $tickDurationMsTotal = 0;
         $engineResponse = ['ok' => true];
 
         for ($i = 0; $i < $ticks; $i++) {
-            $tickStart = microtime(true);
-            
+            Log::info("Simulation Loop: Starting tick iteration", ['iteration' => $i, 'universe_id' => $universe->id]);
             $engineResponse = $this->engineDriver->advance($universe, 1);
             if (! ($engineResponse['ok'] ?? false)) {
                 Log::error('Simulation: engine failure', ['universe_id' => $universe->id, 'error' => $engineResponse['error_message'] ?? 'unknown']);
@@ -51,6 +56,13 @@ final class SimulationSupervisor
             }
 
             $snapshotData = $engineResponse['snapshot'] ?? [];
+            if (is_string($snapshotData['state_vector'] ?? null)) {
+                $snapshotData['state_vector'] = json_decode($snapshotData['state_vector'], true) ?? [];
+            }
+            if (is_string($snapshotData['metrics'] ?? null)) {
+                $snapshotData['metrics'] = json_decode($snapshotData['metrics'], true) ?? [];
+            }
+
             $tickDurationMsPerTick = (float) ($engineResponse['_tick_duration_ms_per_tick'] ?? 0.0);
             $tickDurationMsTotal += $tickDurationMsPerTick;
 
@@ -59,37 +71,42 @@ final class SimulationSupervisor
             // Sync Entity & Persistence
             $this->stateSynchronizer->sync($universe, $snapshotData, 1, $engineManifest);
 
-            // Snapshot Persistence via Repository
-            $snapshot = $this->snapshotRepository->create([
-                'universe_id' => $universe->id,
-                'tick' => $universe->currentTick,
-                'state_vector' => $universe->stateVector,
-                'entropy' => $universe->entropy,
-            ]);
-            
+            // Snapshot Persistence via SnapshotManager (Unified logic)
             // Vector 7: Engine Health Monitor Tracking (§V11)
             $healthScore = max(0, min(100, 100 - (($tickDurationMsPerTick - 50) / 4.5)));
-            $metrics = $snapshotData['metrics'] ?? [];
-            if (!is_array($metrics)) {
-                $metrics = [];
+            $snapshotData['metrics']['engine_health'] = round($healthScore, 2);
+            $snapshotData['metrics']['last_tick_ms'] = round($tickDurationMsPerTick, 2);
+
+            try {
+                $snapshotModel = $this->snapshotManager->persistOrVirtual(
+                    $universeModel,
+                    $snapshotData,
+                    $tickDurationMsPerTick,
+                    $engineManifest
+                );
+
+                if (!$snapshotModel) {
+                    throw new \Exception("SnapshotManager failed to return a model");
+                }
+
+                $snapshotEntity = $this->snapshotRepository->findById($snapshotModel->id);
+                if (!$snapshotEntity) {
+                    throw new \Exception("Failed to load SnapshotEntity for ID: " . $snapshotModel->id);
+                }
+
+                $this->eventDispatcher->dispatchPulsed($universe, $snapshotEntity, $engineResponse, 1, $tickDurationMsPerTick);
+                
+                $this->runtimePipeline->run(
+                    $universe,
+                    (int) ($snapshotData['tick'] ?? $universe->currentTick),
+                    $snapshotEntity,
+                    $engineResponse,
+                    1
+                );
+            } catch (\Throwable $e) {
+                Log::error('Simulation: tick loop failure', ['index' => $i, 'error' => $e->getMessage()]);
+                break;
             }
-            $metrics['engine_health'] = round($healthScore, 2);
-            $metrics['last_tick_ms'] = round($tickDurationMsPerTick, 2);
-            $snapshot->metrics = $metrics;
-
-            $this->snapshotRepository->save($snapshot);
-
-            // Internal Dispatching
-            $this->eventDispatcher->dispatchPulsed($universe, $snapshot, $engineResponse, 1, $tickDurationMsPerTick);
-            
-            // Run common pipeline (Events, Evolutionary Leaps, etc.)
-            $this->runtimePipeline->run(
-                $universe,
-                (int) $snapshotData['tick'],
-                $snapshot,
-                $engineResponse,
-                1
-            );
         }
 
         return $this->handleSuccess($universe);

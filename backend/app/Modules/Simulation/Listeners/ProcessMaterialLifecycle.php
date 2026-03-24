@@ -26,17 +26,15 @@ class ProcessMaterialLifecycle implements ShouldQueue
         $snapshot = $event->snapshot;
         
         $context = $this->buildMaterialContext($snapshot);
-        $deltas = $this->materialLifecycle->processTick($universe->id, (int)$snapshot->tick, $context);
+        $deltas = $this->materialLifecycle->process($context, (int)$snapshot->tick);
         
         if (!empty($deltas)) {
             // ... (existing delta logic)
             $this->applyDeltas($universe, $deltas);
         }
 
-        // V6: Advanced Material Evolution & DAG (§48)
-        $this->materialEvolution->evolve($universe, $context);
-
-        // V6: Omega States & Ascension (§49, §50)
+        // V6: Advanced Material Evolution — Now handled by WorldKernel PHASE_ENVIRONMENT
+        // Omega States & Ascension (§49, §50)
         $this->omegaEngine->checkOmegaStatus($universe, $context);
         $this->ascensionEngine->processAscension($universe, $context);
     }

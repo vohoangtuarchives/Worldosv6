@@ -36,6 +36,22 @@ class EngineSystemAdapter implements WorldSystemInterface
         foreach ($this->strategies as $strategy) {
             if ($strategy->canHandle($this->engine)) {
                 $strategy->execute($this->engine, $context, $tick, $state, $report);
+
+                // V9: Extract mutations from modified state and inject into Report
+                $diff = $state->getDiff($context);
+                if (!empty($diff)) {
+                    $report->log(
+                        'engine',
+                        get_class($this->engine),
+                        'mutation',
+                        'world_state',
+                        $state->getUniverseId(),
+                        1.0,
+                        1.0,
+                        ['mutation' => $diff]
+                    );
+                }
+
                 return $report;
             }
         }
