@@ -10,8 +10,9 @@ export const useRealtime = () => {
   const addChronicle = useSimulationStore((state) => state.addChronicle);
 
   useEffect(() => {
-    // Port 8000 as per simulation environment
-    const centrifuge = new Centrifuge('ws://localhost:8000/connection/websocket', {
+    const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${proto}//${window.location.host}/connection/websocket`;
+    const centrifuge = new Centrifuge(wsUrl, {
       token: '', // Development mode might not require token if configured
     });
 

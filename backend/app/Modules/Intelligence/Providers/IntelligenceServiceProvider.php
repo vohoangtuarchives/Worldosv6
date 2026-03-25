@@ -49,7 +49,11 @@ class IntelligenceServiceProvider extends ServiceProvider
 
         $this->app->singleton(\App\Modules\Intelligence\Services\ActorEvolutionService::class);
         $this->app->singleton(\App\Modules\Intelligence\Services\AgentAutonomyService::class);
+        $this->app->singleton(\App\Modules\Intelligence\Services\AI\AiConfigManager::class);
+        $this->app->singleton(\App\Modules\Intelligence\Services\AI\AiGateway::class);
         $this->app->singleton(\App\Modules\Intelligence\Services\AI\AnalyticalAiService::class);
+
+
         $this->app->singleton(\App\Modules\Intelligence\Services\AI\SearchAiService::class);
     }
 

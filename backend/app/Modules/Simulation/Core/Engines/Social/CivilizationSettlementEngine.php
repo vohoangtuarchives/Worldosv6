@@ -22,14 +22,6 @@ class CivilizationSettlementEngine implements EngineInterface
     public function priority(): int { return 53; }
     public function tickRate(): int { return 1; }
 
-    private const SETTLEMENT_THRESHOLDS = [
-        'camp'    => 0,
-        'village' => 3,
-        'town'    => 6,
-        'city'    => 12,
-        'metropolis' => 25,
-    ];
-
     public function handle(WorldState $state, TickContext $ctx): EngineResult
     {
         $result = new EngineResult();
@@ -40,13 +32,21 @@ class CivilizationSettlementEngine implements EngineInterface
         $zones = $state->getZones();
         $updatedZones = [];
 
+        $thresholds = config('worldos.intelligence.civilization_settlement_thresholds', [
+            'camp'    => 0,
+            'village' => 100,
+            'town'    => 1000,
+            'city'    => 10000,
+            'metropolis' => 100000,
+        ]);
+
         foreach ($zones as $idx => $zone) {
             $s = $zone['state'] ?? [];
             $population = (float) ($s['population'] ?? 0);
 
             // Determine settlement type
             $settlement = 'camp';
-            foreach (self::SETTLEMENT_THRESHOLDS as $type => $threshold) {
+            foreach ($thresholds as $type => $threshold) {
                 if ($population >= $threshold) {
                     $settlement = $type;
                 }

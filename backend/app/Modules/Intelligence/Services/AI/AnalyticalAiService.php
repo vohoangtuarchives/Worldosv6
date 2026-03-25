@@ -11,6 +11,10 @@ use Illuminate\Support\Facades\Log;
  */
 class AnalyticalAiService
 {
+    public function __construct(
+        protected AiGateway $aiGateway
+    ) {}
+
     /**
      * Analyze snapshots across universes for collapse/phase-transition patterns.
      *
@@ -101,34 +105,16 @@ class AnalyticalAiService
 
     protected function callLlm(string $prompt): ?string
     {
-        $apiKey  = env('NARRATIVE_LLM_KEY') ?? config('services.openai.key');
-        $endpoint = env('NARRATIVE_LLM_URL', 'http://host.docker.internal:11434/v1/chat/completions');
-        $model   = env('NARRATIVE_LLM_MODEL', 'mistral');
+        return $this->aiGateway->feature('analytical')->chat([
+            ['role' => 'system', 'content' => 'You are an AI analyst for WorldOS simulation. Respond in JSON when asked.'],
+            ['role' => 'user',   'content' => $prompt],
+        ], [
+            'temperature' => 0.3,
+            'timeout' => 45
+        ]);
 
-        try {
-            $request = Http::timeout(45);
-            if ($apiKey && !str_contains($endpoint, 'localhost') && !str_contains($endpoint, 'host.docker.internal')) {
-                $request = $request->withToken($apiKey);
-            }
-
-            $response = $request->post($endpoint, [
-                'model'    => $model,
-                'messages' => [
-                    ['role' => 'system', 'content' => 'You are an AI analyst for WorldOS simulation. Respond in JSON when asked.'],
-                    ['role' => 'user',   'content' => $prompt],
-                ],
-                'temperature' => 0.3,
-            ]);
-
-            if ($response->successful()) {
-                return $response->json('choices.0.message.content');
-            }
-        } catch (\Throwable $e) {
-            Log::error('AnalyticalAiService LLM Error: ' . $e->getMessage());
-        }
-
-        return null;
     }
+
 
     protected function parseJsonResponse(string $text): ?array
     {

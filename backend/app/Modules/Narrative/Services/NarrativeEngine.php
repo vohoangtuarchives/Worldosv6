@@ -9,6 +9,7 @@ use App\Modules\Narrative\Repositories\ChronicleMemoryRepository;
 use App\Modules\Narrative\Dto\NarrativeProjection;
 use App\Modules\Narrative\Dto\NarrativeMeaning;
 use App\Models\NarrativeState;
+use App\Modules\Intelligence\Services\CollectiveUnconsciousService;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -26,7 +27,8 @@ class NarrativeEngine
         protected ChronicleMemoryRepository $memoryRepository,
         protected LlmNarrativeClientInterface $llmClient,
         protected NarrativeFeedbackService $feedbackService,
-        protected \App\Modules\SocialGraph\Services\Neo4jSocialSyncer $graphSyncer
+        protected \App\Modules\SocialGraph\Services\Neo4jSocialSyncer $graphSyncer,
+        protected CollectiveUnconsciousService $psychologyService
     ) {}
 
     /**
@@ -63,8 +65,11 @@ class NarrativeEngine
             // 3b. Extract Graph Anomalies (Neo4j)
             $graphCliques = $this->graphSyncer->findAnomalousCliques($universe->id);
             
+            // 3c. Extract Collective Psychology (8D Motivation)
+            $psychology = $this->psychologyService->calculate($snapshot->universe);
+            
             // 4. Construct Multi-Perspective Prompt (Emergent Focus)
-            $prompt = $this->buildEmergentPrompt($universe, $state, $history, $events, $tokens, $graphCliques);
+            $prompt = $this->buildEmergentPrompt($universe, $state, $history, $events, $tokens, $graphCliques, $psychology);
             
             // 5. Single LLM Call (The Interpretation phase)
             $response = $this->llmClient->generate($prompt);
@@ -109,13 +114,15 @@ class NarrativeEngine
     /**
      * Build an Emergent-focused prompt that prioritizes causal events over flat metrics.
      */
-    protected function buildEmergentPrompt(UniverseEntity $universe, NarrativeState $state, string $history, array $events, array $tokens, array $cliques = []): string
+    protected function buildEmergentPrompt(UniverseEntity $universe, NarrativeState $state, string $history, array $events, array $tokens, array $cliques = [], array $psychology = []): string
     {
         $eventsText = empty($events) ? "Không có sự kiện đáng chú ý." : collect($events)->map(fn($e) => "- [Tick {$e['tick']}] {$e['summary']}")->implode("\n");
         $tokensText = implode(', ', $tokens);
         
         $graphText = empty($cliques) ? "Không có biến động xã hội đặc biệt." : collect($cliques)->map(fn($c) => "- Cấu trúc mạng lưới xung quanh {$c['name']} (ID: {$c['actor_id']}) đang có {$c['fear_connections']} kết nối sợ hãi dày đặc.")->implode("\n");
 
+        $psychologyText = collect($psychology)->map(fn($val, $key) => "- " . ucfirst($key) . ": " . number_format($val * 100, 1) . "%")->implode("\n");
+        
         return <<<EOT
 Bạn là Narrative Engine (Kiến trúc Sáng tạo) của WorldOS. Nhiệm vụ của bạn là dệt nên câu chuyện từ các sự kiện đột biến (Emergent Events) thay vì chỉ đọc số liệu khô khan.
 
@@ -125,6 +132,9 @@ VŨ TRỤ: {$universe->name} (Chương: {$state->current_arc})
 DỮ LIỆU THỰC TẠI (GROUND TRUTH):
 Các sự kiện vừa xảy ra trong mô phỏng:
 {$eventsText}
+
+TÂM TRẠNG TẬP THỂ (COLLECTIVE PSYCHOLOGY):
+{$psychologyText}
 
 BIẾN ĐỘNG MẠNG LƯỚI XÃ HỘI (GRAPH INSIGHTS):
 {$graphText}
@@ -136,7 +146,7 @@ BIÊN NIÊN SỬ GẦN ĐÂY:
 {$history}
 
 YÊU CẦU:
-1. DIỄN GIẢI CAUSALITY: Liên kết các sự kiện và mạng lưới xã hội trên thành một chuỗi nhân quả hợp lý. Đừng chỉ liệt kê, hãy kể về hậu quả của những sự kiện này.
+1. DIỄN GIẢI CAUSALITY: Liên kết các sự kiện và mạng lưới xã hội trên thành một chuỗi nhân quả hợp lý. Đừng chỉ liệt kê, hãy kể về hậu quả của những sự kiện này. Đặc biệt chú ý đến cách các biến động vật chất/xã hội tác động đến "Tâm trạng tập thể" trên.
 2. NARRATIVE FEEDBACK: Nếu các sự kiện trên cho thấy một xu hướng mới (ví dụ: bạo lực gia tăng), hãy đề xuất các "Omen" (Điềm báo) để tác động ngược lại mô phỏng.
 
 PHẢI TRẢ VỀ JSON NGHIÊM NGẶT:

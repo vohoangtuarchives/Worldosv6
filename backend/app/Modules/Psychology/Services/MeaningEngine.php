@@ -127,11 +127,12 @@ final class MeaningEngine
 
         // Neuroticism: neurotic actors interpret events more negatively
         if ($base->valence < 0) {
-            $valenceDelta -= $traits->neuroticism * 0.25;
+            $valenceDelta -= $traits->neuroticism() * 0.25;
         }
 
         // Confidence buffers negative valence
         $valenceDelta += $traits->confidence() * 0.2 * ($base->valence < 0 ? 1 : 0);
+
 
         // Freudian trauma: suppressed memories distort perception downward
         $traumaBias = $memory->traumaTotal();

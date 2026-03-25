@@ -40,9 +40,15 @@ class AppServiceProvider extends ServiceProvider
                     Log::error("gRPC extension is not installed. Falling back to HTTP.");
                     $url = 'http://' . $host . ':50052';
                 }
-                
+
                 if (str_starts_with($url, 'http://') || str_starts_with($url, 'https://') || !str_contains($url, '://')) {
                     $finalUrl = str_contains($url, '://') ? $url : 'http://' . $url;
+                    
+                    // If port is 50051 (gRPC default) but we are using HTTP client, suggest 50052
+                    if (str_contains($finalUrl, ':50051') && !class_exists(\Grpc\ChannelCredentials::class)) {
+                        $finalUrl = str_replace(':50051', ':50052', $finalUrl);
+                    }
+                    
                     return new HttpSimulationEngineClient($finalUrl);
                 }
             }

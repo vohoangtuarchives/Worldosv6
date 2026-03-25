@@ -6,7 +6,7 @@ use App\Contracts\Simulation\SeederInterface;
 use App\Models\Universe;
 use App\Models\Material;
 use App\Models\MaterialInstance;
-use App\Models\MaterialMutation;
+use App\Models\MaterialReaction;
 use App\Models\Chronicle;
 
 class VietnameseHeritageSeeder implements SeederInterface
@@ -69,14 +69,20 @@ class VietnameseHeritageSeeder implements SeederInterface
             ]);
         }
 
-        // 3. Mutation DAG (§8.4)
+        // 3. Material Reactions (§8.4)
         // Nong nghiep lua nuoc -> Thuy loi so khai
-        MaterialMutation::firstOrCreate([
-            'parent_material_id' => $materialModels['nong-nghiep-lua-nuoc']->id,
-            'child_material_id' => $materialModels['thuy-loi-so-khai']->id,
+        MaterialReaction::firstOrCreate([
+            'slug' => 'evolution-thuy-loi-so-khai',
         ], [
-            'trigger_condition' => 'ip_score > 0.5',
-            'context_constraint' => ['origin' => 'Vietnamese']
+            'name' => 'Tiến hóa Thủy lợi Sơ khai',
+            'inputs' => ['nong-nghiep-lua-nuoc' => 1],
+            'outputs' => [
+                'nong-nghiep-lua-nuoc' => 1, // Catalyst: remains
+                'thuy-loi-so-khai' => 1
+            ],
+            'condition' => 'field_order > 0.3',
+            'rate' => 0.05,
+            'energy_cost' => 10.0
         ]);
 
         Chronicle::create([

@@ -260,11 +260,14 @@ services:
   centrifugo:
     image: centrifugo/centrifugo:v6
     restart: always
-    command: centrifugo --config=config.json
+    command: centrifugo --config=/centrifugo/config.json
     environment:
-      CENTRIFUGO_API_KEY: ${CENTRIFUGO_KEY:-api_key}
-      CENTRIFUGO_SECRET: ${CENTRIFUGO_SECRET:-secret}
-      CENTRIFUGO_HMAC_SECRET: ${CENTRIFUGO_HMAC_SECRET:-hmac_secret}
+      CENTRIFUGO_HTTP_API_KEY: ${CENTRIFUGO_KEY:-api_key}
+      CENTRIFUGO_HTTP_API_INSECURE: "true"
+
+      CENTRIFUGO_CLIENT_ALLOWED_ORIGINS: "*"
+      CENTRIFUGO_CLIENT_INSECURE: "true"
+      CENTRIFUGO_CLIENT_TOKEN_HMAC_SECRET_KEY: "secret"
     volumes:
       - ./centrifugo/config.json:/centrifugo/config.json
     networks:

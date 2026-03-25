@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Crimson_Pro, JetBrains_Mono, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import "@xyflow/react/dist/style.css";
+import { Toaster } from 'sonner';
 
 const display = Space_Grotesk({
   variable: "--font-display",
@@ -35,6 +36,7 @@ export default function RootLayout({
         className={`${display.variable} ${narrative.variable} ${mono.variable} antialiased`}
       >
         {children}
+        <Toaster theme="dark" position="top-right" richColors />
       </body>
     </html>
   );

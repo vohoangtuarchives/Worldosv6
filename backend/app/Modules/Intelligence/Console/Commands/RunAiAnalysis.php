@@ -28,8 +28,9 @@ class RunAiAnalysis extends Command
         if ($universeId) {
             $universes = Universe::where('id', $universeId)->get();
         } else {
-            $universes = Universe::whereNull('archived_at')->get();
+            $universes = Universe::where('status', '!=', 'archived')->get();
         }
+
 
         if ($universes->isEmpty()) {
             $this->warn('Không tìm thấy Universe nào đang hoạt động.');

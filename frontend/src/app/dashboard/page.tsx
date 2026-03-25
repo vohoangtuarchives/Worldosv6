@@ -23,22 +23,19 @@ const DashboardPage = () => {
   const { currentTick, universes, chronicles } = useSimulationStore();
 
   return (
-    <RealityFilterProvider>
-      <div className="min-h-screen bg-background text-foreground flex flex-col p-6 space-y-6 relative overflow-hidden">
-        {/* Background Systems */}
-        <AxiomResonance />
-        <div className="absolute inset-0 bg-grid-pattern opacity-[0.03] pointer-events-none z-10" />
-        <div className="absolute inset-0 bg-starfield opacity-[0.05] pointer-events-none bg-starfield-drift-slow z-10" />
-        
+    <>
         {/* Header Stat Bar */}
         <header className="flex flex-wrap items-center justify-between gap-6 p-6 rounded-[var(--radius)] bg-card/40 border border-border/50 backdrop-blur-md relative z-20">
           <div className="flex items-center gap-4">
             <div className="h-10 w-10 rounded-full bg-gradient-to-tr from-left-brain to-cosmos glow-cosmos" />
             <div>
               <h1 className="text-xl font-bold tracking-tight">Observer Hub</h1>
-              <p className="text-xs text-muted-foreground uppercase tracking-widest font-mono">Multiverse Surveillance</p>
+              <div className="flex items-center gap-2">
+                 <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-mono">Multiverse Surveillance</p>
+              </div>
             </div>
           </div>
+
 
           <div className="flex-1 flex justify-center">
              <SimulationControls />
@@ -78,12 +75,12 @@ const DashboardPage = () => {
           </section>
 
           {/* Row 3: Causal Intelligence & Ancient Mapping */}
-          <section className="lg:col-span-12 grid grid-cols-1 lg:grid-cols-12 gap-6 h-[400px]">
+          <section className="lg:col-span-12 grid grid-cols-1 lg:grid-cols-12 gap-6 h-[600px]">
             <div className="lg:col-span-8">
-              <CausalGraph chronicles={chronicles} />
+              <AncientLivingMap />
             </div>
             <div className="lg:col-span-4">
-              <AncientLivingMap />
+              <CausalGraph chronicles={chronicles} />
             </div>
           </section>
 
@@ -121,13 +118,7 @@ const DashboardPage = () => {
           </section>
 
         </main>
-
-        <footer className="text-[10px] text-muted-foreground font-mono flex items-center justify-between opacity-50 relative z-20">
-          <span>WorldOS Kernel 6.2.0-STABLE</span>
-          <span>Observation Active // Port 8000</span>
-        </footer>
-      </div>
-    </RealityFilterProvider>
+    </>
   );
 };
 

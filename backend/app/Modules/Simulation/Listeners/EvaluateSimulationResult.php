@@ -23,6 +23,7 @@ use App\Models\UniverseSnapshot;
 use App\Modules\Simulation\Core\Runtime\Domain\UniverseState;
 use App\Modules\Simulation\Services\CosmicEnergyPoolService;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Support\Facades\Log;
 
 class EvaluateSimulationResult
 {
@@ -78,6 +79,7 @@ class EvaluateSimulationResult
         protected \App\Modules\Simulation\Services\HeroLifecycleService $heroLifecycleService,
         protected \App\Modules\Intelligence\Services\BiologyMetricsService $biologyMetrics,
         protected \App\Modules\Intelligence\Services\EcosystemMetricsService $ecosystemMetrics,
+        protected \App\Modules\Simulation\Services\GenreEvolutionService $genreEvolutionService,
     ) {}
 
     public function handle(UniverseSimulationPulsed $event): void
@@ -133,14 +135,18 @@ class EvaluateSimulationResult
 
             // 6. Strategic Actions (Fork/Archive/Mutate/Merge/Promote) — AEE decisions (doc §13)
             if ($action === 'fork') {
+                Log::info("Simulation Strategy: FORK Universe {$universe->id} at Tick {$snapshot->tick}");
                 $this->handleFork($universe, (int)$snapshot->tick, $decisionData);
             } elseif ($action === 'merge') {
+                Log::info("Simulation Strategy: MERGE Universe {$universe->id} at Tick {$snapshot->tick}");
                 $this->handleMerge($universe, $decisionData);
             } elseif ($action === 'promote') {
+                Log::info("Simulation Strategy: PROMOTE Universe {$universe->id} at Tick {$snapshot->tick}");
                 $this->handlePromote($universe, $decisionData);
             } elseif ($action === 'continue' || $action === 'mutate') {
                 $this->applySelectivePressure($universe, $snapshot, $decisionData);
             } elseif ($action === 'archive') {
+                Log::info("Simulation Strategy: ARCHIVE Universe {$universe->id} at Tick {$snapshot->tick}");
                 $tick = (int) ($snapshot->tick ?? 0);
                 $minTicks = (int) config('worldos.autonomic.min_ticks_before_archive', 150);
                 $forkGracePeriod = (int) config('worldos.autonomic.fork_grace_period_ticks', 50);
@@ -279,6 +285,7 @@ class EvaluateSimulationResult
         // 12. World Autonomic Regulation
         if ($universe->world) {
             $this->worldRegulatorEngine->process($universe->world);
+            $this->genreEvolutionService->evaluateEvolution($universe);
         }
 
         } catch (\Throwable $e) {

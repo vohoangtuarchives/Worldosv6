@@ -92,9 +92,10 @@ class CentrifugoBroadcaster extends Broadcaster
 
         /** @var \Illuminate\Http\Client\Response $response */
         $response = Http::withHeaders([
-            'Authorization' => 'apikey ' . $apiKey,
+            'X-API-Key' => $apiKey,
             'X-Centrifugo-Error-Mode' => 'any', // Report any error in batch
         ])->withBody($body, 'application/json')->post($url);
+
 
         if ($response->failed()) {
             throw new BroadcastException(

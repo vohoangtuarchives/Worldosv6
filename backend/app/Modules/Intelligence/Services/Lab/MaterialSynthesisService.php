@@ -8,6 +8,10 @@ use Illuminate\Support\Facades\Log;
 
 class MaterialSynthesisService
 {
+    public function __construct(
+        protected \App\Modules\Intelligence\Services\AI\AiGateway $aiGateway
+    ) {}
+
     /**
      * Synthesize a new material based on universe scars and core signatures.
      */
@@ -60,41 +64,16 @@ EOT;
 
     protected function callLlm(string $prompt): ?string
     {
-        $apiKey = env('NARRATIVE_LLM_KEY') ?? config('services.openai.key');
-        // Trỏ về LM Studio nếu local_endpoint được cấu hình
-        $endpoint = env('NARRATIVE_LLM_URL', 'http://127.0.0.1:11434/v1/chat/completions');
-        $model = env('NARRATIVE_LLM_MODEL', 'mistral');
+        return $this->aiGateway->feature('lab')->chat([
+            ['role' => 'system', 'content' => "Bạn là một AI khoa học của WorldOS, chuyên thiết kế JSON."],
+            ['role' => 'user',   'content' => $prompt],
+        ], [
+            'temperature' => 0.8,
+            'timeout' => 45
+        ]);
 
-        try {
-            $request = Http::timeout(45);
-            if ($apiKey && !str_contains($endpoint, 'localhost') && !str_contains($endpoint, '127.0.0.1')) {
-                $request = $request->withToken($apiKey);
-            }
-
-            $response = $request->post($endpoint, [
-                'model' => $model,
-                'messages' => [
-                    ['role' => 'system', 'content' => "Bạn là một AI khoa học của WorldOS, chuyên thiết kế JSON."],
-                    ['role' => 'user', 'content' => $prompt],
-                ],
-                // Nhiệt độ cao hơn để tạo tính sáng tạo đột phá
-                'temperature' => 0.8, 
-            ]);
-
-            // Nếu là async response (LazyPromise), đợi kết quả
-            if (method_exists($response, 'wait')) {
-                $response = $response->wait();
-            }
-
-            if ($response->successful()) {
-                return $response->json('choices.0.message.content');
-            }
-        } catch (\Throwable $e) {
-            Log::error("Material Synthesis LLM Error: " . $e->getMessage());
-        }
-
-        return null;
     }
+
 
     protected function parseResponse(string $responseText): ?array
     {

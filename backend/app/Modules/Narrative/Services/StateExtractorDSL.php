@@ -60,29 +60,11 @@ class StateExtractorDSL
     }
 
     /**
-     * Defined extraction rules.
-     * @todo Move to config/worldos_narrative.php in the future.
+     * Defined extraction rules from config.
      */
     protected function getRuleDefinitions(): array
     {
-        return [
-            'CONFLICT_LEVEL_CRITICAL' => [
-                ['key' => 'metrics.social.status.conflict_index', 'op' => '>', 'value' => 0.8]
-            ],
-            'TECHNOLOGICAL_GOLDEN_AGE' => [
-                ['key' => 'metrics.innovation.tech_rate', 'op' => '>', 'value' => 0.85]
-            ],
-            'ENVIRONMENTAL_COLLAPSE_IMMINENT' => [
-                ['key' => 'metrics.environment.stability', 'op' => '<', 'value' => 0.15]
-            ],
-            'ECONOMIC_PROSPERITY' => [
-                ['key' => 'metrics.economy.growth_rate', 'op' => '>', 'value' => 0.05],
-                ['key' => 'metrics.economy.inequality', 'op' => '<', 'value' => 0.4]
-            ],
-            'RELIGIOUS_FERVOR_RISING' => [
-                ['key' => 'metrics.social.religion_influence', 'op' => '>', 'value' => 0.7]
-            ]
-        ];
+        return config('worldos_narrative.rules', []);
     }
 }
 

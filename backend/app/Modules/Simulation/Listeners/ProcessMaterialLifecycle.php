@@ -3,7 +3,7 @@
 namespace App\Modules\Simulation\Listeners;
 
 use App\Modules\Simulation\Events\UniverseSimulationPulsed;
-use App\Modules\World\Services\MaterialLifecycleEngine;
+use App\Modules\World\Services\MaterialReactionEngine;
 use App\Modules\Simulation\Core\Engines\Physics\MaterialEvolutionEngine;
 use App\Modules\Simulation\Core\Engines\Meta\OmegaEngine;
 use App\Modules\Simulation\Core\Engines\Meta\AscensionEngine;
@@ -13,7 +13,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 class ProcessMaterialLifecycle implements ShouldQueue
 {
     public function __construct(
-        protected MaterialLifecycleEngine $materialLifecycle,
+        protected MaterialReactionEngine $reactionEngine,
         protected MaterialEvolutionEngine $materialEvolution,
         protected OmegaEngine $omegaEngine,
         protected AscensionEngine $ascensionEngine,
@@ -26,7 +26,8 @@ class ProcessMaterialLifecycle implements ShouldQueue
         $snapshot = $event->snapshot;
         
         $context = $this->buildMaterialContext($snapshot);
-        $deltas = $this->materialLifecycle->process($context, (int)$snapshot->tick);
+        $deltas = $this->materialEvolution->process($context, (int)$snapshot->tick);
+
         
         if (!empty($deltas)) {
             // ... (existing delta logic)

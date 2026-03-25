@@ -6,7 +6,7 @@ use App\Models\Universe;
 use App\Modules\Intelligence\Services\AI\AnalyticalAiService;
 use App\Modules\Intelligence\Services\AI\TheorySynthesisService;
 use App\Modules\Intelligence\Services\Lab\MaterialSynthesisService;
-use App\Modules\World\Services\MaterialMutationDag;
+use App\Modules\World\Services\MaterialService;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -20,7 +20,7 @@ class WorldAdvisorService
         protected AnalyticalAiService $analyticalAi,
         protected TheorySynthesisService $theorySynthesis,
         protected MaterialSynthesisService $materialSynthesis,
-        protected MaterialMutationDag $mutationDag,
+        protected MaterialService $materialService,
         protected MemoryService $memory
     ) {}
 
@@ -33,7 +33,8 @@ class WorldAdvisorService
 
         // 1. Pattern Analysis: check cross-universe health
         $allUniverseIds = Universe::where('world_id', $universe->world_id)
-            ->whereNull('archived_at')
+            ->where('status', '!=', 'archived')
+
             ->pluck('id')
             ->toArray();
 
@@ -86,8 +87,12 @@ class WorldAdvisorService
                 $newMaterialData = $this->materialSynthesis->synthesize($universe, $matNames, $scars);
                 if ($newMaterialData) {
                     $parent = \App\Models\Material::where('name', $newMaterialData['parent_material_name'] ?? '')->first();
-                    $newMaterial = $this->mutationDag->injectSynthesizedMaterial($newMaterialData, $parent);
-                    $results['synthesized_material'] = $newMaterial->only(['id', 'name', 'ontology']);
+                    $newMaterial = $this->materialService->injectSynthesizedMaterial($newMaterialData, $parent);
+                    $results['synthesized_material'] = [
+                        'id' => $newMaterial->id,
+                        'name' => $newMaterial->name,
+                        'ontology' => $newMaterial->ontology,
+                    ];
                 }
             }
         } catch (\Throwable $e) {

@@ -1,8 +1,9 @@
 {
     "api_key": "api_key",
-    "secret": "secret",
-    "hmac_secret": "hmac_secret",
-    "allowed_origins": ["*"],
+    "api_insecure": true,
+    "client_insecure": true,
+    "client_allowed_origins": ["*"],
+    "client_token_hmac_secret_key": "secret",
     "namespaces": [
         {
             "name": "public",

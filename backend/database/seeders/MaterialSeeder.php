@@ -4,7 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Material;
 use App\Models\MaterialPressure;
-use App\Models\MaterialMutation;
+use App\Models\MaterialReaction;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
@@ -55,12 +55,12 @@ class MaterialSeeder extends Seeder
             }
         }
 
-        $this->seedMutations();
+        $this->seedReactions();
     }
 
-    protected function seedMutations(): void
+    protected function seedReactions(): void
     {
-        // Vietnamese Mutation DAG
+        // Vietnamese Reaction Graph
         $luaNuoc = Material::where('slug', 'nong-nghiep-lua-nuoc')->first();
         $langXa = Material::where('slug', 'lang-xa-tu-tri')->first();
         $trongDong = Material::where('slug', 'van-hoa-trong-dong')->first();
@@ -68,23 +68,41 @@ class MaterialSeeder extends Seeder
         $leHoi = Material::where('slug', 'le-hoi-den-dai')->first();
 
         if ($luaNuoc && $langXa) {
-            MaterialMutation::updateOrCreate(
-                ['parent_material_id' => $luaNuoc->id, 'child_material_id' => $langXa->id],
-                ['trigger_condition' => 'population >= 0.5 && growth >= 0.4', 'context_constraint' => []]
+            MaterialReaction::updateOrCreate(
+                ['slug' => 'evolution-lang-xa'],
+                [
+                    'name' => 'Tiến hóa Làng xã',
+                    'inputs' => ['nong-nghiep-lua-nuoc' => 1],
+                    'outputs' => ['nong-nghiep-lua-nuoc' => 1, 'lang-xa-tu-tri' => 1],
+                    'condition' => 'field_growth > 0.4',
+                    'rate' => 0.1
+                ]
             );
         }
 
         if ($trongDong && $thoCung) {
-            MaterialMutation::updateOrCreate(
-                ['parent_material_id' => $trongDong->id, 'child_material_id' => $thoCung->id],
-                ['trigger_condition' => 'authority >= 0.4 && culture >= 0.3', 'context_constraint' => []]
+            MaterialReaction::updateOrCreate(
+                ['slug' => 'evolution-tho-cung'],
+                [
+                    'name' => 'Tiến hóa Thờ cúng',
+                    'inputs' => ['van-hoa-trong-dong' => 1],
+                    'outputs' => ['van-hoa-trong-dong' => 1, 'tho-cung-to-tien' => 1],
+                    'condition' => 'field_stability > 0.3',
+                    'rate' => 0.08
+                ]
             );
         }
 
         if ($langXa && $leHoi) {
-            MaterialMutation::updateOrCreate(
-                ['parent_material_id' => $langXa->id, 'child_material_id' => $leHoi->id],
-                ['trigger_condition' => 'population >= 0.7 && stability >= 0.5', 'context_constraint' => []]
+            MaterialReaction::updateOrCreate(
+                ['slug' => 'evolution-le-hoi'],
+                [
+                    'name' => 'Tiến hóa Lễ hội',
+                    'inputs' => ['lang-xa-tu-tri' => 1],
+                    'outputs' => ['lang-xa-tu-tri' => 1, 'le-hoi-den-dai' => 1],
+                    'condition' => 'field_order > 0.5',
+                    'rate' => 0.05
+                ]
             );
         }
     }

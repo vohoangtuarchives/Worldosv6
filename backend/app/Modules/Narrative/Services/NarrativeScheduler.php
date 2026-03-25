@@ -17,13 +17,22 @@ class NarrativeScheduler
      */
     public function shouldPulse(UniverseEntity $universe, UniverseSnapshot $snapshot): bool
     {
-        // 1. Force run on major events
+        // 1. Minimum Tick Interval Check (Optimization - avoid every-tick calls)
+        $minInterval = (int) config('worldos.narrative.min_tick_interval', 10);
+        
+        $lastPulseTick = \App\Models\NarrativeState::where('universe_id', $universe->id)->value('last_tick') ?? 0;
+
+        if (($snapshot->tick - $lastPulseTick) < $minInterval) {
+            return false;
+        }
+
+        // 2. Force run on major events
         if (!empty($snapshot->metrics['major_events'] ?? [])) {
-            Log::debug("NarrativeScheduler: Major event detected. Forcing pulse.");
+            Log::debug("NarrativeScheduler: Major event detected at tick {$snapshot->tick}. Forcing pulse.");
             return true;
         }
 
-        // 2. Check for significant state changes (Threshold Delta)
+        // 3. Check for significant state changes (Threshold Delta)
         $threshold = (float) config('worldos.narrative.delta_threshold', 0.05);
         
         $prevSnapshot = UniverseSnapshot::where('universe_id', $universe->id)
@@ -43,8 +52,8 @@ class NarrativeScheduler
             return true;
         }
 
-        // 3. Probabilistic run for continuity (e.g., 10% chance)
-        if (rand(1, 100) <= 10) {
+        // 4. Probabilistic run for continuity (e.g., 5% chance instead of 10%)
+        if (rand(1, 100) <= 5) {
             Log::debug("NarrativeScheduler: Periodic probabilistic pulse.");
             return true;
         }

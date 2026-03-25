@@ -37,13 +37,19 @@ class Material extends Model
         return $this->hasMany(MaterialPressure::class);
     }
 
-    public function parentMutations(): HasMany
+    /**
+     * Reactions where this material is an input.
+     */
+    public function inputReactions()
     {
-        return $this->hasMany(MaterialMutation::class, 'parent_material_id');
+        return MaterialReaction::whereJsonContains('input_material_ids', $this->id)->get();
     }
 
-    public function childMutations(): HasMany
+    /**
+     * Reactions where this material is an output.
+     */
+    public function outputReactions()
     {
-        return $this->hasMany(MaterialMutation::class, 'child_material_id');
+        return MaterialReaction::whereJsonContains('output_material_ids', $this->id)->get();
     }
 }

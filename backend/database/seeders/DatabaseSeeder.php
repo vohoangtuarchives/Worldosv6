@@ -34,6 +34,7 @@ class DatabaseSeeder extends Seeder
             CosmologySeeder::class,
             MaterialSeeder::class,
             SymbolicMaterialSeeder::class,
+            MaterialExpansionSeeder::class,
             FlavorTextSeeder::class,
             EventTriggerSeeder::class,
             CivilizationAttractorSeeder::class,

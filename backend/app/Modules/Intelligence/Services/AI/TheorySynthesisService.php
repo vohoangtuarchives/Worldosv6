@@ -4,7 +4,7 @@ namespace App\Modules\Intelligence\Services\AI;
 
 use App\Models\Universe;
 use App\Models\DiscoveredAxiom;
-use App\Modules\Narrative\Services\PerceivedArchiveBuilder;
+use App\Modules\Narrative\Services\StateExtractorDSL;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Log;
 class TheorySynthesisService
 {
     public function __construct(
-        protected PerceivedArchiveBuilder $archiveBuilder,
+        protected StateExtractorDSL $archiveBuilder,
         protected AnalyticalAiService $ai
     ) {}
 
@@ -36,12 +36,13 @@ class TheorySynthesisService
         }
 
         // Build a highly "Obscure" context to force AI intuition
-        $context = $this->archiveBuilder->build(
+        $context = $this->archiveBuilder->extractContext(
             $universe->id, 
-            ['theory_discovery'], 
-            $latest->state_vector, 
-            $latest->tick
+            $latest->tick,
+            $latest->state_vector,
+            [] // Metrics can be added if available
         );
+
 
         $prompt = $this->buildDiscoveryPrompt($context);
         $proposal = $this->ai->generateStructuredProposal($prompt);

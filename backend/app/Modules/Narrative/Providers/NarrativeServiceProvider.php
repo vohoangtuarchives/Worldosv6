@@ -12,7 +12,7 @@ use App\Modules\Narrative\Services\ChronicleSynthesisEngine;
 use App\Modules\Narrative\Services\UniverseHistoryGenerator;
 use App\Modules\Narrative\Repositories\ChronicleMemoryRepository;
 use App\Contracts\LlmNarrativeClientInterface;
-use App\Modules\Narrative\Services\OpenAINarrativeService;
+use App\Modules\Narrative\Services\GatewayNarrativeService;
 
 class NarrativeServiceProvider extends ServiceProvider
 {
@@ -31,6 +31,7 @@ class NarrativeServiceProvider extends ServiceProvider
         $this->app->singleton(\App\Modules\Narrative\Contracts\DemiurgeRepositoryInterface::class, \App\Modules\Narrative\Repositories\DemiurgeEloquentRepository::class);
 
         $this->app->singleton(NarrativeEngine::class);
+        $this->app->singleton(LlmNarrativeClientInterface::class, GatewayNarrativeService::class);
 
         // Batch 8: Moved Services
         $this->app->singleton(\App\Modules\Narrative\Services\AdaptivePulseScheduler::class);

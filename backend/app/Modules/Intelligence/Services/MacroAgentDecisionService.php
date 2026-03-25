@@ -12,22 +12,16 @@ use Illuminate\Support\Facades\Log;
  */
 class MacroAgentDecisionService
 {
+    public function __construct(
+        protected \App\Modules\Intelligence\Services\AI\AiGateway $aiGateway
+    ) {}
+
     public function generateEdict(Universe $universe, array $agent, object $leader): ?array
     {
-        $config = AgentConfig::first();
-        $apiKey = $config->api_key ?? env('NARRATIVE_LLM_KEY') ?? config('services.openai.key');
-        $endpoint = env('NARRATIVE_LLM_URL', 'https://api.openai.com/v1/chat/completions');
-        $model = $config->model_name ?? env('NARRATIVE_LLM_MODEL', 'gpt-4o');
-
         // Prepare the Prompt
         $traits = implode(', ', array_keys($leader->traits ?? ['Tham vọng' => 1]));
         $factionType = $agent['type'] ?? 'unknown';
         $entropy = $universe->entropy ?? 0.5;
-
-        // If no real API key, just mock it to save money/prevent errors in dev
-        if (empty($apiKey) || $apiKey === 'sk-dummy') {
-            return $this->mockEdict($factionType, $traits, $entropy);
-        }
 
         $systemPersona = "Bạn là mô phỏng AI của lãnh tụ một phe phái (Faction) trong một thế giới mô phỏng. Trả về đúng định dạng JSON cơ bản.";
 
@@ -50,34 +44,25 @@ Dựa vào tình hình hiện tại, hãy ban hành một Sắc Lệnh (Edict) �
 Lưu ý "drift_target" là mốc xoay chuyển văn hóa (thuộc 8 chiều: survival, power, order, reason, strategy, system, holistic, integral). Chỉ chọn 2-3 thuộc tính để thay đổi (giá trị từ 0.0 đến 1.0).
 EOT;
 
-        try {
-            $request = Http::timeout(60);
-            if ($apiKey) {
-                $request = $request->withToken($apiKey);
-            }
+        $content = $this->aiGateway->feature('decision')->chat([
+            ['role' => 'system', 'content' => $systemPersona],
+            ['role' => 'user',   'content' => $prompt]
+        ], [
+            'temperature' => 0.7,
+            'timeout' => 60
+        ]);
 
-            $response = $request->post($endpoint, [
-                'model' => $model,
-                'messages' => [
-                    ['role' => 'system', 'content' => $systemPersona],
-                    ['role' => 'user', 'content' => $prompt]
-                ],
-                'temperature' => 0.7,
-            ]);
 
-            if ($response->successful()) {
-                $content = $response->json('choices.0.message.content');
-                // Clean markdown JSON block if present
-                $content = preg_replace('/```json\s*/', '', $content);
-                $content = preg_replace('/```\s*/', '', $content);
-                return json_decode($content, true);
-            }
-        } catch (\Throwable $e) {
-            Log::error("MacroAgentDecisionService LLM Error: " . $e->getMessage());
+        if ($content) {
+            // Clean markdown JSON block if present
+            $content = preg_replace('/```json\s*/', '', $content);
+            $content = preg_replace('/```\s*/', '', $content);
+            return json_decode($content, true);
         }
 
         return $this->mockEdict($factionType, $traits, $entropy);
     }
+
 
     private function mockEdict(string $type, string $traits, float $entropy): array
     {

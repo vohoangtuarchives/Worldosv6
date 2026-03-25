@@ -126,4 +126,16 @@ final class TraitVector
 
         return new self($newTraits);
     }
+
+    public function confidence(): float
+    {
+        // Combined Confidence = 60% Dominance + 40% Ambition
+        return (float)($this->get(self::DOMINANCE) * 0.6 + $this->get(self::AMBITION) * 0.4);
+    }
+
+    public function neuroticism(): float
+    {
+        // Neuroticism mapped to FEAR in ocean mapping
+        return (float)$this->get(self::FEAR);
+    }
 }

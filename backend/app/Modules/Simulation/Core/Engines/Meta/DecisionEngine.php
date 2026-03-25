@@ -75,9 +75,13 @@ class DecisionEngine
         // Compute navigator scores
         $navScore = $this->computeNavigatorScore($snapshot);
 
-        // Override recommendation based on navigator score (do not override fork/merge/promote → archive)
-        if ($navScore['total'] >= self::FORK_THRESHOLD && ! in_array($recommendation, ['archive', 'merge', 'promote'], true)) {
-            $recommendation = 'fork';
+        // Override recommendation based on navigator score
+        if ($navScore['total'] >= self::FORK_THRESHOLD) {
+             // Only override archive if score is high interest (>= 0.70)
+             $isAlreadyStrategic = in_array($recommendation, ['merge', 'promote'], true);
+             if (!$isAlreadyStrategic && ($recommendation !== 'archive' || $navScore['total'] >= 0.70)) {
+                 $recommendation = 'fork';
+             }
         } elseif ($navScore['total'] <= self::ARCHIVE_THRESHOLD && ! in_array($recommendation, ['fork', 'mutate', 'merge', 'promote'], true)) {
             // Don't archive very early universes: at tick 1 complexity is ~0 so score is artificially low.
             $tick = (int) ($snapshot->tick ?? 0);

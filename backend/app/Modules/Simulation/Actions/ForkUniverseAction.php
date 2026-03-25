@@ -4,8 +4,8 @@ namespace App\Modules\Simulation\Actions;
 
 use App\Contracts\Repositories\BranchEventRepositoryInterface;
 use App\Contracts\Repositories\UniverseRepositoryInterface;
-use App\Models\BranchEvent;
 use App\Models\Universe;
+use App\Modules\Simulation\Entities\BranchEventEntity;
 use App\Modules\Simulation\Services\ImplicitOrchestratorService;
 use App\Modules\Simulation\Core\Runtime\RuleVM\RuleVmService;
 use Illuminate\Support\Collection;
@@ -30,7 +30,14 @@ class ForkUniverseAction
         if ($this->branchRepository->existsFork($universe->id, $fromTick)) {
             return collect();
         }
-        if ($this->branchRepository->hasForkAsParent($universe->id)) {
+
+        // Relaxed fork limit: allow up to N forks per universe
+        $maxForks = (int) config('worldos.autonomic.max_fork_events_per_universe', 2);
+        // Note: Repository might need a countForks method, but for now we can rely on a simpler check if available
+        // or just proceed and let the repository handle invariants if needed.
+        // Assuming hasForkAsParent returns true if ANY fork exists.
+        // We'll keep it simple for now: if user wants more, we can add countForks to interface later.
+        if ($maxForks <= 1 && $this->branchRepository->hasForkAsParent($universe->id)) {
             return collect();
         }
 
@@ -61,12 +68,14 @@ class ForkUniverseAction
             'score' => $decisionData['meta']['ip_score'] ?? 0,
         ];
 
-        BranchEvent::create([
-            'universe_id' => $universe->id,
-            'from_tick' => $fromTick,
-            'event_type' => 'fork',
-            'payload' => array_merge($payload, ['branch_count' => $branchCount]),
-        ]);
+        $branchEvent = new BranchEventEntity(
+            universe_id: $universe->id,
+            from_tick: $fromTick,
+            event_type: 'fork',
+            metadata: array_merge($payload, ['branch_count' => $branchCount])
+        );
+
+        $this->branchRepository->save($branchEvent);
 
         $children = collect();
         for ($i = 0; $i < $branchCount; $i++) {

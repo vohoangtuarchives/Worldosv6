@@ -5,7 +5,6 @@ namespace App\Modules\Simulation\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Models\Material;
 use App\Models\MaterialInstance;
-use App\Models\MaterialMutation;
 use App\Models\Universe;
 use Illuminate\Http\Request;
 
@@ -51,17 +50,37 @@ class MaterialMutationController extends Controller
             ];
         });
 
-        // Fetch all mutations (edges)
-        $mutations = MaterialMutation::all();
-        $edges = $mutations->map(function ($mut) {
-            return [
-                'id' => 'e' . $mut->parent_material_id . '-' . $mut->child_material_id,
-                'source' => (string) $mut->parent_material_id,
-                'target' => (string) $mut->child_material_id,
-                'label' => $mut->trigger_condition, // Can be used as edge label
-                'animated' => true,
-            ];
-        });
+        // Fetch all reactions (edges)
+        $reactions = \App\Models\MaterialReaction::all();
+        $edges = [];
+        
+        foreach ($reactions as $reaction) {
+            $inputs  = is_array($reaction->inputs)  ? array_keys($reaction->inputs)  : [];
+            $outputs = is_array($reaction->outputs) ? array_keys($reaction->outputs) : [];
+
+            // A Reaction (MRE) can have multiple inputs and multiple outputs.
+            // For the DAG visualization, we draw an edge from EACH input to EACH output.
+            foreach ($inputs as $inputSlug) {
+                $inputModel = $materials->firstWhere('slug', $inputSlug);
+                if (!$inputModel) continue;
+
+                foreach ($outputs as $outputSlug) {
+                    $outputModel = $materials->firstWhere('slug', $outputSlug);
+                    if (!$outputModel) continue;
+
+                    // Skip self-edges if they are catalyst-type (A + B -> A + C)
+                    if ($inputModel->id === $outputModel->id) continue;
+
+                    $edges[] = [
+                        'id' => 'e-' . $reaction->id . '-' . $inputModel->id . '-' . $outputModel->id,
+                        'source' => (string) $inputModel->id,
+                        'target' => (string) $outputModel->id,
+                        'label' => $reaction->slug, 
+                        'animated' => true,
+                    ];
+                }
+            }
+        }
 
         return response()->json([
             'ok' => true,

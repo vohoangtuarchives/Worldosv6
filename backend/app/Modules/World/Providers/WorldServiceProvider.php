@@ -18,8 +18,7 @@ class WorldServiceProvider extends ServiceProvider
 
         // Register Material Services
         $this->app->singleton(\App\Modules\World\Services\PressureResolver::class);
-        $this->app->singleton(\App\Modules\World\Services\MaterialMutationDag::class);
-        $this->app->singleton(\App\Modules\World\Services\MaterialLifecycleEngine::class);
+        $this->app->singleton(\App\Modules\World\Services\MaterialReactionEngine::class);
     }
 
     public function boot(): void

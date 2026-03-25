@@ -7,7 +7,7 @@ return [
     | Simulation Engine (Rust gRPC)
     |--------------------------------------------------------------------------
     */
-    'simulation_engine_grpc_url' => env('SIMULATION_ENGINE_GRPC_URL', 'localhost:50051'),
+    'simulation_engine_grpc_url' => env('SIMULATION_ENGINE_GRPC_URL', 'http://engine:50052'),
 
     /*
     |--------------------------------------------------------------------------
@@ -349,6 +349,8 @@ return [
         'model' => env('NARRATIVE_LLM_MODEL', env('OPENAI_MODEL', 'gpt-4o')),
         'base_url' => env('OPENAI_BASE_URL', 'https://api.openai.com'),
         'timeout' => (int) env('NARRATIVE_LLM_TIMEOUT', 30),
+        'min_tick_interval' => (int) env('WORLDOS_NARRATIVE_MIN_TICK_INTERVAL', 10),
+        'delta_threshold' => (float) env('WORLDOS_NARRATIVE_DELTA_THRESHOLD', 0.1),
     ],
 
     /*
@@ -442,7 +444,13 @@ return [
         'language_memory_decay' => (float) env('WORLDOS_LANGUAGE_MEMORY_DECAY', 0.05),
         // Civilization Engine (Tier 9): settlement layer
         'civilization_tick_interval' => (int) env('WORLDOS_CIVILIZATION_TICK_INTERVAL', 20),
-        'civilization_settlement_thresholds' => ['camp' => 0, 'village' => 3, 'town' => 6, 'city' => 12],
+        'civilization_settlement_thresholds' => [
+            'camp' => 0,
+            'village' => 100,
+            'town' => 1000,
+            'city' => 10000,
+            'metropolis' => 100000
+        ],
         // Global Economy (Tier 10)
         'economy_tick_interval' => (int) env('WORLDOS_ECONOMY_TICK_INTERVAL', 20),
         // Politics (Tier 11)

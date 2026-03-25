@@ -1,0 +1,23 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class AiLog extends Model
+{
+    protected $fillable = [
+        'feature',
+        'driver',
+        'input',
+        'output',
+        'latency_ms',
+        'status',
+        'error_message',
+    ];
+
+    protected $casts = [
+        'input' => 'array',
+        'output' => 'array',
+    ];
+}

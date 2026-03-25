@@ -15,7 +15,6 @@ class UniverseRuntimeService
     public function __construct(
         protected SimulationEngineClientInterface $engine,
         protected UniverseSnapshotRepository $snapshots,
-        protected ?MaterialLifecycleEngine $materialLifecycle = null,
         protected ?NarrativeAiService $narrativeAi = null,
         protected ?CultureDiffusionService $cultureDiffusion = null,
         protected ?InstitutionalEngine $institutionalEngine = null,

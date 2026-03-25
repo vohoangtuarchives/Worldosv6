@@ -12,7 +12,9 @@ use Illuminate\Support\Facades\Log;
  */
 class NarrativeCompiler
 {
-    protected ?\App\Models\Universe $universe = null;
+    public function __construct(
+        protected \App\Modules\Intelligence\Services\AI\AiGateway $aiGateway
+    ) {}
 
     public function setUniverse(\App\Models\Universe $universe): self
     {
@@ -64,33 +66,16 @@ class NarrativeCompiler
             . "Hãy viết một đoạn biên niên sử chi tiết, giàu hình ảnh và mang tính sử thi phù hợp với mức \'$clarityTag\'.\n"
             . "Tập trung vào sự biến đổi của thế giới và cảm xúc của vạn vật. Ngôn ngữ: Tiếng Việt. Không giải thích thêm.";
 
-        $apiKey   = env('NARRATIVE_LLM_KEY');
-        $endpoint = env('NARRATIVE_LLM_URL', 'http://host.docker.internal:11434/v1/chat/completions');
-        $model    = env('NARRATIVE_LLM_MODEL', 'mistral');
+        return $this->aiGateway->feature('narrative')->chat([
+            ['role' => 'system', 'content' => 'You are the Blind Historian of WorldOS.'],
+            ['role' => 'user',   'content' => $prompt],
+        ], [
+            'temperature' => min(0.9, $noise + 0.3),
+            'timeout' => 30
+        ]);
 
-        try {
-            $request = Http::timeout(30);
-            if ($apiKey && !str_contains($endpoint, 'host.docker.internal') && !str_contains($endpoint, 'localhost')) {
-                $request = $request->withToken($apiKey);
-            }
-            $response = $request->post($endpoint, [
-                'model'       => $model,
-                'messages'    => [
-                    ['role' => 'system', 'content' => 'You are the Blind Historian of WorldOS.'],
-                    ['role' => 'user',   'content' => $prompt],
-                ],
-                'temperature' => min(0.9, $noise + 0.3), // More chaos = more creative
-            ]);
-
-            if ($response->successful()) {
-                return trim($response->json('choices.0.message.content') ?? '');
-            }
-        } catch (\Throwable $e) {
-            Log::debug('NarrativeCompiler LLM fallback: ' . $e->getMessage());
-        }
-
-        return null;
     }
+
 
     /**
      * Template-based fallback narrative generation.

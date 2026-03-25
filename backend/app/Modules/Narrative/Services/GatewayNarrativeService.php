@@ -1,0 +1,46 @@
+<?php
+
+namespace App\Modules\Narrative\Services;
+
+use App\Contracts\LlmNarrativeClientInterface;
+use App\Modules\Intelligence\Services\AI\AiGateway;
+use Illuminate\Support\Facades\Log;
+
+/**
+ * GatewayNarrativeService: Implementation of LlmNarrativeClientInterface using the unified AiGateway.
+ * This allows Narrative module to benefit from Audit Logging and Multi-driver support.
+ */
+class GatewayNarrativeService implements LlmNarrativeClientInterface
+{
+    public function __construct(
+        protected AiGateway $aiGateway
+    ) {}
+
+    /**
+     * @return bool
+     */
+    public function isAvailable(): bool
+    {
+        // Gateway is always technically available if drivers are configured
+        return true; 
+    }
+
+    /**
+     * Generate narrative using the AI Gateway.
+     * 
+     * @param string $prompt
+     * @param array $options
+     * @return string|null
+     */
+    public function generate(string $prompt, array $options = []): ?string
+    {
+        try {
+            // Forward to AiGateway with 'narrative' feature context
+            // This will automatically handle logging and driver selection
+            return $this->aiGateway->feature('narrative')->generate($prompt, $options);
+        } catch (\Throwable $e) {
+            Log::error("GatewayNarrativeService: Generation failed: " . $e->getMessage());
+            return null;
+        }
+    }
+}

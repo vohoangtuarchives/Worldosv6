@@ -290,6 +290,11 @@ class SimulationServiceProvider extends ServiceProvider
                 \App\Modules\Simulation\Core\Runtime\WorldKernel::RULE_EXTRACTION,
                 new \App\Modules\Simulation\Core\Runtime\Systems\EngineSystemAdapter($app->make(\App\Modules\Simulation\Core\Engines\Physics\MaterialEvolutionEngine::class))
             );
+            $kernel->registerSystem(
+                \App\Modules\Simulation\Core\Runtime\WorldKernel::PHASE_ENVIRONMENT,
+                \App\Modules\Simulation\Core\Runtime\WorldKernel::RULE_EXTRACTION,
+                $app->make(\App\Modules\Simulation\Core\Runtime\Systems\MaterialWorldSystem::class)
+            );
 
             // Phase 2: Life
             $kernel->registerSystem(
@@ -303,6 +308,11 @@ class SimulationServiceProvider extends ServiceProvider
                 \App\Modules\Simulation\Core\Runtime\WorldKernel::PHASE_MIND,
                 \App\Modules\Simulation\Core\Runtime\WorldKernel::RULE_DIFFUSION,
                 $app->make(\App\Modules\Simulation\Core\Runtime\Systems\PropagationSystem::class)
+            );
+            $kernel->registerSystem(
+                \App\Modules\Simulation\Core\Runtime\WorldKernel::PHASE_MIND,
+                \App\Modules\Simulation\Core\Runtime\WorldKernel::RULE_OBSERVATION,
+                $app->make(\App\Modules\Simulation\Core\Runtime\Systems\PsychologySystem::class)
             );
 
             // Phase 4: Social

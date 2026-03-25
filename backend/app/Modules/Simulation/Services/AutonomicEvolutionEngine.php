@@ -60,15 +60,21 @@ class AutonomicEvolutionEngine implements UniverseEvaluatorInterface
             $minTicksBeforeArchive = (int) config('worldos.autonomic.min_ticks_before_archive', 150);
             $forkGracePeriod = (int) config('worldos.autonomic.fork_grace_period_ticks', 50);
             $tick = (int) ($snapshot->tick ?? 0);
-            if ($entropy >= $archiveThreshold && $tick >= $minTicksBeforeArchive) {
+            if ($entropy >= $forkMin) {
+                $universe = $snapshot->universe;
+                $hasChildren = $universe && $universe->childUniverses()->exists();
+                if (!$hasChildren) {
+                    $recommendation = 'fork';
+                } elseif ($entropy >= $archiveThreshold && $tick >= $minTicksBeforeArchive) {
+                    $recommendation = 'archive';
+                }
+            } elseif ($entropy >= $archiveThreshold && $tick >= $minTicksBeforeArchive) {
                 $universe = $snapshot->universe;
                 $inGracePeriod = $universe && $universe->forked_at_tick !== null
                     && ($tick - (int) $universe->forked_at_tick) < $forkGracePeriod;
                 if (!$inGracePeriod) {
                     $recommendation = 'archive';
                 }
-            } elseif ($entropy >= $forkMin) {
-                $recommendation = 'fork';
             } elseif ($promoteComplexity > 0 && $complexity >= $promoteComplexity) {
                 if ($this->isQualitativelyReady($snapshot)) {
                     $recommendation = 'promote';
