@@ -14,48 +14,30 @@ import ObserverDials from '@/components/ObserverDials';
 import AncientLivingMap from '@/components/AncientLivingMap';
 import NarrativeArchive from '@/components/NarrativeArchive';
 import TimelineSplitter from '@/components/TimelineSplitter';
-import AxiomResonance from '@/components/AxiomResonance';
-import { RealityFilterProvider } from '@/components/RealityFilter';
+import TransitionTimeline from '@/components/TransitionTimeline';
+import RiskPredictor from '@/components/RiskPredictor';
 import { motion } from 'framer-motion';
 
 const DashboardPage = () => {
   useRealtime();
-  const { currentTick, universes, chronicles } = useSimulationStore();
+  const { 
+    currentTick, 
+    universes, 
+    chronicles, 
+    transition, 
+    realityStrain, 
+    anomalyProbability,
+    civilizationEra
+  } = useSimulationStore();
+
+  const normalizedEraClass = civilizationEra?.toLowerCase().replace(' ', '-') || 'genesis';
+  const eraClass = `era-${normalizedEraClass}`;
 
   return (
-    <>
-        {/* Header Stat Bar */}
-        <header className="flex flex-wrap items-center justify-between gap-6 p-6 rounded-[var(--radius)] bg-card/40 border border-border/50 backdrop-blur-md relative z-20">
-          <div className="flex items-center gap-4">
-            <div className="h-10 w-10 rounded-full bg-gradient-to-tr from-left-brain to-cosmos glow-cosmos" />
-            <div>
-              <h1 className="text-xl font-bold tracking-tight">Observer Hub</h1>
-              <div className="flex items-center gap-2">
-                 <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-mono">Multiverse Surveillance</p>
-              </div>
-            </div>
-          </div>
-
-
-          <div className="flex-1 flex justify-center">
-             <SimulationControls />
-          </div>
-
-          <div className="flex gap-8">
-            <div className="flex flex-col">
-              <span className="text-[10px] text-muted-foreground uppercase font-mono">Current Tick</span>
-              <span className="text-2xl font-bold text-primary tabular-nums">{currentTick.toLocaleString()}</span>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-[10px] text-muted-foreground uppercase font-mono">Entropy</span>
-              <span className="text-2xl font-bold text-cosmos tabular-nums">0.0342</span>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-[10px] text-muted-foreground uppercase font-mono">Stability</span>
-              <span className="text-2xl font-bold text-right-brain tabular-nums">92.4%</span>
-            </div>
-          </div>
-        </header>
+    <div className="relative w-full h-full">
+      <div className="p-6 space-y-6 w-full relative">
+        <div className="absolute inset-0 bg-grid-pattern opacity-10 pointer-events-none" />
+        
 
         {/* Main Grid Interface */}
         <main className="flex-1 grid grid-cols-1 lg:grid-cols-12 auto-rows-min gap-6 relative z-20">
@@ -69,9 +51,26 @@ const DashboardPage = () => {
             <AxiomFluxMonitor />
           </section>
 
-          {/* Row 2: Multiverse Divergence (New) */}
-          <section className="lg:col-span-12 h-[200px]">
-             <TimelineSplitter />
+          {/* Row 2: Multiverse Divergence */}
+          <section className="lg:col-span-12 grid grid-cols-1 lg:grid-cols-12 gap-6 h-[200px]">
+             <div className="lg:col-span-8">
+               <TimelineSplitter />
+             </div>
+             <div className="lg:col-span-4">
+               {transition ? (
+                 <TransitionTimeline 
+                   phase={transition.phase} 
+                   target={transition.target} 
+                   startTick={transition.startTick}
+                   currentTick={currentTick}
+                 />
+               ) : (
+                 <div className="h-full bg-void/20 border border-white/5 rounded-[var(--radius)] flex flex-col items-center justify-center opacity-40">
+                   <span className="text-[10px] font-bold uppercase tracking-[0.2em] mb-1">Causal Stability</span>
+                   <span className="text-[9px] font-mono">NO_ACTIVE_REBINDING</span>
+                 </div>
+               )}
+             </div>
           </section>
 
           {/* Row 3: Causal Intelligence & Ancient Mapping */}
@@ -94,17 +93,7 @@ const DashboardPage = () => {
               <EntityFluxMap />
             </div>
             <div className="h-[120px]">
-              <div className="h-full bg-void/40 backdrop-blur-md rounded-[var(--radius)] border border-white/5 p-4 flex flex-col justify-center">
-                <span className="text-[10px] text-muted-foreground uppercase font-mono mb-1">Reality Convergence</span>
-                <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
-                  <motion.div 
-                    className="h-full bg-cosmos"
-                    animate={{ width: ['40%', '85%', '60%'] }}
-                    transition={{ duration: 10, repeat: Infinity }}
-                  />
-                </div>
-                <span className="text-[10px] text-cosmos mt-2 font-mono">STABLE_FLOW // 0.82β</span>
-              </div>
+              <RiskPredictor strain={realityStrain} anomalyProbability={anomalyProbability} />
             </div>
           </section>
 
@@ -118,7 +107,8 @@ const DashboardPage = () => {
           </section>
 
         </main>
-    </>
+      </div>
+    </div>
   );
 };
 

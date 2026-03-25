@@ -35,8 +35,12 @@ class GatewayNarrativeService implements LlmNarrativeClientInterface
     public function generate(string $prompt, array $options = []): ?string
     {
         try {
+            // Support Era-specific personas
+            if (isset($options['persona'])) {
+                $prompt = "Context/Persona: {$options['persona']}\n\nUser Request: {$prompt}";
+            }
+
             // Forward to AiGateway with 'narrative' feature context
-            // This will automatically handle logging and driver selection
             return $this->aiGateway->feature('narrative')->generate($prompt, $options);
         } catch (\Throwable $e) {
             Log::error("GatewayNarrativeService: Generation failed: " . $e->getMessage());

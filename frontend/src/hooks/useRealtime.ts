@@ -10,23 +10,29 @@ export const useRealtime = () => {
   const addChronicle = useSimulationStore((state) => state.addChronicle);
 
   useEffect(() => {
+    // Check if we already have an active or connecting instance
+    if (centrifugeRef.current && (centrifugeRef.current.state === 'connected' || centrifugeRef.current.state === 'connecting')) {
+      return;
+    }
+
     const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${proto}//${window.location.host}/connection/websocket`;
+    
+    console.log('Centrifuge Connecting to:', wsUrl);
+    
     const centrifuge = new Centrifuge(wsUrl, {
-      token: '', // Development mode might not require token if configured
+      token: '', 
     });
 
     centrifugeRef.current = centrifuge;
 
     const subAdvance = centrifuge.newSubscription('worldos.simulation.advanced');
     subAdvance.on('publication', (ctx) => {
-      console.log('Realtime Advance:', ctx.data);
       updateFromAdvance(ctx.data);
     });
 
     const subNarrative = centrifuge.newSubscription('worldos.narrative.pulsed');
     subNarrative.on('publication', (ctx) => {
-      console.log('Realtime Narrative:', ctx.data);
       if (ctx.data.chronicle) {
         addChronicle(ctx.data.chronicle);
       }
@@ -37,7 +43,9 @@ export const useRealtime = () => {
     centrifuge.connect();
 
     return () => {
+      console.log('Centrifuge Disconnecting');
       centrifuge.disconnect();
+      centrifugeRef.current = null;
     };
   }, [updateFromAdvance, addChronicle]);
 

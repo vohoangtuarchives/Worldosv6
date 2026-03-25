@@ -4,6 +4,12 @@ import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 
 const AxiomResonance = () => {
+  const [hasMounted, setHasMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setHasMounted(true);
+  }, []);
+
   const waves = useMemo(() => Array.from({ length: 5 }, (_, i) => ({
     id: i,
     initialRotate: i * 45,
@@ -11,6 +17,8 @@ const AxiomResonance = () => {
     delay: -i * 2,
     opacity: 0.05 + i * 0.02
   })), []);
+
+  if (!hasMounted) return null;
 
   return (
     <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden bg-void">

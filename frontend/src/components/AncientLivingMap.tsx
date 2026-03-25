@@ -53,12 +53,17 @@ const regions: RegionData[] = [
 ];
 
 const AncientLivingMap = () => {
+  const [hasMounted, setHasMounted] = useState(false);
   const [hoveredRegion, setHoveredRegion] = useState<RegionData | null>(null);
   const [selectedRegion, setSelectedRegion] = useState<RegionData | null>(null);
   const [selectedEntity, setSelectedEntity] = useState<any | null>(null);
   const [isAxiomVision, setIsAxiomVision] = useState(false);
   const [isZooming, setIsZooming] = useState(false);
   const { chronicles, entities, universes } = useSimulationStore();
+
+  React.useEffect(() => {
+    setHasMounted(true);
+  }, []);
 
   React.useEffect(() => {
     const handleLocate = (e: any) => {
@@ -125,6 +130,8 @@ const AncientLivingMap = () => {
     e.stopPropagation();
     setSelectedEntity(dot);
   };
+
+  if (!hasMounted) return <div className="w-full h-full bg-void/30 rounded-[var(--radius)] border border-cosmos/20" />;
 
   return (
     <div className={`w-full h-full relative ${isAxiomVision ? 'bg-[#000814]' : 'bg-void/30'} backdrop-blur-2xl rounded-[var(--radius)] border ${isAxiomVision ? 'border-cosmos/50' : 'border-cosmos/20'} overflow-hidden shadow-[inset_0_0_80px_rgba(0,0,0,0.5)] transition-colors duration-1000`}>

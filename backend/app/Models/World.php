@@ -11,7 +11,12 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 class World extends Model
 {
     use HasFactory;
-    protected $fillable = ['multiverse_id', 'name', 'slug', 'axiom', 'world_seed', 'origin', 'primary_ruleset_id', 'current_genre', 'base_genre', 'active_genre_weights', 'is_autonomic', 'global_tick', 'is_chaotic', 'snapshot_interval'];
+    protected $fillable = [
+        'multiverse_id', 'name', 'slug', 'axiom', 'world_seed', 'origin', 
+        'primary_ruleset_id', 'current_genre', 'base_genre', 'active_genre_weights', 
+        'is_autonomic', 'global_tick', 'is_chaotic', 'snapshot_interval',
+        'civilization_era', 'power_system_type', 'power_system_bootstrap_energy', 'version'
+    ];
 
     protected $casts = [
         'axiom' => 'array',
@@ -21,6 +26,8 @@ class World extends Model
         'global_tick' => 'integer',
         'is_chaotic' => 'boolean',
         'snapshot_interval' => 'integer',
+        'power_system_bootstrap_energy' => 'float',
+        'version' => 'integer',
     ];
 
     public function multiverse(): BelongsTo

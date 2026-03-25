@@ -45,10 +45,19 @@ class EpochEngine
         $tick = $snapshot->tick;
         $relativeTick = $tick - $currentEpoch->start_tick;
 
-        // Evaluate DSL for Transition Decision
+        // Phase 101: Enrich vmState with multi-layer metrics
+        $worldState = WorldState::fromArray($universe->stateVector);
+        $socialLayer = $worldState->getSocialLayer();
+        $physicalLayer = $worldState->getPhysicalLayer();
+
         $vmState = [
             'relative_tick' => (int) $relativeTick,
             'entropy' => (float) $universe->entropy,
+            'stability' => (float) ($universe->stateVector['stability_index'] ?? 1.0),
+            'tech_level' => (float) ($universe->stateVector['tech_level'] ?? 0.0),
+            'population' => (int) ($universe->stateVector['total_population'] ?? 0),
+            'social_order' => (float) ($socialLayer['pressures']['social_order'] ?? 1.0),
+            'resource_scarcity' => (float) ($physicalLayer['pressures']['resource_scarcity'] ?? 0.5),
             'innovation' => (float) ($universe->stateVector['innovation'] ?? 0),
         ];
 

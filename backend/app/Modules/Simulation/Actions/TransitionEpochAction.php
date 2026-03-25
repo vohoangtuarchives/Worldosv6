@@ -8,6 +8,7 @@ use App\Models\Epoch;
 use App\Models\Chronicle;
 use App\Models\BranchEvent;
 use App\Models\World;
+use App\Modules\Simulation\Events\EpochTransitioned;
 use Illuminate\Support\Facades\Log;
 
 class TransitionEpochAction
@@ -70,10 +71,21 @@ class TransitionEpochAction
         if ($world) {
             $axiom = $world->axiom ?? [];
             $axiom['current_epoch_theme'] = $nextEpoch->theme;
-            $world->update(['axiom' => $axiom]);
+            $world->update([
+                'axiom' => $axiom,
+                'civilization_era' => $nextEpoch->theme
+            ]);
         }
 
         Log::info("Epoch Transition Completed: [{$currentEpoch->name}] -> [{$nextEpoch->name}]");
+
+        // Dispatch event for narrative and artifact generation
+        event(new EpochTransitioned(
+            UniverseModel::find($universe->id),
+            $currentEpoch,
+            $nextEpoch,
+            $tick
+        ));
 
         return $nextEpoch;
     }

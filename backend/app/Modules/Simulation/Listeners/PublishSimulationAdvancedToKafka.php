@@ -33,6 +33,13 @@ class PublishSimulationAdvancedToKafka
             $payload['instability_gradient'] = $engineResponse['snapshot']['instability_gradient'];
         }
 
+        // Phase 100: Include transition metadata and reality strain
+        $payload['transition'] = $universe->state_vector['transition'] ?? null;
+        $payload['reality_strain'] = $universe->state_vector['reality_strain'] ?? 0.0;
+        $payload['anomaly_probability'] = $universe->state_vector['anomaly_probability'] ?? 0.0;
+        $payload['power_system'] = $universe->world->power_system_type ?? 'traditional';
+        $payload['civilization_era'] = $universe->world->civilization_era ?? 'genesis';
+
         $this->producer->publishSimulationAdvanced((int) $universe->id, $tick, $payload);
     }
 }

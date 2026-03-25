@@ -6,6 +6,11 @@ import { useSimulationStore } from '@/store/useSimulationStore';
 
 const TimelineSplitter = () => {
   const { universes, currentTick } = useSimulationStore();
+  const [hasMounted, setHasMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setHasMounted(true);
+  }, []);
   
   // Simulated universe branching if only one exists
   const displayUniverses = useMemo(() => {
@@ -15,6 +20,8 @@ const TimelineSplitter = () => {
       { id: 'EXP-BRANCH-99', name: 'Experimental Divergence', stability: 72.1, color: 'hsl(var(--accent))' }
     ];
   }, [universes]);
+
+  if (!hasMounted) return <div className="w-full h-full p-6 bg-card/20 rounded-[var(--radius)] border border-white/10" />;
 
   return (
     <div className="w-full h-full p-6 bg-card/20 backdrop-blur-3xl rounded-[var(--radius)] border border-white/10 flex flex-col gap-4 relative overflow-hidden">
@@ -27,7 +34,7 @@ const TimelineSplitter = () => {
       </div>
 
       <div className="flex-1 relative mt-4">
-        <svg className="w-full h-full min-h-[120px]" preserveAspectRatio="none">
+        <svg className="w-full h-full min-h-[120px]" viewBox="0 0 1000 100" preserveAspectRatio="none">
           <defs>
             <linearGradient id="branch-grad" x1="0%" y1="0%" x2="100%" y2="0%">
               <stop offset="0%" stopColor="hsl(var(--cosmos))" stopOpacity="0.1" />
@@ -37,18 +44,18 @@ const TimelineSplitter = () => {
           </defs>
 
           {/* Main Timeline Line */}
-          <line x1="0" y1="50%" x2="100%" y2="50%" stroke="url(#branch-grad)" strokeWidth="1" strokeDasharray="4 4" />
+          <line x1="0" y1="50" x2="1000" y2="50" stroke="url(#branch-grad)" strokeWidth="1" strokeDasharray="4 4" />
 
           {displayUniverses.map((u, i) => {
             const isPrimary = i === 0;
-            const yPos = isPrimary ? '40%' : '70%';
+            const yPos = isPrimary ? 40 : 70;
             const color = isPrimary ? 'hsl(var(--cosmos))' : 'hsl(var(--accent))';
             
             return (
               <g key={u.id}>
                 {/* Branch Path */}
                 <motion.path
-                  d={`M 0 50% C 50 50%, 100 ${yPos}, 200 ${yPos} L 1000 ${yPos}`}
+                  d={`M 0 50 C 150 50, 200 ${yPos}, 1000 ${yPos}`}
                   stroke={color}
                   strokeWidth={isPrimary ? 2 : 1}
                   fill="none"
@@ -59,12 +66,12 @@ const TimelineSplitter = () => {
                 
                 {/* Status Indicator */}
                 <motion.foreignObject
-                  x="50%"
-                  y={isPrimary ? '15%' : '80%'}
+                  x="500"
+                  y={isPrimary ? 10 : 75}
                   width="180"
                   height="40"
-                  initial={{ x: '45%', opacity: 0 }}
-                  animate={{ x: '50%', opacity: 1 }}
+                  initial={{ x: 450, opacity: 0 }}
+                  animate={{ x: 500, opacity: 1 }}
                   transition={{ delay: 1 + i * 0.5 }}
                 >
                   <div className="flex items-center gap-3 p-2 bg-void/60 border border-white/10 rounded-sm backdrop-blur-md">
@@ -81,11 +88,11 @@ const TimelineSplitter = () => {
 
           {/* Current Tick Marker */}
           <motion.line
-            x1="80%" y1="0" x2="80%" y2="100%"
+            x1="800" y1="0" x2="800" y2="100"
             stroke="rgba(255,255,255,0.2)"
             strokeWidth="0.5"
             strokeDasharray="2 2"
-            animate={{ x: ['79%', '81%', '79%'] }}
+            animate={{ x: [790, 810, 790] }}
             transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
           />
         </svg>

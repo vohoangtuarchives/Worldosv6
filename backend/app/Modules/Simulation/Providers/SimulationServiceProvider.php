@@ -248,6 +248,31 @@ class SimulationServiceProvider extends ServiceProvider
         $this->app->singleton(\App\Modules\Simulation\Services\FfiActorEngine::class);
         $this->app->singleton(\App\Modules\Simulation\Services\FeatureExtractionService::class);
 
+        // Phase 100: Power System Transition (Decoupling Era from Power System)
+        $this->app->singleton(\App\Modules\Simulation\Services\Transition\Transformers\EntropyTransformer::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Transition\Transformers\StabilityBinder::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Transition\Transformers\CausalityRewriter::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Transition\Transformers\RealityStrainSimulator::class);
+
+        $this->app->singleton(\App\Modules\Simulation\Services\Transition\Guards\EnergyInvariantGuard::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Transition\Guards\CausalityInvariantGuard::class);
+
+        $this->app->singleton(\App\Modules\Simulation\Services\Transition\TransitionProcessor::class, function ($app) {
+            $transformers = [
+                $app->make(\App\Modules\Simulation\Services\Transition\Transformers\EntropyTransformer::class),
+                $app->make(\App\Modules\Simulation\Services\Transition\Transformers\StabilityBinder::class),
+                $app->make(\App\Modules\Simulation\Services\Transition\Transformers\CausalityRewriter::class),
+                $app->make(\App\Modules\Simulation\Services\Transition\Transformers\RealityStrainSimulator::class),
+            ];
+            
+            $guards = [
+                $app->make(\App\Modules\Simulation\Services\Transition\Guards\EnergyInvariantGuard::class),
+                $app->make(\App\Modules\Simulation\Services\Transition\Guards\CausalityInvariantGuard::class),
+            ];
+            
+            return new \App\Modules\Simulation\Services\Transition\TransitionProcessor($transformers, $guards);
+        });
+
         // Phase 80: World Kernel & Primitive Systems (§World-Kernel Architecture)
         $this->app->singleton(\App\Modules\Simulation\Core\Runtime\WorldKernel::class, function ($app) {
             $kernel = new \App\Modules\Simulation\Core\Runtime\WorldKernel($app->make(\App\Modules\Simulation\Core\Runtime\State\StateManager::class));
@@ -765,6 +790,16 @@ class SimulationServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        \Illuminate\Support\Facades\Event::listen(
+            \App\Modules\Simulation\Events\PowerSystemTransitionTriggered::class,
+            \App\Modules\Simulation\Listeners\HandlePowerSystemTransition::class
+        );
+
+        \Illuminate\Support\Facades\Event::listen(
+            \App\Modules\Simulation\Events\EpochTransitioned::class,
+            \App\Modules\Simulation\Listeners\HandleEpochTransition::class
+        );
+
         Route::group([
             'prefix' => 'api',
             'middleware' => 'api',
