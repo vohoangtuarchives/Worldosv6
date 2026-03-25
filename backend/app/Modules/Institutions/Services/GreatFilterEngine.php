@@ -70,7 +70,7 @@ class GreatFilterEngine
             ]
         ]);
 
-        $result = $this->ruleVm->evaluateRaw($universe, $snapshot, $dsl);
+        $result = $this->ruleVm->evaluateRaw($snapshot->state_vector, $dsl);
         
         if (!($result['ok'] ?? false)) return [];
 

@@ -6,6 +6,7 @@ use Laudis\Neo4j\ClientBuilder;
 use Laudis\Neo4j\Contracts\ClientInterface;
 use App\Models\Actor;
 use Illuminate\Support\Facades\Log;
+use Laudis\Neo4j\Authentication;
 
 class Neo4jSocialSyncer
 {
@@ -19,8 +20,23 @@ class Neo4jSocialSyncer
     {
         if ($this->client === null) {
             $uri = config('worldos.graph.uri', 'bolt://neo4j:worldos_secret@neo4j:7687');
+            // Force bolt if we get an http address (likely from a misconfigured bridge)
+            if (str_starts_with($uri, 'http')) {
+                $uri = str_replace(['http://', 'https://'], 'bolt://', $uri);
+                $uri = str_replace(':7474', ':7687', $uri);
+            }
+
+            // Parse auth from bolt URI (bolt://user:pass@host:port)
+            // Use ClientBuilder's internal basic auth if Authentication class is missing
+            $user = 'neo4j';
+            $pass = 'worldos_secret';
+            if (preg_match('/bolt:\/\/([^:]+):([^@]+)@/', $uri, $matches)) {
+                $user = $matches[1];
+                $pass = $matches[2];
+            }
+
             $this->client = ClientBuilder::create()
-                ->withDriver('bolt', $uri)
+                ->withDriver('bolt', $uri, \Laudis\Neo4j\Authentication::basic($user, $pass))
                 ->build();
         }
         return $this->client;

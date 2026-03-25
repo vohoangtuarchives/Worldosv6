@@ -94,8 +94,6 @@ final class SimulationSupervisor
                     throw new \Exception("Failed to load SnapshotEntity for ID: " . $snapshotModel->id);
                 }
 
-                $this->eventDispatcher->dispatchPulsed($universe, $snapshotEntity, $engineResponse, 1, $tickDurationMsPerTick);
-                
                 $this->runtimePipeline->run(
                     $universe,
                     (int) ($snapshotData['tick'] ?? $universe->currentTick),
@@ -103,6 +101,8 @@ final class SimulationSupervisor
                     $engineResponse,
                     1
                 );
+
+                $this->eventDispatcher->dispatchPulsed($universe, $snapshotEntity, $engineResponse, 1, $tickDurationMsPerTick);
             } catch (\Throwable $e) {
                 Log::error('Simulation: tick loop failure', ['index' => $i, 'error' => $e->getMessage()]);
                 break;

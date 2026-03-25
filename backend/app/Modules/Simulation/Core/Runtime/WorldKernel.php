@@ -77,6 +77,17 @@ class WorldKernel
         Log::debug("WorldKernel: Starting Orchestration Tick $tick");
         $this->tickImpacts = [];
 
+        // 1. PHASE 0: Agents Act First (§V8 Realignment)
+        // V9: Ensure zones are prepopulated with agents from the single source of truth
+        $state->syncAgentsToZones();
+        
+        // Before world environment updates, agents must decide and act.
+        $this->executeAgentActions($state, $tick);
+
+        // V9: Resync after actions (to reflect movement/changes before systems run)
+        $state->syncAgentsToZones();
+
+        // 2. PHASE 1-5: Sequential Reality Phases
         foreach ($this->orchestrationMap as $phase => $categories) {
             $phaseStart = microtime(true);
             $this->executePhase($phase, $categories, $state, $tick);
@@ -84,21 +95,60 @@ class WorldKernel
             Log::debug("WorldKernel: Phase [{$phase}] completed in {$phaseMs}ms");
         }
 
-        // 1. Process Global Emergence: State Transition Engine (ISTE)
+        // 3. Process Global Emergence: State Transition Engine (ISTE)
         $iste = app(\App\Modules\Simulation\Core\Runtime\Engines\StateTransitionEngine::class);
         $iste->run($state, $this->tickImpacts, $tick);
 
-        // 2. Finalize: Link semantic impacts to the Causal History Engine
+        // 4. Finalize: Link semantic impacts to the Causal History Engine
         $this->processCausalImpacts($state, $tick);
 
-        // 3. Event-Driven: Dispatch domain events dựa trên ngưỡng state
-        $this->dispatchDomainEvents($state, $tick);
-
-        // 4. Narrative-Driven: Process Emergent Narrative Feedback & Scars (§Level-10)
-        $this->finalizeNarrativeEmergence($state, $tick);
+        // 5. Narrative-Driven: Cleanup & Feedback
+        $this->finalizeTick($state, $tick);
 
         $totalMs = round((microtime(true) - $startTime) * 1000, 2);
         Log::debug("WorldKernel: Orchestration Tick $tick Completed in {$totalMs}ms");
+    }
+
+    protected function executeAgentActions(WorldState $state, int $tick): void
+    {
+        $universeId = (int) $state->get('universe_id', 0);
+        $actors = $state->getActorEntities();
+        if (empty($actors)) return;
+
+        // V8: Historical Scars from previous ticks provide path-dependence
+        $pastScars = $state->getScars();
+
+        // shard and process (same logic as old finalizeNarrativeEmergence but at START)
+        $universe = \App\Models\Universe::find($universeId);
+        $isObserved = (float) ($universe->observation_load ?? 0.0) > 0.5;
+        
+        $factionRelations = \App\Models\FactionRelation::all()->toArray();
+        $beliefDefinitions = \App\Models\Belief::all()->map(function($b) {
+            return ['id' => $b->id, 'name' => $b->name, 'type' => $b->type, 'trait_weights' => $b->trait_weights];
+        })->toArray();
+        
+        $techDefinitions = \App\Models\Technology::all()->map(function($t) {
+            return ['id' => $t->id, 'name' => $t->name, 'code' => $t->code, 'requirements' => $t->requirements, 'effects' => $t->effects];
+        })->toArray();
+
+        // Sharding if needed
+        $shardCount = config('worldos.simulation.shard_count', 1);
+        $actorBatches = array_chunk($actors, ceil(count($actors) / $shardCount));
+
+        foreach ($actorBatches as $batchIdx => $batchActors) {
+            $this->processAgentBatch($universeId, $tick, $batchActors, $state, $isObserved, $factionRelations, $beliefDefinitions, $techDefinitions, $pastScars);
+        }
+    }
+
+    protected function finalizeTick(WorldState $state, int $tick): void
+    {
+        // Periodic Decay of Memory to prevent state bloat
+        if ($tick % 50 === 0) {
+            app(\App\Modules\Simulation\Actions\DecayScarsAction::class)->handle((int)$state->get('universe_id'));
+        }
+        
+        // Dispatch Domain Events
+        $this->dispatchDomainEvents($state, $tick);
     }
 
     /**
@@ -209,66 +259,9 @@ class WorldKernel
     }
 
     /**
-     * Finalize Narrative Emergence: Bridge Simulation Results with Narrative Intent via gRPC.
-     */
-    public function finalizeNarrativeEmergence(WorldState $state, int $tick): void
-    {
-        $universeId = (int) $state->get('universe_id', 0);
-        
-        // 1. Fetch pending narrative feedback signals and Universe axioms
-        $universe = \App\Models\Universe::find($universeId);
-        $signals = \App\Models\NarrativeFeedbackSignal::pendingForTick($universeId, $tick)->get();
-        // Note: axioms/signals are currently handled at the evaluating rules step.
-
-        // 2. Sharding & Batch processing (Phase 9)
-        $actors = $state->getActorEntities();
-        $shardCount = config('worldos.simulation.shard_count', 1);
-        $totalActors = count($actors);
-        
-        if ($totalActors === 0) return;
-
-        $actorBatches = array_chunk($actors, ceil($totalActors / $shardCount));
-        
-        $isObserved = (float) $universe->observation_load > 0.5;
-        
-        $factionRelations = \App\Models\FactionRelation::all()->toArray();
-        $beliefDefinitions = \App\Models\Belief::all()->map(function($b) {
-            return [
-                'id' => $b->id,
-                'name' => $b->name,
-                'type' => $b->type,
-                'trait_weights' => $b->trait_weights
-            ];
-        })->toArray();
-        
-        $techDefinitions = \App\Models\Technology::all()->map(function($t) {
-            return [
-                'id' => $t->id,
-                'name' => $t->name,
-                'code' => $t->code,
-                'requirements' => $t->requirements,
-                'effects' => $t->effects
-            ];
-        })->toArray();
-        
-        foreach ($actorBatches as $batchIdx => $batchActors) {
-            Log::debug("WorldKernel: Processing shard " . ($batchIdx + 1) . "/{$shardCount} (" . count($batchActors) . " actors)");
-            $this->processActorBatch($universeId, $tick, $batchActors, $state, $isObserved, $factionRelations, $beliefDefinitions, $techDefinitions);
-        }
-
-        // Mark signals as applied after all batches are processed
-        $signals->each(fn($s) => $s->update(['status' => 'applied']));
-
-        // V10: Entropy of Memory (Chronological Decay) every 50 ticks
-        if ($tick % 50 === 0) {
-            app(\App\Modules\Simulation\Actions\DecayScarsAction::class)->handle($universeId);
-        }
-    }
-
-    /**
      * Process a single batch of actors (Shard) via gRPC.
      */
-    private function processActorBatch(int $universeId, int $tick, array $actors, WorldState $state, bool $isObserved = false, array $factionRelations = [], array $beliefDefinitions = [], array $techDefinitions = []): void
+    private function processAgentBatch(int $universeId, int $tick, array $actors, WorldState $state, bool $isObserved = false, array $factionRelations = [], array $beliefDefinitions = [], array $techDefinitions = [], array $pastScars = []): void
     {
         $ids = [];
         $zoneIds = [];
@@ -303,7 +296,7 @@ class WorldKernel
             $behaviorStates[] = (int) data_get($actor->metrics, 'behavior_state', 0);
 
             // Collect belief alignments (Phase 13)
-            $actorBeliefs = \DB::table('actor_beliefs')
+            $actorBeliefs = DB::table('actor_beliefs')
                 ->where('actor_id', $actor->id)
                 ->pluck('alignment', 'belief_id')
                 ->toArray();
@@ -313,7 +306,7 @@ class WorldKernel
             }
 
             // Collect technology levels (Phase 14)
-            $actorTechs = \DB::table('actor_technologies')
+            $actorTechs = DB::table('actor_technologies')
                 ->where('actor_id', $actor->id)
                 ->pluck('level', 'technology_id')
                 ->toArray();
@@ -396,22 +389,14 @@ class WorldKernel
                         $category = strtoupper($scar['category'] ?? '');
                         match (true) {
                             str_contains($category, 'STARV') => ($entropyDelta += 0.005),
-                            str_contains($category, 'REVOLT') || str_contains($category, 'WAR') => ($entropyDelta += 0.01) && ($violenceDelta += 0.015),
-                            str_contains($category, 'DISASTER') || str_contains($category, 'DEATH') => ($entropyDelta += 0.003),
+                            (str_contains($category, 'REVOLT') || str_contains($category, 'WAR')) => ($entropyDelta += 0.01 + ($violenceDelta += 0.015)),
+                            (str_contains($category, 'DISASTER') || str_contains($category, 'DEATH')) => ($entropyDelta += 0.003),
                             default => null
                         };
                     }
 
-                    // V10: Narrative Layer Distillation
-                    app(\App\Modules\Simulation\Actions\DistillScarsAction::class)->handle($universeId, $tick, $result['scars']);
-
-                    // Apply accumulated field deltas to WorldState (Event → Field Mutation)
-                    if ($entropyDelta > 0) {
-                        $state->updateField('entropy', min(0.05, $entropyDelta), 'Scar-driven entropy');
-                    }
-                    if ($violenceDelta > 0) {
-                        $state->updateField('violence', min(0.05, $violenceDelta), 'Scar-driven violence');
-                    }
+                    // V10: Narrative Layer Distillation & SCAR Persistence (§V8 Fix)
+                    $this->persistAndDistillScars($state, $tick, $result['scars'], $universeId);
                 }
 
                 // Phase 4: Handle Civilization Metrics
@@ -419,115 +404,132 @@ class WorldKernel
                     $this->storeCivilizationMetrics($universeId, $tick, $result['civilization_metrics']);
                 }
 
-                // Phase 15: Handle Emergent Calamities (The Great Filter)
+                // Phase 15: Handle Emergent Calamities
                 if (!empty($result['calamities'])) {
                     foreach ($result['calamities'] as $calamity) {
                         \App\Models\Chronicle::create([
                             'universe_id' => $universeId,
-                            'actor_id' => null, // Global event
+                            'actor_id' => null,
                             'from_tick' => $tick,
                             'to_tick' => $tick,
                             'type' => 'GLOBAL_CALAMITY',
                             'content' => $calamity['description'] ?? 'A great calamity strikes.',
-                            'importance' => 1.0, // Maximum importance
+                            'importance' => 1.0,
                             'raw_payload' => $calamity
                         ]);
                     }
                 }
 
-                // Phase 13: Update Belief Alignments
+                // Phase 13/14 Updates
                 if (!empty($result['outputs'])) {
-                    foreach ($result['outputs'] as $idx => $out) {
-                        if (isset($out['new_belief_alignments']) && isset($actors[$idx])) {
-                            $actorId = $actors[$idx]->id;
-                            foreach ($beliefDefinitions as $bIdx => $def) {
-                                \DB::table('actor_beliefs')->updateOrInsert(
-                                    ['actor_id' => $actorId, 'belief_id' => $def['id']],
-                                    ['alignment' => $out['new_belief_alignments'][$bIdx], 'updated_at' => now()]
-                                );
-                            }
-                        }
-
-                        // Phase 14: Update Tech Levels
-                        if (isset($out['new_tech_levels']) && isset($actors[$idx])) {
-                            $actorId = $actors[$idx]->id;
-                            foreach ($techDefinitions as $tIdx => $def) {
-                                $newLevel = $out['new_tech_levels'][$tIdx] ?? 0.0;
-                                if ($newLevel > 0) {
-                                    \DB::table('actor_technologies')->updateOrInsert(
-                                        ['actor_id' => $actorId, 'technology_id' => $def['id']],
-                                        ['level' => $newLevel, 'updated_at' => now()]
-                                    );
-                                }
-                            }
-                        }
-                    }
+                    $this->applyBeliefAndTechUpdates($actors, $result['outputs'], $beliefDefinitions, $techDefinitions);
                 }
 
-                // 6. Handle Spawned Actors (Births)
+                // Births
                 if (!empty($result['spawned_actors'])) {
-                    foreach ($result['spawned_actors'] as $spawn) {
-                        $parentId = $spawn['parent_id'];
-                        $parent = \App\Models\Actor::find($parentId);
-                        $generation = $parent ? $parent->generation + 1 : 1;
-                        $familyName = $parent ? ($parent->name) : "Family $parentId";
-                        
-                        $child = \App\Models\Actor::create([
-                            'universe_id' => $universeId,
-                            'name' => "Descendant of " . ($parent ? $parent->name : $parentId),
-                            'archetype' => $spawn['archetype'] ?? 'Commoner',
-                            'parent_actor_id' => $parentId,
-                            'birth_tick' => $tick,
-                            'is_alive' => true,
-                            'traits' => $spawn['trait_vector'] ?? [],
-                            'metrics' => [
-                                'zone_id' => $spawn['zone_id'],
-                                'hunger' => 0.1,
-                                'energy' => 0.6,
-                                'fear' => 0.0,
-                                'trauma' => 0.0,
-                            ],
-                            'generation' => $generation,
-                            'biography' => "Born at tick $tick in Zone " . $spawn['zone_id'] . ". Part of the " . ($parent ? "lineage of " . $parent->name : "first generation") . ".",
-                        ]);
-
-                        // Emit ActorBornEvent for integration with other modules (Narrative, Social)
-                        event(new \App\Modules\Simulation\Core\Events\ActorBornEvent($universeId, (int)$tick, [
-                            'child_id' => $child->id,
-                            'parent1_id' => $parentId,
-                            'traits' => $spawn['trait_vector'] ?? []
-                        ]));
-
-                        // Heritage Logic: Ancestral Memory
-                        if ($parent) {
-                            $recentTrauma = \App\Models\Chronicle::where('actor_id', $parentId)
-                                ->where('type', 'TRAUMA')
-                                ->where('from_tick', '>', $tick - 500)
-                                ->exists();
-
-                            if ($recentTrauma) {
-                                \App\Models\Chronicle::create([
-                                    'universe_id' => $universeId,
-                                    'actor_id' => $child->id,
-                                    'from_tick' => $tick,
-                                    'to_tick' => $tick,
-                                    'type' => 'ANCESTRAL_MEMORY',
-                                    'content' => "Inherited a ghostly fear from the parent's past traumas.",
-                                    'importance' => 0.6,
-                                    'raw_payload' => ['inherited_from' => $parentId, 'legacy_type' => 'trauma']
-                                ]);
-                            }
-                        }
-                    }
+                    $this->handleSpawnedActors($universeId, $tick, $result['spawned_actors']);
                 }
-            }
-
-            // Note: Civilization metrics are shard-aware in this implementation (last shard wins or summed)
-            if (!empty($result['civilization_metrics'])) {
-                $this->storeCivilizationMetrics($universeId, $tick, $result['civilization_metrics']);
             }
         } catch (\Exception $e) {
             Log::error("WorldKernel: gRPC Shard processing failed: " . $e->getMessage());
+        }
+    }
+    private function applyBeliefAndTechUpdates(array $actors, array $outputs, array $beliefDefinitions, array $techDefinitions): void
+    {
+        foreach ($outputs as $idx => $out) {
+            if (!isset($actors[$idx])) continue;
+            $actorId = $actors[$idx]->id;
+
+            // Phase 13: Beliefs
+            if (isset($out['new_belief_alignments'])) {
+                foreach ($beliefDefinitions as $bIdx => $def) {
+                    $alignment = $out['new_belief_alignments'][$bIdx] ?? 0.0;
+                    DB::table('actor_beliefs')->updateOrInsert(
+                        ['actor_id' => $actorId, 'belief_id' => $def['id']],
+                        ['alignment' => $alignment, 'updated_at' => now()]
+                    );
+                }
+            }
+
+            // Phase 14: Technology
+            if (isset($out['new_tech_levels'])) {
+                foreach ($techDefinitions as $tIdx => $def) {
+                    $newLevel = $out['new_tech_levels'][$tIdx] ?? 0.0;
+                    if ($newLevel > 0) {
+                        DB::table('actor_technologies')->updateOrInsert(
+                            ['actor_id' => $actorId, 'technology_id' => $def['id']],
+                            ['level' => $newLevel, 'updated_at' => now()]
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    private function handleSpawnedActors(int $universeId, int $tick, array $spawnedActors): void
+    {
+        foreach ($spawnedActors as $spawn) {
+            $parentId = $spawn['parent_id'];
+            $parent = \App\Models\Actor::find($parentId);
+            $generation = $parent ? $parent->generation + 1 : 1;
+            
+            $child = \App\Models\Actor::create([
+                'universe_id' => $universeId,
+                'name' => "Descendant of " . ($parent ? $parent->name : $parentId),
+                'archetype' => $spawn['archetype'] ?? 'Commoner',
+                'parent_actor_id' => $parentId,
+                'birth_tick' => $tick,
+                'is_alive' => true,
+                'traits' => $spawn['trait_vector'] ?? [],
+                'metrics' => [
+                    'zone_id' => $spawn['zone_id'],
+                    'hunger' => 0.1,
+                    'energy' => 0.6,
+                    'fear' => 0.0,
+                    'trauma' => 0.0,
+                ],
+                'generation' => $generation,
+            ]);
+            event(new \App\Modules\Simulation\Core\Events\ActorBornEvent($universeId, (int)$tick, [
+                'child_id' => $child->id,
+                'parent1_id' => $parentId,
+                'traits' => $spawn['trait_vector'] ?? []
+            ]));
+        }
+    }
+
+    private function persistAndDistillScars(WorldState $state, int $tick, array $scars, int $universeId): void
+    {
+        // 1. Persist in WorldState for engine memory (path-dependence)
+        $currentScars = $state->getScars();
+        $updatedScars = array_merge($currentScars, $scars);
+        
+        // Cap scans to avoid bloat (last 50 significant scars)
+        if (count($updatedScars) > 50) {
+            $updatedScars = array_slice($updatedScars, -50);
+        }
+        $state->setScars($updatedScars);
+
+        // 2. Distill for Narrative Chronicles (Historical record)
+        app(\App\Modules\Simulation\Actions\DistillScarsAction::class)->handle($universeId, $tick, $scars);
+
+        // 3. Field feedback loop
+        $entropyDelta = 0.0;
+        $violenceDelta = 0.0;
+        foreach ($scars as $scar) {
+            $category = strtoupper($scar['category'] ?? '');
+            if (str_contains($category, 'DEATH')) $entropyDelta += 0.001;
+            if (str_contains($category, 'WAR')) {
+                $entropyDelta += 0.01;
+                $violenceDelta += 0.015;
+            }
+        }
+        
+        if ($entropyDelta > 0) {
+            $state->updateField('entropy', min(0.05, $entropyDelta), 'Scar-driven feedback');
+        }
+        if ($violenceDelta > 0) {
+            $state->updateField('violence', min(0.05, $violenceDelta), 'Scar-driven violence');
         }
     }
 
@@ -642,9 +644,10 @@ class WorldKernel
         $transitions = [];
         // [0: withdraw, 1: resist, 2: cooperate, 3: isolate, 4: passive]
         // 4 is 'passive' (Idle) in current behaviors.json
+        // Corrected V12 Transitions:conditions must be valid boolean expressions
         $transitions[] = $this->createTransition(4, 0, "fear > 0.6", 1.0);
-        $transitions[] = $this->createTransition(4, 2, "sociability > 0.6", 0.8);
-        $transitions[] = $this->createTransition(4, 1, "dominance > 0.7", 0.5);
+        $transitions[] = $this->createTransition(4, 2, "trust > 0.6", 0.8);
+        $transitions[] = $this->createTransition(4, 1, "anger > 0.7", 0.5);
         $transitions[] = $this->createTransition(0, 4, "fear < 0.2", 1.0);
         
         $graph->setTransitions($transitions);

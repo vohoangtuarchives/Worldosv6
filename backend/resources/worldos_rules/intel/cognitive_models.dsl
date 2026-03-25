@@ -14,7 +14,8 @@ formula "(1.0 - (energy / maxEnergy))"
 set hunger h_hunger
     
 when
-starving then
+energy < (maxEnergy * 0.2)
+then
 set hunger (hunger + 1.2)
     
 calc h_safety
@@ -28,9 +29,7 @@ calc h_repro
 formula "0.2"
 set reproduction h_repro
 when
-energy > (maxEnergy * 0.7) then
-when
-generation < 10 then
+energy > (maxEnergy * 0.7) && generation < 10 then
 set reproduction (reproduction + 0.3)
     
 set belonging_need 0.5

@@ -15,5 +15,5 @@ state.fields.entropy > 0.8
 count(state.nested_realities) > 0
 then
     // Entropy quá cao làm đứt gãy kết nối với sub-sim
-state.nested_realities = [];
+metadata log("V9 Paradox Excessive entropy collapsed the nested reality layers.");
 metadata log("V9 Paradox Excessive entropy collapsed the nested reality layers.");

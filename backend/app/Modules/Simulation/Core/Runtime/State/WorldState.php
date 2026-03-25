@@ -47,18 +47,21 @@ class WorldState
     {
         $data = $this->data;
         
-        // V6: Sync real entities back to the state vector for visibility
+        // V9: Enforce Single Source of Truth for Agent Visibility
         if (!empty($this->actorEntities)) {
+            $alive = array_filter($this->actorEntities, fn($a) => $a->isAlive);
+            
+            // Limit actor_table size for snapshot performance, but maintain real count
             $data['agents'] = array_map(fn($a) => [
                 'id' => $a->id,
                 'name' => $a->name,
-                'hunger' => round($a->hunger ?? 0.5, 2),
+                'hunger' => round($a->hunger ?? 0.0, 2),
                 'energy' => round((float)($a->metrics['energy'] ?? $a->energy ?? 100), 2),
                 'zone_id' => $a->zone_id,
                 'is_alive' => $a->isAlive,
-            ], array_slice(array_filter($this->actorEntities, fn($a) => $a->isAlive), 0, 10));
+            ], array_slice($alive, 0, 50)); 
             
-            $data['total_population'] = count(array_filter($this->actorEntities, fn($a) => $a->isAlive));
+            $data['total_population'] = count($alive);
         }
 
         return $data;
@@ -152,8 +155,9 @@ class WorldState
             'state' => [
                 'ideas' => $this->getIdeaEntities(),
                 'myths' => $this->get('meta.active_myths', []),
-                'narratives' => $this->get('meta.active_narratives', []), // Added
+                'narratives' => $this->get('meta.active_narratives', []),
                 'chronicles' => $this->getRecentChronicles(),
+                'persistent_myths' => $this->get('meta.persistent_myths', []),
             ],
             'pressures' => [
                 'collective_meaning' => (float)($fields['meaning'] ?? 0.5),
@@ -184,6 +188,70 @@ class WorldState
 
     public function getZones(): array { return $this->data['zones'] ?? []; }
     public function setZones(array $val): void { $this->data['zones'] = $val; }
+
+    /**
+     * V9: Sync internal Agent entities to their respective Zones.
+     * Use this to rebuild zone.agents[] from the global actorEntities source.
+     */
+    public function syncAgentsToZones(): void
+    {
+        $zones = $this->getZones();
+        $agents = $this->getActorEntities();
+        
+        $actorTable = [
+            'ids' => [],
+            'zone_ids' => [],
+            'hunger' => [],
+            'energy' => [],
+            'fear' => [],
+            'traits_mask' => [],
+            'memes_mask' => [],
+            'heroic_type' => [],
+            'lineage_id' => [],
+            'current_node' => [],
+        ];
+
+        // Group alive agents by zone
+        $agentGroups = [];
+        foreach ($agents as $agent) {
+            if ($agent->isAlive) {
+                $e = (float)($agent->metrics['energy'] ?? $agent->energy ?? 100);
+                $h = (float)($agent->hunger ?? 0.0);
+                
+                $agentGroups[$agent->zone_id][] = [
+                    'id' => $agent->id,
+                    'name' => $agent->name,
+                    'hunger' => $h,
+                    'energy' => $e,
+                ];
+
+                // Build SOA actor_table
+                $actorTable['ids'][] = (int)$agent->id;
+                $actorTable['zone_ids'][] = (int)$agent->zone_id;
+                $actorTable['hunger'][] = $h;
+                $actorTable['energy'][] = $e;
+                $actorTable['fear'][] = (float)($agent->fear ?? 0.0);
+                $actorTable['traits_mask'][] = (int)($agent->metrics['traits_mask'] ?? 0);
+                $actorTable['memes_mask'][] = (int)($agent->metrics['memes_mask'] ?? 0);
+                $actorTable['heroic_type'][] = (int)($agent->metrics['heroic_type'] ?? 0);
+                $actorTable['lineage_id'][] = (int)($agent->metrics['lineage_id'] ?? 0);
+                $actorTable['current_node'][] = (int)($agent->metrics['behavior_state'] ?? 0);
+            }
+        }
+
+        // Update zone structures
+        foreach ($zones as &$zone) {
+            $zoneId = $zone['id'];
+            $zone['agents'] = $agentGroups[$zoneId] ?? [];
+            $zone['population_proxy'] = count($zone['agents']);
+        }
+
+        $this->setZones($zones);
+        $this->set('actor_table', $actorTable);
+        $this->set('population_proxy', count($actorTable['ids']));
+        
+        \Illuminate\Support\Facades\Log::debug("WorldState: Synced " . count($actorTable['ids']) . " agents into actor_table.");
+    }
 
     public function getZoneMemory(int $zoneId): array { return $this->get("memory.zones.{$zoneId}", []); }
     public function setZoneMemory(int $zoneId, array $memory): void { $this->set("memory.zones.{$zoneId}", $memory); }

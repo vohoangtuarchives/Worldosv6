@@ -29,17 +29,21 @@ class AppServiceProvider extends ServiceProvider
             $url = (string) config('worldos.simulation_engine_grpc_url', '');
             if ($url !== '') {
                 if (str_starts_with($url, 'grpc://')) {
-                    $hostname = str_replace('grpc://', '', $url);
+                    $parsed = parse_url($url);
+                    $host = $parsed['host'] ?? 'localhost';
+                    $port = $parsed['port'] ?? 50051;
+
                     // Chỉ khởi tạo GrpcClient nếu extension đã được cài đặt
                     if (class_exists(\Grpc\ChannelCredentials::class)) {
-                        return new GrpcSimulationEngineClient($hostname);
+                        return new GrpcSimulationEngineClient($host . ':' . $port);
                     }
                     Log::error("gRPC extension is not installed. Falling back to HTTP.");
-                    $url = 'http://' . $hostname . ':50052';
+                    $url = 'http://' . $host . ':50052';
                 }
                 
-                if (str_starts_with($url, 'http://') || str_starts_with($url, 'https://')) {
-                    return new HttpSimulationEngineClient($url);
+                if (str_starts_with($url, 'http://') || str_starts_with($url, 'https://') || !str_contains($url, '://')) {
+                    $finalUrl = str_contains($url, '://') ? $url : 'http://' . $url;
+                    return new HttpSimulationEngineClient($finalUrl);
                 }
             }
             return new StubSimulationEngineClient;

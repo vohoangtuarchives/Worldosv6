@@ -155,6 +155,13 @@ export default function Home() {
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    if (universe?.id) {
+      setLoading(true);
+      fetchSnapshots(universe.id);
+    }
+  }, [universe?.id]);
+
   const viewSnapshotDetail = async (snapshot: any) => {
     try {
       setFetchingDetail(true);
@@ -541,12 +548,12 @@ export default function Home() {
                         <td className="px-6 py-4">
                            <div className="flex flex-col">
                               <span className="text-xs font-mono text-white/80">
-                                {s.metrics?.actor_count || 0} <span className="text-[9px] opacity-40 uppercase">Actors</span>
+                                {s.metrics?.actor_count || s.metrics?.total_population || s.state_vector?.total_population || 0} <span className="text-[9px] opacity-40 uppercase">Entities</span>
                               </span>
                               {nextS && (
                                 <span className={`text-[8px] font-bold ${popAction}`}>
-                                  {s.metrics?.actor_count >= (nextS?.metrics?.actor_count ?? 0) ? '+' : ''}
-                                  {(s.metrics?.actor_count ?? 0) - (nextS?.metrics?.actor_count ?? 0)}
+                                  {(s.metrics?.actor_count || s.metrics?.total_population || 0) >= ((nextS?.metrics?.actor_count || nextS?.metrics?.total_population) ?? 0) ? '+' : ''}
+                                  {(s.metrics?.actor_count || s.metrics?.total_population || 0) - ((nextS?.metrics?.actor_count || nextS?.metrics?.total_population) ?? 0)}
                                 </span>
                               )}
                            </div>

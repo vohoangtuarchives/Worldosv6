@@ -69,10 +69,8 @@ class UniverseController extends Controller
         $limit = $limit > 0 && $limit <= 500 ? $limit : 50;
         $rows = \App\Models\UniverseSnapshot::where('universe_id', (int) $id)
             ->orderByDesc('tick')
-            ->limit($limit)
-            ->get(['id', 'universe_id', 'tick', 'entropy', 'stability_index', 'metrics', 'created_at'])
-            ->toArray();
-        return response()->json(array_reverse($rows));
+            ->get(['id', 'universe_id', 'tick', 'entropy', 'stability_index', 'metrics', 'created_at']);
+        return response()->json($rows);
     }
 
     public function getSnapshot(string $snapshotId): JsonResponse

@@ -76,6 +76,8 @@ class EvaluateSimulationResult
         protected CosmicEnergyPoolService $cosmicEnergyPoolService,
         protected \App\Modules\Simulation\Services\AdaptiveSchedulerService $adaptiveScheduler,
         protected \App\Modules\Simulation\Services\HeroLifecycleService $heroLifecycleService,
+        protected \App\Modules\Intelligence\Services\BiologyMetricsService $biologyMetrics,
+        protected \App\Modules\Intelligence\Services\EcosystemMetricsService $ecosystemMetrics,
     ) {}
 
     public function handle(UniverseSimulationPulsed $event): void
@@ -366,13 +368,19 @@ class EvaluateSimulationResult
         $stress = $this->pressureCalculator->calculateMaterialStress($state);
         $cosmic = $this->pressureCalculator->calculateCosmicMetrics($state);
 
+        $bio = $this->biologyMetrics->forUniverse($universe->id);
+        $eco = $this->ecosystemMetrics->forUniverse($universe);
+
         $calculated_metrics = [
             'material_stress' => $stress,
             'order' => $cosmic['order'],
             'energy_level' => $cosmic['energy_level'],
+            'actor_count' => $bio['total_alive'] ?? 0,
+            'total_population' => $eco['total_population'] ?? 0,
+            'ecosystem_metrics' => $eco,
         ];
         // Merge: snapshot->metrics (cosmic impact from SupremeEntity) wins over calculated pressure.
-        $metrics = array_replace_recursive($calculated_metrics, $snapshot->metrics ?? []);
+        $metrics = array_replace_recursive($snapshot->metrics ?? [], $calculated_metrics);
 
         // Metrics invariant [0,1]: clamp when writing so downstream engines can trust values.
         $metrics = $this->clampMetricsToUnitInterval($metrics);

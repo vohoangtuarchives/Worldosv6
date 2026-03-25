@@ -32,7 +32,7 @@ RUN composer install --no-interaction --prefer-dist --no-dev --no-scripts --no-a
 COPY backend/ /var/www
 
 # Finalize autoloader and run scripts
-RUN composer dump-autoload --optimize --no-dev
+RUN rm -f bootstrap/cache/*.php && composer dump-autoload --optimize --no-dev
 
 # Set permissions early for artisan commands
 RUN chown -R www-data:www-data /var/www
