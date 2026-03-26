@@ -48,14 +48,7 @@ class DynamicLawEngine implements SimulationEngine
         $tick = $ctx->getTick();
         
         // Thực thi ma trận dịch chuyển luật vật lý cơ bản
-        $lawShiftsDsl = $this->ruleVmService->loadDsl('simulation/law_shifts');
-        if (!empty($lawShiftsDsl)) {
-            $this->ruleVmService->evaluateAndApplyWithState(
-                $state, 
-                $lawShiftsDsl, 
-                $tick
-            );
-        }
+        $this->ruleVmService->evaluateAndApplyWithDsl($state, 'simulation/law_shifts', $tick);
 
         // Phase 60: Ontological Resonance (Reality Warping)
         $fields = $state->getFields();
@@ -63,17 +56,9 @@ class DynamicLawEngine implements SimulationEngine
 
         if ($resonance > 0.8) {
             $warpFactor = ($resonance - 0.8) * 5.0; // 0 to 1.0
-            $ontologicalDsl = $this->ruleVmService->loadDsl('simulation/ontological');
-            
-            if (!empty($ontologicalDsl)) {
-                $state->set('meta.reality_warping', $warpFactor);
-                $this->ruleVmService->evaluateAndApplyWithState(
-                    $state,
-                    $ontologicalDsl,
-                    $tick
-                );
-                Log::info("DynamicLawEngine: Ontological Resonance detected! Warp Factor: $warpFactor");
-            }
+            $state->set('meta.reality_warping', $warpFactor);
+            $this->ruleVmService->evaluateAndApplyWithDsl($state, 'simulation/ontological', $tick);
+            Log::info("DynamicLawEngine: Ontological Resonance detected! Warp Factor: $warpFactor");
         }
 
         Log::debug("DynamicLawEngine: Metaphysical law shifts applied for attractor: " . $state->getActiveAttractor());

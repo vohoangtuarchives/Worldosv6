@@ -125,7 +125,7 @@ class MeaningEngine implements SimulationEngine
 
     private function applyDslRules(WorldState $state, int $tick): void
     {
-        $this->ruleVm->evaluateAndApplyWithState(
+        $this->ruleVm->evaluateAndApplyWithDsl(
             $state,
             'culture/meaning.dsl',
             $tick,

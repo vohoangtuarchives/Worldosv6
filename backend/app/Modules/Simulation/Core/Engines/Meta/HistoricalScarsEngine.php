@@ -100,7 +100,7 @@ class HistoricalScarsEngine implements SimulationEngine
         }
 
         $dsl = file_get_contents($path);
-        $this->ruleVm->evaluateAndApplyWithState($state, $dsl, $tick);
+        $this->ruleVm->evaluateAndApplyWithDsl($state, $dsl, $tick);
     }
 
     protected function estimateMagnitude($chronicle): float

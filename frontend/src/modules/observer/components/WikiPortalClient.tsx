@@ -186,10 +186,16 @@ export default function WikiPortalClient({ universeId }: { universeId: string })
                 {results.chronicles.map((ch: any) => (
                   <div key={ch.id} className="p-3 rounded-lg hover:bg-white/5 transition-colors flex items-center justify-between group cursor-help">
                     <div className="flex-1">
-                      <div className="font-bold text-sm text-white truncate group-hover:text-purple-400 transition-colors">{ch.title}</div>
-                      <div className="text-xs text-muted-foreground">Tick {ch.tick}</div>
+                      <div className="font-bold text-sm text-white truncate group-hover:text-purple-400 transition-colors uppercase tracking-tight">{ch.title}</div>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Badge className="text-[9px] bg-purple-500/10 text-purple-400 border-purple-500/20">Tick {ch.tick}</Badge>
+                        {ch.impact_score > 70 && <Badge className="text-[9px] bg-red-500/10 text-red-400 border-red-500/20">Critical</Badge>}
+                      </div>
                     </div>
-                    <ChevronRight className="w-4 h-4 text-muted-foreground group-hover:text-purple-400 transition-colors" />
+                    <div className="text-right">
+                       <div className="text-[10px] text-white/40 font-mono">IMPACT</div>
+                       <div className="text-xs font-bold text-purple-400">{ch.impact_score}%</div>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -207,11 +213,25 @@ export default function WikiPortalClient({ universeId }: { universeId: string })
                     href={`/universes/${universeId}/wiki/axiom/${ax.id}`}
                     className="p-3 rounded-lg hover:bg-white/5 transition-colors flex items-center justify-between group"
                   >
-                    <div>
+                    <div className="flex-1">
                       <div className="font-bold text-sm text-white group-hover:text-emerald-400 transition-colors">{ax.name}</div>
-                      <div className="text-xs text-muted-foreground italic truncate max-w-[150px]">{ax.id}</div>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-[10px] text-white/40 font-mono italic truncate max-w-[120px]">{ax.id}</span>
+                        {ax.drift_summary?.status === 'shifting' && (
+                          <span className="flex items-center gap-1 text-[9px] text-orange-400 animate-pulse">
+                            <Zap className="w-2 h-2" /> Drifted
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <Badge className="text-[10px] uppercase">{ax.dimension}</Badge>
+                    <div className="text-right flex flex-col items-end gap-1">
+                       <Badge className="text-[9px] uppercase">{ax.dimension}</Badge>
+                       {ax.drift_summary && (
+                         <div className={`text-[10px] font-mono ${ax.drift_summary.drift > 0 ? 'text-emerald-400' : ax.drift_summary.drift < 0 ? 'text-red-400' : 'text-white/20'}`}>
+                           {ax.drift_summary.drift > 0 ? '+' : ''}{ax.drift_summary.drift.toFixed(2)}
+                         </div>
+                       )}
+                    </div>
                   </Link>
                 ))}
               </div>

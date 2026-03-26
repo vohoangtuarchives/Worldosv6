@@ -72,7 +72,7 @@ class ActorDecisionEngine
 
         // 2. Evaluate Cognitive Model via Pure State DSL
         $state->set('actor_decision_input', $vmState);
-        $this->ruleVm->evaluateAndApplyWithState($state, 'intel/cognitive_models', $currentTick);
+        $this->ruleVm->evaluateAndApplyWithDsl($state, 'intel/cognitive_models', $currentTick);
 
         // 3. Extract Scores from WorldState
         $finalState = $state->get('actor_decision_output', []);

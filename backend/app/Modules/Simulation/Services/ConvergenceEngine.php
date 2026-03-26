@@ -89,7 +89,7 @@ class ConvergenceEngine
             ['universe_id' => $a->id],
             $vmState
         ));
-        $this->ruleVm->evaluateAndApplyWithState($tempState, $dslPath, 0);
+        $this->ruleVm->evaluateAndApplyWithDsl($tempState, $dslPath, 0);
         return (bool) $tempState->get('should_merge', false);
     }
 
@@ -149,7 +149,7 @@ class ConvergenceEngine
             ['universe_id' => $universe->id],
             $vmState
         ));
-        $this->ruleVm->evaluateAndApplyWithState($tempState, $dslPath, $tick);
+        $this->ruleVm->evaluateAndApplyWithDsl($tempState, $dslPath, $tick);
         $isOmega = (bool) $tempState->get('is_omega_point', false);
 
         if ($isOmega) {

@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Atom, TrendingUp, Info, AlertTriangle } from 'lucide-react';
+import { Atom, TrendingUp, Info, AlertTriangle, Zap } from 'lucide-react';
+import Link from 'next/link';
 import { 
   LineChart, 
   Line, 
@@ -81,9 +82,17 @@ export default function AxiomaticArchives({
             "{data.axiom.description}"
           </p>
         </div>
-        <Badge variant="outline" className="text-lg px-4 py-1 border-blue-500/30 text-blue-400 bg-blue-500/5">
-          Tier {data.axiom.tier}
-        </Badge>
+        <div className="flex flex-col items-end gap-2">
+          <Badge variant="outline" className="text-lg px-4 py-1 border-blue-500/30 text-blue-400 bg-blue-500/5">
+            Tier {data.axiom.tier}
+          </Badge>
+          <Link 
+            href={`/universes/${universeId}/omen-weaver`}
+            className="text-[10px] font-mono text-purple-400 hover:text-purple-300 flex items-center gap-1 group"
+          >
+            <Zap className="w-3 h-3 group-hover:animate-pulse" /> REWEAVE REALITY
+          </Link>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

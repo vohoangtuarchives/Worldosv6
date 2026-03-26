@@ -181,7 +181,7 @@ class MythogenesisEngine implements SimulationEngine
 
     private function applyDslRules(WorldState $state, int $tick): void
     {
-        $this->ruleVm->evaluateAndApplyWithState(
+        $this->ruleVm->evaluateAndApplyWithDsl(
             $state,
             'culture/myth.dsl',
             $tick,

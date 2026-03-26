@@ -61,7 +61,7 @@ class VocationActionEngine
             'bloodline' => $actor->lineage_id ?? 'NONE'
         ];
 
-        $this->ruleVm->evaluateAndApplyWithState($state, $ruleDsl, $tick, $context);
+        $this->ruleVm->evaluateAndApplyWithDsl($state, $ruleDsl, $tick, $context);
         
         // 4. Special Action: Synthesis Discovery (Autonomous Evolution)
         if (in_array($behaviorState, ['research', 'meditate'])) {

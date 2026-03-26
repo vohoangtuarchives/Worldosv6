@@ -60,7 +60,7 @@ class RealityAttractorEngine implements SimulationEngine
         $dsl = file_get_contents($path);
 
         // 1. Phân tích trạng thái hiện tại so với các Attractors thông qua Rules
-        $this->ruleVm->evaluateAndApplyWithState($state, $dsl, $tick);
+        $this->ruleVm->evaluateAndApplyWithDsl($state, $dsl, $tick);
 
         Log::debug("RealityAttractorEngine: Calculated reality topology at tick {$tick}. Active attractors updated.");
 

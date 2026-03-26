@@ -41,7 +41,7 @@ final class EconomyStage implements SimulationStageInterface
         $dslFile = resource_path('worldos_rules/simulation/market.dsl');
         if (file_exists($dslFile)) {
             $dsl = file_get_contents($dslFile);
-            $this->ruleVm->evaluateAndApplyWithState($state, $dsl, $tick);
+            $this->ruleVm->evaluateAndApplyWithDsl($state, $dsl, $tick);
         }
     }
 }

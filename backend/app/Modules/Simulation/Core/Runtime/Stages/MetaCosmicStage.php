@@ -12,6 +12,8 @@ use function config;
 use App\Models\Universe;
 use App\Models\UniverseSnapshot;
 use App\Modules\Simulation\Core\Runtime\Contracts\SimulationStageInterface;
+use App\Modules\Simulation\Core\Runtime\RuleVM\RuleVmService;
+use App\Modules\Simulation\Core\Runtime\RuleVM\DslPayload;
 use App\Modules\Simulation\Services\ResonanceAuditorService;
 use App\Modules\Simulation\Services\MultiverseSovereigntyService;
 use App\Modules\Narrative\Actions\ArchetypeShiftAction;
@@ -81,7 +83,7 @@ final class MetaCosmicStage implements SimulationStageInterface
         protected \App\Modules\Intelligence\Services\DynastyEngine $dynastyEngine,
         protected \App\Modules\Simulation\Core\Runtime\Core\CosmicV2Orchestrator $cosmicV2Orchestrator,
         protected \App\Modules\Simulation\Core\Runtime\State\StateManager $stateManager,
-        protected \App\Modules\Simulation\Core\Runtime\RuleVM\RuleVmService $ruleVm,
+        protected RuleVmService $ruleVm,
         protected \App\Modules\Simulation\Services\AnomalyGeneratorService $anomalyGenerator,
         protected InformationDensityEngine $informationDensityEngine,
         protected AutopoieticEvolutionEngine $autopoieticEngine,
@@ -119,7 +121,7 @@ final class MetaCosmicStage implements SimulationStageInterface
         // 3. Top-level Cosmic DSL (Heat Death, Sovereignty, Omens)
         $cosmicDslFile = resource_path('worldos_rules/simulation/cosmic.dsl');
         if (file_exists($cosmicDslFile)) {
-            $this->ruleVm->evaluateAndApplyWithState($state, file_get_contents($cosmicDslFile), $tick);
+            $this->ruleVm->evaluateAndApplyWithDsl($state, file_get_contents($cosmicDslFile), $tick);
         }
 
         // 4. Divine Miracles (Random)

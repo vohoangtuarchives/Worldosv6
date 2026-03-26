@@ -23,15 +23,25 @@ class WikiEngineService
         $actors = Actor::where('universe_id', $universeId)
             ->where('name', 'like', "%{$query}%")
             ->limit(5)
-            ->get(['id', 'name', 'role']);
+            ->get(['id', 'name', 'role', 'metrics'])
+            ->map(function($actor) use ($universeId) {
+                // Giả định có metadata về quan hệ từ Neo4j được cache trong metrics hoặc lấy riêng
+                $actor->relationship_count = count($actor->metrics['relations'] ?? []); 
+                return $actor;
+            });
 
         $chronicles = Chronicle::where('universe_id', $universeId)
             ->where('title', 'like', "%{$query}%")
             ->limit(5)
-            ->get(['id', 'title', 'tick']);
+            ->get(['id', 'title', 'tick', 'impact_score']);
 
         $axioms = collect($this->axiomRegistry->getAll())
             ->filter(fn($a) => stripos($a['name'], $query) !== false || stripos($a['id'], $query) !== false)
+            ->map(function($a) use ($universeId) {
+                // Thêm thông tin tiến hoá/biến động
+                $a['drift_summary'] = $this->getAxiomDriftSummary($a['id'], $universeId);
+                return $a;
+            })
             ->take(5)
             ->values();
 
@@ -39,6 +49,33 @@ class WikiEngineService
             'actors' => $actors,
             'chronicles' => $chronicles,
             'axioms' => $axioms,
+            'metadata' => [
+                'universe_id' => $universeId,
+                'timestamp' => \Carbon\Carbon::now()->toIso8601String(),
+            ]
+        ];
+    }
+
+    /**
+     * Tóm tắt biến động của Axiom (Evolutionary Logic)
+     */
+    public function getAxiomDriftSummary(string $axiomId, int $universeId): array
+    {
+        $logs = $this->getAxiomDriftLogs($axiomId, $universeId, 10);
+        if ($logs->isEmpty()) {
+            return ['status' => 'stable', 'drift' => 0];
+        }
+
+        $first = $logs->first()['value'];
+        $last = $logs->last()['value'];
+        
+        $drift = is_numeric($first) && is_numeric($last) ? $last - $first : 0;
+        $count = $logs->count();
+        
+        return [
+            'status' => abs($drift) > 0.1 ? 'shifting' : 'stable',
+            'drift' => $drift,
+            'evolution_rate' => $count > 1 ? $drift / ($count - 1) : 0
         ];
     }
 

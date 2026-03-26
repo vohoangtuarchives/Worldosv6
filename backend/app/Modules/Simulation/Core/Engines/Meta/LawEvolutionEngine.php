@@ -60,7 +60,7 @@ class LawEvolutionEngine implements SimulationEngine
         // Evaluate leadership/rule mutations
         // Note: RuleVmService currently modifies state directly. 
         // We wrap it here to stay compatible with the existing DSL executor.
-        $this->ruleVm->evaluateAndApplyWithState($state, $dsl, $ctx->getTick());
+        $this->ruleVm->evaluateAndApplyWithDsl($state, $dsl, $ctx->getTick());
 
         Log::info("LawEvolutionEngine: World rules evolved via DSL for Universe {$state->get('universe_id')} at tick {$ctx->getTick()}");
 

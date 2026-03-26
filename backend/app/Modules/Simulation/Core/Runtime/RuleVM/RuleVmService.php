@@ -11,6 +11,7 @@ use App\Modules\Simulation\Services\CausalCacheService;
 use App\Modules\Simulation\Services\AxiomRegistry;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
+use App\Modules\Simulation\Core\Runtime\RuleVM\DslPayload;
 
 /**
  * RuleVmService (Standardized V10): Evaluate DSL rules against world state (Rust Rule VM).
@@ -31,25 +32,26 @@ class RuleVmService
     /**
      * Legacy support: Evaluate and apply effects immediately.
      */
-    public function evaluateAndApply(\App\Models\Universe $universe, ?\App\Models\UniverseSnapshot $snapshot = null, ?string $rulesDsl = null): void
+    public function evaluateAndApply(\App\Models\Universe $universe, ?\App\Models\UniverseSnapshot $snapshot = null, ?DslPayload $rulesDsl = null): void
     {
         $state = app(\App\Modules\Simulation\Core\Runtime\State\StateManager::class)->get();
         if (!$state) return;
 
         $tick = (int) ($snapshot ? $snapshot->tick : $universe->current_tick);
         $rulesPath = Config::get('worldos.rule_engine.rules_path');
-        $dsl = $rulesDsl ?? ($rulesPath ? $this->loadDsl($rulesPath) : '');
-        if (empty($dsl)) return;
+        $payload = $rulesDsl ?? ($rulesPath ? $this->loadDslPayload($rulesPath) : null);
+        
+        if (!$payload || $payload->isEmpty()) return;
 
-        $result = $this->evaluate($state, $dsl, $tick);
+        $result = $this->evaluate($state, $payload, $tick);
         
         $this->executor->execute((int)$universe->id, $tick, $result, $state);
     }
 
-    public function evaluateAndApplyWithState(WorldState $state, string $dsl, int $tick, array $context = []): void
+    public function evaluateAndApplyWithState(WorldState $state, DslPayload $payload, int $tick, array $context = []): void
     {
-        if (empty($dsl)) return;
-        $result = $this->evaluate($state, $dsl, $tick, $context);
+        if ($payload->isEmpty()) return;
+        $result = $this->evaluate($state, $payload, $tick, $context);
         $universeId = (int) $state->get('universe_id');
         if ($universeId && $state instanceof \App\Modules\Simulation\Core\Runtime\State\WorldStateMutable) {
             $this->executor->execute($universeId, $tick, $result, $state);
@@ -57,11 +59,23 @@ class RuleVmService
     }
 
     /**
+     * Compatibility helper: Accepts string (path or raw) or DslPayload.
+     */
+    public function evaluateAndApplyWithDsl(WorldState $state, string|DslPayload $dslOrPayload, int $tick, array $context = []): void
+    {
+        $payload = $dslOrPayload instanceof DslPayload 
+            ? $dslOrPayload 
+            : $this->loadDslPayload($dslOrPayload);
+            
+        $this->evaluateAndApplyWithState($state, $payload, $tick, $context);
+    }
+
+    /**
      * Evaluate rules and return result without applying it.
      */
-    public function evaluate(WorldState $state, string $dslOrPath, int $tick, array $context = []): EngineResult
+    public function evaluate(WorldState $state, DslPayload $payload, int $tick, array $context = []): EngineResult
     {
-        $outputs = $this->evaluateWithResults($state, $dslOrPath, $tick, $context);
+        $outputs = $this->evaluateWithResults($state, $payload, $tick, $context);
         return $this->mapOutputsToResults($outputs, (int)$state->get('universe_id'), $tick, $state);
     }
 
@@ -80,11 +94,11 @@ class RuleVmService
         return $this->evaluateRawState($rawState, $dsl);
     }
 
-    public function evaluateWithResults(WorldState $state, string $dslOrPath, int $tick, array $context = []): array
+    public function evaluateWithResults(WorldState $state, DslPayload $payload, int $tick, array $context = []): array
     {
-        $dsl = $this->loadDsl($dslOrPath);
-        if (empty($dsl)) return [];
+        if ($payload->isEmpty()) return [];
 
+        $dsl = $payload->getRawContent();
         $rawState = array_merge($this->buildRawStateFromManifold($state, $tick), $context);
         
         $cacheService = app(CausalCacheService::class);
@@ -145,9 +159,20 @@ class RuleVmService
         return new EngineResult($events, $effects, []);
     }
 
-    public function loadDsl(string $pathOrDsl, bool $allowMutated = true): string
+    public function loadDslPayload(string $pathOrDsl, bool $allowMutated = true): DslPayload
     {
-        if (str_contains($pathOrDsl, "\n") || str_contains($pathOrDsl, "rule")) {
+        $raw = $this->loadDslRaw($pathOrDsl, $allowMutated);
+        return new DslPayload($raw, [
+            'source' => str_contains($pathOrDsl, "\n") ? 'inline' : 'file',
+            'path' => $pathOrDsl,
+            'mutated' => $allowMutated
+        ]);
+    }
+
+    private function loadDslRaw(string $pathOrDsl, bool $allowMutated = true): string
+    {
+        // Treat as raw DSL if it contains newlines or specific DSL tokens (but don't parse!)
+        if (str_contains($pathOrDsl, "\n") || str_contains($pathOrDsl, "rule ")) {
             return $pathOrDsl;
         }
 
@@ -172,7 +197,7 @@ class RuleVmService
 
     public function resolveDslContent(string $pathOrDsl): string
     {
-        return $this->loadDsl($pathOrDsl);
+        return $this->loadDslRaw($pathOrDsl);
     }
 
     public static function clearDslCache(?string $pathOrDsl = null): void

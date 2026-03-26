@@ -29,7 +29,7 @@ class AnomalyGeneratorService
 
     public function runWithState(\App\Modules\Simulation\Core\Runtime\State\WorldState $state, int $tick): void
     {
-        $this->ruleVm->evaluateAndApplyWithState($state, 'simulation/anomalies', $tick);
+        $this->ruleVm->evaluateAndApplyWithDsl($state, 'simulation/anomalies', $tick);
         Log::debug("AnomalyGeneratorService: Universe {$state->get('universe_id')} anomalies evaluated at tick {$tick}");
     }
 

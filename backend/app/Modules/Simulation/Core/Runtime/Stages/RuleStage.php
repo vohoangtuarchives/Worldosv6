@@ -6,6 +6,7 @@ use App\Models\Universe;
 use App\Models\UniverseSnapshot;
 use App\Modules\Simulation\Core\Runtime\Contracts\SimulationStageInterface;
 use App\Modules\Simulation\Core\Runtime\RuleVM\RuleVmService;
+use App\Modules\Simulation\Core\Runtime\RuleVM\DslPayload;
 use App\Modules\Simulation\Core\Runtime\State\StateManager;
 
 /**
@@ -141,10 +142,10 @@ final class RuleStage implements SimulationStageInterface
 
     private function applyDslPathIfAvailable(\App\Modules\Simulation\Core\Runtime\State\WorldState $state, int $tick, string $dslPath): void
     {
-        $dsl = $this->ruleVmService->loadDsl($dslPath);
+        $payload = $this->ruleVmService->loadDslPayload($dslPath);
 
-        if ($dsl !== '') {
-            $this->ruleVmService->evaluateAndApplyWithState($state, $dsl, $tick);
+        if (!$payload->isEmpty()) {
+            $this->ruleVmService->evaluateAndApplyWithState($state, $payload, $tick);
         }
     }
 }

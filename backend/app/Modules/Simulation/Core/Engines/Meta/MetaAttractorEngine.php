@@ -57,7 +57,7 @@ class MetaAttractorEngine implements SimulationEngine
         }
 
         // Chạy DSL để thực hiện Pull và Transitions
-        $this->ruleVm->evaluateAndApplyWithState($state, $dsl, $tick);
+        $this->ruleVm->evaluateAndApplyWithDsl($state, $dsl, $tick);
 
         // Hậu xử lý (Optional): Nếu có logic phức tạp về Stability hoặc Noise có thể thêm ở đây
         // Ví dụ: Add stochastic noise to the current attractor

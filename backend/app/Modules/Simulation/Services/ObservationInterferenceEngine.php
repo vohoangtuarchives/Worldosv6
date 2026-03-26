@@ -53,11 +53,7 @@ class ObservationInterferenceEngine
         }
 
         // Always evaluate observer DSL
-        $dslFile = resource_path('worldos_rules/simulation/observer.dsl');
-        if (file_exists($dslFile)) {
-            $dsl = file_get_contents($dslFile);
-            $this->ruleVm->evaluateAndApplyWithState($state, $dsl, $tick);
-        }
+        $this->ruleVm->evaluateAndApplyWithDsl($state, 'simulation/observer', $tick);
         
         Log::debug("ObservationInterferenceEngine: Processed quantum state for Universe {$state->get('universe_id')} at tick {$tick}");
     }

@@ -80,7 +80,7 @@ class SingularityStabilityEngine implements SimulationEngine
         }
 
         // 3. Thực thi Apex DSL Rules cho sự ổn định
-        $this->vmService->evaluateAndApplyWithState(
+        $this->vmService->evaluateAndApplyWithDsl(
             $state,
             'simulation/apex.dsl',
             $tick,
