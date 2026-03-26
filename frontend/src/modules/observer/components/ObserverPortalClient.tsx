@@ -9,7 +9,7 @@ import type { UniverseSummary } from '@/modules/observer/types';
 
 export function ObserverPortalClient({ initialUniverses }: { initialUniverses: UniverseSummary[] }) {
   const { data: universes = initialUniverses } = useObserverUniverseSummaries(initialUniverses);
-  
+
   if (!universes) return null;
 
   const activeUniverses = universes.filter((universe) => universe.status === 'active').length;
@@ -23,9 +23,6 @@ export function ObserverPortalClient({ initialUniverses }: { initialUniverses: U
           <div className="grid gap-8 xl:grid-cols-[minmax(0,1.2fr)_420px]">
             <div>
               <p className="text-[11px] uppercase tracking-[0.34em] text-primary/70">Observer Portal</p>
-              <h1 className="mt-4 max-w-4xl text-5xl font-semibold tracking-tight md:text-6xl">
-                Frontend skeleton rebuilt around universe, timeline, actor, and intervention flows.
-              </h1>
               <p className="mt-5 max-w-2xl text-sm leading-7 text-muted-foreground">
                 The portal is now the entry point into structured observer workspaces. Each universe gets its own domain navigation,
                 rather than forcing the user through a single monolithic dashboard.
