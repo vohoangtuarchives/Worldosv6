@@ -9,9 +9,6 @@ use App\Modules\Simulation\Core\Domain\TickContext;
 use App\Modules\Simulation\Core\Runtime\State\WorldState;
 use App\Modules\Simulation\Core\Runtime\RuleVM\RuleVmService;
 use Illuminate\Support\Facades\Log;
-use function resource_path;
-use function file_get_contents;
-use function file_exists;
 
 /**
  * Phase 53: Meta-Attractor Graph Engine (V8 Core) 🌌🕸️
@@ -50,14 +47,14 @@ class MetaAttractorEngine implements SimulationEngine
     public function handle(WorldState $state, TickContext $ctx): EngineResult
     {
         $tick = $ctx->getTick();
-        $path = resource_path('worldos_rules/simulation/meta_attractors.dsl');
+        $path = 'simulation/meta_attractors';
         
-        if (!file_exists($path)) {
-            Log::warning("MetaAttractorEngine: meta_attractors.dsl not found at {$path}");
+        $dsl = $this->ruleVm->loadDsl($path);
+
+        if (empty($dsl)) {
+            Log::warning("MetaAttractorEngine: meta_attractors.dsl not found or empty");
             return EngineResult::empty();
         }
-
-        $dsl = file_get_contents($path);
 
         // Chạy DSL để thực hiện Pull và Transitions
         $this->ruleVm->evaluateAndApplyWithState($state, $dsl, $tick);
@@ -68,6 +65,5 @@ class MetaAttractorEngine implements SimulationEngine
         return EngineResult::empty();
     }
 }
-
 
 

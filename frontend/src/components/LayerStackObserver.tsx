@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 
 const initialLayers = [
   { id: 'meta', name: 'Metaphysical', color: 'hsl(var(--cosmos))', description: 'Axioms & Immutable Laws', stability: 98, flux: 1.2, icon: '◈' },

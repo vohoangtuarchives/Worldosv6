@@ -2,7 +2,11 @@
 
 import { useEffect, useRef } from 'react';
 import { Centrifuge } from 'centrifuge';
-import { useSimulationStore } from '@/store/useSimulationStore';
+import { useSimulationStore, type ChronicleRecord } from '@/store/useSimulationStore';
+
+interface ChroniclePublication {
+  chronicle?: ChronicleRecord;
+}
 
 export const useRealtime = () => {
   const centrifugeRef = useRef<Centrifuge | null>(null);
@@ -10,20 +14,13 @@ export const useRealtime = () => {
   const addChronicle = useSimulationStore((state) => state.addChronicle);
 
   useEffect(() => {
-    // Check if we already have an active or connecting instance
-    if (centrifugeRef.current && (centrifugeRef.current.state === 'connected' || centrifugeRef.current.state === 'connecting')) {
+    if (centrifugeRef.current) {
       return;
     }
 
     const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${proto}//${window.location.host}/connection/websocket`;
-    
-    console.log('Centrifuge Connecting to:', wsUrl);
-    
-    const centrifuge = new Centrifuge(wsUrl, {
-      token: '', 
-    });
-
+    const centrifuge = new Centrifuge(wsUrl, { token: '' });
     centrifugeRef.current = centrifuge;
 
     const subAdvance = centrifuge.newSubscription('worldos.simulation.advanced');
@@ -33,8 +30,9 @@ export const useRealtime = () => {
 
     const subNarrative = centrifuge.newSubscription('worldos.narrative.pulsed');
     subNarrative.on('publication', (ctx) => {
-      if (ctx.data.chronicle) {
-        addChronicle(ctx.data.chronicle);
+      const payload = ctx.data as ChroniclePublication;
+      if (payload.chronicle) {
+        addChronicle(payload.chronicle);
       }
     });
 
@@ -43,11 +41,10 @@ export const useRealtime = () => {
     centrifuge.connect();
 
     return () => {
-      console.log('Centrifuge Disconnecting');
+      subAdvance.unsubscribe();
+      subNarrative.unsubscribe();
       centrifuge.disconnect();
       centrifugeRef.current = null;
     };
-  }, [updateFromAdvance, addChronicle]);
-
-  return centrifugeRef.current;
+  }, [addChronicle, updateFromAdvance]);
 };

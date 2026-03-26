@@ -12,9 +12,7 @@ use App\Modules\Simulation\Core\Events\WorldEvent;
 use App\Modules\Simulation\Core\Events\WorldEventType;
 use App\Modules\Simulation\Core\Runtime\RuleVM\RuleVmService;
 use Illuminate\Support\Facades\Log;
-use function resource_path;
 use function app;
-use function config;
 
 /**
  * Evolves world_rules (Tier 2 mutable rules) via DSL logic.
@@ -53,12 +51,11 @@ class LawEvolutionEngine implements SimulationEngine
 
     public function handle(WorldState $state, TickContext $ctx): EngineResult
     {
-        $dslFile = \resource_path('worldos_rules/innovation/leadership.dsl');
-        if (!file_exists($dslFile)) {
+        $dsl = $this->ruleVm->loadDsl('innovation/leadership');
+        
+        if (empty($dsl)) {
             return new EngineResult([], [], []);
         }
-
-        $dsl = file_get_contents($dslFile);
         
         // Evaluate leadership/rule mutations
         // Note: RuleVmService currently modifies state directly. 
@@ -70,6 +67,5 @@ class LawEvolutionEngine implements SimulationEngine
         return new EngineResult([], [], []);
     }
 }
-
 
 

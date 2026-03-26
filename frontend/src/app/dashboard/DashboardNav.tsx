@@ -4,19 +4,14 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { 
-  BarChart3, 
-  Cpu, 
-  Settings, 
-  LayoutDashboard,
-  Zap,
-  Box
-} from 'lucide-react';
+import { Cpu, LayoutDashboard, Globe, BookOpen, Activity } from 'lucide-react';
 
 const navItems = [
   { name: 'OBSERVER_HUB', path: '/dashboard', icon: LayoutDashboard },
+  { name: 'UNIVERSES', path: '/dashboard', icon: Globe },
   { name: 'AI_ORCHESTRATOR', path: '/dashboard/ai-config', icon: Cpu },
-  // { name: 'SIM_CHRONICLE', path: '/dashboard/chronicle', icon: BarChart3 },
+  { name: 'SIM_CHRONICLE', path: '/dashboard/narrative', icon: BookOpen },
+  { name: 'Z-METRICS', path: '/dashboard/metrics', icon: Activity },
 ];
 
 const DashboardNav = () => {

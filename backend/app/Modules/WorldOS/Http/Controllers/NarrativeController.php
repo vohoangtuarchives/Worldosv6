@@ -3,11 +3,12 @@
 namespace App\Modules\WorldOS\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Modules\Narrative\Contracts\ArtifactRepositoryInterface;
 use App\Modules\Narrative\Contracts\ChronicleRepositoryInterface;
 use App\Modules\Narrative\Contracts\MythScarRepositoryInterface;
-use App\Modules\Narrative\Contracts\ArtifactRepositoryInterface;
+use App\Modules\WorldOS\Http\Resources\ChronicleResource;
+use App\Modules\WorldOS\Http\Resources\MythScarResource;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 class NarrativeController extends Controller
 {
@@ -20,18 +21,21 @@ class NarrativeController extends Controller
     public function chronicles(int $universeId): JsonResponse
     {
         $chronicles = $this->chronicleRepo->findByUniverse($universeId);
-        return response()->json($chronicles);
+
+        return ChronicleResource::collection(collect($chronicles))->response();
     }
 
     public function mythScars(int $universeId): JsonResponse
     {
         $scars = $this->mythScarRepo->findByUniverse($universeId);
-        return response()->json($scars);
+
+        return MythScarResource::collection(collect($scars))->response();
     }
 
     public function artifacts(int $universeId): JsonResponse
     {
-        $artifacts = $this->artifactRepo->findByUniverse($universeId);
-        return response()->json($artifacts);
+        return response()->json([
+            'data' => $this->artifactRepo->findByUniverse($universeId),
+        ]);
     }
 }

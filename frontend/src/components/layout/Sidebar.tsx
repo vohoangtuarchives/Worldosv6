@@ -6,14 +6,16 @@ import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { 
   Home, 
-  LayoutDashboard, 
+  Orbit, 
   History, 
-  BookOpen, 
+  Users, 
   Settings,
-  Zap
+  Zap,
+  Sparkles,
+  type LucideIcon
 } from 'lucide-react';
 
-const NavItem = ({ href, icon: Icon, label, active }: { href: string; icon: any; label: string; active: boolean }) => (
+const NavItem = ({ href, icon: Icon, label, active }: { href: string; icon: LucideIcon; label: string; active: boolean }) => (
   <Link href={href}>
     <motion.div
       whileHover={{ x: 4 }}
@@ -54,17 +56,19 @@ const Sidebar = () => {
       </div>
 
       <nav className="flex-1 flex flex-col gap-6">
-        <NavItem href="/" icon={Home} label="Home" active={pathname === '/'} />
-        <NavItem href="/dashboard" icon={LayoutDashboard} label="Observer Console" active={pathname.startsWith('/dashboard')} />
-        <NavItem href="/chronicles" icon={History} label="Chronicles" active={pathname.startsWith('/chronicles')} />
-        <NavItem href="/wiki" icon={BookOpen} label="Loom of Lore" active={pathname.startsWith('/wiki')} />
+        <NavItem href="/dashboard" icon={Home} label="Home" active={pathname === '/dashboard'} />
+        <NavItem href="/dashboard" icon={Orbit} label="Universe Hub" active={pathname === '/dashboard'} />
+        <NavItem href="/dashboard/universes/create" icon={Sparkles} label="Axiom Workshop" active={pathname.includes('/create')} />
+        <NavItem href="/dashboard/narrative" icon={History} label="Chronicles" active={pathname.includes('/narrative')} />
+        <NavItem href="/dashboard" icon={Users} label="Actors" active={pathname.includes('/actors')} />
       </nav>
 
       <div className="mt-auto">
-        <NavItem href="/settings" icon={Settings} label="System Config" active={pathname === '/settings'} />
+        <NavItem href="/dashboard/ai-config" icon={Settings} label="System Config" active={pathname.startsWith('/dashboard/ai-config')} />
       </div>
     </aside>
   );
 };
 
 export default Sidebar;
+

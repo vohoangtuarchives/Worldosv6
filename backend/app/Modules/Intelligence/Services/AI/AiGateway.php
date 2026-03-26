@@ -50,12 +50,14 @@ class AiGateway
 
     protected function createDriver(string $name): LlmDriverInterface
     {
-        // Try getting from AiConfigManager first
-        $config = $this->configManager->get("drivers.{$name}");
-
-        // Fallback to static config
-        if (!$config) {
-            $config = config("ai.drivers.{$name}");
+        // Merge DB config with static config (DB overrides static)
+        $dbConfig = $this->configManager->get("drivers.{$name}");
+        $staticConfig = config("ai.drivers.{$name}", []);
+        
+        if (is_array($dbConfig)) {
+            $config = array_merge($staticConfig, $dbConfig);
+        } else {
+            $config = $staticConfig;
         }
 
         if (!$config) {

@@ -70,6 +70,8 @@ class ApexObserverController extends Controller
                 'inherited_attractor' => $state->get('meta.inherited_attractor', 'none'),
             ],
             'autopoiesis' => [
+                'enabled' => (bool) config('worldos.autopoiesis.enabled', true),
+                'entropy_threshold' => (float) config('worldos.autopoiesis.entropy_threshold', 0.70),
                 'mutation_history_size' => count(
                     Storage::disk('local')->directories('simulation/mutated_rules')
                 ),
@@ -117,28 +119,46 @@ class ApexObserverController extends Controller
      * GET /api/apex/mutation-chronicle/{universeId}
      * List all autopoietic mutations applied to the active DSL layers.
      */
-    public function getMutationChronicle(): JsonResponse
+    public function getMutationChronicle(int $universeId): JsonResponse
     {
-        $dirs = Storage::disk('local')->directories('simulation/mutated_rules');
-        $chronicle = [];
+        $chronicle = array_values(array_filter(
+            $this->mutationService->getMutationChronicle(),
+            fn(array $entry) => !isset($entry['universe_id']) || $entry['universe_id'] === null || (int) $entry['universe_id'] === $universeId
+        ));
 
-        foreach ($dirs as $dir) {
-            $hash = basename($dir);
-            $currentFile = "{$dir}/current.dsl";
-            $versions = collect(Storage::disk('local')->files($dir))
-                ->filter(fn($f) => str_starts_with(basename($f), 'v'))
-                ->count();
+        return response()->json([
+            'universe_id' => $universeId,
+            'total_mutations' => count($chronicle),
+            'chronicle' => $chronicle,
+        ]);
+    }
 
-            $chronicle[] = [
-                'dsl_hash' => $hash,
-                'version_count' => $versions,
-                'has_current' => Storage::disk('local')->exists($currentFile),
-            ];
+    /**
+     * GET /api/apex/mutation-chronicle/{universeId}/{dslHash}
+     * Return the latest mutation detail with before/after contents.
+     */
+    public function getMutationDetail(int $universeId, string $dslHash): JsonResponse
+    {
+        $detail = $this->mutationService->getMutationDetail($dslHash);
+
+        if ($detail === null) {
+            return response()->json([
+                'error' => 'Mutation not found',
+                'dsl_hash' => $dslHash,
+            ], 404);
+        }
+
+        $metadataUniverseId = isset($detail['metadata']['universe_id']) ? (int) $detail['metadata']['universe_id'] : null;
+        if ($metadataUniverseId !== null && $metadataUniverseId !== $universeId) {
+            return response()->json([
+                'error' => 'Mutation does not belong to this universe',
+                'dsl_hash' => $dslHash,
+            ], 404);
         }
 
         return response()->json([
-            'total_mutations' => count($chronicle),
-            'chronicle' => $chronicle,
+            'universe_id' => $universeId,
+            'detail' => $detail,
         ]);
     }
 
@@ -374,6 +394,4 @@ class ApexObserverController extends Controller
         ]);
     }
 }
-
-
 

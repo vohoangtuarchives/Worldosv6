@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { BookOpen, Sparkles } from 'lucide-react';
+import { BookOpen } from 'lucide-react';
 
 export default function NarrativePage() {
   return (

@@ -215,6 +215,7 @@ services:
     restart: always
     environment:
       NEXT_PUBLIC_API_URL: /api # Use relative path since served by Nginx
+      BACKEND_URL: http://nginx
     depends_on:
       - backend
     networks:

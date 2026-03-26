@@ -4,11 +4,12 @@ namespace App\Modules\WorldOS\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Universe;
+use App\Modules\Narrative\Services\ChronicleSynthesisEngine;
 use App\Modules\Narrative\Services\NarrativeAiService;
 use App\Modules\Narrative\Services\UniverseHistoryGenerator;
-use App\Modules\Narrative\Services\ChronicleSynthesisEngine;
-use Illuminate\Http\Request;
+use App\Modules\WorldOS\Http\Resources\TimelineEventResource;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class TimelineController extends Controller
@@ -22,21 +23,23 @@ class TimelineController extends Controller
             ->limit($limit)
             ->get();
 
-        return response()->json([
-            'timeline' => $facts,
-            'by_type' => $facts->groupBy('type')
-        ]);
+        return TimelineEventResource::collection($facts)
+            ->additional([
+                'meta' => [
+                    'by_type' => $facts->groupBy('type')->map(static fn ($group) => $group->count()),
+                ],
+            ])
+            ->response();
     }
 
     public function generateChronicle(string $id, Request $request, NarrativeAiService $narrativeAi): JsonResponse
     {
         $universeId = (int) $id;
         $universe = Universe::findOrFail($universeId);
-        
+
         $fromTick = $request->input('from_tick');
         $toTick = $request->input('to_tick');
 
-        // Logic xử lý tick range mặc định
         if ($fromTick === null || $fromTick === '') {
             $first = $universe->snapshots()->orderBy('tick')->first();
             $latest = $universe->snapshots()->orderByDesc('tick')->first();
@@ -48,17 +51,17 @@ class TimelineController extends Controller
             $toTick = $toTick !== null && $toTick !== '' ? (int) $toTick : ($latest ? (int) $latest->tick : $fromTick);
         }
 
-        $chronicle = $narrativeAi->generateChronicle($universeId, (int)$fromTick, (int)$toTick, 'chronicle');
-        
-        if (!$chronicle) {
-            return response()->json(['message' => 'Không thể sinh sử thi.'], 422);
+        $chronicle = $narrativeAi->generateChronicle($universeId, (int) $fromTick, (int) $toTick, 'chronicle');
+
+        if (! $chronicle) {
+            return response()->json(['message' => 'Khong the sinh su thi.'], 422);
         }
 
         return response()->json(['data' => [
-            'id' => $chronicle->id, 
-            'content' => $chronicle->content, 
-            'from_tick' => $chronicle->from_tick, 
-            'to_tick' => $chronicle->to_tick
+            'id' => $chronicle->id,
+            'content' => $chronicle->content,
+            'from_tick' => $chronicle->from_tick,
+            'to_tick' => $chronicle->to_tick,
         ]]);
     }
 
@@ -69,26 +72,32 @@ class TimelineController extends Controller
         $toTick = $request->has('to_tick') ? (int) $request->input('to_tick') : null;
 
         $history = $historian->generate($universe, $fromTick, $toTick);
-        
-        if (!$history) {
-            return response()->json(['message' => 'Lỗi khi tạo lịch sử.'], 422);
+
+        if (! $history) {
+            return response()->json(['message' => 'Loi khi tao lich su.'], 422);
         }
 
         return response()->json(['data' => [
-            'id' => $history->id, 
-            'content' => $history->full_text, 
-            'from_tick' => $history->from_tick, 
-            'to_tick' => $history->to_tick
+            'id' => $history->id,
+            'content' => $history->full_text,
+            'from_tick' => $history->from_tick,
+            'to_tick' => $history->to_tick,
         ]]);
     }
 
     public function causalLinks(string $id, ChronicleSynthesisEngine $synthesisEngine): JsonResponse
     {
         $links = $synthesisEngine->synthesize(
-            (int) $id, 
-            (int) request('from_tick', 0), 
+            (int) $id,
+            (int) request('from_tick', 0),
             (int) request('to_tick', 1000000)
         );
-        return response()->json(['universe_id' => (int) $id, 'links' => $links]);
+
+        return response()->json([
+            'data' => [
+                'universe_id' => (int) $id,
+                'links' => $links,
+            ],
+        ]);
     }
 }

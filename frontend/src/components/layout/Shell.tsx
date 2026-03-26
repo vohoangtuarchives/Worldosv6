@@ -3,11 +3,9 @@
 import React from 'react';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
-import { usePathname } from 'next/navigation';
 import { useSimulationStore } from '@/store/useSimulationStore';
 
 const Shell = ({ children }: { children: React.ReactNode }) => {
-  const pathname = usePathname();
   const { civilizationEra } = useSimulationStore();
   
   // Decide which era class to apply

@@ -11,5 +11,6 @@ return [
     App\Modules\SocialGraph\Providers\SocialGraphServiceProvider::class,
     App\Modules\World\Providers\WorldServiceProvider::class,
     App\Modules\WorldOS\Providers\WorldOSServiceProvider::class,
+    App\Modules\Knowledge\Providers\KnowledgeServiceProvider::class,
     Laravel\Sanctum\SanctumServiceProvider::class,
 ];

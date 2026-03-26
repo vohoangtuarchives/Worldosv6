@@ -7,60 +7,69 @@ rule Detect_Ecological_Collapse
 priority 10
 scope global
 when
-    # active == false and instability_score >= threshold
-is_collapse_active == false
-instability_score >= 0.7
+    is_collapse_active == false
+    instability_score >= 0.7
 then
-    # Trigger collapse
-emit_event ECOLOGICAL_COLLAPSE_TRIGGERED
-metadata instability_score instability_score
-metadata resource_stress resource_stress
-    
-    # Calculate duration (mimicking PHP logic)
-set collapse_duration (200 + (random_dur * 800))
-set is_collapse_active true
-    
-    # Determine type
-when
-resource_stress >= 0.6
-then
-set collapse_type "famine"
-else
-when
-random_type < 0.5
-then
-set collapse_type "disease"
-else
-set collapse_type "predator_crash"
+    emit_event ECOLOGICAL_COLLAPSE_TRIGGERED
+    metadata instability_score instability_score
+    metadata resource_stress resource_stress
+    set collapse_duration (200 + (random_dur * 800))
+    set is_collapse_active true
 
-rule Monitor_Collapse_Duration
+rule Set_Collapse_Famine
 priority 11
 scope global
 when
-is_collapse_active == true
-current_tick >= until_tick
+    is_collapse_active == true
+    resource_stress >= 0.6
 then
-set is_collapse_active false
-emit_event ECOLOGICAL_COLLAPSE_ENDED
+    set collapse_type "famine"
+
+rule Set_Collapse_Random
+priority 11
+scope global
+when
+    is_collapse_active == true
+    resource_stress < 0.6
+then
+    # Determine type randomly in PHP or split here
+    set collapse_type "predator_crash"
+
+rule Monitor_Collapse_Duration
+priority 12
+scope global
+when
+    is_collapse_active == true
+    current_tick >= until_tick
+then
+    set is_collapse_active false
+    emit_event ECOLOGICAL_COLLAPSE_ENDED
 
 # --- 2. Population & Biology Metrics ---
 
-rule Population_Dynamics
+rule Population_Dynamics_Base
 priority 20
-scope global
-then
-    # Fertility/Mortality nudges
-set base_fertility 0.05
-set base_mortality 0.02
-    
 when
-is_collapse_active == true
+    true == true
 then
-set base_fertility (base_fertility * 0.5)
-set base_mortality (base_mortality * 2.0)
-    
-set fertility (clamp base_fertility 0.0 1.0)
-set mortality (clamp base_mortality 0.0 1.0)
+    set base_fertility 0.05
+    set base_mortality 0.02
+
+rule Population_Collapse_Impact
+priority 21
+when
+    is_collapse_active == true
+then
+    set base_fertility (base_fertility * 0.5)
+    set base_mortality (base_mortality * 2.0)
+
+rule Population_Finalize
+priority 22
+when
+    true == true
+then
+    set fertility (clamp base_fertility 0.0 1.0)
+    set mortality (clamp base_mortality 0.0 1.0)
 
 # --- 3. Disease Propagation (SIR Model) ---
 
@@ -68,82 +77,67 @@ rule Disease_SIR_Evolution
 priority 30
 scope global
 when
-is_collapse_active == true
-collapse_type == "disease"
+    is_collapse_active == true
+    collapse_type == "disease"
 then
-    # SIR Evolution: Susceptible (S), Infected (I), Recovered (R)
-    # infected_growth = I * beta * (S/N)
-    # recovered_growth = I * gamma
-    
-set beta 0.3
-set gamma 0.1
-    
-    # Calculate state changes for PHP to apply
-set d_infected (infected * beta)
-set d_infected (d_infected * (susceptible / population))
-    
-set d_recovered (infected * gamma)
-    
-set d_mortality (infected * 0.02) # Crude mortality rate
-    
-set mortality (mortality + d_mortality)
-    
-emit_event PANDEMIC_PROGRESS
-metadata new_infections d_infected
-metadata new_recoveries d_recovered
-metadata new_deaths d_mortality
+    set beta 0.3
+    set gamma 0.1
+    set d_infected (infected * beta * (susceptible / population))
+    set d_recovered (infected * gamma)
+    set d_mortality (infected * 0.02)
+    add mortality d_mortality
+    emit_event PANDEMIC_PROGRESS
+    metadata new_infections d_infected
+    metadata new_recoveries d_recovered
+    metadata new_deaths d_mortality
 
-# --- 4. Agriculture & Food Security (§Level-9) ---
+# --- 4. Agriculture & Food Security ---
 
 rule Agriculture_Production
 priority 5
-scope global
-then
-    # base_production = land_area * tech_multiplier * ecological_stability
-set tech_mult (1.0 + (tech_level * 2.0))
-set base_prod (land_area * tech_mult)
-set base_prod (base_prod * ecological_stability)
-    
-    # food_required = population * intake_rate
-set food_req (population * 0.01)
-    
-    # food_surplus = base_prod - food_req
-set food_surplus (base_prod - food_req)
-set food_security (base_prod / food_req)
-set food_security (clamp food_security 0.0 2.0)
-    
-    # famine trigger
 when
-food_security < 0.6
+    true == true
 then
-set famine_risk (1.0 - food_security)
-when
-random_chance < famine_risk
-then
-emit_event FAMINE_OUTBREAK
-set mortality (mortality + (famine_risk * 0.05))
-set instability_score (instability_score + 0.1)
+    set tech_mult (1.0 + (tech_level * 2.0))
+    set base_prod (land_area * tech_mult * ecological_stability)
+    set food_req (population * 0.01)
+    set food_surplus (base_prod - food_req)
+    set food_security (clamp (base_prod / food_req) 0.0 2.0)
+    set production base_prod
+    set requirement food_req
 
-set production base_prod
-set requirement food_req
+rule Famine_Risk_Logic
+priority 6
+when
+    food_security < 0.6
+then
+    set famine_risk (1.0 - food_security)
+    # Random chance handled by engine logic if possible, 
+    # or use emit_event with metadata for PHP trigger
+    emit_event FAMINE_RISK_CHECK
+    metadata risk_level famine_risk
 
 # --- 5. Climate Cycles & Stability ---
 
 rule Climate_Cycle_Evolution
 priority 1
-scope global
-then
-    # Use a sine wave simulation for temperature cycles in PHP usually,
-    # but we can nudge it here or apply effects.
-    # ecological_stability drift
-set e_drift (0.01 * (random_chance - 0.5))
-    
-    # Drought risk if stability low
 when
-ecological_stability < 0.4
+    true == true
 then
-set e_drift (e_drift - 0.02)
-emit_event CLIMATE_INSTABILITY_WARNING
+    set e_drift (0.01 * (random_chance - 0.5))
+    add ecological_stability e_drift
 
-set ecological_stability (ecological_stability + e_drift)
-set ecological_stability (clamp ecological_stability 0.0 1.0)
+rule Climate_Instability_Check
+priority 2
+when
+    ecological_stability < 0.4
+then
+    add ecological_stability -0.02
+    emit_event CLIMATE_INSTABILITY_WARNING
+
+rule Climate_Finalize
+priority 3
+when
+    true == true
+then
+    set ecological_stability (clamp ecological_stability 0.0 1.0)

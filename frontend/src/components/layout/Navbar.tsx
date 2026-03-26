@@ -1,13 +1,12 @@
 import React from 'react';
 import { useSimulationStore } from '@/store/useSimulationStore';
-import { Activity, Shield, Cpu, Zap, Info } from 'lucide-react';
+import { Orbit, Zap } from 'lucide-react';
 import SimulationControls from '@/components/SimulationControls';
 
 const Navbar = () => {
   const { 
     civilizationEra, 
     currentTick, 
-    universes,
     transition
   } = useSimulationStore();
 
@@ -15,7 +14,7 @@ const Navbar = () => {
     <nav className="fixed top-0 left-[72px] right-0 h-16 flex items-center justify-between px-6 bg-card/5 backdrop-blur-xl border-b border-border/10 z-40">
       <div className="flex items-center gap-6">
         <div className="flex flex-col">
-          <span className="text-[10px] text-primary/60 uppercase tracking-[0.2em] font-bold">Node_Status</span>
+          <span className="text-[10px] text-primary/60 uppercase tracking-[0.2em] font-bold">Observer Status</span>
           <div className="flex items-center gap-2">
             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse glow-emerald-sm" />
             <span className="text-xs font-mono font-bold tracking-tight text-foreground/90 uppercase">
@@ -44,23 +43,25 @@ const Navbar = () => {
         {/* Quick Stats Grid */}
         <div className="hidden lg:flex items-center gap-8 text-[10px] font-mono text-muted-foreground mr-4">
           <div className="flex flex-col items-end">
-            <span className="text-[8px] uppercase tracking-widest text-muted-foreground/50">Entropy</span>
-            <span className="text-foreground/80 font-bold">0.0342</span>
+            <span className="text-[8px] uppercase tracking-widest text-muted-foreground/50">Workspace</span>
+            <span className="text-foreground/80 font-bold">Universe</span>
           </div>
           <div className="flex flex-col items-end">
-            <span className="text-[8px] uppercase tracking-widest text-muted-foreground/50">Stability</span>
-            <span className="text-foreground/80 font-bold">92.4%</span>
+            <span className="text-[8px] uppercase tracking-widest text-muted-foreground/50">Mode</span>
+            <span className="text-foreground/80 font-bold">Observer</span>
           </div>
           <div className="flex flex-col items-end">
             <span className="text-[8px] uppercase tracking-widest text-muted-foreground/50">Pattern</span>
-            <span className="text-primary font-bold truncate max-w-[80px]">{transition?.target || 'Traditional'}</span>
+            <span className="text-primary font-bold truncate max-w-[80px]">{transition?.target || 'Stable'}</span>
           </div>
         </div>
 
         <div className="h-8 w-[1px] bg-border/20" />
 
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-cosmos to-primary glow-sm border border-white/10" />
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-tr from-cosmos to-primary glow-sm border border-white/10">
+            <Orbit size={16} className="text-white" />
+          </div>
         </div>
       </div>
     </nav>

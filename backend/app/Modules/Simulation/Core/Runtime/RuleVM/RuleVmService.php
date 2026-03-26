@@ -24,7 +24,8 @@ class RuleVmService
     public function __construct(
         protected readonly SimulationEngineClientInterface $engine,
         protected readonly AxiomRegistry $axiomRegistry,
-        protected readonly EffectExecutor $executor
+        protected readonly EffectExecutor $executor,
+        protected readonly RuleMutationService $mutationService,
     ) {}
 
     /**
@@ -37,7 +38,7 @@ class RuleVmService
 
         $tick = (int) ($snapshot ? $snapshot->tick : $universe->current_tick);
         $rulesPath = Config::get('worldos.rule_engine.rules_path');
-        $dsl = $rulesDsl ?? ($rulesPath ? $this->resolveDslContent($rulesPath) : '');
+        $dsl = $rulesDsl ?? ($rulesPath ? $this->loadDsl($rulesPath) : '');
         if (empty($dsl)) return;
 
         $result = $this->evaluate($state, $dsl, $tick);
@@ -45,10 +46,10 @@ class RuleVmService
         $this->executor->execute((int)$universe->id, $tick, $result, $state);
     }
 
-    public function evaluateAndApplyWithState(WorldState $state, string $dsl, int $tick): void
+    public function evaluateAndApplyWithState(WorldState $state, string $dsl, int $tick, array $context = []): void
     {
         if (empty($dsl)) return;
-        $result = $this->evaluate($state, $dsl, $tick);
+        $result = $this->evaluate($state, $dsl, $tick, $context);
         $universeId = (int) $state->get('universe_id');
         if ($universeId && $state instanceof \App\Modules\Simulation\Core\Runtime\State\WorldStateMutable) {
             $this->executor->execute($universeId, $tick, $result, $state);
@@ -81,7 +82,7 @@ class RuleVmService
 
     public function evaluateWithResults(WorldState $state, string $dslOrPath, int $tick, array $context = []): array
     {
-        $dsl = $this->resolveDslContent($dslOrPath);
+        $dsl = $this->loadDsl($dslOrPath);
         if (empty($dsl)) return [];
 
         $rawState = array_merge($this->buildRawStateFromManifold($state, $tick), $context);
@@ -144,28 +145,62 @@ class RuleVmService
         return new EngineResult($events, $effects, []);
     }
 
-    protected function resolveDslContent(string $pathOrDsl): string
+    public function loadDsl(string $pathOrDsl, bool $allowMutated = true): string
     {
         if (str_contains($pathOrDsl, "\n") || str_contains($pathOrDsl, "rule")) {
             return $pathOrDsl;
         }
 
-        $suffix = str_ends_with($pathOrDsl, '.dsl') ? $pathOrDsl : $pathOrDsl . '.dsl';
-        $path = resource_path('worldos_rules/' . $suffix);
-
-        if (!file_exists($path)) return '';
+        $path = $this->resolveDslFilePath($pathOrDsl);
+        if ($path === null || !file_exists($path)) {
+            return '';
+        }
 
         $isProduction = app()->environment('production');
         $currentMtime = !$isProduction ? filemtime($path) : null;
+        $useMutated = $allowMutated && (bool) config('worldos.autopoiesis.enabled', true);
+        $cacheKey = $path . '|mutated:' . (int) $useMutated;
 
-        if (!isset(self::$dslFileCache[$path]) || ($currentMtime !== null && $currentMtime !== (self::$dslFileMtime[$path] ?? null))) {
-            $mutationService = app(RuleMutationService::class);
-            $mutated = $mutationService->getMutatedContent($path);
-            self::$dslFileCache[$path] = $mutated ?: (@file_get_contents($path) ?: '');
-            self::$dslFileMtime[$path] = $currentMtime;
+        if (!isset(self::$dslFileCache[$cacheKey]) || ($currentMtime !== null && $currentMtime !== (self::$dslFileMtime[$cacheKey] ?? null))) {
+            $mutated = $useMutated ? $this->mutationService->getMutatedContent($pathOrDsl) : null;
+            self::$dslFileCache[$cacheKey] = $mutated ?: (@file_get_contents($path) ?: '');
+            self::$dslFileMtime[$cacheKey] = $currentMtime;
         }
 
-        return self::$dslFileCache[$path];
+        return self::$dslFileCache[$cacheKey];
+    }
+
+    public function resolveDslContent(string $pathOrDsl): string
+    {
+        return $this->loadDsl($pathOrDsl);
+    }
+
+    public static function clearDslCache(?string $pathOrDsl = null): void
+    {
+        if ($pathOrDsl === null) {
+            self::$dslFileCache = [];
+            self::$dslFileMtime = [];
+            return;
+        }
+
+        if (str_contains($pathOrDsl, "\n") || str_contains($pathOrDsl, "rule")) {
+            return;
+        }
+
+        $suffix = str_ends_with($pathOrDsl, '.dsl') ? $pathOrDsl : $pathOrDsl . '.dsl';
+        $path = resource_path('worldos_rules/' . $suffix);
+
+        foreach ([0, 1] as $mutatedFlag) {
+            $cacheKey = $path . '|mutated:' . $mutatedFlag;
+            unset(self::$dslFileCache[$cacheKey], self::$dslFileMtime[$cacheKey]);
+        }
+    }
+
+    protected function resolveDslFilePath(string $pathOrDsl): ?string
+    {
+        $suffix = str_ends_with($pathOrDsl, '.dsl') ? $pathOrDsl : $pathOrDsl . '.dsl';
+
+        return resource_path('worldos_rules/' . $suffix);
     }
 
     protected function buildRawStateFromManifold(WorldState $state, int $tick): array
@@ -183,4 +218,3 @@ class RuleVmService
         ];
     }
 }
-

@@ -45,7 +45,7 @@ class VocationActionEngine
         // 2. Chance to Mutate (Autonomous Evolution) if Entropy is high
         $entropy = (float) $state->get('entropy', 0.5);
         if ($entropy > 0.8 && mt_rand(0, 100) < 5) {
-            $ruleDsl = $this->attemptRuleMutation($virtualPath, $ruleDsl, $entropy);
+            $ruleDsl = $this->attemptRuleMutation($virtualPath, $ruleDsl, $entropy, $tick);
         }
 
         // 3. Execute the Rust DSL rule
@@ -130,7 +130,7 @@ class VocationActionEngine
         $actor->metrics['skill_history'] = $history;
     }
 
-    private function attemptRuleMutation(string $path, string $dsl, float $entropy): string
+    private function attemptRuleMutation(string $path, string $dsl, float $entropy, int $tick): string
     {
         // Simple heuristic mutation: search for "power: X" or "health: -X" and drift them
         // This simulates the skill morphing over time due to world instability
@@ -146,7 +146,8 @@ class VocationActionEngine
             $this->mutationService->applyMutation($path, $mutatedDsl, [
                 'source' => 'vocation_action_engine',
                 'entropy' => $entropy,
-                'type' => 'autonomous_evolution'
+                'type' => 'autonomous_evolution',
+                'tick' => $tick,
             ]);
             Log::info("VocationActionEngine: Skill rule mutated at {$path}");
         }
@@ -154,5 +155,3 @@ class VocationActionEngine
         return $mutatedDsl;
     }
 }
-
-

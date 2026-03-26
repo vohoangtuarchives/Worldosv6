@@ -1,34 +1,67 @@
-import { create } from 'zustand';
+import { create } from "zustand";
 
-interface Universe {
+export interface Universe {
   id: number;
   name: string;
   entropy: number;
   stability: number;
+  status?: string;
+  current_tick?: number;
+}
+
+export interface ChronicleRecord {
+  id?: string | number;
+  title?: string;
+  content?: string;
+  type?: string;
+}
+
+export interface SimulationEntity {
+  id: string | number;
+  name?: string;
+  weight?: number;
+  vocation?: string;
+  intent?: string;
+}
+
+export interface TransitionState {
+  target: string;
+  phase: number;
+  startTick: number;
+}
+
+interface AdvancePayload {
+  snapshot_tick?: number;
+  universes?: Universe[];
+  axioms?: Record<string, number>;
+  chronicles?: ChronicleRecord[];
+  entities?: SimulationEntity[];
+  transition?: TransitionState;
+  reality_strain?: number;
+  anomaly_probability?: number;
+  civilization_era?: string;
+}
+
+interface TransitionPayload {
+  transition?: TransitionState;
+  reality_strain?: number;
+  anomaly_probability?: number;
 }
 
 interface SimulationState {
   currentTick: number;
   universes: Universe[];
   axioms: Record<string, number>;
-  chronicles: any[];
-  entities: any[];
+  chronicles: ChronicleRecord[];
+  entities: SimulationEntity[];
   isPaused: boolean;
-  
-  // Transition State
-  transition?: {
-    target: string;
-    phase: number;
-    startTick: number;
-  };
+  transition?: TransitionState;
   realityStrain: number;
   anomalyProbability: number;
   civilizationEra: string;
-
-  // Actions
-  updateFromAdvance: (data: any) => void;
-  updateTransition: (data: any) => void;
-  addChronicle: (chronicle: any) => void;
+  updateFromAdvance: (data: AdvancePayload) => void;
+  updateTransition: (data: TransitionPayload) => void;
+  addChronicle: (chronicle: ChronicleRecord) => void;
   setUniverses: (universes: Universe[]) => void;
   togglePause: () => void;
 }
@@ -42,28 +75,32 @@ export const useSimulationStore = create<SimulationState>((set) => ({
   isPaused: false,
   realityStrain: 0,
   anomalyProbability: 0,
-  civilizationEra: 'Genesis',
+  civilizationEra: "Genesis",
 
-  updateFromAdvance: (data) => set((state) => ({
-    currentTick: data.snapshot_tick ?? state.currentTick,
-    universes: data.universes ?? state.universes,
-    axioms: data.axioms ?? state.axioms,
-    entities: data.entities ?? state.entities,
-    transition: data.transition ?? state.transition,
-    realityStrain: data.reality_strain ?? state.realityStrain,
-    anomalyProbability: data.anomaly_probability ?? state.anomalyProbability,
-    civilizationEra: data.civilization_era ?? state.civilizationEra,
-  })),
+  updateFromAdvance: (data) =>
+    set((state) => ({
+      currentTick: data.snapshot_tick ?? state.currentTick,
+      universes: data.universes ?? state.universes,
+      axioms: data.axioms ?? state.axioms,
+      chronicles: data.chronicles ?? state.chronicles,
+      entities: data.entities ?? state.entities,
+      transition: data.transition ?? state.transition,
+      realityStrain: data.reality_strain ?? state.realityStrain,
+      anomalyProbability: data.anomaly_probability ?? state.anomalyProbability,
+      civilizationEra: data.civilization_era ?? state.civilizationEra,
+    })),
 
-  updateTransition: (data) => set({
-    transition: data.transition,
-    realityStrain: data.reality_strain ?? 0.1,
-    anomalyProbability: data.anomaly_probability ?? 0.05,
-  }),
+  updateTransition: (data) =>
+    set((state) => ({
+      transition: data.transition ?? state.transition,
+      realityStrain: data.reality_strain ?? state.realityStrain,
+      anomalyProbability: data.anomaly_probability ?? state.anomalyProbability,
+    })),
 
-  addChronicle: (chronicle) => set((state) => ({
-    chronicles: [chronicle, ...state.chronicles].slice(0, 50),
-  })),
+  addChronicle: (chronicle) =>
+    set((state) => ({
+      chronicles: [chronicle, ...state.chronicles].slice(0, 50),
+    })),
 
   setUniverses: (universes) => set({ universes }),
 

@@ -9,9 +9,6 @@ use App\Modules\Simulation\Core\Domain\TickContext;
 use App\Modules\Simulation\Core\Runtime\State\WorldState;
 use App\Modules\Simulation\Core\Runtime\RuleVM\RuleVmService;
 use Illuminate\Support\Facades\Log;
-use function resource_path;
-use function file_get_contents;
-use function file_exists;
 
 /**
  * Phase 57: Dynamic Metaphysical Axioms Engine (V8+) 🌌📜
@@ -49,13 +46,13 @@ class DynamicLawEngine implements SimulationEngine
     public function handle(WorldState $state, TickContext $ctx): EngineResult
     {
         $tick = $ctx->getTick();
-        $lawShiftsDsl = resource_path('worldos_rules/simulation/law_shifts.dsl');
         
-        if (file_exists($lawShiftsDsl)) {
-            // Thực thi ma trận dịch chuyển luật vật lý cơ bản
+        // Thực thi ma trận dịch chuyển luật vật lý cơ bản
+        $lawShiftsDsl = $this->ruleVmService->loadDsl('simulation/law_shifts');
+        if (!empty($lawShiftsDsl)) {
             $this->ruleVmService->evaluateAndApplyWithState(
                 $state, 
-                file_get_contents($lawShiftsDsl), 
+                $lawShiftsDsl, 
                 $tick
             );
         }
@@ -66,13 +63,13 @@ class DynamicLawEngine implements SimulationEngine
 
         if ($resonance > 0.8) {
             $warpFactor = ($resonance - 0.8) * 5.0; // 0 to 1.0
-            $ontologicalDsl = resource_path('worldos_rules/simulation/ontological.dsl');
+            $ontologicalDsl = $this->ruleVmService->loadDsl('simulation/ontological');
             
-            if (file_exists($ontologicalDsl)) {
+            if (!empty($ontologicalDsl)) {
                 $state->set('meta.reality_warping', $warpFactor);
                 $this->ruleVmService->evaluateAndApplyWithState(
                     $state,
-                    file_get_contents($ontologicalDsl),
+                    $ontologicalDsl,
                     $tick
                 );
                 Log::info("DynamicLawEngine: Ontological Resonance detected! Warp Factor: $warpFactor");
@@ -84,6 +81,5 @@ class DynamicLawEngine implements SimulationEngine
         return EngineResult::empty();
     }
 }
-
 
 

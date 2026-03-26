@@ -10,12 +10,18 @@ use App\Modules\WorldOS\Http\Controllers\Api\TimelineController;
 Route::prefix('worldos')->group(function () {
     // 1. Core Universe Management
     Route::get('universes', [UniverseController::class, 'index'])->name('worldos.universes.index');
+    Route::post('universes', [UniverseController::class, 'store'])->name('worldos.universes.store');
     Route::get('universes/{id}', [UniverseController::class, 'show'])->name('worldos.universes.show');
     Route::patch('universes/{id}', [UniverseController::class, 'update'])->name('worldos.universes.update');
     Route::delete('universes/{id}', [UniverseController::class, 'destroy'])->name('worldos.universes.destroy');
     Route::post('universes/{id}/toggle-status', [UniverseController::class, 'toggleStatus'])->name('worldos.universes.toggle-status');
+    Route::get('universes/{id}/metrics', [UniverseController::class, 'metrics'])->name('worldos.universes.metrics');
+    Route::get('universes/{id}/reality-state', [UniverseController::class, 'realityState'])->name('worldos.universes.reality-state');
     Route::get('universes/{id}/snapshot', [UniverseController::class, 'snapshot'])->name('worldos.universes.snapshot');
+    Route::post('universes/{id}/snapshots', [UniverseController::class, 'createSnapshot'])->name('worldos.universes.snapshots.create');
     Route::get('universes/{id}/snapshots', [UniverseController::class, 'snapshots'])->name('worldos.universes.snapshots');
+    Route::get('universes/{id}/forks', [UniverseController::class, 'forks'])->name('worldos.universes.forks');
+    Route::get('universes/{id}/forks/compare', [UniverseController::class, 'compareFork'])->name('worldos.universes.forks.compare');
     Route::get('snapshots/{snapshotId}', [UniverseController::class, 'getSnapshot'])->name('worldos.snapshots.show');
 
     // 2. World Management (Basic Only)

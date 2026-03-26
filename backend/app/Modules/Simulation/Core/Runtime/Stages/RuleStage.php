@@ -7,9 +7,6 @@ use App\Models\UniverseSnapshot;
 use App\Modules\Simulation\Core\Runtime\Contracts\SimulationStageInterface;
 use App\Modules\Simulation\Core\Runtime\RuleVM\RuleVmService;
 use App\Modules\Simulation\Core\Runtime\State\StateManager;
-use function resource_path;
-use function file_get_contents;
-use function file_exists;
 
 /**
  * RuleStage – Executes the Rule VM (DSL) as an orchestrated stage.
@@ -82,10 +79,7 @@ final class RuleStage implements SimulationStageInterface
 
             // Phase 55: Meta-Attractor Graph Engine (V8 Core)
             $this->metaAttractorEngine->handle($state, $ctx);
-            $metaAttractorsDsl = resource_path('worldos_rules/simulation/meta_attractors.dsl');
-            if (file_exists($metaAttractorsDsl)) {
-                $this->ruleVmService->evaluateAndApplyWithState($state, file_get_contents($metaAttractorsDsl), $tick);
-            }
+            $this->applyDslPathIfAvailable($state, $tick, 'simulation/meta_attractors');
 
             // Phase 55: Causal History & Reasoning Engine (V8 Core)
             $this->causalHistoryEngine->handle($state, $ctx);
@@ -95,93 +89,65 @@ final class RuleStage implements SimulationStageInterface
 
             // Phase 58: Heroic Reality Anchors
             $this->anchorEngine->handle($state, $ctx);
-            $anchorsDsl = resource_path('worldos_rules/simulation/anchors.dsl');
-            if (file_exists($anchorsDsl)) {
-                $this->ruleVmService->evaluateAndApplyWithState($state, file_get_contents($anchorsDsl), $tick);
-            }
+            $this->applyDslPathIfAvailable($state, $tick, 'simulation/anchors');
 
             // Phase 55: Meta-Attractor Graph Engine (V8 Core) - Duplicate call preserved for logic parity
             $this->metaAttractorEngine->handle($state, $ctx);
-            $metaAttractorsDsl = resource_path('worldos_rules/simulation/meta_attractors.dsl');
-            if (file_exists($metaAttractorsDsl)) {
-                $this->ruleVmService->evaluateAndApplyWithState($state, file_get_contents($metaAttractorsDsl), $tick);
-            }
+            $this->applyDslPathIfAvailable($state, $tick, 'simulation/meta_attractors');
 
             // Phase 55: Civilization Field Physics Engine (V8 Core) - Duplicate call preserved for logic parity
             $this->physicsEngine->handle($state, $ctx);
-            $fieldPhysicsDsl = resource_path('worldos_rules/simulation/field_physics.dsl');
-            if (file_exists($fieldPhysicsDsl)) {
-                $this->ruleVmService->evaluateAndApplyWithState($state, file_get_contents($fieldPhysicsDsl), $tick);
-            }
+            $this->applyDslPathIfAvailable($state, $tick, 'simulation/field_physics');
 
             // Phase 57: Dynamic Metaphysical Axioms
             $this->dynamicLawEngine->handle($state, $ctx);
 
             // Phase 56: Multi-Dimensional Superposition (Reality Bleeding)
             $this->resonanceEngine->handle($state, $ctx);
-            $superpositionDsl = resource_path('worldos_rules/multiverse/superposition.dsl');
-            if (file_exists($superpositionDsl)) {
-                $this->ruleVmService->evaluateAndApplyWithState($state, file_get_contents($superpositionDsl), $tick);
-            }
+            $this->applyDslPathIfAvailable($state, $tick, 'multiverse/superposition');
 
             // Phase 62: Multiverse Causal Bridges (Traversing Realities)
             $this->bridgeEngine->handle($state, $ctx);
-            $bridgesDsl = resource_path('worldos_rules/multiverse/bridges.dsl');
-            if (file_exists($bridgesDsl)) {
-                $this->ruleVmService->evaluateAndApplyWithState($state, file_get_contents($bridgesDsl), $tick);
-            }
+            $this->applyDslPathIfAvailable($state, $tick, 'multiverse/bridges');
 
             // Phase 63: Civilizational Meta-Observation (Post-Apotheosis)
             $this->postApotheosisEngine->handle($state, $ctx);
-            $ascendanceDsl = resource_path('worldos_rules/simulation/ascendance.dsl');
-            if (file_exists($ascendanceDsl)) {
-                $this->ruleVmService->evaluateAndApplyWithState($state, file_get_contents($ascendanceDsl), $tick);
-            }
+            $this->applyDslPathIfAvailable($state, $tick, 'simulation/ascendance');
 
             // Phase 64: The Omega Point Convergence (Final Convergence)
             $this->omegaEngine->handle($state, $ctx);
-            $omegaDsl = resource_path('worldos_rules/multiverse/omega.dsl');
-            if (file_exists($omegaDsl)) {
-                $this->ruleVmService->evaluateAndApplyWithState($state, file_get_contents($omegaDsl), $tick);
-            }
+            $this->applyDslPathIfAvailable($state, $tick, 'multiverse/omega');
             // Phase 65: Dimensional Ascension (Hyper-reality)
             $this->higherDimEngine->handle($state, $ctx);
-            $hyperspaceDsl = resource_path('worldos_rules/simulation/hyperspace.dsl');
-            if (file_exists($hyperspaceDsl)) {
-                $this->ruleVmService->evaluateAndApplyWithState($state, file_get_contents($hyperspaceDsl), $tick);
-            }
+            $this->applyDslPathIfAvailable($state, $tick, 'simulation/hyperspace');
 
             // Phase 66: Infinite Recursion (The Self-Simulation Paradox)
             $this->recursionEngine->handle($state, $ctx);
-            $recursionDsl = resource_path('worldos_rules/simulation/recursion.dsl');
-            if (file_exists($recursionDsl)) {
-                $this->ruleVmService->evaluateAndApplyWithState($state, file_get_contents($recursionDsl), $tick);
-            }
+            $this->applyDslPathIfAvailable($state, $tick, 'simulation/recursion');
 
             // Phase 67: Idealism Engine (Subjective Physics)
             $this->idealismEngine->handle($state, $ctx);
-            $idealismDsl = resource_path('worldos_rules/simulation/idealism.dsl');
-            if (file_exists($idealismDsl)) {
-                $this->ruleVmService->evaluateAndApplyWithState($state, file_get_contents($idealismDsl), $tick);
-            }
+            $this->applyDslPathIfAvailable($state, $tick, 'simulation/idealism');
 
             // Phase 68: Singularity Engine (The Origin Point)
             $this->singularityEngine->handle($state, $ctx);
-            $singularityDsl = resource_path('worldos_rules/simulation/singularity.dsl');
-            if (file_exists($singularityDsl)) {
-                $this->ruleVmService->evaluateAndApplyWithState($state, file_get_contents($singularityDsl), $tick);
-            }
+            $this->applyDslPathIfAvailable($state, $tick, 'simulation/singularity');
 
             // Phase 69: Terminal Horizon (Information Saturation)
             $this->infoDensityEngine->handle($state, $ctx);
-            $horizonDsl = resource_path('worldos_rules/simulation/horizon.dsl');
-            if (file_exists($horizonDsl)) {
-                $this->ruleVmService->evaluateAndApplyWithState($state, file_get_contents($horizonDsl), $tick);
-            }
+            $this->applyDslPathIfAvailable($state, $tick, 'simulation/horizon');
+        }
+    }
+
+    private function applyDslPathIfAvailable(\App\Modules\Simulation\Core\Runtime\State\WorldState $state, int $tick, string $dslPath): void
+    {
+        $dsl = $this->ruleVmService->loadDsl($dslPath);
+
+        if ($dsl !== '') {
+            $this->ruleVmService->evaluateAndApplyWithState($state, $dsl, $tick);
         }
     }
 }
-
 
 
 

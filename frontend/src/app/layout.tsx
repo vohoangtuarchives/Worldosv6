@@ -4,6 +4,7 @@ import "./globals.css";
 import "@xyflow/react/dist/style.css";
 import { Toaster } from 'sonner';
 import Shell from '@/components/layout/Shell';
+import { QueryProvider } from '@/components/providers/QueryProvider';
 
 const display = Space_Grotesk({
   variable: "--font-display",
@@ -36,9 +37,11 @@ export default function RootLayout({
       <body
         className={`${display.variable} ${narrative.variable} ${mono.variable} antialiased`}
       >
-        <Shell>
-          {children}
-        </Shell>
+        <QueryProvider>
+          <Shell>
+            {children}
+          </Shell>
+        </QueryProvider>
         <Toaster theme="dark" position="top-right" richColors />
       </body>
     </html>

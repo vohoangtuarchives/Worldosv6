@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { GitBranch, Zap } from 'lucide-react';
+import { GitBranch } from 'lucide-react';
 
 export default function ScenariosPage() {
   return (

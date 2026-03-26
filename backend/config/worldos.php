@@ -130,9 +130,19 @@ return [
     ],
     /*
     |--------------------------------------------------------------------------
-    | Self-improving simulation (Doc §30) — stub hook, no closed loop
+    | Autopoiesis: Self-improving simulation (Doc §30, Phase 74)
     |--------------------------------------------------------------------------
+    | Tự động hóa việc đột biến quy luật DSL dựa trên áp lực thực tại (Entropy/Stability).
+    | enabled: Cho phép hệ thống tự can thiệp vào mã nguồn quy luật.
+    | tick_interval: Tần suất kiểm tra đột biến (mặc định 100 ticks).
+    | entropy_threshold: Ngưỡng entropy bắt đầu kích hoạt cơ chế ổn định (0.70).
     */
+    'autopoiesis' => [
+        'enabled' => (bool) env('WORLDOS_AUTOPOIESIS_ENABLED', true),
+        'tick_interval' => (int) env('WORLDOS_AUTOPOIESIS_TICK_INTERVAL', 100),
+        'entropy_threshold' => (float) env('WORLDOS_AUTOPOIESIS_ENTROPY_THRESHOLD', 0.70),
+    ],
+
     'self_improving' => [
         'enabled' => (bool) env('WORLDOS_SELF_IMPROVING_ENABLED', false),
         'candidate_rules' => [
