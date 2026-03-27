@@ -3,7 +3,7 @@
 namespace App\Modules\Intelligence\Services;
 
 use App\Models\Universe;
-use App\Modules\Simulation\Services\SimulationPRNG;
+use App\Modules\Simulation\Services\Ecology\SimulationPRNG;
 use Illuminate\Support\Facades\Log;
 
 /**

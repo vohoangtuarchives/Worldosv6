@@ -35,7 +35,7 @@ class InformationPropagationEngine implements SimulationEngine
 
     public function tickRate(): int
     {
-        return 1;
+        return 5;
     }
 
     /**

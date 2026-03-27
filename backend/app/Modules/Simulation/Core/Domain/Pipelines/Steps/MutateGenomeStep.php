@@ -3,7 +3,7 @@
 namespace App\Modules\Simulation\Core\Domain\Pipelines\Steps;
 
 // use App\Modules\Simulation\Core\Domain\Pipelines\SpawnStepInterface;
-use App\Modules\Simulation\Services\KernelMutationService;
+use App\Modules\Simulation\Services\Ecology\KernelMutationService;
 
 /**
  * Bước đột biến genome cho vũ trụ mới.

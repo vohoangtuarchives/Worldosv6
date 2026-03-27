@@ -44,27 +44,27 @@ export function ObserverControlSurface({
   async function handleAdvance() {
     const ticks = parseInteger(advanceTicks, 1, 1000);
     if (ticks === undefined) {
-      toast.error('Tick window must be an integer from 1 to 1000.');
+      toast.error('Cửa sổ tick phải là một số nguyên từ 1 đến 1000.');
       return;
     }
 
     try {
       await advanceMutation.mutateAsync(ticks);
-      toast.success(`Advanced the simulation by ${ticks} ticks.`);
+      toast.success(`Đã tiến tới ${ticks} tick trong mô phỏng.`);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Advance failed.');
+      toast.error(error instanceof Error ? error.message : 'Tiến tới thất bại.');
     }
   }
 
   async function handleFork() {
     const divergenceTick = parseInteger(forkTick, 0, currentTick);
     if (divergenceTick === undefined) {
-      toast.error(`Divergence tick must be an integer from 0 to ${currentTick}.`);
+      toast.error(`Tick phân kỳ phải là số nguyên từ 0 đến ${currentTick}.`);
       return;
     }
 
     if (forkName.trim().length > 120) {
-      toast.error('Branch label must stay under 120 characters.');
+      toast.error('Nhãn nhánh phải dưới 120 ký tự.');
       return;
     }
 
@@ -74,21 +74,21 @@ export function ObserverControlSurface({
         name: forkName.trim() || undefined,
       });
       const data = typeof payload === 'object' && payload ? (payload.data as Record<string, unknown> | undefined) : undefined;
-      const branchId = typeof data?.child_universe_id === 'number' ? data.child_universe_id : 'new';
+      const branchId = typeof data?.child_universe_id === 'number' ? data.child_universe_id : 'mới';
       setForkName('');
-      toast.success(`Forked branch ${branchId} from tick ${divergenceTick}.`);
+      toast.success(`Đã tách nhánh ${branchId} từ tick ${divergenceTick}.`);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Fork failed.');
+      toast.error(error instanceof Error ? error.message : 'Tách nhánh thất bại.');
     }
   }
 
   async function handleToggleStatus() {
     try {
       const payload = await toggleMutation.mutateAsync();
-      const nextStatus = typeof payload?.new_status === 'string' ? payload.new_status : 'updated';
-      toast.success(`Universe status changed to ${nextStatus}.`);
+      const nextStatus = typeof payload?.new_status === 'string' ? payload.new_status : 'cập nhật';
+      toast.success(`Trạng thái vũ trụ đã đổi sang ${nextStatus}.`);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Status update failed.');
+      toast.error(error instanceof Error ? error.message : 'Cập nhật trạng thái thất bại.');
     }
   }
 
@@ -98,30 +98,30 @@ export function ObserverControlSurface({
       const data = typeof payload === 'object' && payload ? (payload.data as Record<string, unknown> | undefined) : undefined;
       const snapshot = data?.snapshot as Record<string, unknown> | undefined;
       const tick = typeof snapshot?.tick === 'number' ? snapshot.tick : currentTick;
-      toast.success(`Captured snapshot at tick ${tick}.`);
+      toast.success(`Đã ghi lại snapshot tại tick ${tick}.`);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Snapshot capture failed.');
+      toast.error(error instanceof Error ? error.message : 'Ghi snapshot thất bại.');
     }
   }
 
   return (
     <div className="grid gap-4 xl:grid-cols-2 2xl:grid-cols-4">
       <form
-        className="rounded-2xl border border-white/8 bg-background/35 p-5"
+        className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
         onSubmit={(event) => {
           event.preventDefault();
           void handleAdvance();
         }}
       >
-        <p className="text-[10px] uppercase tracking-[0.26em] text-primary/70">Advance</p>
-        <h3 className="mt-2 text-lg font-semibold">Move the causal state forward</h3>
-        <p className="mt-2 text-sm leading-6 text-muted-foreground">
-          Use bounded tick windows so the observer can inspect changes without losing the narrative trail.
+        <p className="text-[10px] uppercase tracking-[0.26em] text-sky-600 font-bold">Tiến tới</p>
+        <h3 className="mt-2 text-lg font-semibold text-slate-900">Tiến tới trạng thái nhân quả tiếp theo</h3>
+        <p className="mt-2 text-sm leading-6 text-slate-500">
+          Sử dụng các cửa sổ tick có giới hạn để người quan sát có thể kiểm tra các thay đổi mà không làm mất đi dấu vết câu chuyện.
         </p>
-        <label className="mt-5 block text-xs uppercase tracking-[0.22em] text-muted-foreground">
-          Tick Window
+        <label className="mt-5 block text-xs uppercase tracking-[0.22em] text-slate-400 font-bold">
+          Cửa sổ Tick
           <input
-            className="mt-2 w-full rounded-2xl border border-white/10 bg-background/60 px-4 py-3 text-sm outline-none transition focus:border-primary/40"
+            className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-sky-400 focus:bg-white"
             inputMode="numeric"
             min="1"
             step="1"
@@ -132,28 +132,28 @@ export function ObserverControlSurface({
         <button
           type="submit"
           disabled={isBusy}
-          className="mt-5 rounded-2xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-primary transition hover:bg-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
+          className="mt-5 w-full rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm font-bold text-sky-700 transition hover:bg-sky-100 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {advanceMutation.isPending ? 'Advancing...' : 'Advance Simulation'}
+          {advanceMutation.isPending ? 'Đang tiến tới...' : 'Tiến trình Simulation'}
         </button>
       </form>
 
       <form
-        className="rounded-2xl border border-white/8 bg-background/35 p-5"
+        className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
         onSubmit={(event) => {
           event.preventDefault();
           void handleFork();
         }}
       >
-        <p className="text-[10px] uppercase tracking-[0.26em] text-primary/70">Fork</p>
-        <h3 className="mt-2 text-lg font-semibold">Split a parallel trajectory</h3>
-        <p className="mt-2 text-sm leading-6 text-muted-foreground">
-          Fork from a known causal checkpoint to compare outcomes without mutating the active branch.
+        <p className="text-[10px] uppercase tracking-[0.26em] text-sky-600 font-bold">Fork</p>
+        <h3 className="mt-2 text-lg font-semibold text-slate-900">Tách một quỹ đạo song song</h3>
+        <p className="mt-2 text-sm leading-6 text-slate-500">
+          Tách nhánh từ một điểm kiểm tra nhân quả đã biết để so sánh các kết quả mà không làm thay đổi nhanh đang hoạt động.
         </p>
-        <label className="mt-5 block text-xs uppercase tracking-[0.22em] text-muted-foreground">
-          Divergence Tick
+        <label className="mt-5 block text-xs uppercase tracking-[0.22em] text-slate-400 font-bold">
+          Tick phân kỳ
           <input
-            className="mt-2 w-full rounded-2xl border border-white/10 bg-background/60 px-4 py-3 text-sm outline-none transition focus:border-primary/40"
+            className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-sky-400 focus:bg-white"
             inputMode="numeric"
             min="0"
             max={currentTick}
@@ -162,49 +162,49 @@ export function ObserverControlSurface({
             onChange={(event) => setForkTick(event.target.value)}
           />
         </label>
-        <label className="mt-4 block text-xs uppercase tracking-[0.22em] text-muted-foreground">
-          Branch Label
+        <label className="mt-4 block text-xs uppercase tracking-[0.22em] text-slate-400 font-bold">
+          Nhãn của nhánh
           <input
-            className="mt-2 w-full rounded-2xl border border-white/10 bg-background/60 px-4 py-3 text-sm outline-none transition focus:border-primary/40"
+            className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-sky-400 focus:bg-white"
             value={forkName}
             onChange={(event) => setForkName(event.target.value)}
-            placeholder="Counterfactual Dawn"
+            placeholder="Bình minh mới"
             maxLength={120}
           />
         </label>
         <button
           type="submit"
           disabled={isBusy}
-          className="mt-5 rounded-2xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-primary transition hover:bg-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
+          className="mt-5 w-full rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm font-bold text-sky-700 transition hover:bg-sky-100 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {forkMutation.isPending ? 'Forking...' : 'Create Branch'}
+          {forkMutation.isPending ? 'Đang tạo nhánh...' : 'Tạo nhánh mới'}
         </button>
       </form>
 
-      <div className="rounded-2xl border border-white/8 bg-background/35 p-5">
-        <p className="text-[10px] uppercase tracking-[0.26em] text-primary/70">Status</p>
-        <h3 className="mt-2 text-lg font-semibold">Observation posture</h3>
-        <p className="mt-2 text-sm leading-6 text-muted-foreground">
-          Current branch status is <span className="font-medium text-foreground">{status}</span>. Toggle it when you need to pause automatic progression or resume active observation.
+      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <p className="text-[10px] uppercase tracking-[0.26em] text-sky-600 font-bold">Trạng thái</p>
+        <h3 className="mt-2 text-lg font-semibold text-slate-900">Tư thế quan sát</h3>
+        <p className="mt-2 text-sm leading-6 text-slate-500">
+          Trạng thái nhánh hiện tại là <span className="font-bold text-slate-900 uppercase">{status}</span>. Chuyển đổi trạng thái khi bạn cần tạm dừng tiến trình tự động hoặc tiếp tục quan sát tích cực.
         </p>
-        <p className="mt-5 text-3xl font-semibold text-primary">Tick {currentTick.toLocaleString()}</p>
+        <p className="mt-5 text-3xl font-bold text-sky-600 font-mono">Tick {currentTick.toLocaleString()}</p>
         <button
           type="button"
           disabled={isBusy}
           onClick={() => {
             void handleToggleStatus();
           }}
-          className="mt-5 rounded-2xl border border-white/10 bg-background/60 px-4 py-3 text-sm transition hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-60"
+          className="mt-5 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {toggleMutation.isPending ? 'Updating...' : 'Toggle Active State'}
+          {toggleMutation.isPending ? 'Đang cập nhật...' : 'Chuyển đổi trạng thái'}
         </button>
       </div>
 
-      <div className="rounded-2xl border border-white/8 bg-background/35 p-5">
-        <p className="text-[10px] uppercase tracking-[0.26em] text-primary/70">Snapshot</p>
-        <h3 className="mt-2 text-lg font-semibold">Capture the present state</h3>
-        <p className="mt-2 text-sm leading-6 text-muted-foreground">
-          Persist a checkpoint now so the snapshots lane and future branch comparisons share a stable reference frame.
+      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <p className="text-[10px] uppercase tracking-[0.26em] text-sky-600 font-bold">Snapshot</p>
+        <h3 className="mt-2 text-lg font-semibold text-slate-900">Ghi lại trạng thái hiện tại</h3>
+        <p className="mt-2 text-sm leading-6 text-slate-500">
+          Lưu trữ một điểm kiểm tra ngay bây giờ để các so sánh nhánh trong tương lai có một khung tham chiếu ổn định.
         </p>
         <button
           type="button"
@@ -212,9 +212,9 @@ export function ObserverControlSurface({
           onClick={() => {
             void handleSnapshot();
           }}
-          className="mt-5 rounded-2xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-primary transition hover:bg-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
+          className="mt-5 w-full rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm font-bold text-sky-700 transition hover:bg-sky-100 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {snapshotMutation.isPending ? 'Capturing...' : 'Create Snapshot'}
+          {snapshotMutation.isPending ? 'Đang ghi lại...' : 'Tạo Snapshot'}
         </button>
       </div>
     </div>

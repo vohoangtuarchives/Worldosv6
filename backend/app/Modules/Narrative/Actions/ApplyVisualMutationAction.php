@@ -6,7 +6,7 @@ use App\Models\LegendaryAgent;
 use App\Models\Universe;
 use App\Models\VisualBranch;
 use App\Modules\Intelligence\Services\AI\VisualDnaEngine;
-use App\Modules\Simulation\Services\ImplicitOrchestratorService;
+use App\Modules\Simulation\Services\Core\ImplicitOrchestratorService;
 use Illuminate\Support\Facades\Log;
 
 /**

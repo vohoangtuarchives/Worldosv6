@@ -14,9 +14,9 @@ function formatPercent(value: number) {
 function getVisualState(pulse?: RealityPulse) {
   if (!pulse) {
     return {
-      label: 'Awaiting signal',
-      color: '#7dd3fc',
-      accent: 'border-sky-400/30 bg-sky-500/10 text-sky-100',
+      label: 'Đang chờ tín hiệu',
+      color: '#0ea5e9',
+      accent: 'border-sky-200 bg-sky-50 text-sky-700',
       intensity: 0.2,
       autonomyActive: false,
     };
@@ -24,9 +24,9 @@ function getVisualState(pulse?: RealityPulse) {
 
   if (pulse.entropy >= pulse.entropyThreshold) {
     return {
-      label: 'Critical entropy',
-      color: '#fb7185',
-      accent: 'border-rose-400/30 bg-rose-500/10 text-rose-100',
+      label: 'Entropy tới hạn',
+      color: '#e11d48',
+      accent: 'border-rose-200 bg-rose-50 text-rose-700',
       intensity: 1,
       autonomyActive: true,
     };
@@ -34,18 +34,18 @@ function getVisualState(pulse?: RealityPulse) {
 
   if (pulse.entropy >= 0.8) {
     return {
-      label: 'Pressure rising',
+      label: 'Áp lực đang tăng',
       color: '#f97316',
-      accent: 'border-orange-400/30 bg-orange-500/10 text-orange-100',
+      accent: 'border-orange-200 bg-orange-50 text-orange-700',
       intensity: 0.7,
       autonomyActive: pulse.mutationHistorySize > 0,
     };
   }
 
   return {
-    label: 'Stable reality',
-    color: '#34d399',
-    accent: 'border-emerald-400/30 bg-emerald-500/10 text-emerald-100',
+    label: 'Thực tại ổn định',
+    color: '#059669',
+    accent: 'border-emerald-200 bg-emerald-50 text-emerald-700',
     intensity: 0.35,
     autonomyActive: pulse.mutationHistorySize > 0,
   };
@@ -92,20 +92,20 @@ function CoreMesh({ intensity, autonomyActive, color }: { intensity: number; aut
 
 export function RealityCore({ pulse }: { pulse?: RealityPulse }) {
   const visual = getVisualState(pulse);
-  const pressure = pulse && pulse.entropyThreshold > 0 ? Math.min(pulse.entropy / pulse.entropyThreshold, 1.4) : 0;
+  const pressure = (pulse && (pulse.entropyThreshold ?? 0) > 0) ? Math.min((pulse.entropy ?? 0) / pulse.entropyThreshold, 1.4) : 0;
 
   return (
-    <div className="relative overflow-hidden rounded-[32px] border border-white/10 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.16),_transparent_45%),linear-gradient(180deg,rgba(15,23,42,0.82),rgba(2,6,23,0.94))] p-5">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_35%,rgba(251,191,36,0.18),transparent_24%),radial-gradient(circle_at_50%_70%,rgba(59,130,246,0.12),transparent_28%)]" />
+    <div className="relative overflow-hidden rounded-[32px] border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_35%,rgba(59,130,246,0.05),transparent_24%),radial-gradient(circle_at_50%_70%,rgba(59,130,246,0.02),transparent_28%)]" />
       <div className="relative grid gap-5 lg:grid-cols-[minmax(0,1.05fr)_minmax(280px,0.95fr)]">
-        <div className="relative h-[360px] overflow-hidden rounded-[28px] border border-white/8 bg-black/30">
+        <div className="relative h-[360px] overflow-hidden rounded-[28px] border border-slate-200 bg-slate-900 shadow-inner">
           <Canvas camera={{ position: [0, 0, 4.5], fov: 42 }}>
             <CoreMesh intensity={visual.intensity} autonomyActive={visual.autonomyActive} color={visual.color} />
           </Canvas>
           <motion.div
-            className="pointer-events-none absolute inset-x-8 bottom-8 h-4 rounded-full bg-white/10"
+            className="pointer-events-none absolute inset-x-8 bottom-8 h-4 rounded-full bg-sky-500/20"
             initial={{ opacity: 0.35 }}
-            animate={{ opacity: [0.25, 0.9, 0.25], scaleX: [0.8, 1 + Math.min(pressure, 1) * 0.24, 0.8] }}
+            animate={{ opacity: [0.15, 0.6, 0.15], scaleX: [0.8, 1 + Math.min(pressure, 1) * 0.24, 0.8] }}
             transition={{ duration: pulse && pulse.entropy >= pulse.entropyThreshold ? 0.7 : 2.1, repeat: Infinity, ease: 'easeInOut' }}
           />
         </div>
@@ -113,29 +113,29 @@ export function RealityCore({ pulse }: { pulse?: RealityPulse }) {
         <div className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-[10px] uppercase tracking-[0.28em] text-primary/70">Reality Pulse</p>
-              <h3 className="mt-2 text-2xl font-semibold tracking-tight">Nh?p d?p th?c t?i</h3>
+              <p className="text-[10px] uppercase tracking-[0.28em] text-sky-600 font-black">NHỊP ĐẬP THỰC TẠI</p>
+              <h3 className="mt-2 text-2xl font-bold tracking-tight text-slate-900">Nhịp đập thực tại</h3>
             </div>
-            <span className={`rounded-full border px-3 py-1 text-xs uppercase tracking-[0.18em] ${visual.accent}`}>{visual.label}</span>
+            <span className={`rounded-full border px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] ${visual.accent}`}>{visual.label}</span>
           </div>
 
-          <p className="text-sm leading-7 text-muted-foreground">
-            Entropy, stability v� informational mass dang du?c gom v? m?t l�i tr?c quan duy nh?t d? b?n th?y khi n�o vu tr? b?t d?u r?n n?t v� khi n�o autopoiesis d� v�o gu?ng.
+          <p className="text-sm leading-7 text-slate-500">
+            Entropy, tính ổn định và khối lượng thông tin đang được tổng hợp vào một lõi trực quan duy nhất để bạn có thể thấy khi nào vũ trụ bắt đầu rạn nứt và khi nào quá trình tự tạo (autopoiesis) bắt đầu hoạt động.
           </p>
 
           <div className="grid gap-3 sm:grid-cols-2">
-            <StatTile label="Entropy pressure" value={pulse ? `${(pressure * 100).toFixed(0)}%` : 'N/A'} />
-            <StatTile label="Collapse probability" value={pulse ? formatPercent(pulse.collapseProbability) : 'N/A'} />
-            <StatTile label="Stability index" value={pulse ? pulse.stabilityIndex.toFixed(2) : 'N/A'} />
-            <StatTile label="Informational mass" value={pulse ? pulse.informationalMass.toFixed(2) : 'N/A'} />
+            <StatTile label="Áp lực Entropy" value={pulse ? `${(pressure * 100).toFixed(0)}%` : 'N/A'} />
+            <StatTile label="Xác suất sụp đổ" value={pulse ? formatPercent(pulse.collapseProbability) : 'N/A'} />
+            <StatTile label="Chỉ số ổn định" value={pulse ? (pulse.stabilityIndex ?? 0).toFixed(2) : 'N/A'} />
+            <StatTile label="Khối lượng thông tin" value={pulse ? (pulse.informationalMass ?? 0).toFixed(2) : 'N/A'} />
           </div>
 
-          <div className="rounded-3xl border border-white/8 bg-white/5 p-4">
-            <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.22em] text-muted-foreground">
-              <span>Autonomy stream</span>
-              <span>{pulse ? `Tick ${pulse.tick.toLocaleString()}` : 'Offline'}</span>
+          <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
+            <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.22em] text-slate-400 font-bold">
+              <span>Luồng tự trị</span>
+              <span>{pulse ? `Tick ${pulse.tick.toLocaleString()}` : 'Ngoại tuyến'}</span>
             </div>
-            <div className="mt-3 h-3 rounded-full bg-white/10">
+            <div className="mt-3 h-3 rounded-full bg-slate-200">
               <motion.div
                 className="h-full rounded-full"
                 style={{ background: `linear-gradient(90deg, ${visual.color}, rgba(255,255,255,0.9))` }}
@@ -143,8 +143,8 @@ export function RealityCore({ pulse }: { pulse?: RealityPulse }) {
                 transition={{ type: 'spring', stiffness: 80, damping: 18 }}
               />
             </div>
-            <p className="mt-3 text-sm text-muted-foreground">
-              {pulse?.lastMutationVector ? `Last repair vector: ${pulse.lastMutationVector}` : 'No repair vector has been recorded yet.'}
+            <p className="mt-3 text-sm text-slate-500 italic">
+              {pulse?.lastMutationVector ? `Vector sửa chữa cuối: ${pulse.lastMutationVector}` : 'Chưa ghi nhận vector sửa chữa nào.'}
             </p>
           </div>
         </div>
@@ -155,9 +155,9 @@ export function RealityCore({ pulse }: { pulse?: RealityPulse }) {
 
 function StatTile({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl border border-white/8 bg-white/5 p-4">
-      <p className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground">{label}</p>
-      <p className="mt-2 text-2xl font-semibold tracking-tight">{value}</p>
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+      <p className="text-[10px] uppercase tracking-[0.22em] text-slate-400 font-bold">{label}</p>
+      <p className="mt-2 text-2xl font-bold tracking-tight text-slate-900 font-mono">{value}</p>
     </div>
   );
 }

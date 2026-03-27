@@ -37,6 +37,9 @@ export const observerKeys = {
     timeline: (universeId: string) => ['observer', 'universes', universeId, 'timeline'] as const,
     omenContext: (universeId: string) => ['observer', 'universes', universeId, 'omen-context'] as const,
   },
+  multiverse: {
+    resonance: ['observer', 'multiverse', 'resonance'] as const,
+  },
   actors: {
     detail: (actorId: string) => ['observer', 'actors', actorId, 'detail'] as const,
     events: (actorId: string) => ['observer', 'actors', actorId, 'events'] as const,
@@ -976,7 +979,7 @@ export function useCreateUniverseSnapshotMutation(universeId: string) {
 export function useAiDiagnosticsMutation() {
   return useMutation({
     mutationFn: (input: { driver?: string; prompt?: string }) =>
-      requestClientJson<Record<string, unknown>>('/api/system/ai/diagnostics/run', {
+      requestClientJson<Record<string, unknown>>('/api/ai-settings/diagnostics', {
         method: 'POST',
         body: JSON.stringify(input),
       }),

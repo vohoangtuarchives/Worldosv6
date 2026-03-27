@@ -56,7 +56,7 @@ class ActorBehaviorEngine
         protected \App\Modules\Narrative\Services\TraitMapper $traitMapper,
         protected \App\Modules\Simulation\Core\Engines\Meta\ActorDecisionEngine $decisionEngine,
         protected RuleVmService $ruleVm,
-        protected \App\Modules\Simulation\Services\VocationActionEngine $vocationActionEngine,
+        protected \App\Modules\Simulation\Services\Society\VocationActionEngine $vocationActionEngine,
         protected \App\Modules\Intelligence\Services\GreatPersonEngine $greatPersonEngine,
         protected \App\Modules\Institutions\Actions\SpawnSupremeEntityAction $spawnAction
     ) {}

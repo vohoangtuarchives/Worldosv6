@@ -29,16 +29,10 @@ class InnovationEngine
      */
     public function runWithState(\App\Modules\Simulation\Core\Runtime\State\WorldState $state, int $tick): void
     {
-        $path = \resource_path('worldos_rules/innovation/collective.dsl');
-        if (!file_exists($path)) {
-            Log::warning("InnovationEngine: collective.dsl not found at {$path}");
-            return;
-        }
-
-        $dsl = file_get_contents($path);
+        $path = 'innovation/collective'; // RuleVmService loads from resource_path('worldos_rules/')
 
         // Evaluation directly against the manifold
-        $this->ruleVm->evaluateAndApplyWithState($state, $dsl, $tick);
+        $this->ruleVm->evaluateAndApplyWithDsl($state, $path, $tick);
         
         Log::debug("InnovationEngine: Evaluated innovation dynamics for Universe {$state->get('universe_id')} at tick {$tick}");
     }

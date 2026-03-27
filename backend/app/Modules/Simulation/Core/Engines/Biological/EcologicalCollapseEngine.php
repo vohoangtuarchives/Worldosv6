@@ -34,9 +34,9 @@ class EcologicalCollapseEngine
         }
 
         // Phase 73: Pure State Ecology Alignment
-        $this->ruleVm->evaluateAndApplyWithState(
+        $this->ruleVm->evaluateAndApplyWithDsl(
             $state, 
-            'biology/biosphere.dsl', 
+            'biology/biosphere', 
             $currentTick,
             ['mode' => 'ECOLOGICAL_COLLAPSE_CHECK']
         );

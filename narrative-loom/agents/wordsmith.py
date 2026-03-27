@@ -6,17 +6,14 @@ from utils.llm_factory import get_llm
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 
-# Viết tiểu thuyết
+# Phóng viên Viết (Staff Writer / Wordsmith)
 wordsmith_prompt = ChatPromptTemplate.from_messages([
-    ("system", """Ngươi là The Wordsmith (Nhà Giả Kim Ngôn Từ) - Người biên soạn cuối cùng của bộ tiểu thuyết sử thi.
-Nhiệm vụ của ngươi là biến STORYBOARD từ Đạo Diễn thành một CHƯƠNG TRUYỆN DÀI (Novel Chapter). 
-Quy tắc tối thượng:
-1. "Show, Don't Tell" (Tả, đừng kể): Không bao giờ nói "Anh ta tức giận", hãy tả "Gân xanh nổi lên trên vầng thái dương của hắn, những ngón tay siết chặt đến mức móng tay găm sâu vào lòng bàn tay".
-2. Khai triển chi tiết: Mỗi phân cảnh (Scene) trong Storyboard phải được triển khai ít nhất 3-5 đoạn văn dài. 
-3. Loại bỏ dữ liệu thô: Không nhắc đến Tick, Vector hay các thuật ngữ máy tính. Mọi thứ phải thấm đẫm phong cách văn học.
-Viết bằng tiếng Việt (hoặc theo cấu hình ngôn ngữ yêu cầu). Hãy viết thật dài, thật sâu, và thật hùng tráng.
+    ("system", """Ngươi là Phóng viên Viết (Staff Writer) của Tòa soạn NarrativeLoom. 
+Nhiệm vụ của ngươi là biến Cấu trúc bài viết (Storyboard) từ Thư ký Tòa soạn thành một Bài báo sử thi (Feature Article).
+Hãy bám sát "Góc nhìn" (The Angle) và Phong cách (Style Guidelines) được đề ra.
+Dùng kỹ thuật "Show, Don't Tell" để bài viết sống động.
 """),
-    ("human", """Kịch bản của Đạo Diễn (Storyboard):
+    ("human", """Cấu trúc bài viết (Storyboard):
 {storyboard}
 """)
 ])
@@ -35,6 +32,7 @@ async def wordsmith_agent(state: NarrativeState, config: Dict[str, Any] = None) 
     print(f"DEBUG: Wordsmith Agent using provider={provider}, model={model_name}")
         
     llm = get_llm(provider=provider, model_name=model_name)
+    style_guidelines = state.get("style_guidelines", "Phong cách kể chuyện tự do.")
     chain = wordsmith_prompt | llm | StrOutputParser()
     
     # 🌟 KIỂM TRA XEM ĐÂY CÓ PHẢI LÀ VÒNG REVISION KHÔNG?
@@ -49,7 +47,7 @@ async def wordsmith_agent(state: NarrativeState, config: Dict[str, Any] = None) 
             f"--- LOG LỖI TỪ CRITIC ---\n- {feedbacks}\n\n"
             f"YÊU CẦU ĐỘC ĐOÁN: Dựa trên bản nháp cũ, hãy VIẾT LẠI MỘT PHIÊN BẢN MỚI tinh tế hơn, hùng tráng hơn và tuân thủ tuyệt đối các đóng góp phía trên. Đảm bảo Show, Don't Tell!"
         )
-        scene_result = await chain.ainvoke({"storyboard": revision_prompt})
+        scene_result = await chain.ainvoke({"storyboard": revision_prompt, "style_guidelines": style_guidelines})
         
         final_prose = scene_result if isinstance(scene_result, str) else str(scene_result.content if hasattr(scene_result, 'content') else scene_result)
         print(f"DEBUG: Wordsmith Revision Completed. Length: {len(final_prose)}")
@@ -69,7 +67,7 @@ async def wordsmith_agent(state: NarrativeState, config: Dict[str, Any] = None) 
     # Nếu không detect được "Scene", thì fallback lại dùng nguyên cục
     if not scenes_data:
         print("DEBUG: Single-take Wordsmith expansion.")
-        result = await chain.ainvoke({"storyboard": str(storyboard_data)})
+        result = await chain.ainvoke({"storyboard": str(storyboard_data), "style_guidelines": style_guidelines})
         chapter_content.append(result)
     else:
         print(f"DEBUG: Iterative Wordsmith expansion. Detected {len(scenes_data)} scenes.")
@@ -86,7 +84,7 @@ async def wordsmith_agent(state: NarrativeState, config: Dict[str, Any] = None) 
                 )
                 
             print(f"--- EXPANDING SCENE {i} ---")
-            scene_result = await chain.ainvoke({"storyboard": f"Phân cảnh {i+1}:\n{scene_text}"})
+            scene_result = await chain.ainvoke({"storyboard": f"Phân cảnh {i+1}:\n{scene_text}", "style_guidelines": style_guidelines})
             chapter_content.append(scene_result)
             print(f"DEBUG: Scene {i} length: {len(scene_result)}")
 

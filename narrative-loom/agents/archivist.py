@@ -26,11 +26,12 @@ def archivist_agent(state: NarrativeState, config: Dict[str, Any] = None) -> Nar
             "world_id": world_id,
             "tick_start": tick_start if tick_start is not None else 0,
             "tick_end": tick_end if tick_end is not None else 0,
-            "actors": ",".join(list(actors))
+            "actors": ",".join(list(actors)),
+            "agent": "qwen3.5-aggressive" # Ghi nhận model đã biên soạn số báo này
         }
         
         memory_db.store_memory(prose, metadata)
-        print("DEBUG: Lịch sử đã được Archivist khắc ghi vĩnh viễn vào Tàng thư các (Vector DB).")
+        print(f"DEBUG: Archivist (Model: qwen3.5) đã khắc ghi sử thi vào Tàng thư các.")
     elif not memory_db.enabled:
         print("DEBUG: Archivist bị vô hiệu hóa do thiếu thư viện Vector DB (chromadb/sentence-transformers).")
         

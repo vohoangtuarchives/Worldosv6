@@ -9,7 +9,7 @@ use App\Modules\Simulation\Core\Domain\TickContext;
 use App\Modules\Simulation\Core\Runtime\State\WorldState;
 use Illuminate\Support\Facades\Log;
 use App\Models\UniverseBridge;
-use App\Modules\Simulation\Services\ConvergenceScoreService;
+use App\Modules\Simulation\Services\Meta\ConvergenceScoreService;
 use App\Modules\Simulation\Core\Effects\WorldStateUpdateEffect;
 
 /**
@@ -46,7 +46,7 @@ class OmegaConvergenceEngine implements SimulationEngine
 
     public function tickRate(): int
     {
-        return 1;
+        return 5;
     }
 
     public function handle(WorldState $state, TickContext $ctx): EngineResult

@@ -20,13 +20,13 @@ import MultiverseIdentityTracker from './MultiverseIdentityTracker';
 
 // Minimal UI Components
 const Card = ({ children, className = "" }: { children: React.ReactNode, className?: string }) => (
-  <div className={`rounded-2xl border border-white/10 bg-black/40 backdrop-blur-md overflow-hidden ${className}`}>
+  <div className={`rounded-[2rem] border border-slate-100 bg-white shadow-sm overflow-hidden ${className}`}>
     {children}
   </div>
 );
 
 const Badge = ({ children, className = "", variant = "outline" }: { children: React.ReactNode, className?: string, variant?: string }) => (
-  <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase tracking-wider ${variant === 'outline' ? 'border border-white/20 text-white/70' : 'bg-primary/20 text-primary border border-primary/30'} ${className}`}>
+  <span className={`px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider ${variant === 'outline' ? 'border border-slate-200 text-slate-500 bg-slate-50/50' : 'bg-sky-50 text-sky-600 border border-sky-100'} ${className}`}>
     {children}
   </span>
 );
@@ -40,50 +40,53 @@ export default function ActorWikiDetail({
 }) {
   const { data: actor, isLoading } = useObserverActorDetail(actorId, undefined as any);
 
-  if (isLoading) return <div className="animate-pulse h-96 bg-white/5 rounded-2xl" />;
-  if (!actor) return <div className="p-8 text-center text-muted-foreground">Không tìm thấy thông tin thực thể này.</div>;
+  if (isLoading) return <div className="animate-pulse h-96 bg-slate-100/50 rounded-[2.5rem]" />;
+  if (!actor) return <div className="p-12 text-center text-slate-400 font-medium">Không tìm thấy thông tin thực thể này.</div>;
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-7xl mx-auto font-sans">
       {/* Left Column: Avatar & Basic Stats */}
-      <div className="space-y-6">
-        <Card className="text-center p-8 bg-gradient-to-b from-blue-500/10 to-transparent border-blue-500/20">
-          <div className="mx-auto w-32 h-32 rounded-full bg-void border-2 border-blue-500/50 flex items-center justify-center mb-4 relative overflow-hidden">
-             <User className="w-16 h-16 text-blue-400/50" />
-             <div className="absolute inset-0 bg-gradient-to-t from-blue-500/20 to-transparent" />
-          </div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">{actor.name}</h1>
-          <Badge className="mt-2 text-blue-400 border-blue-500/30">{actor.role}</Badge>
+      <div className="space-y-8">
+        <Card className="text-center p-10 bg-gradient-to-b from-sky-50/50 to-white border-sky-100/50 relative">
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-1 bg-sky-500 rounded-b-full opacity-20" />
           
-          <div className="grid grid-cols-2 gap-4 mt-8">
-            <div className="text-center">
-              <div className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1">Influence</div>
-              <div className="text-xl font-bold text-white">{(actor.influence * 100).toFixed(0)}%</div>
+          <div className="mx-auto w-36 h-36 rounded-full bg-slate-50 border-4 border-white shadow-xl flex items-center justify-center mb-6 relative overflow-hidden group">
+             <User className="w-20 h-20 text-slate-200 group-hover:text-sky-300 transition-colors" />
+             <div className="absolute inset-0 bg-gradient-to-t from-sky-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          </div>
+          
+          <h1 className="text-3xl font-black text-slate-900 tracking-tight uppercase leading-none">{actor.name}</h1>
+          <Badge className="mt-4 text-sky-600 border-sky-100 bg-sky-50/50 px-4 py-1.5">{actor.role}</Badge>
+          
+          <div className="grid grid-cols-2 gap-6 mt-10">
+            <div className="text-center p-4 rounded-3xl bg-slate-50/50 border border-slate-100 transition-hover hover:border-sky-100 hover:bg-white hover:shadow-sm">
+              <div className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">Tầm ảnh hưởng</div>
+              <div className="text-2xl font-black text-slate-900">{(actor.influence * 100).toFixed(0)}%</div>
             </div>
-            <div className="text-center">
-              <div className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1">Alignment</div>
-              <div className="text-xl font-bold text-white">{actor.alignment}</div>
+            <div className="text-center p-4 rounded-3xl bg-slate-50/50 border border-slate-100 transition-hover hover:border-sky-100 hover:bg-white hover:shadow-sm">
+              <div className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">Định hướng</div>
+              <div className="text-2xl font-black text-slate-900 capitalize">{actor.alignment === 'neutral' ? 'Trung lập' : actor.alignment}</div>
             </div>
           </div>
         </Card>
 
         <section className="space-y-4">
-          <h3 className="text-xs font-bold font-mono tracking-[0.2em] text-muted-foreground uppercase flex items-center gap-2">
-            <Shield className="w-3 h-3 text-blue-400" />
-            Biological Stats
+          <h3 className="text-[10px] font-black tracking-[0.3em] text-slate-400 uppercase flex items-center gap-3 px-2">
+            <Shield className="w-4 h-4 text-sky-400" />
+            Thông số Sinh học
           </h3>
-          <Card className="p-4 bg-white/[0.02] border-white/5 space-y-4">
+          <Card className="p-8 space-y-6">
             {Object.entries(actor.vitality || {}).map(([key, value]: [string, any]) => (
-              <div key={key} className="space-y-1">
-                <div className="flex justify-between text-[10px] uppercase font-mono tracking-wider">
-                   <span className="text-muted-foreground">{key}</span>
-                   <span className="text-white">{(value * 100).toFixed(0)}%</span>
+              <div key={key} className="space-y-3">
+                <div className="flex justify-between text-[10px] font-black uppercase tracking-widest leading-none">
+                   <span className="text-slate-400">{key === 'health' ? 'Sức mạnh' : key === 'energy' ? 'Năng lượng' : key === 'sanity' ? 'Tâm trí' : key}</span>
+                   <span className="text-slate-900">{(value * 100).toFixed(0)}%</span>
                 </div>
-                <div className="h-1 bg-void rounded-full overflow-hidden">
+                <div className="h-2 bg-slate-50 rounded-full overflow-hidden border border-slate-100 shadow-inner">
                    <motion.div 
                      initial={{ width: 0 }}
                      animate={{ width: `${value * 100}%` }}
-                     className="h-full bg-blue-500/40"
+                     className={`h-full ${key === 'health' ? 'bg-sky-500' : key === 'energy' ? 'bg-amber-400' : 'bg-indigo-500'} opacity-80`}
                    />
                 </div>
               </div>
@@ -95,51 +98,66 @@ export default function ActorWikiDetail({
       </div>
 
       {/* Middle Column: Biography & Narrative */}
-      <div className="lg:col-span-2 space-y-8 text-white/90">
-        <section className="space-y-4">
-          <div className="flex items-center gap-2 border-b border-white/5 pb-2">
-             <BookOpen className="w-5 h-5 text-purple-400" />
-             <h2 className="text-xl font-bold tracking-tight">Biography (Hồ sơ thực thể)</h2>
+      <div className="lg:col-span-2 space-y-12">
+        <section className="space-y-6">
+          <div className="flex items-center gap-4 border-b border-slate-100 pb-4">
+             <div className="p-3 rounded-2xl bg-indigo-50 border border-indigo-100 text-indigo-500">
+               <BookOpen className="w-6 h-6" />
+             </div>
+             <div>
+               <h2 className="text-2xl font-black text-slate-900 tracking-tight uppercase">Hồ sơ Thực thể</h2>
+               <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest mt-1">BIOGRAPHY DATABASE v2.0</p>
+             </div>
           </div>
-          <div className="text-lg leading-relaxed font-serif italic text-white/80 whitespace-pre-wrap">
+          <div className="text-xl leading-relaxed text-slate-600 font-medium italic indent-8">
              <AutoLinkContent content={actor.biography} universeId={universeId} />
           </div>
         </section>
 
-        <section className="space-y-4">
-          <div className="flex items-center gap-2 border-b border-white/5 pb-2">
-             <Zap className="w-5 h-5 text-emerald-400" />
-             <h2 className="text-xl font-bold tracking-tight">Capabilities (Năng lực & Thuộc tính)</h2>
+        <section className="space-y-6">
+          <div className="flex items-center gap-4 border-b border-slate-100 pb-4">
+             <div className="p-3 rounded-2xl bg-amber-50 border border-amber-100 text-amber-500">
+               <Zap className="w-6 h-6" />
+             </div>
+             <div>
+               <h2 className="text-2xl font-black text-slate-900 tracking-tight uppercase">Năng lực & Thuộc tính</h2>
+               <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest mt-1">CAPABILITIES & TRAITS</p>
+             </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
              {Object.entries(actor.traits || {}).map(([key, val]: [string, any]) => (
-               <div key={key} className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/5">
-                 <div className="w-10 h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
-                    <Award className="w-5 h-5" />
+               <div key={key} className="flex items-center gap-5 p-5 rounded-[1.5rem] bg-white border border-slate-100 shadow-sm transition-hover hover:shadow-md hover:border-amber-100 group">
+                 <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-500 transition-colors group-hover:bg-amber-500 group-hover:text-white">
+                    <Award className="w-6 h-6" />
                  </div>
                  <div>
-                   <div className="text-[10px] uppercase text-muted-foreground font-mono">{key}</div>
-                   <div className="text-sm font-bold">{val}</div>
+                   <div className="text-[9px] font-black uppercase text-slate-300 tracking-[0.2em] mb-1">{key}</div>
+                   <div className="text-sm font-black text-slate-900 uppercase tracking-tight">{val}</div>
                  </div>
                </div>
              ))}
           </div>
         </section>
 
-        <section className="space-y-4">
-          <div className="flex items-center gap-2 border-b border-white/5 pb-2">
-             <History className="w-5 h-5 text-blue-400" />
-             <h2 className="text-xl font-bold tracking-tight">Recent Evolutionary Events</h2>
+        <section className="space-y-6">
+          <div className="flex items-center gap-4 border-b border-slate-100 pb-4">
+             <div className="p-3 rounded-2xl bg-sky-50 border border-sky-100 text-sky-500">
+               <History className="w-6 h-6" />
+             </div>
+             <div>
+               <h2 className="text-2xl font-black text-slate-900 tracking-tight uppercase">Sự kiện Tiến hóa Gần đây</h2>
+               <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest mt-1">EVOLUTIONARY HISTORY</p>
+             </div>
           </div>
-          <div className="space-y-3">
+          <div className="space-y-4">
              {actor.recentEvents?.map((event: any) => (
-               <div key={event.id} className="flex gap-4 p-4 rounded-xl bg-white/[0.02] border border-white/5 group hover:bg-white/[0.05] transition-all">
-                  <div className="pt-1">
-                    <div className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.5)]" />
+               <div key={event.id} className="flex gap-6 p-6 rounded-[2rem] bg-slate-50/50 border border-slate-100 group hover:bg-white hover:shadow-md hover:border-sky-100 transition-all">
+                  <div className="pt-2">
+                    <div className="w-3 h-3 rounded-full bg-sky-500 border-4 border-white shadow-sm shadow-sky-200" />
                   </div>
                   <div>
-                    <div className="text-xs font-mono text-blue-400 mb-1">TICK {event.tick}</div>
-                    <div className="text-sm text-white/90 font-light leading-relaxed">
+                    <div className="text-[10px] font-black text-sky-500 mb-2 uppercase tracking-widest">NHỊP {event.tick}</div>
+                    <div className="text-base text-slate-600 font-medium leading-relaxed">
                        <AutoLinkContent content={event.summary} universeId={universeId} />
                     </div>
                   </div>

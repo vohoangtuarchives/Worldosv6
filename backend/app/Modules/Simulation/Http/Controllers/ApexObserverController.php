@@ -4,9 +4,7 @@ namespace App\Modules\Simulation\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Modules\Simulation\Core\Runtime\State\StateManager;
-use App\Modules\Simulation\Services\ZenithMetricsService;
-use App\Modules\Narrative\Services\MeaningSeedService;
-use App\Modules\Simulation\Services\RuleMutationService;
+use App\Modules\Simulation\Services\Core\RuleMutationService;
 use App\Models\UniverseSnapshot;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Storage;
@@ -21,8 +19,6 @@ class ApexObserverController extends Controller
 {
     public function __construct(
         protected StateManager $stateManager,
-        protected ZenithMetricsService $zenithMetrics,
-        protected MeaningSeedService $seedService,
         protected RuleMutationService $mutationService,
     ) {}
 
@@ -32,11 +28,11 @@ class ApexObserverController extends Controller
      */
     public function projectWavefunction(int $universeId): JsonResponse
     {
-        $state = $this->stateManager->get();
+        $state = $this->ensureStateLoaded($universeId);
 
-        if (!$state || (int) $state->get('universe_id') !== $universeId) {
+        if (!$state) {
             return response()->json([
-                'error' => 'Universe state not loaded',
+                'error' => 'Universe state could not be loaded',
                 'universe_id' => $universeId,
             ], 404);
         }
@@ -86,9 +82,9 @@ class ApexObserverController extends Controller
      */
     public function getInformationalMass(int $universeId): JsonResponse
     {
-        $state = $this->stateManager->get();
+        $state = $this->ensureStateLoaded($universeId);
 
-        if (!$state || (int) $state->get('universe_id') !== $universeId) {
+        if (!$state) {
             return response()->json(['error' => 'State not loaded'], 404);
         }
 
@@ -269,8 +265,8 @@ class ApexObserverController extends Controller
      */
     public function getTopology(int $universeId): JsonResponse
     {
-        $state = $this->stateManager->get();
-        if (!$state || (int) $state->get('universe_id') !== $universeId) {
+        $state = $this->ensureStateLoaded($universeId);
+        if (!$state) {
             return response()->json(['error' => 'State not loaded'], 404);
         }
 
@@ -331,8 +327,8 @@ class ApexObserverController extends Controller
      */
     public function getConsciousnessField(int $universeId): JsonResponse
     {
-        $state = $this->stateManager->get();
-        if (!$state || (int) $state->get('universe_id') !== $universeId) {
+        $state = $this->ensureStateLoaded($universeId);
+        if (!$state) {
             return response()->json(['error' => 'State not loaded'], 404);
         }
 
@@ -369,8 +365,8 @@ class ApexObserverController extends Controller
      */
     public function getAscensionStatus(int $universeId): JsonResponse
     {
-        $state = $this->stateManager->get();
-        if (!$state || (int) $state->get('universe_id') !== $universeId) {
+        $state = $this->ensureStateLoaded($universeId);
+        if (!$state) {
             return response()->json(['error' => 'State not loaded'], 404);
         }
 
@@ -392,6 +388,24 @@ class ApexObserverController extends Controller
             'singularity_probability' => round(($fields['knowledge'] ?? 0.1) * (1 - ($pressures['stability'] ?? 0.5)), 4),
             'filters' => $filters
         ]);
+    }
+
+    /**
+     * Internal helper to ensure the state for a specific universe is loaded.
+     */
+    protected function ensureStateLoaded(int $universeId): ?\App\Modules\Simulation\Core\Runtime\State\WorldState
+    {
+        $state = $this->stateManager->get();
+
+        if (!$state || (int) $state->get('universe_id') !== $universeId) {
+            $universe = \App\Models\Universe::find($universeId);
+            if (!$universe) {
+                return null;
+            }
+            $state = $this->stateManager->load($universe);
+        }
+
+        return $state;
     }
 }
 

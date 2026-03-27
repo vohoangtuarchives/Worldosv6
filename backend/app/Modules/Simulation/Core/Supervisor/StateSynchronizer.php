@@ -4,7 +4,7 @@ namespace App\Modules\Simulation\Core\Supervisor;
 
 use App\Contracts\Repositories\UniverseRepositoryInterface;
 use App\Models\Universe;
-use App\Modules\Simulation\Services\TemporalSyncService;
+use App\Modules\Simulation\Services\Meta\TemporalSyncService;
 use App\Modules\Simulation\Core\Contracts\StateCacheInterface;
 
 /**

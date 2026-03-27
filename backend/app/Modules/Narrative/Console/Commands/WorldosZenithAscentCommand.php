@@ -7,7 +7,7 @@ use App\Models\Universe;
 use App\Models\UniverseSnapshot;
 use App\Modules\Simulation\Core\Runtime\SimulationTickOrchestrator;
 use App\Modules\Simulation\Core\Runtime\State\StateManager;
-use App\Modules\Simulation\Services\ZenithMetricsService;
+use App\Modules\Simulation\Services\Ecology\ZenithMetricsService;
 
 class WorldosZenithAscentCommand extends Command
 {

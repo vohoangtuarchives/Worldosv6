@@ -22,14 +22,14 @@ const NavItem = ({ href, icon: Icon, label, active }: { href: string; icon: Luci
       className={`
         group relative flex items-center justify-center w-12 h-12 rounded-xl transition-all duration-300
         ${active 
-          ? 'bg-primary/20 text-primary border border-primary/30 glow-sm' 
-          : 'text-muted-foreground hover:bg-card/40 hover:text-foreground border border-transparent'}
+          ? 'bg-sky-100 text-sky-700 border border-sky-200 shadow-sm' 
+          : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 border border-transparent'}
       `}
     >
       <Icon size={20} />
       
       {/* Tooltip */}
-      <div className="absolute left-16 px-3 py-1.5 rounded-md bg-popover/90 backdrop-blur-md border border-border/50 text-xs font-medium text-popover-foreground opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-300 translate-x-[-10px] group-hover:translate-x-0 z-50 whitespace-nowrap">
+      <div className="absolute left-16 px-3 py-1.5 rounded-md bg-white border border-slate-200 shadow-lg text-xs font-medium text-slate-800 opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-300 translate-x-[-10px] group-hover:translate-x-0 z-50 whitespace-nowrap">
         {label}
       </div>
 
@@ -37,7 +37,7 @@ const NavItem = ({ href, icon: Icon, label, active }: { href: string; icon: Luci
       {active && (
         <motion.div 
           layoutId="sidebar-active"
-          className="absolute -left-3 w-1 h-6 bg-primary rounded-r-full glow-primary"
+          className="absolute -left-3 w-1 h-6 bg-sky-600 rounded-r-full"
         />
       )}
     </motion.div>
@@ -48,23 +48,23 @@ const Sidebar = () => {
   const pathname = usePathname();
 
   return (
-    <aside className="fixed left-0 top-0 bottom-0 w-[72px] flex flex-col items-center py-8 bg-card/10 backdrop-blur-2xl border-r border-border/20 z-50 overflow-visible">
+    <aside className="fixed left-0 top-0 bottom-0 w-[72px] flex flex-col items-center py-8 bg-white border-r border-slate-200 z-50 overflow-visible">
       <div className="mb-12">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-primary to-cosmos flex items-center justify-center glow-primary">
+        <div className="w-10 h-10 rounded-xl bg-sky-600 flex items-center justify-center shadow-md">
           <Zap size={22} className="text-white" fill="white" />
         </div>
       </div>
 
       <nav className="flex-1 flex flex-col gap-6">
-        <NavItem href="/dashboard" icon={Home} label="Home" active={pathname === '/dashboard'} />
-        <NavItem href="/dashboard" icon={Orbit} label="Universe Hub" active={pathname === '/dashboard'} />
-        <NavItem href="/dashboard/universes/create" icon={Sparkles} label="Axiom Workshop" active={pathname.includes('/create')} />
-        <NavItem href="/dashboard/narrative" icon={History} label="Chronicles" active={pathname.includes('/narrative')} />
-        <NavItem href="/dashboard" icon={Users} label="Actors" active={pathname.includes('/actors')} />
+        <NavItem href="/dashboard" icon={Home} label="Trang chủ" active={pathname === '/dashboard'} />
+        <NavItem href="/dashboard" icon={Orbit} label="Trung tâm Vũ trụ" active={pathname === '/dashboard'} />
+        <NavItem href="/dashboard/universes/create" icon={Sparkles} label="Xưởng Axiom" active={pathname.includes('/create')} />
+        <NavItem href="/dashboard/narrative" icon={History} label="Biên niên sử" active={pathname.includes('/narrative')} />
+        <NavItem href="/dashboard" icon={Users} label="Thực thể" active={pathname.includes('/actors')} />
       </nav>
 
       <div className="mt-auto">
-        <NavItem href="/dashboard/ai-config" icon={Settings} label="System Config" active={pathname.startsWith('/dashboard/ai-config')} />
+        <NavItem href="/dashboard/ai-config" icon={Settings} label="Cấu hình Hệ thống" active={pathname.startsWith('/dashboard/ai-config')} />
       </div>
     </aside>
   );

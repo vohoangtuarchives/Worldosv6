@@ -6,7 +6,7 @@ $kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
 $kernel->bootstrap();
 
 use App\Modules\Simulation\Core\Runtime\RuleVM\RuleVmService;
-use App\Modules\Simulation\Services\RuleMutationService;
+use App\Modules\Simulation\Services\Core\RuleMutationService;
 use Illuminate\Support\Facades\Config;
 
 $dslPath = 'simulation/integrity';

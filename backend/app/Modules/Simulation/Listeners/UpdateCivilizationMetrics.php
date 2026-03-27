@@ -3,9 +3,9 @@
 namespace App\Modules\Simulation\Listeners;
 
 use App\Modules\Simulation\Events\UniverseSimulationPulsed;
-use App\Modules\Simulation\Services\PressureCalculator;
-use App\Modules\Simulation\Services\CosmicPhaseDetector;
-use App\Modules\Simulation\Services\CosmicEnergyPoolService;
+use App\Modules\Simulation\Services\Ecology\PressureCalculator;
+use App\Modules\Simulation\Services\Cosmology\CosmicPhaseDetector;
+use App\Modules\Simulation\Services\Cosmology\CosmicEnergyPoolService;
 use App\Modules\Simulation\Core\Engines\Meta\AttractorEngine;
 use App\Modules\Simulation\Core\Engines\Meta\DynamicAttractorEngine;
 use App\Modules\Simulation\Core\Support\SimulationRandom;

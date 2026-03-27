@@ -8,15 +8,15 @@ export function ObserverErrorState({
   onRetry: () => void;
 }) {
   return (
-    <div className="rounded-2xl border border-rose-400/20 bg-rose-500/10 p-5 text-sm text-rose-100">
-      <p className="font-semibold">{title}</p>
-      <p className="mt-2 text-rose-100/80">{description}</p>
+    <div className="rounded-[2rem] border border-rose-200 bg-rose-50 p-8 text-sm text-rose-700 shadow-sm font-sans">
+      <p className="text-lg font-black uppercase tracking-tight">{title}</p>
+      <p className="mt-3 text-rose-600/80 font-medium leading-relaxed">{description}</p>
       <button
         type="button"
         onClick={onRetry}
-        className="mt-4 rounded-xl border border-rose-200/20 bg-black/10 px-4 py-2 text-xs uppercase tracking-[0.18em] transition hover:bg-black/20"
+        className="mt-6 rounded-xl border border-rose-200 bg-white px-6 py-2.5 text-[10px] font-black uppercase tracking-[0.2em] text-rose-700 transition hover:bg-rose-100 shadow-sm"
       >
-        Retry
+        Thử lại
       </button>
     </div>
   );

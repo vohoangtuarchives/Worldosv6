@@ -5,7 +5,7 @@ namespace App\Modules\Simulation\Core\Engines\Meta;
 use App\Models\LegendaryAgent;
 use App\Models\Universe;
 use App\Models\Chronicle;
-use App\Modules\Simulation\Services\CheatGranterService;
+use App\Modules\Simulation\Services\Core\CheatGranterService;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -112,7 +112,7 @@ class TransmigrationEngine
         }
 
         // Pick random zone
-        $prng = \App\Modules\Simulation\Services\SimulationPRNG::forUniverse($universe);
+        $prng = \App\Modules\Simulation\Services\Ecology\SimulationPRNG::forUniverse($universe);
         $zoneIdx = $prng->arrayRand($vec['zones']);
         
         // Reconstruct basic agent payload

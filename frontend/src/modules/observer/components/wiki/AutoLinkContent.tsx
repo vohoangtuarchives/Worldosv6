@@ -13,7 +13,7 @@ export default function AutoLinkContent({ content, universeId, className = '' }:
   // Và hiển thị nó với style của Wiki
   return (
     <div 
-      className={`wiki-content prose prose-invert max-w-none ${className}`}
+      className={`wiki-content prose max-w-none font-medium text-slate-600 ${className}`}
       dangerouslySetInnerHTML={{ __html: content }}
       onClick={(e) => {
         const target = e.target as HTMLElement;

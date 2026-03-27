@@ -1,24 +1,20 @@
 import type { Metadata } from "next";
-import { Crimson_Pro, JetBrains_Mono, Space_Grotesk } from "next/font/google";
+import { Fira_Sans, Fira_Code } from "next/font/google";
 import "./globals.css";
 import "@xyflow/react/dist/style.css";
 import { Toaster } from 'sonner';
 import Shell from '@/components/layout/Shell';
 import { QueryProvider } from '@/components/providers/QueryProvider';
 
-const display = Space_Grotesk({
+const display = Fira_Sans({
   variable: "--font-display",
+  weight: ["300", "400", "500", "600", "700"],
   subsets: ["latin", "vietnamese"],
 });
 
-const narrative = Crimson_Pro({
-  variable: "--font-narrative",
-  subsets: ["latin", "vietnamese"],
-});
-
-const mono = JetBrains_Mono({
+const mono = Fira_Code({
   variable: "--font-mono",
-  subsets: ["latin", "vietnamese"],
+  subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
@@ -35,14 +31,14 @@ export default function RootLayout({
   return (
     <html lang="vi">
       <body
-        className={`${display.variable} ${narrative.variable} ${mono.variable} antialiased`}
+        className={`${display.variable} ${mono.variable} antialiased`}
       >
         <QueryProvider>
           <Shell>
             {children}
           </Shell>
         </QueryProvider>
-        <Toaster theme="dark" position="top-right" richColors />
+        <Toaster theme="light" position="top-right" richColors />
       </body>
     </html>
   );

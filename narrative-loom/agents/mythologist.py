@@ -1,0 +1,42 @@
+import os
+from typing import Dict, Any
+from state import NarrativeState
+from utils.llm_factory import get_llm
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+
+# Phóng viên Văn hóa (Cultural Reporter / Mythologist)
+mythologist_prompt = ChatPromptTemplate.from_messages([
+    ("system", """Ngươi là Phóng viên Văn hóa (Cultural Reporter) của Tòa soạn NarrativeLoom. 
+Nhiệm vụ của ngươi là tiếp nhận bản tin từ Phóng viên Sử học và "Thần thoại hóa" nó.
+Hãy bám sát "Góc nhìn" (The Angle) mà Tổng Biên Tập đã đề ra.
+Tìm kiếm các biểu tượng, điển tích và tiềm năng thần thánh trong các sự kiện.
+"""),
+    ("human", """Bản tin sử học:
+{outline}
+
+Chỉ thị từ Tổng Biên Tập:
+{style}
+""")
+])
+
+async def mythologist_agent(state: NarrativeState, config: Dict[str, Any] = None) -> NarrativeState:
+    print("--- RUNNING AGENT: THE MYTHOLOGIST ---")
+    
+    outline = state.get("historical_outline", "")
+    style = state.get("style_guidelines", "")
+    
+    provider = "local"
+    model_name = os.getenv("LOCAL_MODEL_NAME", "MythoMax-L2-13B")
+    llm = get_llm(provider=provider, model_name=model_name)
+    chain = mythologist_prompt | llm | StrOutputParser()
+    
+    result = await chain.ainvoke({
+        "outline": str(outline),
+        "style": style
+    })
+    
+    # Lưu vào state để Director sử dụng
+    new_storyboard_context = state.get("storyboard", "") + f"\n\n[MYTHIC FRAGMENTS]:\n{result}"
+    
+    return {**state, "storyboard": new_storyboard_context, "current_agent": "mythologist"}

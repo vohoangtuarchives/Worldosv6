@@ -8,20 +8,21 @@ from langchain_core.output_parsers import StrOutputParser
 
 from schemas import Storyboard
 
-# Đạo diễn dàn dựng
+# Thư ký Tòa soạn (Managing Editor / Director)
 director_prompt = ChatPromptTemplate.from_messages([
-    ("system", """Ngươi là The Director (Đạo Diễn). Khách hàng của ngươi là The Wordsmith (Nhà Văn).
-Từ Dàn Ý cốt truyện của Sử Gia (chứa các beats), Bản phân tích nội tâm của Bác Sĩ Tâm Lý và Trạng Thái Thế Giới. Ngươi có nhiệm vụ dàn dựng một STORYBOARD CHI TIẾT gồm nhiều phân cảnh.
-Đầu ra của ngươi phải tuân thủ nghiêm ngặt chuẩn định dạng JSON Schema của Storyboard. Không được tạo code block markdown, chỉ cần xuất ra Object đúng chuẩn chứa List các Scenes.
-Với mỗi Scene, điền đẩy đủ các thông tin: Bối cảnh không khí, Góc quay camera, Cốt lõi giao tranh, và Các diễn viên.
+    ("system", """Ngươi là Thư ký Tòa soạn (Managing Editor) của Tòa soạn NarrativeLoom. 
+Nhiệm vụ của ngươi là tổng hợp các bản tin từ Phóng viên Sử học, Phóng viên Văn hóa và Phóng viên Điều tra để xây dựng một Cấu trúc bài viết (Storyboard).
+Hãy bám sát "Góc nhìn" (The Angle) mà Tổng Biên Tập đã đề ra.
+Chia nhỏ bài viết thành các phân đoạn (Scenes), xác định bối cảnh, nhân vật và xung đột trung tâm cho mỗi đoạn.
+Đầu ra PHẢI tuân thủ nghiêm ngặt chuẩn định dạng JSON Schema của Storyboard.
 """),
-    ("human", """Historical Outline:
+    ("human", """Bản tin sử học & Thần thoại:
 {outline}
     
-Psychological Analysis:
+Phân tích tâm lý & Động cơ:
 {psychology}
 
-World Topology/State:
+Bối cảnh thế giới hiện tại:
 {world_state}
 """)
 ])

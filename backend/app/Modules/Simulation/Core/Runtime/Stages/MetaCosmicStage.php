@@ -14,15 +14,15 @@ use App\Models\UniverseSnapshot;
 use App\Modules\Simulation\Core\Runtime\Contracts\SimulationStageInterface;
 use App\Modules\Simulation\Core\Runtime\RuleVM\RuleVmService;
 use App\Modules\Simulation\Core\Runtime\RuleVM\DslPayload;
-use App\Modules\Simulation\Services\ResonanceAuditorService;
-use App\Modules\Simulation\Services\MultiverseSovereigntyService;
+use App\Modules\Simulation\Services\Culture\ResonanceAuditorService;
+use App\Modules\Simulation\Services\Meta\MultiverseSovereigntyService;
 use App\Modules\Narrative\Actions\ArchetypeShiftAction;
 use App\Modules\Intelligence\Services\AI\FaithService;
 use App\Modules\Narrative\Actions\EmpowerDemiurgesAction;
 use App\Modules\Narrative\Actions\DemiurgeAutonomousAction;
 use App\Modules\Narrative\Actions\DivineMiracleAction;
 use App\Modules\Narrative\Services\EtherealOmenService;
-use App\Modules\Simulation\Services\HeatDeathService;
+use App\Modules\Simulation\Services\Cosmology\HeatDeathService;
 use App\Modules\Simulation\Actions\AutonomousAxiomMutationAction;
 use App\Modules\Intelligence\Actions\AgentSovereigntyAction;
 use App\Modules\Simulation\Core\Engines\Biological\CelestialAntibodyEngine;
@@ -84,7 +84,7 @@ final class MetaCosmicStage implements SimulationStageInterface
         protected \App\Modules\Simulation\Core\Runtime\Core\CosmicV2Orchestrator $cosmicV2Orchestrator,
         protected \App\Modules\Simulation\Core\Runtime\State\StateManager $stateManager,
         protected RuleVmService $ruleVm,
-        protected \App\Modules\Simulation\Services\AnomalyGeneratorService $anomalyGenerator,
+        protected \App\Modules\Simulation\Services\Ecology\AnomalyGeneratorService $anomalyGenerator,
         protected InformationDensityEngine $informationDensityEngine,
         protected AutopoieticEvolutionEngine $autopoieticEngine,
         protected NarrativeChapterEngine $narrativeChapterEngine,
@@ -145,7 +145,7 @@ final class MetaCosmicStage implements SimulationStageInterface
     private function triggerManifoldMiracles(\App\Modules\Simulation\Core\Runtime\State\WorldState $state, int $tick): void
     {
         $rivals = \App\Models\Demiurge::where('is_active', true)->get();
-        $rng = new \App\Modules\Simulation\Services\SimulationPRNG($state->get('seed', 0) + $tick);
+        $rng = new \App\Modules\Simulation\Services\Ecology\SimulationPRNG($state->get('seed', 0) + $tick);
         
         foreach ($rivals as $demiurge) {
             $chance = ($demiurge->will_power / 5000) + (float)($state->get('meta.omen.sci_modifier', 0));
@@ -171,7 +171,7 @@ final class MetaCosmicStage implements SimulationStageInterface
         return $ratios;
     }
 
-    private function processAlignments(Universe $universe, \App\Modules\Simulation\Services\SimulationPRNG $rng): void
+    private function processAlignments(Universe $universe, \App\Modules\Simulation\Services\Ecology\SimulationPRNG $rng): void
     {
         $legends = \App\Models\LegendaryAgent::where('universe_id', $universe->id)->get();
         foreach ($legends as $legend) {
@@ -186,7 +186,7 @@ final class MetaCosmicStage implements SimulationStageInterface
         }
     }
 
-    private function triggerRandomMiracles(Universe $universe, \App\Modules\Simulation\Services\SimulationPRNG $rng): void
+    private function triggerRandomMiracles(Universe $universe, \App\Modules\Simulation\Services\Ecology\SimulationPRNG $rng): void
     {
         $rivals = \App\Models\Demiurge::where('is_active', true)->get();
         $omen = $this->etherOmen->generateInternalOmen($universe);

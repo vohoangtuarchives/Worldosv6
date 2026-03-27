@@ -3,8 +3,8 @@
 namespace App\Modules\Simulation\Core\Domain\Pipelines\Steps;
 
 // use App\Modules\Simulation\Core\Domain\Pipelines\SpawnStepInterface;
-use App\Modules\Simulation\Services\OriginSeeder;
-use App\Modules\Simulation\Services\KernelMutationService;
+use App\Modules\Simulation\Services\Cosmology\OriginSeeder;
+use App\Modules\Simulation\Services\Ecology\KernelMutationService;
 
 /**
  * Bước hoàn tất: Seeding, Mutation post-processing, External Shocks.

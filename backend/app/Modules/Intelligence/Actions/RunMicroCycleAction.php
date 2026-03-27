@@ -13,7 +13,7 @@ use App\Modules\Intelligence\Services\ActorTransitionSystem;
 use App\Modules\Intelligence\Services\ReplicatorDistributionUpdater;
 use App\Modules\Intelligence\Services\MacroStateEvolution;
 use App\Modules\Intelligence\Services\SocietyAnalyzer;
-use App\Modules\Simulation\Services\SimulationPRNG;
+use App\Modules\Simulation\Services\Ecology\SimulationPRNG;
 use Illuminate\Support\Facades\Log;
 
 class RunMicroCycleAction

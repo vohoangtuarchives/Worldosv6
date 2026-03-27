@@ -4,7 +4,7 @@ namespace App\Modules\WorldOS\Actions;
 
 use App\Models\Universe;
 use App\Models\BranchEvent;
-use App\Modules\Simulation\Services\ImplicitOrchestratorService;
+use App\Modules\Simulation\Services\Core\ImplicitOrchestratorService;
 
 class ForkUniverseAction
 {

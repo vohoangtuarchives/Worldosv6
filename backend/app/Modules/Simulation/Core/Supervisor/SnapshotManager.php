@@ -9,7 +9,7 @@ use App\Modules\Simulation\Core\Contracts\SnapshotArchiveInterface;
 use App\Modules\Simulation\Core\EngineRegistry;
 use App\Modules\Simulation\Core\Support\SnapshotLoader;
 use App\Modules\Simulation\Core\SimulationKernel;
-use App\Modules\Simulation\Services\SimulationClock;
+use App\Modules\Simulation\Services\Cosmology\SimulationClock;
 
 /**
  * Persists or creates virtual snapshot; optionally runs SimulationKernel post-tick.

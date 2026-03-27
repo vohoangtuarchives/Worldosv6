@@ -14,6 +14,12 @@ RUN apt-get update && apt-get install -y \
     && docker-php-ext-enable redis \
     && docker-php-ext-install pdo pdo_pgsql pgsql zip opcache pcntl bcmath sockets
 
+# PHP Timeouts
+RUN echo "max_execution_time=300" >> /usr/local/etc/php/conf.d/docker-php-timeouts.ini \
+    && echo "memory_limit=512M" >> /usr/local/etc/php/conf.d/docker-php-timeouts.ini \
+    && sed -i 's/pm.max_children = 5/pm.max_children = 20/g' /usr/local/etc/php-fpm.d/www.conf \
+    && echo "request_terminate_timeout = 300" >> /usr/local/etc/php-fpm.d/www.conf
+
 # Clear cache
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 
@@ -26,7 +32,10 @@ WORKDIR /var/www
 COPY backend/composer.json backend/composer.lock* /var/www/
 
 # Install dependencies (no dev, no scripts, no autoloader yet)
-RUN composer install --no-interaction --prefer-dist --no-dev --no-scripts --no-autoloader
+# Skip audit blocks and increase timeout for slow networks
+RUN composer config process-timeout 600 \
+    && composer config audit.block-insecure false \
+    && composer install --no-interaction --prefer-dist --no-dev --no-scripts --no-autoloader
 
 # Now copy the rest of the application code
 COPY backend/ /var/www

@@ -4,9 +4,9 @@ namespace App\Modules\Simulation\Actions;
 
 use App\Models\Universe;
 use App\Models\Chronicle;
-use App\Modules\Simulation\Services\ParadoxResolver;
-use App\Modules\Simulation\Services\SoulAnchorService;
-use App\Modules\Simulation\Services\MultiverseInteractionService;
+use App\Modules\Simulation\Services\Meta\ParadoxResolver;
+use App\Modules\Simulation\Services\Society\SoulAnchorService;
+use App\Modules\Simulation\Services\Meta\MultiverseInteractionService;
 use Illuminate\Support\Facades\Log;
 
 /**

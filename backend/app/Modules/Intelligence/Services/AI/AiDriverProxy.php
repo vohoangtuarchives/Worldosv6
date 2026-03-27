@@ -18,6 +18,7 @@ class AiDriverProxy implements LlmDriverInterface
     {
         $startTime = microtime(true);
         try {
+            $options['timeout'] = max($options['timeout'] ?? 0, 300);
             $response = $this->driver->chat($messages, $options);
             $response = $this->cleanResponse($response);
             $latency = (int)((microtime(true) - $startTime) * 1000);

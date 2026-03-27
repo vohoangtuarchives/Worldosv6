@@ -10,7 +10,7 @@ class RuleSetDefinitionSeeder extends Seeder
 {
     public function run(): void
     {
-        $registry = app(\App\Modules\Simulation\Services\AxiomRegistry::class);
+        $registry = app(\App\Modules\Simulation\Services\Cosmology\AxiomRegistry::class);
 
         $definitions = [
             // --- TIER 0: REALISTIC ---

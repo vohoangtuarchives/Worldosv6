@@ -4,7 +4,7 @@ namespace App\Modules\Simulation\Core\Supervisor;
 
 use App\Contracts\SimulationEngineClientInterface;
 use App\Models\Universe;
-use App\Modules\Simulation\Services\GeographyResourceService;
+use App\Modules\Simulation\Services\Ecology\GeographyResourceService;
 use App\Modules\Simulation\Core\Contracts\StateCacheInterface;
 
 /**

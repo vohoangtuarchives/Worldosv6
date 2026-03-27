@@ -20,14 +20,14 @@ export function UniverseWorkspaceShellClient({
   const { data: universe } = useObserverUniverseDetail(universeId, initialUniverse);
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] px-4 pb-8 pt-4 sm:px-6 sm:pt-6">
-      <div className="mx-auto max-w-[1540px] space-y-4 sm:space-y-6">
+    <div className="min-h-[calc(100vh-4rem)] px-4 pb-12 pt-6 sm:px-8 sm:pt-8 bg-slate-50/30">
+      <div className="mx-auto max-w-[1540px] space-y-8">
         <UniverseWorkspaceHeader universe={universe} />
         <UniverseSummaryStrip universe={universe} />
 
-        <div className="grid gap-4 xl:grid-cols-[280px_minmax(0,1fr)] xl:gap-6">
+        <div className="grid gap-6 xl:grid-cols-[280px_minmax(0,1fr)] xl:gap-8">
           <ObserverSidebar universeId={universe.id} />
-          <div className="min-w-0 space-y-6">{children}</div>
+          <div className="min-w-0 space-y-8">{children}</div>
         </div>
       </div>
 

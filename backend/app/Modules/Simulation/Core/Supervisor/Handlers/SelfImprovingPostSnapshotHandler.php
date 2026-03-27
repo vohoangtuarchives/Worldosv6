@@ -6,7 +6,7 @@ use App\Models\Universe;
 use App\Models\UniverseSnapshot;
 use App\Modules\Simulation\Core\Supervisor\Contracts\PostSnapshotHandlerInterface;
 use App\Modules\Simulation\Core\Runtime\RuleVM\RuleVmService;
-use App\Modules\Simulation\Services\SelfImprovingSimulationService;
+use App\Modules\Simulation\Services\Core\SelfImprovingSimulationService;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Log;

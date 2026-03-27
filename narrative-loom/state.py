@@ -18,11 +18,20 @@ class NarrativeState(TypedDict):
     
     historical_outline: str
     
+    genre: str
+    style_guidelines: str
+    
+    cross_pollination_whispers: List[str]
+    
     psychological_profiles: dict
     
     storyboard: str
     
     final_prose: str
+    
+    news_headline: str
+    news_slogan: str
+    vfx_config: dict
     
     feedback: dict
     revision_count: int

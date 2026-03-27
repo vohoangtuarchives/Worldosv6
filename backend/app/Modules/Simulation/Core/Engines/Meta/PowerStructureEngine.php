@@ -35,7 +35,7 @@ class PowerStructureEngine implements SimulationEngine
 
     public function tickRate(): int
     {
-        return 1;
+        return 5;
     }
 
     public function handle(WorldState $state, TickContext $ctx): EngineResult

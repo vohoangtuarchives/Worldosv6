@@ -7,9 +7,9 @@ use App\Contracts\SimulationEngineClientInterface;
 use App\Contracts\UniverseEvaluatorInterface;
 use App\Modules\Narrative\Services\OpenAINarrativeService;
 use App\Modules\Simulation\Repositories\UniverseSnapshotRepository;
-use App\Modules\Simulation\Services\HttpSimulationEngineClient;
-use App\Modules\Simulation\Services\StubSimulationEngineClient;
-use App\Modules\Simulation\Services\GrpcSimulationEngineClient;
+use App\Modules\Simulation\Services\Core\HttpSimulationEngineClient;
+use App\Modules\Simulation\Services\Core\StubSimulationEngineClient;
+use App\Modules\Simulation\Services\Core\GrpcSimulationEngineClient;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\ServiceProvider;
@@ -55,7 +55,7 @@ class AppServiceProvider extends ServiceProvider
             return new StubSimulationEngineClient;
         });
         $this->app->singleton(UniverseSnapshotRepository::class);
-        $this->app->singleton(\App\Modules\Simulation\Services\ObserverService::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Core\ObserverService::class);
         $this->app->singleton(\App\Modules\Intelligence\Services\AI\MemoryService::class);
         $this->app->bind(
             \App\Contracts\GraphProviderInterface::class,

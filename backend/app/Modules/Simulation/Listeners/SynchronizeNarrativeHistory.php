@@ -4,7 +4,7 @@ namespace App\Modules\Simulation\Listeners;
 
 use App\Modules\Simulation\Events\UniverseSimulationPulsed;
 use App\Modules\Narrative\Actions\ApplyMythScarAction;
-use App\Modules\Simulation\Services\EventNormalizer;
+use App\Modules\Simulation\Services\Core\EventNormalizer;
 use App\Modules\Narrative\Services\HistoricalFactEngine;
 use App\Modules\Simulation\Core\Contracts\WorldEventBusInterface;
 use App\Modules\Intelligence\Services\AI\EpistemicService;

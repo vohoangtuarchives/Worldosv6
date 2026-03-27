@@ -53,11 +53,12 @@ class WeaveNarrativesCommand extends Command
                 ]);
 
                 if ($response->successful()) {
-                    $prose = $response->json('final_prose', 'No prose generated.');
+                    $result = $response->json();
+                    $prose = $result['final_prose'] ?? 'No prose generated.';
                     $this->info("Successfully woven! Prose length: " . strlen($prose));
                     
                     // Update the DB so they are no longer pending
-                    DB::transaction(function () use ($ids, $prose) {
+                    DB::transaction(function () use ($ids, $prose, $universeId, $minTick, $result) {
                         // Set the first chronicle of the batch to hold the full prose
                         $firstId = array_shift($ids);
                         Chronicle::where('id', $firstId)->update(['content' => $prose]);
@@ -66,6 +67,20 @@ class WeaveNarrativesCommand extends Command
                         if (count($ids) > 0) {
                             Chronicle::whereIn('id', $ids)->update(['content' => '[Merged into Loom Output]']);
                         }
+
+                        // Create a "Media Station" Narrative record for Bloom UI
+                        \App\Models\Narrative::create([
+                            'universe_id' => $universeId,
+                            'tick_born'   => $minTick,
+                            'story'       => $prose,
+                            'virality'    => 0.8, // Default high virality for Loom output
+                            'distortion'  => 0.2, // Loom output has some creative distortion
+                            'is_active'   => true,
+                            'news_headline' => $result['news_headline'] ?? 'Breaking News from Universe ' . $universeId,
+                            'news_slogan'   => $result['news_slogan'] ?? 'The story blooms...',
+                            'vfx_config'    => $result['vfx_config'] ?? [],
+                            'tags'          => ['loom_output', 'multiverse_news'],
+                        ]);
                     });
 
                     $successCount += rtrim(count($ids) + 1, '1') + 1; // total processed

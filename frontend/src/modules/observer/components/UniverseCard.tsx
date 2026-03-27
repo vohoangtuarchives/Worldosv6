@@ -1,47 +1,82 @@
 import Link from "next/link";
 import type { UniverseSummary } from "@/modules/observer/types";
+import { 
+  Activity, 
+  Zap, 
+  ShieldCheck, 
+  Globe, 
+  GitBranch, 
+  ShieldAlert,
+  ChevronRight,
+  Terminal
+} from "lucide-react";
+import { HUDBadge } from "./ui/hud-primitives";
 
-const statusTone: Record<UniverseSummary["status"], string> = {
-  active: "text-emerald-300 bg-emerald-500/10 border-emerald-400/20",
-  paused: "text-amber-200 bg-amber-500/10 border-amber-400/20",
-  forked: "text-sky-200 bg-sky-500/10 border-sky-400/20",
+const statusConfig: Record<UniverseSummary["status"], { color: "primary" | "secondary" | "destructive" | "neutral", label: string }> = {
+  active: { color: "primary", label: "ỔN ĐỊNH" },
+  paused: { color: "neutral", label: "TẠM DỪNG" },
+  forked: { color: "secondary", label: "PHÂN KỲ" },
 };
 
 export function UniverseCard({ universe }: { universe: UniverseSummary }) {
+  const config = statusConfig[universe.status];
+
   return (
     <Link
       href={`/universes/${universe.id}`}
-      className="group rounded-[28px] border border-white/10 bg-card/50 p-6 backdrop-blur-xl transition duration-300 hover:border-primary/40 hover:bg-card/70"
+      className="group relative block rounded-3xl border border-slate-200 bg-white p-8 transition-all hover:border-sky-400 hover:shadow-xl hover:-translate-y-1 overflow-hidden"
     >
-      <div className="mb-6 flex items-start justify-between gap-4">
+      {/* HUD Accent Line */}
+      <div className={`absolute top-0 left-0 w-1.5 h-full ${config.color === 'primary' ? 'bg-sky-500' : config.color === 'secondary' ? 'bg-indigo-500' : 'bg-slate-300'} opacity-20 group-hover:opacity-100 transition-opacity`} />
+      
+      <div className="flex items-start justify-between gap-6 mb-8 relative z-10">
         <div>
-          <p className="text-[11px] uppercase tracking-[0.3em] text-primary/70">Universe</p>
-          <h2 className="mt-2 text-2xl font-semibold tracking-tight">{universe.name}</h2>
+          <div className="flex items-center gap-2.5 mb-3">
+            <Terminal className="w-3.5 h-3.5 text-slate-300" />
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-300">Nút_Thực_tại</span>
+          </div>
+          <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tighter group-hover:text-sky-600 transition-colors">
+            {universe.name}
+          </h2>
         </div>
-        <span className={`rounded-full border px-3 py-1 text-[10px] font-mono uppercase tracking-[0.24em] ${statusTone[universe.status]}`}>
-          {universe.status}
-        </span>
+        <HUDBadge color={config.color}>
+          {config.label}
+        </HUDBadge>
       </div>
 
-      <p className="max-w-md text-sm leading-6 text-muted-foreground">{universe.focus}</p>
+      <p className="text-[12px] font-bold leading-relaxed text-slate-400 uppercase tracking-tight mb-10 line-clamp-2 italic">
+        {universe.focus}
+      </p>
 
-      <div className="mt-8 grid grid-cols-2 gap-4 text-sm">
-        <Metric label="Tick" value={`#${universe.currentTick.toLocaleString()}`} />
-        <Metric label="Era" value={universe.era} />
-        <Metric label="Stability" value={`${universe.stability.toFixed(1)}%`} />
-        <Metric label="Entropy" value={universe.entropy.toFixed(3)} />
-        <Metric label="Branches" value={String(universe.branchCount)} />
-        <Metric label="Anomalies" value={String(universe.anomalyCount)} />
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+        <Metric label="Nhịp" value={`#${universe.currentTick ?? 0}`} icon={Activity} />
+        <Metric label="Kỷ nguyên" value={universe.era ?? 'Genesis'} icon={Globe} />
+        <Metric label="Độ ổn định" value={`${(universe.stability ?? 0).toFixed(1)}%`} icon={ShieldCheck} />
+        <Metric label="Hỗn loạn" value={(universe.entropy ?? 0).toFixed(3)} icon={Zap} />
+        <Metric label="Nhánh" value={String(universe.branchCount ?? 0)} icon={GitBranch} />
+        <Metric label="Dị biệt" value={String(universe.anomalyCount ?? 0)} icon={ShieldAlert} status="destructive" />
+      </div>
+      
+      <div className="mt-8 flex items-center justify-between text-[10px] font-black text-slate-200 uppercase border-t border-slate-100 pt-6">
+         <span>Mã_Xác_thực: {(universe.id ?? '').slice(0, 12)}</span>
+         <div className="flex items-center gap-2 text-sky-500 opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0">
+            KHỞI TẠO KHÔNG GIAN <ChevronRight size={14} />
+         </div>
       </div>
     </Link>
   );
 }
 
-function Metric({ label, value }: { label: string; value: string }) {
+function Metric({ label, value, icon: Icon, status = "default" }: { label: string; value: string; icon: any; status?: "default" | "destructive" }) {
   return (
-    <div className="rounded-2xl border border-white/8 bg-background/40 p-4">
-      <p className="text-[10px] uppercase tracking-[0.24em] text-muted-foreground">{label}</p>
-      <p className="mt-2 text-base font-semibold">{value}</p>
+    <div className="rounded-2xl border border-slate-50 bg-slate-50/50 p-4 hover:border-slate-200 hover:bg-white transition-all shadow-inner hover:shadow-sm">
+      <div className="flex items-center gap-2.5 mb-2.5">
+        <Icon className={`w-3.5 h-3.5 ${status === 'destructive' ? 'text-rose-500' : 'text-slate-300'}`} />
+        <span className="text-[9px] font-black uppercase tracking-widest text-slate-300">{label}</span>
+      </div>
+      <p className={`text-sm font-black ${status === 'destructive' ? 'text-rose-600' : 'text-slate-700'} truncate`}>
+        {value}
+      </p>
     </div>
   );
 }

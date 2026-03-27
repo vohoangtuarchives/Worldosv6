@@ -4,7 +4,7 @@ namespace App\Modules\Intelligence\Services;
 
 use App\Models\Universe;
 use App\Modules\Intelligence\Entities\ActorState;
-use App\Modules\Simulation\Services\SimulationPRNG;
+use App\Modules\Simulation\Services\Ecology\SimulationPRNG;
 
 /**
  * GreatPersonEngine (Điểm kết tinh Lịch sử)

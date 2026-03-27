@@ -8,7 +8,7 @@ use App\Modules\Simulation\Core\Engines\EngineResult;
 use App\Modules\Simulation\Core\Domain\TickContext;
 use App\Modules\Simulation\Core\Runtime\RuleVM\RuleVmService;
 use App\Modules\Simulation\Core\Runtime\State\WorldState;
-use App\Modules\Simulation\Services\RuleMutationService;
+use App\Modules\Simulation\Services\Core\RuleMutationService;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -91,7 +91,7 @@ class AutopoieticEvolutionEngine implements SimulationEngine
         $universeId = (int) $state->get('universe_id');
 
         // 1. Load existing mutated or original content
-        $content = $this->ruleVmService->loadDsl($dslPath, true);
+        $content = $this->ruleVmService->resolveDslContent($dslPath);
 
         if (!$content) {
             return ['error' => "Source DSL not found: $dslPath", 'path' => $dslPath, 'changed' => false];

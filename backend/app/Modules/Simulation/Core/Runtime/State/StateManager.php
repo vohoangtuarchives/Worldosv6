@@ -21,7 +21,7 @@ class StateManager
         protected \App\Modules\Intelligence\Services\EcosystemMetricsService $ecosystemMetrics,
         protected \App\Modules\Narrative\Services\OmenIntegrationService $omenService,
         protected \App\Contracts\UniverseSimilarityServiceInterface $similarityService,
-        protected \App\Modules\Simulation\Services\HolographicCompressionService $compressionService
+        protected \App\Modules\Simulation\Services\Core\HolographicCompressionService $compressionService
     ) {}
 
     protected array $originalData = [];

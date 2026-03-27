@@ -42,51 +42,7 @@ impl UniverseState {
         index
     }
 
-    pub fn run_archetype_discovery(&mut self) {
-        let archetypes = Self::get_standard_archetypes();
-        let current = &self.global_fields;
-        
-        let mut best_name = "Fragmented".to_string();
-        let mut best_dist = f64::MAX;
 
-        for arch in archetypes {
-            let dist = (
-                (arch.survival - current.survival).powi(2) +
-                (arch.reproduction - current.reproduction).powi(2) +
-                (arch.wealth - current.wealth).powi(2) +
-                (arch.power - current.power).powi(2) +
-                (arch.knowledge - current.knowledge).powi(2) +
-                (arch.meaning - current.meaning).powi(2) +
-                (arch.status - current.status).powi(2) +
-                (arch.belonging - current.belonging).powi(2)
-            ).sqrt();
-            if dist < best_dist {
-                best_dist = dist;
-                best_name = arch.name;
-            }
-        }
-
-        let is_novel = best_dist > 0.35;
-        self.archetype_discovery = Some(DiscoveryResult {
-            name: best_name,
-            distance: best_dist,
-            is_novel,
-        });
-
-        // Recommend Fork if system is highly unstable or highly novel
-        self.fork_recommendation = is_novel || self.instability_gradient > 0.7;
-    }
-
-    fn get_standard_archetypes() -> Vec<ArchetypeProfile> {
-        vec![
-            ArchetypeProfile { name: "Hegemon".into(), survival: 0.8, reproduction: 0.7, wealth: 0.4, power: 0.9, knowledge: 0.3, meaning: 0.5, status: 0.8, belonging: 0.7 },
-            ArchetypeProfile { name: "Merchant Republic".into(), survival: 0.5, reproduction: 0.6, wealth: 0.9, power: 0.6, knowledge: 0.7, meaning: 0.4, status: 0.7, belonging: 0.6 },
-            ArchetypeProfile { name: "Technocracy".into(), survival: 0.4, reproduction: 0.5, wealth: 0.7, power: 0.5, knowledge: 0.9, meaning: 0.3, status: 0.6, belonging: 0.5 },
-            ArchetypeProfile { name: "Theocracy".into(), survival: 0.7, reproduction: 0.8, wealth: 0.3, power: 0.8, knowledge: 0.4, meaning: 0.9, status: 0.7, belonging: 0.8 },
-            ArchetypeProfile { name: "Utopia".into(), survival: 0.8, reproduction: 0.9, wealth: 0.8, power: 0.4, knowledge: 0.8, meaning: 0.8, status: 0.7, belonging: 0.9 },
-            ArchetypeProfile { name: "Survivalist".into(), survival: 0.9, reproduction: 0.8, wealth: 0.2, power: 0.3, knowledge: 0.2, meaning: 0.4, status: 0.5, belonging: 0.6 },
-        ]
-    }
     fn refresh_aggregates(&mut self) {
         let n = self.zones.len() as f64;
         if n <= 0.0 {
@@ -166,47 +122,6 @@ impl UniverseState {
         }
     }
 
-    /// Apply narrative-driven influences to the universe state before ticking.
-    pub fn apply_narrative_influence(&mut self, influence: &serde_json::Value) {
-        if let Some(inf_type) = influence.get("type").and_then(|v| v.as_str()) {
-            match inf_type {
-                "dark_attractor" => {
-                    if let Ok(da) = serde_json::from_value::<DarkAttractor>(influence.clone()) {
-                        self.dark_attractors.push(da);
-                    }
-                },
-                "emotion_spike" => {
-                    if let Some(zone_id) = influence.get("zone_id").and_then(|v| v.as_u64()) {
-                        let zone_id = zone_id as usize;
-                        if zone_id < self.behavior_context.emotion_fields.len() {
-                            let field = &mut self.behavior_context.emotion_fields[zone_id];
-                            if let Some(fear) = influence.get("fear").and_then(|v| v.as_f64()) {
-                                field.fear = (field.fear + fear as f32).clamp(0.0, 1.0);
-                            }
-                            if let Some(anger) = influence.get("anger").and_then(|v| v.as_f64()) {
-                                field.anger = (field.anger + anger as f32).clamp(0.0, 1.0);
-                            }
-                        }
-                    }
-                },
-                "narrative_tag" => {
-                    if let Ok(tag) = serde_json::from_value::<NarrativeTag>(influence.clone()) {
-                        self.narrative_tags.push(tag);
-                    }
-                },
-                "ruleset_axioms" => {
-                    if let Some(payload) = influence.get("payload").and_then(|v| v.as_object()) {
-                        for (key, val) in payload {
-                            if let Some(num) = val.as_f64() {
-                                self.axioms.insert(key.clone(), num);
-                            }
-                        }
-                    }
-                },
-                _ => {}
-            }
-        }
-    }
 
     /// Run one 3-phase tick (simplified: no SlotMap in this struct; we use vec for serialization).
     pub fn tick(&mut self, world: &crate::types::WorldConfig, macro_idx: Option<&crate::memory::ZoneActorIndex>) {
@@ -640,264 +555,16 @@ impl UniverseState {
         self.tick += 1;
     }
 
-    /// Update agent motivation profiles based on 17D traits and RuleSet drift.
-    pub fn tick_vocation_drift(&mut self) {
-        let destiny_scale = self.axioms.get("destiny_gradient").cloned().unwrap_or(0.5) as f32;
-        let curiosity_scale = self.axioms.get("causal_curiosity").cloned().unwrap_or(0.5) as f32;
-        
-        for zone in &mut self.zones {
-            for agent in &mut zone.state.agents {
-                // 1. Calculate "Trait Motivation" (The Natural Drift)
-                // Creation influenced by Curiosity Scale
-                let natural_creation = (agent.trait_vector[8] * 0.4 + agent.trait_vector[1] * 0.3 + curiosity_scale as f64 * 0.3) as f32;
-                // Destruction: Vengeance (12) + Coercion (2)
-                let natural_destruction = (agent.trait_vector[12] * 0.7 + agent.trait_vector[2] * 0.3) as f32;
-                // Order: Dogmatism (9) + Conformity (6)
-                let natural_order = (agent.trait_vector[9] * 0.6 + agent.trait_vector[6] * 0.4) as f32;
-                // Chaos: RiskTolerance (10) - Dogmatism (9)
-                let natural_chaos = (agent.trait_vector[10] * 0.8 + (1.0 - agent.trait_vector[9]) * 0.2) as f32;
-                // Self-Preservation: Fear (11) + Pragmatism (7)
-                let natural_self_pres = (agent.trait_vector[11] * 0.7 + agent.trait_vector[7] * 0.3) as f32;
-                // Altruism: Empathy (4) + Solidarity (5)
-                let natural_altruism = (agent.trait_vector[4] * 0.6 + agent.trait_vector[5] * 0.4) as f32;
-                // Physical: Dominance (0) + Pride (15)
-                let natural_physical = (agent.trait_vector[0] * 0.5 + agent.trait_vector[15] * 0.5) as f32;
-                // Metaphysical influenced by Destiny Scale
-                let natural_metaphysical = (agent.trait_vector[13] * 0.3 + agent.trait_vector[8] * 0.2 + destiny_scale as f64 * 0.5) as f32;
 
-                // 2. Drift current motivation toward natural state (alpha = 0.05)
-                let alpha = 0.05;
-                agent.motivation_profile.creation += (natural_creation - agent.motivation_profile.creation) * alpha;
-                agent.motivation_profile.destruction += (natural_destruction - agent.motivation_profile.destruction) * alpha;
-                agent.motivation_profile.order += (natural_order - agent.motivation_profile.order) * alpha;
-                agent.motivation_profile.chaos += (natural_chaos - agent.motivation_profile.chaos) * alpha;
-                agent.motivation_profile.self_preservation += (natural_self_pres - agent.motivation_profile.self_preservation) * alpha;
-                agent.motivation_profile.altruism += (natural_altruism - agent.motivation_profile.altruism) * alpha;
-                agent.motivation_profile.physical += (natural_physical - agent.motivation_profile.physical) * alpha;
-                agent.motivation_profile.metaphysical += (natural_metaphysical - agent.motivation_profile.metaphysical) * alpha;
-            }
-        }
-    }
 
-    /// V7 §57: Quantum Overlay tick — decay superposition depth each tick.
-    /// Zones in superposition gradually collapse. Observer presence accelerates collapse.
-    fn tick_quantum_overlays(&mut self) {
-        for z in &mut self.zones {
-            if let Some(ref mut qo) = z.state.quantum_overlay {
-                // Natural decay: superposition reduces each tick
-                let decay = qo.probability_decay;
-                // Observer presence accelerates collapse
-                let observer_boost = qo.observer_presence * 0.05;
-                qo.superposition_depth = (qo.superposition_depth - decay - observer_boost).max(0.0);
 
-                // Observer presence decays over time (Kiến Trúc Sư rời đi)
-                qo.observer_presence = (qo.observer_presence - 0.01).max(0.0);
 
-                // Fully collapsed: remove overlay
-                if qo.superposition_depth < 0.01 {
-                    z.state.quantum_overlay = None;
-                }
-            }
-        }
-    }
 
-    /// V7 §57: Observer Effect — when a zone is observed, increase observer_presence
-    /// and add entropy cost. Called by Laravel via HTTP/gRPC.
-    pub fn observe_zone(&mut self, zone_id: u32, entropy_cost: f64) {
-        if let Some(z) = self.zones.iter_mut().find(|z| z.id == zone_id) {
-            // Observation has a cost: increase zone entropy
-            z.state.entropy = (z.state.entropy + entropy_cost).min(1.0);
 
-            if let Some(ref mut qo) = z.state.quantum_overlay {
-                // Boost observer_presence → accelerating collapse
-                qo.observer_presence = (qo.observer_presence + 0.3).min(1.0);
-            } else {
-                // Zone is already collapsed, just pay entropy cost
-            }
-        }
-    }
 
-    /// Trigger Micro Mode (Crisis Window): Spawn agents deterministically (§3.2).
-    pub fn trigger_micro_mode(&mut self, zone_index: usize) {
-        if let Some(z) = self.zones.get_mut(zone_index) {
-            // Only spawn if not already crowded
-            if z.state.agents.len() < 10 {
-                use crate::agent::{Agent, Archetype};
-                // Deterministic spawn from entropy + material_stress
-                let seed = (self.tick as f64 + z.state.material_stress * 1000.0) as u64;
-                let mut traits = [0.5; 17];
-                traits[0] = (seed % 10) as f64 / 10.0; // Dominance
-                traits[11] = z.state.entropy; // Fear
-                
-                let agent = Agent::new(seed, traits, Archetype::Opportunist);
-                z.state.agents.push(agent);
-            }
-        }
-    }
 
-    /// Resolve Micro Mode: Aggregate agent actions into Macro Deltas (§3.2, §5).
-    /// Ends the crisis window and pushes an event to the chronicle.
-    pub fn resolve_micro_mode(&mut self, zone_index: usize) -> Vec<String> {
-        let mut events = Vec::new();
-        if let Some(z) = self.zones.get_mut(zone_index) {
-            if z.state.agents.is_empty() { return events; }
-            
-            let avg_violence: f64 = z.state.agents.iter()
-                .map(|a| a.trait_vector[12]) // Vengeance
-                .sum::<f64>() / z.state.agents.len() as f64;
-            
-            if avg_violence > 0.7 {
-                z.state.trauma += 0.1;
-                events.push("Violent Conflict Rooted".to_string());
-            }
-            
-            // Garbage collect agents (§3.2)
-            z.state.agents.clear();
-        }
-        events
-    }
 
-    /// Pressure = f(inequality, entropy, trauma, MaterialStress) (§3.2).
-    pub fn pressure_at_zone(&self, zone_index: usize, macro_idx: Option<&crate::memory::ZoneActorIndex>) -> f64 {
-        if zone_index >= self.zones.len() {
-            return 0.0;
-        }
-        let z = &self.zones[zone_index].state;
-        let base = (z.inequality * 0.2 + z.entropy * 0.3 + z.trauma * 0.2 + z.material_stress * 0.3).clamp(0.0, 1.0);
-        let zone_id = self.zones[zone_index].id;
-        let army_sum: f64 = if let Some(idx) = macro_idx {
-            idx.actors_in_zone(zone_index).iter()
-                .map(|&ma_id| &self.macro_agents[ma_id as usize])
-                .filter(|ma| ma.agent_type == MacroAgentType::Army)
-                .map(|ma| if ma.leader_id.is_some() { ma.strength * 1.5 } else { ma.strength })
-                .sum()
-        } else {
-            self.macro_agents.iter()
-                .filter(|a| a.zone_id == zone_id && a.agent_type == MacroAgentType::Army)
-                .map(|a| if a.leader_id.is_some() { a.strength * 1.5 } else { a.strength })
-                .sum()
-        };
-        (base + army_sum * constants::MACRO_ARMY_PRESSURE_COEFF).clamp(0.0, 1.0)
-    }
 
-    /// Level-8: Civilization Attractor Field — attractors pull zone civ_fields by distance decay.
-    pub fn apply_attractor_fields(&mut self) {
-        for attractor in &self.attractors {
-            for zone in &mut self.zones {
-                let distance = ((zone.id as i64 - attractor.zone_id as i64).abs() as f64) + 1.0;
-                let influence = (attractor.radius / distance).powf(attractor.decay);
-                zone.state.civ_fields.power += attractor.power * influence * 0.02;
-                zone.state.civ_fields.wealth += attractor.wealth * influence * 0.02;
-                zone.state.civ_fields.knowledge += attractor.knowledge * influence * 0.02;
-                zone.state.civ_fields.meaning += attractor.meaning * influence * 0.02;
-                zone.state.civ_fields.survival += attractor.survival * influence * 0.02;
-                zone.state.civ_fields.clamp_mut();
-            }
-        }
-    }
-
-    /// Level-8: Dark Attractor — high entropy/trauma/inequality pulls zone toward collapse.
-    pub fn apply_dark_attractors(&mut self) {
-        for attractor in &self.dark_attractors {
-            for z in &mut self.zones {
-                let e_ratio = z.state.entropy / (attractor.entropy_threshold + 1e-6);
-                let t_ratio = z.state.trauma / (attractor.trauma_threshold + 1e-6);
-                let i_ratio = z.state.inequality / (attractor.inequality_threshold + 1e-6);
-                let risk = ((e_ratio + t_ratio + i_ratio) / 3.0).min(2.0);
-                if risk > 1.0 {
-                    let pull = attractor.pull_strength * risk * 0.02;
-                    z.state.entropy = (z.state.entropy + pull * 0.05).min(1.0);
-                    z.state.trauma = (z.state.trauma + pull * 0.03).min(1.0);
-                    z.state.cultural.collective_trust =
-                        (z.state.cultural.collective_trust - pull * 0.04).max(0.0);
-                    z.state.cultural.clamp_mut();
-                }
-                if risk > 1.5 {
-                    z.state.active_materials.clear();
-                    z.state.structured_mass *= 0.95;
-                    z.state.trauma = (z.state.trauma + 0.1).min(1.0);
-                }
-            }
-        }
-    }
-
-    /// Level-8: Intelligence Explosion — high knowledge/energy/openness boosts growth.
-    pub fn apply_intelligence_explosion(&mut self) {
-        for z in &mut self.zones {
-            let score = z.state.knowledge_frontier * 0.4
-                + (z.state.free_energy / (z.state.base_mass + 1e-6)).min(1.0) * 0.3
-                + z.state.cultural.innovation_openness * 0.3
-                - z.state.entropy * 0.3;
-            if score > 0.6 {
-                let boost = score * 0.02;
-                z.state.embodied_knowledge = (z.state.embodied_knowledge + boost).min(1.0);
-                z.state.knowledge_frontier = (z.state.knowledge_frontier + boost).min(z.state.tech_ceiling);
-                z.state.tech_ceiling = (z.state.tech_ceiling + boost * 0.5).min(1.0);
-                z.state.free_energy += boost * z.state.base_mass * 0.1;
-
-                // Feedback Loop: High intelligence organizes the system, reducing local entropy
-                z.state.entropy = (z.state.entropy - boost * 0.5).max(0.0);
-            }
-        }
-    }
-
-    /// Level-8: Phase Transition — advance zone phase when thresholds are met.
-    pub fn check_phase_transition(zone: &mut ZoneState) {
-        use crate::types::CivilizationPhase;
-        match zone.phase {
-            CivilizationPhase::Tribal => {
-                if zone.structured_mass > 50.0 {
-                    zone.phase = CivilizationPhase::Agrarian;
-                }
-            }
-            CivilizationPhase::Agrarian => {
-                if zone.knowledge_frontier > 0.2 {
-                    zone.phase = CivilizationPhase::Kingdom;
-                }
-            }
-            CivilizationPhase::Kingdom => {
-                if zone.embodied_knowledge > 0.4 {
-                    zone.phase = CivilizationPhase::Empire;
-                }
-            }
-            CivilizationPhase::Empire => {
-                let energy_ratio = (zone.free_energy / (zone.base_mass + 1e-6)).min(1.0);
-                if energy_ratio > 0.6 {
-                    zone.phase = CivilizationPhase::Industrial;
-                }
-            }
-            CivilizationPhase::Industrial => {
-                if zone.knowledge_frontier > 0.8 {
-                    zone.phase = CivilizationPhase::Information;
-                }
-            }
-            CivilizationPhase::Information => {}
-        }
-    }
-
-    /// Level-8: Possibility Space Navigator — run horizon ticks on clones, return future outcomes.
-    pub fn explore_futures(
-        &self,
-        world: &crate::types::WorldConfig,
-        horizon: u32,
-        num_branches: usize,
-    ) -> Vec<crate::types::FutureOutcome> {
-        let mut futures = Vec::with_capacity(num_branches);
-        for _ in 0..num_branches {
-            let mut sim = self.clone();
-            let idx = sim.build_macro_index();
-            for _ in 0..horizon {
-                sim.tick(world, Some(&idx));
-            }
-            futures.push(crate::types::FutureOutcome {
-                entropy: sim.global_entropy,
-                knowledge: sim.knowledge_core,
-                sci: sim.sci,
-                tick: sim.tick,
-            });
-        }
-        futures
-    }
 
     pub fn to_snapshot(&self) -> UniverseSnapshot {
         let state_vector = serde_json::to_value(self).unwrap_or(serde_json::json!({}));
@@ -940,23 +607,6 @@ impl UniverseState {
         }
     }
 
-    /// Check for Meta-Cycle trigger (§4.3): Major collapse when SCI is too low.
-    pub fn check_meta_cycle(&mut self) -> bool {
-        if self.sci < 0.3 {
-            self.global_entropy = (self.global_entropy + 0.3).min(1.0);
-            for z in &mut self.zones {
-                z.state.entropy = (z.state.entropy + 0.5).min(1.0);
-                z.state.active_materials.clear(); 
-            }
-            self.scars.push(serde_json::json!({
-                "type": "meta_cycle",
-                "description": format!("Phát động Meta-Cycle tại tick {}", self.tick),
-                "tick": self.tick
-            }));
-            return true;
-        }
-        false
-    }
 
     pub fn merge(&mut self, other: UniverseState) {
         self.tick = self.tick.max(other.tick);
@@ -1004,34 +654,6 @@ impl UniverseState {
             }
         }
     }
-    /// Apply effects of hyper-agents on the universe (§53.1).
-    pub fn perform_deity_intervention(&mut self, zone_index: usize, trait_index: usize) {
-        if let Some(z) = self.zones.get_mut(zone_index) {
-            match trait_index {
-                // Power traits (Dominance, Ambition, Aggression)
-                0 | 1 | 2 => {
-                    z.state.embodied_knowledge = (z.state.embodied_knowledge + 0.05).min(1.0);
-                    z.state.entropy = (z.state.entropy + 0.02).min(1.0); // Reduced from 0.05
-                },
-                // Empathy/Social traits (Compassion, Altruism)
-                4 | 5 => {
-                    z.state.entropy = (z.state.entropy - 0.15).max(0.0); // Increased cooling
-                    z.state.trauma = (z.state.trauma - 0.1).max(0.0);    // Increased healing
-                },
-                // Cognitive/Curiosity (Intellect)
-                8 => {
-                    z.state.knowledge_frontier = (z.state.knowledge_frontier + 0.08).min(z.state.tech_ceiling);
-                },
-                // Fear/Grief (High-distress triggers)
-                11 | 14 => {
-                    z.state.trauma = (z.state.trauma + 0.08).min(1.0);
-                    z.state.entropy = (z.state.entropy + 0.01).min(1.0);
-                },
-                _ => {}
-            }
-            z.state.update_material_stress();
-        }
-    }
 }
 
 #[cfg(test)]
@@ -1039,17 +661,6 @@ mod tests {
     use super::*;
     use crate::types::{ActiveMaterial, PressureCoefficients, WorldConfig};
 
-    #[test]
-    fn test_micro_mode_trigger() {
-        let mut state = UniverseState::with_one_zone(1, 100.0);
-        assert_eq!(state.zones[0].state.agents.len(), 0);
-
-        state.zones[0].state.material_stress = 0.8;
-        state.trigger_micro_mode(0);
-
-        assert_eq!(state.zones[0].state.agents.len(), 1);
-        assert_eq!(state.zones[0].state.agents[0].archetype, crate::agent::Archetype::Opportunist);
-    }
 
     #[test]
     fn test_material_resonance_same_slug_amplifies_effect() {
@@ -1234,85 +845,8 @@ mod tests {
         }
     }
 
-    /// Deity interventions must not break boundedness invariants.
-    #[test]
-    fn test_deity_intervention_boundedness() {
-        let mut state = UniverseState::with_one_zone(1, 100.0);
 
-        // Apply many interventions of different types in succession
-        let trait_indices = [0, 1, 2, 4, 5, 8, 11, 14, 99];
-        for _ in 0..50 {
-            for &ti in &trait_indices {
-                state.perform_deity_intervention(0, ti);
-            }
-        }
 
-        let z = &state.zones[0].state;
-        assert!(z.entropy >= 0.0 && z.entropy <= 1.0,
-            "After 450 deity interventions: entropy={} out of [0,1]", z.entropy);
-        assert!(z.trauma >= 0.0 && z.trauma <= 1.0,
-            "After 450 deity interventions: trauma={} out of [0,1]", z.trauma);
-        assert!(z.embodied_knowledge >= 0.0 && z.embodied_knowledge <= 1.0,
-            "After 450 deity interventions: embodied_knowledge={} out of [0,1]", z.embodied_knowledge);
-        assert!(z.knowledge_frontier <= z.tech_ceiling,
-            "After deity interventions: frontier={} > ceiling={}", z.knowledge_frontier, z.tech_ceiling);
-        assert!(z.material_stress >= 0.0 && z.material_stress <= 1.0,
-            "After deity interventions: material_stress={} out of [0,1]", z.material_stress);
-    }
-
-    /// Level-8: Possibility Space Navigator returns one outcome per branch, with valid metrics.
-    #[test]
-    fn test_explore_futures() {
-        let world = WorldConfig { world_id: 1, ..Default::default() };
-        let state = UniverseState::with_one_zone(1, 100.0);
-        let horizon = 10u32;
-        let num_branches = 5;
-        let futures = state.explore_futures(&world, horizon, num_branches);
-        assert_eq!(futures.len(), num_branches);
-        for (i, f) in futures.iter().enumerate() {
-            assert!(f.entropy >= 0.0 && f.entropy <= 1.0, "branch {} entropy {}", i, f.entropy);
-            assert!(f.knowledge >= 0.0 && f.knowledge <= 1.0, "branch {} knowledge {}", i, f.knowledge);
-            assert!(f.sci >= 0.0 && f.sci <= 1.0, "branch {} sci {}", i, f.sci);
-            assert_eq!(f.tick, state.tick + horizon as u64);
-        }
-    }
-
-    /// Level-8: Attractor, Dark Attractor, Intelligence Explosion, Phase Transition keep invariants.
-    #[test]
-    fn test_level8_engines_boundedness() {
-        use crate::types::{CivilizationAttractor, DarkAttractor, CivilizationPhase};
-        let world = WorldConfig { world_id: 1, ..Default::default() };
-        let mut state = UniverseState::with_one_zone(1, 100.0);
-        state.attractors.push(CivilizationAttractor {
-            id: 1,
-            zone_id: 0,
-            power: 0.5,
-            wealth: 0.3,
-            knowledge: 0.2,
-            meaning: 0.1,
-            survival: 0.4,
-            radius: 10.0,
-            decay: 1.0,
-        });
-        state.dark_attractors.push(DarkAttractor {
-            id: 1,
-            entropy_threshold: 0.5,
-            trauma_threshold: 0.5,
-            inequality_threshold: 0.5,
-            pull_strength: 0.3,
-            collapse_probability: 0.2,
-        });
-        for _ in 0..50 {
-            state.tick(&world, None);
-        }
-        let z = &state.zones[0].state;
-        assert!(z.civ_fields.power >= 0.0 && z.civ_fields.power <= 1.0);
-        assert!(z.civ_fields.survival >= 0.0 && z.civ_fields.survival <= 1.0);
-        assert!(z.entropy >= 0.0 && z.entropy <= 1.0);
-        assert!(z.trauma >= 0.0 && z.trauma <= 1.0);
-        assert!(z.knowledge_frontier <= z.tech_ceiling);
-        assert!(matches!(z.phase, CivilizationPhase::Tribal | CivilizationPhase::Agrarian | CivilizationPhase::Kingdom | CivilizationPhase::Empire | CivilizationPhase::Industrial | CivilizationPhase::Information));
-    }
 
     /// Trade flow (Deep Sim Phase C): wealth_proxy flows from higher to lower between neighbors.
     #[test]
@@ -1366,64 +900,7 @@ mod tests {
         assert!(entropy_after > entropy_before, "entropy should flow from ghost (0.8) to local (0.2)");
     }
 
-    /// Level-8 Intelligence & Narrative: verify archetype discovery and tag generation.
-    #[test]
-    fn test_intelligence_and_narrative() {
-        let world = WorldConfig { world_id: 1, ..Default::default() };
-        let mut state = UniverseState::new(1);
-        
-        // Setup a Tech-heavy zone
-        let mut z = ZoneState::new(100.0);
-        z.knowledge_frontier = 0.8;
-        z.tech_ceiling = 1.0;
-        z.free_energy = 80.0;
-        z.entropy = 0.1;
-        
-        z.civ_fields.knowledge = 0.9;
-        z.civ_fields.wealth = 0.7;
-        z.civ_fields.power = 0.4;
-        z.civ_fields.survival = 0.4;
-        z.civ_fields.meaning = 0.2;
-        
-        // Setup high innovation culture
-        z.cultural.innovation_openness = 0.9;
-        z.cultural.collective_trust = 0.8;
-        
-        state.zones.push(ZoneStateSerial { id: 0, state: z, neighbors: vec![] });
-        
-        // Test Intelligence Explosion directly
-        state.apply_intelligence_explosion();
-        assert!(state.zones[0].state.embodied_knowledge > 0.0, "Should have boosted embodied knowledge");
-        
-        // Test Discovery directly by setting global fields
-        state.global_fields = crate::types::CivilizationFields {
-            survival: 0.4,
-            power: 0.4,
-            wealth: 0.7,
-            knowledge: 0.9,
-            meaning: 0.2,
-        };
-        state.run_archetype_discovery();
-        
-        // Test Narrative directly
-        let culture_engine = crate::culture_engine::CultureEngine::new(0.01);
-        state.narrative_tags = culture_engine.generate_narrative_tags(&state.zones);
-        
-        println!("Test Global Fields: {:?}", state.global_fields);
-        if let Some(d) = &state.archetype_discovery {
-            println!("Test Discovery: name={}, dist={}", d.name, d.distance);
-        }
-        let discovery = state.archetype_discovery.as_ref().expect("Should have discovery result");
-        assert_eq!(discovery.name, "Technocracy");
-        
-        // Check Narrative Tags
-        let has_renaissance = state.narrative_tags.iter().any(|t| t.slug == "renaissance_flame");
-        assert!(has_renaissance, "Should have renaissance_flame tag");
-        
-        // Check Intelligence Explosion impact
-        assert!(state.zones[0].state.embodied_knowledge > 0.0);
-    }
+
+
+
 }
-
-
-

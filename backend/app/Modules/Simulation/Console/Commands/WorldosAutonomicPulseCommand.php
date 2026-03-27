@@ -3,7 +3,7 @@
 namespace App\Modules\Simulation\Console\Commands;
 
 use Illuminate\Console\Command;
-use App\Modules\Simulation\Services\AutonomicWorkerService;
+use App\Modules\Simulation\Services\Society\AutonomicWorkerService;
 
 class WorldosAutonomicPulseCommand extends Command
 {

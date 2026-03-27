@@ -6,7 +6,7 @@ use Laudis\Neo4j\ClientBuilder;
 use Laudis\Neo4j\Contracts\ClientInterface;
 use App\Models\Actor;
 use Illuminate\Support\Facades\Log;
-use Laudis\Neo4j\Authentication;
+use Laudis\Neo4j\Authentication\Authenticate;
 
 class Neo4jSocialSyncer
 {
@@ -36,7 +36,7 @@ class Neo4jSocialSyncer
             }
 
             $this->client = ClientBuilder::create()
-                ->withDriver('bolt', $uri, \Laudis\Neo4j\Authentication::basic($user, $pass))
+                ->withDriver('bolt', $uri, Authenticate::basic($user, $pass))
                 ->build();
         }
         return $this->client;

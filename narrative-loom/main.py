@@ -13,6 +13,8 @@ class ChronicleRequest(BaseModel):
     world_id: int
     tick_start: int | None = None
     tick_end: int | None = None
+    genre: str | None = "generic"
+    whispers: list[str] | None = []
 
 @app.get("/")
 def read_root():
@@ -68,6 +70,8 @@ async def weave_chronicles(req: ChronicleRequest):
         "world_id": req.world_id,
         "tick_start": req.tick_start,
         "tick_end": req.tick_end,
+        "genre": req.genre or "generic",
+        "cross_pollination_whispers": req.whispers or [],
         "raw_chronicles": data.get("data", []),
         "historical_outline": "",
         "psychological_profiles": {},
@@ -113,7 +117,10 @@ async def weave_chronicles(req: ChronicleRequest):
         "supported_models": ["openai", "anthropic", "google", "groq", "local", "alibaba"],
         "historical_outline": final_state.get("historical_outline"),
         "storyboard": final_state.get("storyboard"),
-        "final_prose": final_prose
+        "final_prose": final_prose,
+        "news_headline": final_state.get("news_headline"),
+        "news_slogan": final_state.get("news_slogan"),
+        "vfx_config": final_state.get("vfx_config")
     }
 
 

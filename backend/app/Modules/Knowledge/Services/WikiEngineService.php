@@ -5,7 +5,7 @@ namespace App\Modules\Knowledge\Services;
 use App\Models\Actor;
 use App\Models\Chronicle;
 use App\Models\UniverseSnapshot;
-use App\Modules\Simulation\Services\AxiomRegistry;
+use App\Modules\Simulation\Services\Cosmology\AxiomRegistry;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 

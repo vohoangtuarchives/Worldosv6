@@ -16,4 +16,8 @@ Route::prefix('apex')->group(function () {
         Route::get('/consciousness', [\App\Modules\Simulation\Http\Controllers\ApexObserverController::class, 'getConsciousnessField']);
         Route::get('/ascension-filters', [\App\Modules\Simulation\Http\Controllers\ApexObserverController::class, 'getAscensionStatus']);
     });
+
+    // Bloom & Multiverse DAG visualization
+    Route::get('/multiverse/bloom', [\App\Modules\Simulation\Http\Controllers\MultiverseMapController::class, 'bloom']);
+    Route::get('/multiverse/resonance', [\App\Modules\Simulation\Http\Controllers\MultiverseMapController::class, 'resonance']);
 });

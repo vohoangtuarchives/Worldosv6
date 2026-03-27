@@ -33,7 +33,7 @@ export function RealityPulse({ entropy, stability, tick = 0, size = 140 }: Reali
   }, [entropy, stability]);
 
   // Dynamic values
-  const primaryColor = pressure > 0.8 ? '#fb7185' : pressure > 0.4 ? '#fbbf24' : '#38bdf8';
+  const primaryColor = pressure > 0.8 ? '#e11d48' : pressure > 0.4 ? '#d97706' : '#0284c7';
   const pulseDuration = Math.max(0.3, 1.8 - pressure * 1.4);
   const turbulenceFrequency = 0.015 + pressure * 0.06;
   
@@ -46,7 +46,7 @@ export function RealityPulse({ entropy, stability, tick = 0, size = 140 }: Reali
       <motion.div
         animate={{
           scale: [1, 1.3 + pressure * 0.4, 1],
-          opacity: [0.15, 0.4 + pressure * 0.2, 0.15],
+          opacity: [0.1, 0.25 + pressure * 0.15, 0.1],
         }}
         transition={{
           repeat: Infinity,
@@ -94,7 +94,7 @@ export function RealityPulse({ entropy, stability, tick = 0, size = 140 }: Reali
             fill="none"
             stroke={primaryColor}
             strokeWidth="0.5"
-            strokeOpacity={0.1 - i * 0.02}
+            strokeOpacity={0.15 - i * 0.03}
             strokeDasharray="4 8"
             animate={{ rotate: 360 * (i % 2 === 0 ? 1 : -1) }}
             transition={{ repeat: Infinity, duration: 15 + i * 5, ease: "linear" }}
@@ -111,13 +111,13 @@ export function RealityPulse({ entropy, stability, tick = 0, size = 140 }: Reali
                 fill="none"
                 stroke={primaryColor}
                 strokeWidth="1.5"
-                strokeOpacity={0.4 + (1-i*0.1)}
+                strokeOpacity={0.5 + (1-i*0.1)}
                 initial={{ rotate: angle, scale: 0.8 }}
                 style={{ transformOrigin: '50% 50%' }}
                 animate={{
                   rotate: angle + 360,
                   scale: pulseActive ? [1, 1.4, 1] : [0.8, 1 + pressure * 0.2, 0.8],
-                  strokeOpacity: [0.3, 0.6, 0.3],
+                  strokeOpacity: [0.35, 0.7, 0.35],
                 }}
                 transition={{
                   repeat: pulseActive ? 0 : Infinity,
@@ -171,7 +171,8 @@ export function RealityPulse({ entropy, stability, tick = 0, size = 140 }: Reali
         {stability > 0.8 && (
            <motion.line 
              x1="10" y1="50" x2="90" y2="50" 
-             stroke="#fff" strokeWidth="0.5" strokeOpacity="0.3"
+             stroke="currentColor" strokeWidth="0.5" strokeOpacity="0.2"
+             className="text-primary"
              animate={{ y1: [30, 70, 30], y2: [30, 70, 30] }}
              transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
            />
@@ -185,11 +186,11 @@ export function RealityPulse({ entropy, stability, tick = 0, size = 140 }: Reali
              opacity: pulseActive ? 1 : [0.4, 0.8, 0.4],
              scale: pulseActive ? 1.2 : 1
            }}
-           className={`text-[9px] font-mono tracking-widest uppercase ${pulseActive ? 'text-primary' : 'text-white/60'}`}
+           className={`font-display text-[9px] tracking-[0.2em] uppercase ${pulseActive ? 'text-primary' : 'text-slate-500'}`}
          >
-            {pulseActive ? 'PULSE_SYNC' : pressure > 0.7 ? 'CAUSAL_WARP' : 'REALITY_LOK'}
+            {pulseActive ? 'ĐỒNG BỘ PULSE' : pressure > 0.7 ? 'BIẾN BIẾN CAUSAL' : 'KHÓA REALITY'}
          </motion.span>
-         <span className="text-xs font-mono font-bold text-white shadow-primary/20">
+         <span className="font-mono text-xs font-bold text-slate-900 drop-shadow-[0_0_8px_rgba(14,165,233,0.3)]">
             {Math.round(stability * 100)}%
          </span>
       </div>

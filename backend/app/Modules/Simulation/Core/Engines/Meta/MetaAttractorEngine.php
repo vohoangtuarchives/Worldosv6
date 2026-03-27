@@ -41,23 +41,12 @@ class MetaAttractorEngine implements SimulationEngine
 
     public function tickRate(): int
     {
-        return 1;
+        return 5;
     }
 
     public function handle(WorldState $state, TickContext $ctx): EngineResult
     {
-        $tick = $ctx->getTick();
-        $path = 'simulation/meta_attractors';
-        
-        $dsl = $this->ruleVm->loadDsl($path);
-
-        if (empty($dsl)) {
-            Log::warning("MetaAttractorEngine: meta_attractors.dsl not found or empty");
-            return EngineResult::empty();
-        }
-
-        // Chạy DSL để thực hiện Pull và Transitions
-        $this->ruleVm->evaluateAndApplyWithDsl($state, $dsl, $tick);
+        $this->ruleVm->evaluateAndApplyWithDsl($state, 'simulation/meta_attractors', $ctx->getTick());
 
         // Hậu xử lý (Optional): Nếu có logic phức tạp về Stability hoặc Noise có thể thêm ở đây
         // Ví dụ: Add stochastic noise to the current attractor
@@ -65,5 +54,3 @@ class MetaAttractorEngine implements SimulationEngine
         return EngineResult::empty();
     }
 }
-
-

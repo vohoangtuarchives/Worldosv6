@@ -4,7 +4,7 @@ namespace App\Modules\Simulation\Repositories;
 
 use App\Models\Universe;
 use App\Models\UniverseSnapshot;
-use App\Modules\Simulation\Services\ObserverService;
+use App\Modules\Simulation\Services\Core\ObserverService;
 
 class UniverseSnapshotRepository
 {

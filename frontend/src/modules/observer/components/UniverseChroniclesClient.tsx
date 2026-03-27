@@ -28,26 +28,26 @@ export function UniverseChroniclesClient({
   return (
     <div className="space-y-6">
       <div className="grid gap-4 md:grid-cols-3">
-        <div className="rounded-2xl border border-white/10 bg-background/35 p-4">
-          <p className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground">Chronicles</p>
-          <p className="mt-2 text-2xl font-semibold">{chronicles.length}</p>
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
+          <p className="text-[10px] uppercase font-bold tracking-[0.2em] text-slate-400">Biên niên sử</p>
+          <p className="mt-2 text-2xl font-black text-slate-900">{chronicles.length}</p>
         </div>
-        <div className="rounded-2xl border border-white/10 bg-background/35 p-4">
-          <p className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground">High Importance</p>
-          <p className="mt-2 text-2xl font-semibold">{highImportanceCount}</p>
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
+          <p className="text-[10px] uppercase font-bold tracking-[0.2em] text-slate-400">Độ quan trọng cao</p>
+          <p className="mt-2 text-2xl font-black text-indigo-600">{highImportanceCount}</p>
         </div>
-        <div className="rounded-2xl border border-white/10 bg-background/35 p-4">
-          <p className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground">Latest Tick</p>
-          <p className="mt-2 text-2xl font-semibold">{chronicles[0]?.tick?.toLocaleString() ?? 'N/A'}</p>
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
+          <p className="text-[10px] uppercase font-bold tracking-[0.2em] text-slate-400">Tick mới nhất</p>
+          <p className="mt-2 text-2xl font-black text-sky-600">{chronicles[0]?.tick?.toLocaleString() ?? 'N/A'}</p>
         </div>
       </div>
 
-      <ObserverPanel eyebrow="Chronicles" title="Narrative archive for the active branch">
+      <ObserverPanel eyebrow="Biên niên sử" title="Kho lưu trữ tự sự cho nhánh đang hoạt động">
         {chroniclesQuery.isLoading && chronicles.length === 0 ? <ObserverLoadingState lines={3} /> : null}
         {chroniclesQuery.isError && chronicles.length === 0 ? (
           <ObserverErrorState
-            title="Chronicle archive is unavailable"
-            description="The narrative layer did not return chronicle data for this branch."
+            title="Kho lưu trữ biên niên sử không khả dụng"
+            description="Lớp tự sự không trả về dữ liệu biên niên sử cho nhánh này."
             onRetry={() => {
               void chroniclesQuery.refetch();
             }}
@@ -55,20 +55,20 @@ export function UniverseChroniclesClient({
         ) : null}
         {!chroniclesQuery.isLoading && visibleChronicles.length === 0 ? (
           <ObserverEmptyState
-            title={Number.isFinite(focusedTick) ? 'No chronicle matches this timeline tick' : 'No chronicle archive yet'}
+            title={Number.isFinite(focusedTick) ? 'Không có biên niên sử nào khớp với tick này' : 'Chưa có kho lưu trữ biên niên sử'}
             description={
               Number.isFinite(focusedTick)
-                ? 'This tick does not currently map to a chronicle window. Try another timeline event or clear the filter.'
-                : 'The simulation has not emitted narrative synthesis for this branch yet. Once chronicles are generated, this archive becomes the story-facing layer of the universe.'
+                ? 'Tick này hiện không ánh xạ tới cửa sổ biên niên sử nào. Hãy thử sự kiện khác hoặc xóa bộ lọc.'
+                : 'Mô phỏng chưa phát ra tổng hợp tự sự cho nhánh này. Khi biên niên sử được tạo, kho lưu trữ này sẽ trở thành lớp cốt truyện của vũ trụ.'
             }
             action={
               <>
-                <Link href={`/universes/${universeId}/timeline`} className="rounded-2xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-primary transition hover:bg-primary/20">
-                  Open timeline
+                <Link href={`/universes/${universeId}/timeline`} className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-2 text-xs font-bold text-sky-700 transition hover:bg-sky-100 shadow-sm">
+                  Mở dòng thời gian
                 </Link>
                 {Number.isFinite(focusedTick) ? (
-                  <Link href={`/universes/${universeId}/chronicles`} className="rounded-2xl border border-white/10 bg-background/40 px-4 py-3 text-sm transition hover:bg-white/5">
-                    Clear tick filter
+                  <Link href={`/universes/${universeId}/chronicles`} className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-600 transition hover:bg-slate-50 shadow-sm">
+                    Xóa bộ lọc tick
                   </Link>
                 ) : null}
               </>
@@ -82,30 +82,30 @@ export function UniverseChroniclesClient({
               return (
                 <article
                   key={entry.id}
-                  className={`relative rounded-3xl border bg-background/25 p-6 transition-all hover:bg-background/45 ${highlighted ? 'border-primary/40 shadow-[0_0_20px_rgba(var(--primary-rgb),0.1)]' : 'border-white/5'}`}
+                  className={`relative rounded-3xl border p-6 transition-all hover:shadow-md ${highlighted ? 'border-sky-300 bg-sky-50 shadow-sm' : 'border-slate-100 bg-white'}`}
                 >
                   <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
                     <div className="space-y-1">
-                      <h3 className="text-xl font-bold tracking-tight text-white font-serif">{entry.title}</h3>
+                      <h3 className="text-xl font-black tracking-tight text-slate-900">{entry.title}</h3>
                       <div className="flex items-center gap-2">
-                         <span className="w-1.5 h-1.5 rounded-full bg-primary/60 animate-pulse" />
-                         <p className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground font-mono">
-                            Epoch Window {entry.fromTick.toLocaleString()} — {entry.toTick.toLocaleString()}
+                         <span className="w-1.5 h-1.5 rounded-full bg-sky-500 animate-pulse" />
+                         <p className="text-[10px] uppercase font-bold tracking-[0.2em] text-slate-400 font-mono">
+                            Cửa sổ Kỷ nguyên {entry.fromTick.toLocaleString()} — {entry.toTick.toLocaleString()}
                          </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Link href={`/universes/${universeId}/timeline?tick=${entry.tick}`} className="px-3 py-1.5 rounded-full border border-primary/20 bg-primary/5 text-[9px] font-bold uppercase tracking-widest text-primary hover:bg-primary/10 transition-colors">
-                        Inspect Causal Node
+                      <Link href={`/universes/${universeId}/timeline?tick=${entry.tick}`} className="px-3 py-1.5 rounded-full border border-sky-200 bg-white text-[9px] font-black uppercase tracking-widest text-sky-600 hover:bg-sky-50 transition-colors shadow-sm">
+                        Kiểm tra Nút Nhân quả
                       </Link>
-                      <span className="px-3 py-1.5 rounded-full border border-white/5 bg-white/5 text-[9px] font-bold uppercase tracking-widest text-muted-foreground">
-                        Weight {(entry.importance * 100).toFixed(0)}
+                      <span className="px-3 py-1.5 rounded-full border border-slate-100 bg-slate-50 text-[9px] font-black uppercase tracking-widest text-slate-400">
+                        Trọng số {((entry.importance ?? 0) * 100).toFixed(0)}
                       </span>
                     </div>
                   </div>
                   
                   <div className="relative">
-                     <p className="text-sm leading-7 text-muted-foreground/90 first-letter:text-4xl first-letter:font-serif first-letter:font-bold first-letter:text-primary first-letter:mr-3 first-letter:float-left first-letter:leading-none first-letter:mt-1">
+                     <p className="text-[13px] leading-7 text-slate-600 first-letter:text-4xl first-letter:font-black first-letter:text-sky-600 first-letter:mr-3 first-letter:float-left first-letter:leading-none first-letter:mt-1">
                         {entry.summary}
                      </p>
                   </div>

@@ -68,12 +68,12 @@ final class SimulationKernel
                     $elapsed = microtime(true) - $tickStartTime;
                     $priority = $engine->priorityCategory();
 
-                    if ($priority === 'COSMETIC' && $elapsed > 0.5) {
+                    if ($priority === 'COSMETIC' && $elapsed > 0.3) {
                         $skippedEngines[] = $engine->name();
                         $executionRecords[] = new EngineExecutionRecord($engine->name(), 0, 0, 0, $priority, true);
                         continue;
                     }
-                    if ($priority === 'STOCHASTIC' && $elapsed > 0.8) {
+                    if ($priority === 'STOCHASTIC' && $elapsed > 0.5) {
                         $skippedEngines[] = $engine->name();
                         $executionRecords[] = new EngineExecutionRecord($engine->name(), 0, 0, 0, $priority, true);
                         continue;
@@ -123,12 +123,12 @@ final class SimulationKernel
                 $elapsed = microtime(true) - $tickStartTime;
                 $priority = $engine->priorityCategory();
 
-                if ($priority === 'COSMETIC' && $elapsed > 0.5) {
+                if ($priority === 'COSMETIC' && $elapsed > 0.3) {
                     $skippedEngines[] = $engine->name();
                     $executionRecords[] = new EngineExecutionRecord($engine->name(), 0, 0, 0, $priority, true);
                     continue;
                 }
-                if ($priority === 'STOCHASTIC' && $elapsed > 0.8) {
+                if ($priority === 'STOCHASTIC' && $elapsed > 0.5) {
                     $skippedEngines[] = $engine->name();
                     $executionRecords[] = new EngineExecutionRecord($engine->name(), 0, 0, 0, $priority, true);
                     continue;

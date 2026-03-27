@@ -54,7 +54,7 @@ class AiDiagnosticsController extends Controller
                 'latency_ms' => (int) round((microtime(true) - $startedAt) * 1000),
                 'error' => $exception->getMessage(),
                 'checked_at' => now()->toIso8601String(),
-            ], 422);
+            ], 500);
         }
     }
 }

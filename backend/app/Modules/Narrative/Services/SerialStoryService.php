@@ -91,6 +91,20 @@ class SerialStoryService
                 'raw_payload' => json_encode(['source' => 'narrative_loom', 'loom_result' => $result]),
             ]);
 
+            // Create a "Media Station" Narrative record for the series chapter
+            \App\Models\Narrative::create([
+                'universe_id' => $universe->id,
+                'tick_born'   => $fromTick,
+                'story'       => $content,
+                'virality'    => 1.0, // High virality for series output
+                'distortion'  => 0.1,
+                'is_active'   => true,
+                'news_headline' => $result['news_headline'] ?? 'Chapter Update: ' . ($series->title ?? 'New Saga'),
+                'news_slogan'   => $result['news_slogan'] ?? 'A new era blooms...',
+                'vfx_config'    => $result['vfx_config'] ?? [],
+                'tags'          => ['series_chapter', 'multiverse_broadcast'],
+            ]);
+
         } catch (\Exception $e) {
             Log::error("IP Factory: NarrativeLoom Error: " . $e->getMessage());
             // Fallback to simple generation if Loom fails

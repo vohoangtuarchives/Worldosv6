@@ -5,7 +5,7 @@ namespace App\Modules\Simulation\Core\Runtime\Stages;
 use App\Models\Universe;
 use App\Models\UniverseSnapshot;
 use App\Modules\Simulation\Core\Runtime\Contracts\SimulationStageInterface;
-use App\Modules\Simulation\Services\FfiActorEngine;
+use App\Modules\Simulation\Services\Core\FfiActorEngine;
 use App\Modules\Simulation\Core\Runtime\State\WorldState;
 use Illuminate\Support\Facades\Log;
 

@@ -69,7 +69,7 @@ EOT;
             ['role' => 'user',   'content' => $prompt],
         ], [
             'temperature' => 0.8,
-            'timeout' => 45
+            'timeout' => 120
         ]);
 
     }

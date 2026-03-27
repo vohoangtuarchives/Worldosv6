@@ -12,9 +12,11 @@ class AiGateway
 {
     protected array $drivers = [];
 
-    public function __construct(
-        protected AiConfigManager $configManager
-    ) {}
+    public function __construct(protected
+        AiConfigManager $configManager
+        )
+    {
+    }
 
     /**
      * Get a driver instance by name.
@@ -53,10 +55,11 @@ class AiGateway
         // Merge DB config with static config (DB overrides static)
         $dbConfig = $this->configManager->get("drivers.{$name}");
         $staticConfig = config("ai.drivers.{$name}", []);
-        
+
         if (is_array($dbConfig)) {
             $config = array_merge($staticConfig, $dbConfig);
-        } else {
+        }
+        else {
             $config = $staticConfig;
         }
 
@@ -65,27 +68,31 @@ class AiGateway
         }
 
         return match ($name) {
-            'zai' => new Drivers\ZaiDriver(
+                'zai' => new Drivers\ZaiDriver(
                 $config['url'] ?? '',
                 $config['key'] ?? '',
                 $config['model'] ?? ''
             ),
-            'openai' => new Drivers\OpenAiDriver(
+                'openai' => new Drivers\OpenAiDriver(
                 $config['url'] ?? '',
                 $config['key'] ?? '',
                 $config['model'] ?? ''
             ),
-            'local' => new Drivers\LocalDriver(
+                'local' => new Drivers\LocalDriver(
                 $config['url'] ?? '',
                 $config['model'] ?? ''
             ),
-            'openrouter' => new Drivers\OpenRouterDriver(
+                'openrouter' => new Drivers\OpenRouterDriver(
                 $config['url'] ?? 'https://openrouter.ai/api/v1/chat/completions',
                 $config['key'] ?? '',
                 $config['model'] ?? 'minimax/minimax-m2.5:free'
             ),
-            default => throw new \InvalidArgumentException("AI Driver [{$name}] not supported."),
-        };
+                'qwen' => new Drivers\LocalDriver(
+                $config['url'] ?? 'http://host.docker.internal:8080/v1/chat/completions',
+                $config['model'] ?? 'qwen3-14b-uncensored'
+            ),
+                default => throw new \InvalidArgumentException("AI Driver [{$name}] not supported."),
+            };
     }
 
 }

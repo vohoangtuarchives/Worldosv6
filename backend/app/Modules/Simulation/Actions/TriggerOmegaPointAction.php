@@ -4,7 +4,7 @@ namespace App\Modules\Simulation\Actions;
 
 use App\Models\Universe;
 use App\Models\Chronicle;
-use App\Modules\Simulation\Services\HttpSimulationEngineClient;
+use App\Modules\Simulation\Services\Core\HttpSimulationEngineClient;
 use Illuminate\Support\Facades\Log;
 
 /**

@@ -14,6 +14,7 @@ export interface ChronicleRecord {
   title?: string;
   content?: string;
   type?: string;
+  raw_payload?: string | any;
 }
 
 export interface SimulationEntity {

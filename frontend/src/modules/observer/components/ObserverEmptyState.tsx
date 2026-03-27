@@ -10,12 +10,12 @@ export function ObserverEmptyState({
   action?: ReactNode;
 }) {
   return (
-    <div className="overflow-hidden rounded-[28px] border border-dashed border-white/12 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))] p-8 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+    <div className="overflow-hidden rounded-[2rem] border-2 border-dashed border-slate-200 bg-slate-50/50 p-12 text-center">
       <div className="mx-auto max-w-2xl">
-        <p className="text-[10px] uppercase tracking-[0.28em] text-primary/70">Observer guidance</p>
-        <h3 className="mt-3 text-lg font-semibold tracking-tight sm:text-xl">{title}</h3>
-        <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-muted-foreground">{description}</p>
-        {action ? <div className="mt-6 flex flex-wrap items-center justify-center gap-3">{action}</div> : null}
+        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-sky-600/70">Hướng dẫn Quan sát</p>
+        <h3 className="mt-4 text-xl font-black tracking-tight text-slate-900 sm:text-2xl uppercase">{title}</h3>
+        <p className="mx-auto mt-4 max-w-xl text-sm font-medium leading-relaxed text-slate-400 italic">{description}</p>
+        {action ? <div className="mt-8 flex flex-wrap items-center justify-center gap-4">{action}</div> : null}
       </div>
     </div>
   );

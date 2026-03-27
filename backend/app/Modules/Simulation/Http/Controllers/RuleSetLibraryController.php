@@ -3,7 +3,7 @@
 namespace App\Modules\Simulation\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Modules\Simulation\Services\AxiomRegistry;
+use App\Modules\Simulation\Services\Cosmology\AxiomRegistry;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 

@@ -7,7 +7,7 @@ use App\Models\Actor;
 use App\Models\InstitutionalEntity;
 use App\Models\SupremeEntity;
 use App\Models\Chronicle;
-use App\Modules\Simulation\Services\ImplicitOrchestratorService;
+use App\Modules\Simulation\Services\Core\ImplicitOrchestratorService;
 
 /**
  * Merge Universe Action: Synthesizes two universes into a new Prime timeline.

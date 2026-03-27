@@ -33,17 +33,7 @@ class CollectiveConsciousnessEngine
         $state->set('resonance_field', $resonance);
 
         // 2. Evaluate Consciousness DSL for Reality Warping
-        $dslPath = resource_path('worldos_rules/simulation/consciousness.dsl');
-        if (file_exists($dslPath)) {
-            $dsl = file_get_contents($dslPath);
-            // Build VM state for global consciousness evaluation
-            $vmState = array_merge($state->toArray(), [
-                'field_resonance_field' => $resonance,
-                'alive_actor_count'     => count($alive)
-            ]);
-
-            $this->ruleVm->evaluateAndApplyWithState($state, $dsl, $tick);
-        }
+        $this->ruleVm->evaluateAndApplyWithDsl($state, 'simulation/consciousness', $tick);
 
         if ($resonance > 0.8) {
             Log::info("CollectiveConsciousness: High resonance detected ({$resonance}) for Universe " . $state->get('universe_id'));

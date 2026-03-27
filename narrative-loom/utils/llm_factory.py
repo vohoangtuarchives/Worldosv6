@@ -28,20 +28,34 @@ def get_llm(provider: str = "openai", model_name: str = None) -> BaseChatModel:
             google_api_key=os.getenv("GOOGLE_API_KEY")
         )
     if provider == "local":
-        local_url = os.getenv("LOCAL_LLM_URL", "http://host.docker.internal:1234/v1").strip().rstrip("/")
-        # Đảm bảo luôn có scheme (http/https) — tránh UnsupportedProtocol khi env chỉ có host:port
+        local_url = os.getenv("LOCAL_LLM_URL", "http://localhost:1234").strip().rstrip("/")
         if local_url and not (local_url.startswith("http://") or local_url.startswith("https://")):
             local_url = "http://" + local_url
-        if not local_url.endswith("/v1"):
-            local_url = f"{local_url}/v1" if "/v1" not in local_url else local_url
-        model = model_name or os.getenv("LOCAL_MODEL_NAME", "MythoMax-L2-13B")
-        print(f"DEBUG: Local LLM using OpenAI-compatible API: {local_url}, model={model}")
-        # LM Studio / Ollama OpenAI mode / hầu hết local server dùng chuẩn OpenAI chat/completions
+            
+        model = model_name or os.getenv("LOCAL_MODEL_NAME", "qwen3.5-9b-uncensored-hauhaucs-aggressive")
+        
+        # Nếu là OpenAI-compatible (LM Studio / Ollama v1 endpoint)
+        if "/v1" in local_url:
+            print(f"DEBUG: Local LLM using OpenAI-compatible API: {local_url}, model={model}")
+            return ChatOpenAI(
+                base_url=local_url,
+                model=model,
+                temperature=0.7,
+                api_key=os.getenv("OPENAI_API_KEY") or "not-needed",
+                timeout=int(os.getenv("LOCAL_LLM_TIMEOUT", "360")),
+            )
+        
+        # Nếu là Custom /api/v1/chat (như yêu cầu của user)
+        # Chúng ta dùng CustomLLM wrapper hoặc đơn giản là dùng HTTP client trực tiếp nếu LangChain không hỗ trợ tốt format lạ
+        # Tuy nhiên, format user gửi trông giống hệt OpenAI nhưng endpoint là /api/v1/chat thay vì /v1/chat/completions
+        # Chúng ta sẽ thử map sang OpenAI ChatOpenAI với base_url điều chỉnh
+        
+        print(f"DEBUG: Local LLM using Custom Chat API: {local_url}, model={model}")
         return ChatOpenAI(
-            base_url=local_url,
+            base_url=f"{local_url}/api/v1", # Kết quả sẽ là {url}/api/v1/chat/completions
             model=model,
             temperature=0.7,
-            api_key=os.getenv("OPENAI_API_KEY") or "not-needed",
+            api_key="not-needed",
             timeout=int(os.getenv("LOCAL_LLM_TIMEOUT", "360")),
         )
     elif provider in ("alibaba", "dashscope", "qwen"):

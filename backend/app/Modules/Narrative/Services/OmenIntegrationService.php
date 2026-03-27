@@ -114,7 +114,7 @@ class OmenIntegrationService
     protected function getFallbackOmen(Universe $universe): array
     {
         $sentiments = ['positive', 'negative', 'neutral', 'volatile'];
-        $prng = \App\Modules\Simulation\Services\SimulationPRNG::forUniverse($universe);
+        $prng = \App\Modules\Simulation\Services\Ecology\SimulationPRNG::forUniverse($universe);
         $chosen = $prng->randomElement($sentiments);
 
         $omens = [

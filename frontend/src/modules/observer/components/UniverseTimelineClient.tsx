@@ -1,17 +1,40 @@
 'use client';
 
+import React from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { useObserverAutonomyAudit, useObserverUniverseChronicles, useObserverUniverseForks, useObserverUniverseSnapshots, useObserverUniverseTimeline } from '@/modules/observer/api';
+import { 
+  useObserverAutonomyAudit, 
+  useObserverUniverseChronicles, 
+  useObserverUniverseForks, 
+  useObserverUniverseSnapshots, 
+  useObserverUniverseTimeline 
+} from '@/modules/observer/api';
 import type { AutonomyAudit } from '@/modules/observer/contracts';
 import { ObserverEmptyState } from '@/modules/observer/components/ObserverEmptyState';
 import { ObserverErrorState } from '@/modules/observer/components/ObserverErrorState';
 import { ObserverLoadingState } from '@/modules/observer/components/ObserverLoadingState';
 import { ObserverPanel } from '@/modules/observer/components/ObserverPanel';
 import type { BranchSummary, ChronicleEntry, SnapshotSummary, TimelineEvent } from '@/modules/observer/types';
+import { HUDCard, HUDBadge } from '@/modules/observer/components/ui/hud-primitives';
+import { 
+  History, 
+  Zap, 
+  GitBranch, 
+  Layers, 
+  Clock, 
+  Activity, 
+  ChevronRight,
+  Database,
+  ShieldAlert,
+  ArrowRightCircle,
+  Shield
+} from 'lucide-react';
+
+
 
 function laneClass(highlighted: boolean) {
-  return highlighted ? 'border-primary/40 bg-primary/10' : 'border-white/8 bg-background/35';
+  return highlighted ? 'border-sky-300 bg-sky-50 shadow-[0_0_15px_rgba(14,165,233,0.1)]' : 'border-slate-200 bg-white shadow-sm';
 }
 
 export function UniverseTimelineClient({
@@ -60,130 +83,161 @@ export function UniverseTimelineClient({
     .sort((left, right) => right.tick - left.tick);
 
   return (
-    <div className="space-y-6">
-      <ObserverPanel eyebrow="Divergence" title="Timeline of causality, intervention, and mutation">
-        <div className="grid gap-6 xl:grid-cols-3">
-          <Lane title="Causal ticks" description="Natural historian timeline facts flowing through the active branch.">
+    <div className="space-y-8 max-w-[1600px] mx-auto p-4 md:p-6 font-mono">
+      {/* Main Timeline Control HUD */}
+      <section className="relative grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="absolute -inset-2 bg-primary/5 blur-3xl pointer-events-none" />
+        
+        {/* Lane 1: Causal Stream */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between px-2">
+            <div className="flex items-center gap-2">
+              <Activity className="w-5 h-5 text-sky-600" />
+              <h2 className="text-sm font-black uppercase tracking-[0.2em] text-slate-900">Luồng Nhân Quả</h2>
+            </div>
+            <HUDBadge color="primary">Hoạt động</HUDBadge>
+          </div>
+          <div className="space-y-3 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar">
             {timelineQuery.isLoading && timeline.length === 0 ? <ObserverLoadingState lines={4} /> : null}
             {timelineQuery.isError && timeline.length === 0 ? (
-              <ObserverErrorState title="Timeline is unavailable" description="The historian did not return timeline facts for this branch." onRetry={() => void timelineQuery.refetch()} />
+              <ObserverErrorState title="Lỗi Đồng bộ" description="Liên kết lượng tử bị gián đoạn." onRetry={() => void timelineQuery.refetch()} />
             ) : null}
-            {!timelineQuery.isLoading && timeline.length === 0 ? (
-              <ObserverEmptyState title="No historical facts yet" description="Causal ticks will appear once the historian writes structured facts for this universe." />
-            ) : null}
+            {timeline.length === 0 && !timelineQuery.isLoading && (
+              <div className="p-8 text-center text-[10px] text-slate-400 uppercase tracking-widest border border-dashed border-slate-200 rounded-lg">Đang chờ luồng nhân quả...</div>
+            )}
             {timeline.map((entry) => {
               const highlighted = Number.isFinite(focusedTick) && entry.tick === focusedTick;
               return (
-                <article key={entry.id} className={`rounded-2xl border p-4 ${laneClass(highlighted)}`}>
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-[10px] uppercase tracking-[0.22em] text-primary/70">{entry.category}</p>
-                      <h3 className="mt-2 text-base font-semibold">Tick {entry.tick}</h3>
-                    </div>
-                    <span className="text-xs text-muted-foreground">{entry.zone}</span>
+                <article key={entry.id} className={`relative rounded-lg border p-4 transition-all duration-300 ${laneClass(highlighted)} group hover:border-sky-300`}>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-[10px] text-sky-600 font-bold tracking-tighter">TIC-{entry.tick.toString().padStart(6, '0')}</span>
+                    <HUDBadge color="primary" className="text-[8px] border-sky-200">{entry.category}</HUDBadge>
                   </div>
-                  <p className="mt-3 text-sm leading-6 text-muted-foreground">{entry.summary}</p>
-                  <div className="mt-4 flex flex-wrap gap-2 text-xs">
-                    <Link href={`/universes/${universeId}/chronicles?tick=${entry.tick}`} className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-primary transition hover:bg-primary/20">
-                      View related chronicles
+                  <p className="text-[11px] leading-relaxed text-slate-600 line-clamp-3 italic">"{entry.summary}"</p>
+                  <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+                    <span className="text-[9px] text-slate-400 truncate max-w-[100px]">{entry.zone}</span>
+                    <Link href={`/universes/${universeId}/chronicles?tick=${entry.tick}`} className="flex items-center gap-1 text-[9px] text-sky-600 font-bold hover:text-sky-700 transition-colors">
+                      <History className="w-3 h-3" /> PHÂN TÍCH
                     </Link>
                   </div>
                 </article>
               );
             })}
-          </Lane>
+          </div>
+        </div>
 
-          <Lane title="Interventions" description="Observer actions like snapshots and forks, separated from natural causality.">
-            {snapshotsQuery.isLoading && forksQuery.isLoading && interventions.length === 0 ? <ObserverLoadingState lines={3} /> : null}
-            {interventions.length === 0 ? (
-              <ObserverEmptyState title="No interventions yet" description="Forks and snapshots will appear here after the observer starts intervening in the branch." />
-            ) : (
-              interventions.map((entry) => {
-                const highlighted = Number.isFinite(focusedTick) && entry.tick === focusedTick;
-                return (
-                  <article key={entry.id} className={`rounded-2xl border p-4 ${laneClass(highlighted)}`}>
-                    <p className="text-[10px] uppercase tracking-[0.22em] text-primary/70">{entry.kind}</p>
-                    <h3 className="mt-2 text-base font-semibold">{entry.label}</h3>
-                    <p className="mt-2 text-sm text-muted-foreground">Tick {entry.tick}</p>
-                    <p className="mt-3 text-sm leading-6 text-muted-foreground">{entry.summary}</p>
-                    <div className="mt-4 flex flex-wrap gap-2 text-xs">
-                      <Link href={`/universes/${universeId}/control`} className="rounded-full border border-white/10 px-3 py-1 text-muted-foreground transition hover:bg-white/5 hover:text-white">
-                        Open control surface
-                      </Link>
-                    </div>
-                  </article>
-                );
-              })
-            )}
-          </Lane>
+        {/* Lane 2: Intervention Layer */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between px-2">
+            <div className="flex items-center gap-2">
+              <Shield className="w-5 h-5 text-indigo-600" />
+              <h2 className="text-sm font-black uppercase tracking-[0.2em] text-slate-900">Sự Can Thiệp</h2>
+            </div>
+            <HUDBadge color="secondary">An toàn</HUDBadge>
+          </div>
+          <div className="space-y-3 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar">
+            {interventions.map((entry) => {
+              const highlighted = Number.isFinite(focusedTick) && entry.tick === focusedTick;
+              return (
+                <article key={entry.id} className={`rounded-lg border p-4 transition-all ${laneClass(highlighted)} border-indigo-100 bg-indigo-50/50 hover:bg-indigo-50`}>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[10px] text-indigo-600/60 font-bold">TIC-{entry.tick.toString().padStart(6, '0')}</span>
+                    <span className="text-[9px] font-black text-indigo-600 px-1 bg-indigo-100 rounded">{entry.kind}</span>
+                  </div>
+                  <h3 className="text-xs font-bold text-slate-900 mb-2 uppercase">{entry.label}</h3>
+                  <p className="text-[11px] text-slate-500 leading-relaxed mb-4">{entry.summary}</p>
+                  <Link href={`/universes/${universeId}/control`} className="inline-flex items-center gap-2 text-[9px] text-indigo-600 font-bold hover:underline">
+                    <Database size={12} /> TRUY XUẤT TRẠNG THÁI
+                  </Link>
+                </article>
+              );
+            })}
+            {interventions.length === 0 && <div className="p-8 text-center text-[10px] text-slate-400 uppercase tracking-widest border border-dashed border-slate-200 rounded-lg">Đang chờ sự can thiệp...</div>}
+          </div>
+        </div>
 
-          <Lane title="Mutations" description="Autopoietic self-rewrites persisted into the mutation chronicle.">
-            {auditQuery.isLoading && mutationLane.length === 0 ? <ObserverLoadingState lines={3} /> : null}
-            {auditQuery.isError && mutationLane.length === 0 ? (
-              <ObserverErrorState title="Mutation lane is unavailable" description="The observer could not refresh the mutation chronicle for this branch." onRetry={() => void auditQuery.refetch()} />
-            ) : null}
-            {!auditQuery.isLoading && mutationLane.length === 0 ? (
-              <ObserverEmptyState title="No self-mutations yet" description="When autopoiesis edits a DSL pack, it will show up here as a separate divergence lane." />
-            ) : null}
+        {/* Lane 3: Mutation Log */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between px-2">
+            <div className="flex items-center gap-2">
+              <Zap className="w-5 h-5 text-orange-600" />
+              <h2 className="text-sm font-black uppercase tracking-[0.2em] text-slate-900">Nhật Ký Đột Biến</h2>
+            </div>
+            <HUDBadge color="orange">Không ổn định</HUDBadge>
+          </div>
+          <div className="space-y-3 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar">
             {mutationLane.map((entry) => {
               const highlighted = Number.isFinite(focusedTick) && entry.tick === focusedTick;
               return (
-                <article key={entry.id} className={`rounded-2xl border p-4 ${laneClass(highlighted)}`}>
-                  <p className="text-[10px] uppercase tracking-[0.22em] text-primary/70">AUTOPOIESIS_MUTATION</p>
-                  <h3 className="mt-2 text-base font-semibold">{entry.label}</h3>
-                  <p className="mt-2 text-sm text-muted-foreground">{entry.tick < 0 ? 'Tick unknown' : `Tick ${entry.tick}`}</p>
-                  <p className="mt-3 text-sm leading-6 text-muted-foreground">{entry.summary}</p>
-                  <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
-                    <span>{entry.timestamp ? new Date(entry.timestamp).toLocaleString() : 'No timestamp'}</span>
-                    <span>{entry.versionCount} versions</span>
+                <article key={entry.id} className={`rounded-lg border p-4 transition-all ${laneClass(highlighted)} border-orange-200 bg-orange-50/50 hover:bg-orange-50`}>
+                  <div className="flex items-center justify-between mb-2">
+                     <span className="text-[10px] text-orange-600/60 font-bold italic">
+                       {entry.tick < 0 ? 'ĐANG ĐỒNG BỘ' : `TIC-${entry.tick.toString().padStart(6, '0')}`}
+                     </span>
+                     <div className="flex items-center gap-2">
+                        <span className="text-[9px] text-orange-600 font-bold bg-orange-100 px-1 rounded">v{entry.versionCount}</span>
+                        <ShieldAlert className="w-3 h-3 text-orange-600 animate-pulse" />
+                     </div>
                   </div>
-                  <div className="mt-4 flex flex-wrap gap-2 text-xs">
-                    <Link href={`/universes/${universeId}/control`} className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-primary transition hover:bg-primary/20">
-                      Inspect diff in control
+                  <h3 className="text-xs font-bold text-slate-900 mb-1 truncate">{entry.label}</h3>
+                  <p className="text-[10px] text-slate-400 font-mono mb-4 break-all opacity-70">{entry.id}</p>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[8px] text-slate-400 uppercase font-bold">{entry.timestamp ? new Date(entry.timestamp).toLocaleTimeString() : 'Không rõ thời gian'}</span>
+                    <Link href={`/universes/${universeId}/control`} className="text-[9px] text-orange-600 hover:text-orange-700 font-bold">
+                      KIỂM TRA ĐỘT BIẾN
                     </Link>
                   </div>
                 </article>
               );
             })}
-          </Lane>
+            {mutationLane.length === 0 && <div className="p-8 text-center text-[10px] text-slate-400 uppercase tracking-widest border border-dashed border-slate-200 rounded-lg">Đang chờ quá trình tự tạo...</div>}
+          </div>
         </div>
-      </ObserverPanel>
+      </section>
 
-      <ObserverPanel eyebrow="Chronicles" title="Narrative echoes cross-linked from the same branch">
-        {chroniclesQuery.isLoading && chronicles.length === 0 ? <ObserverLoadingState lines={3} /> : null}
-        {chroniclesQuery.isError && chronicles.length === 0 ? (
-          <ObserverErrorState title="Chronicle echoes are unavailable" description="The narrative archive could not be refreshed while comparing divergence lanes." onRetry={() => void chroniclesQuery.refetch()} />
-        ) : null}
+      {/* Narrative Synthesis HUD */}
+      <section className="mt-12 space-y-6">
+        <div className="flex items-center gap-3 border-b border-slate-200 pb-4">
+           <Layers className="w-6 h-6 text-sky-600" />
+           <h2 className="text-xl font-black text-slate-900 uppercase tracking-[0.3em]">Tổng Hợp Tự Sự</h2>
+        </div>
+        
         {chronicles.length === 0 && !chroniclesQuery.isLoading ? (
-          <ObserverEmptyState title="No chronicle synthesis yet" description="Chronicle entries will appear here once the narrative layer summarizes stretches of the timeline." />
+          <div className="p-12 text-center border border-dashed border-slate-200 rounded-2xl bg-slate-50/50">
+            <p className="text-xs text-slate-400 uppercase tracking-widest font-bold">Đang khởi tạo các mảnh biên niên sử...</p>
+          </div>
         ) : (
-          <div className="grid gap-3 lg:grid-cols-2">
-            {chronicles.slice(0, 6).map((entry) => (
-              <article key={entry.id} className="rounded-2xl border border-white/8 bg-background/35 p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <h3 className="text-sm font-semibold">{entry.title}</h3>
-                  <Link href={`/universes/${universeId}/timeline?tick=${entry.tick}`} className="text-xs font-mono text-primary/80 transition hover:text-primary">
-                    Tick {entry.tick}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {chronicles.slice(0, 9).map((entry) => (
+              <HUDCard key={entry.id} title={entry.title} color="primary" className="hover:scale-[1.02] transition-transform">
+                <p className="text-xs leading-relaxed text-slate-600 mb-6 italic">"{entry.summary}"</p>
+                <div className="flex justify-between items-center mt-auto border-t border-slate-100 pt-3">
+                  <HUDBadge color="primary" className="text-[8px] border-sky-100">Mã tham chiếu: {entry.id.slice(0, 8)}</HUDBadge>
+                  <Link href={`/universes/${universeId}/timeline?tick=${entry.tick}`} className="text-[9px] font-bold text-sky-600 hover:underline flex items-center gap-1">
+                    ĐẾN TICK <ArrowRightCircle size={10} />
                   </Link>
                 </div>
-                <p className="mt-3 text-sm leading-6 text-muted-foreground">{entry.summary}</p>
-              </article>
+              </HUDCard>
             ))}
           </div>
         )}
-      </ObserverPanel>
-    </div>
-  );
-}
+      </section>
 
-function Lane({ title, description, children }: { title: string; description: string; children: React.ReactNode }) {
-  return (
-    <div className="space-y-4">
-      <div>
-        <h3 className="text-lg font-semibold tracking-tight">{title}</h3>
-        <p className="mt-2 text-sm leading-6 text-muted-foreground">{description}</p>
-      </div>
-      <div className="space-y-3">{children}</div>
+      <style jsx global>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: rgba(15, 23, 42, 0.02);
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: rgba(14, 165, 233, 0.2);
+          border-radius: 2px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: rgba(14, 165, 233, 0.4);
+        }
+      `}</style>
     </div>
   );
 }

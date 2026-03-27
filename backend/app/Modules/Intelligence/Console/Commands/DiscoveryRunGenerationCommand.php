@@ -2,7 +2,7 @@
 
 namespace App\Modules\Intelligence\Console\Commands;
 
-use App\Modules\Simulation\Services\CivilizationDiscoveryService;
+use App\Modules\Simulation\Services\Politics\CivilizationDiscoveryService;
 use Illuminate\Console\Command;
 
 /**

@@ -65,7 +65,7 @@ class PulseWorldActionTest extends TestCase
             ->andReturn(['ok' => true]);
 
         // 3. Run Action
-        $autonomicEngine = Mockery::mock(\App\Modules\Simulation\Services\WorldRegulatorEngine::class);
+        $autonomicEngine = Mockery::mock(\App\Modules\Simulation\Services\Meta\WorldRegulatorEngine::class);
         $autonomicEngine->shouldReceive('process')->with($world)->once()->andReturnNull();
 
         $temporalSync = Mockery::mock(\App\Services\Simulation\TemporalSyncService::class);

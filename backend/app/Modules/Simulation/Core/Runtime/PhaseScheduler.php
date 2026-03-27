@@ -3,7 +3,7 @@
 namespace App\Modules\Simulation\Core\Runtime;
 
 use App\Modules\Simulation\Core\Runtime\Contracts\TickSchedulerInterface;
-use App\Modules\Simulation\Services\SimulationClock;
+use App\Modules\Simulation\Services\Cosmology\SimulationClock;
 
 /**
  * PhaseScheduler – implements 5-phase execution loop.

@@ -4,12 +4,12 @@ namespace App\Modules\Simulation\Console\Commands;
 
 use App\Models\Universe;
 use App\Models\World;
-use App\Modules\Simulation\Services\CivilizationMemoryEngine;
-use App\Modules\Simulation\Services\GreatPersonEngine;
-use App\Modules\Simulation\Services\IdeologyEvolutionEngine;
-use App\Modules\Simulation\Services\MythologyGeneratorEngine;
-use App\Modules\Simulation\Services\NarrativeExtractionEngine;
-use App\Modules\Simulation\Services\TimelineSelectionEngine;
+use App\Modules\Simulation\Services\Narrative\CivilizationMemoryEngine;
+use App\Modules\Simulation\Services\Core\GreatPersonEngine;
+use App\Modules\Simulation\Services\Culture\IdeologyEvolutionEngine;
+use App\Modules\Simulation\Services\Culture\MythologyGeneratorEngine;
+use App\Modules\Simulation\Services\Narrative\NarrativeExtractionEngine;
+use App\Modules\Simulation\Services\Meta\TimelineSelectionEngine;
 use Illuminate\Console\Command;
 
 /**

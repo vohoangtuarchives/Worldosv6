@@ -12,15 +12,16 @@ from utils.memory_manager import EpisodicMemoryManager
 memory_db = EpisodicMemoryManager()
 
 historian_prompt = ChatPromptTemplate.from_messages([
-    ("system", """Ngươi là The Historian (Sử Gia) của một hệ thống mô phỏng vũ trụ.
-Nhiệm vụ của ngươi là tiếp nhận các dữ liệu sự kiện thô dưới dạng JSON và biến nó thành một bản dàn ý lịch sử sâu sắc.
-Hãy tham khảo KÝ ỨC LỊCH SỬ (Past Memories) để kết nối nhân quả các sự kiện quá khứ với hiện tại.
-Ngươi không được phép tự sáng tác lời văn bay bổng (hãy để đó cho The Wordsmith). Ngươi phải phân tích:
+    ("system", """Ngươi là Phóng viên Sử học (Reporter Historian) của Tòa soạn NarrativeLoom.
+Nhiệm vụ của ngươi là tiếp nhận dữ liệu thô và bản chỉ thị từ Tổng Biên Tập (Chief Editor) để viết một bản dàn ý lịch sử.
+Hãy bám sát "Góc nhìn" (The Angle) mà Tổng Biên Tập đã đề ra.
+Phân tích:
 1. Nguyên nhân - Kết quả (Causality): Tại sao sự kiện này dẫn tới sự kiện kia?
-2. 5-8 Mốc sự kiện chính (Narrative Beats): Chia nhỏ chuỗi dữ liệu thành các "nhịp" truyện cụ thể để chuẩn bị cho việc dàn cảnh.
-Đầu ra của ngươi tuân thủ nghiêm ngặt Schema JSON quy định.
+2. 5-8 Mốc sự kiện chính (Narrative Beats): Chia nhỏ chuỗi dữ liệu thành các "nhịp" tin tức.
+3. Tiếng vọng từ Đa vũ trụ (Whispers): Kết hợp các "lời thì thầm" từ các vũ trụ song song khác.
+Đầu ra PHẢI tuân thủ nghiêm ngặt Schema JSON quy định.
 """),
-    ("human", "Dưới đây là Chronicle Payload (Từ Tick {tick_start} đến {tick_end}):\n\n{raw_payload}\n\nKÝ ỨC LỊCH SỬ LIÊN QUAN (Past Memories):\n{past_memories}")
+    ("human", "Dữ liệu thô (Tick {tick_start} đến {tick_end}):\n\n{raw_payload}\n\nCHỈ THỊ TỪ TÒA SOẠN:\n{past_memories}\n\nTIẾNG VỌNG ĐA VŨ TRỤ:\n{whispers}")
 ])
 
 async def historian_agent(state: NarrativeState, config: Dict[str, Any] = None) -> NarrativeState:
@@ -95,16 +96,20 @@ async def historian_agent(state: NarrativeState, config: Dict[str, Any] = None) 
         past_memories = "Hệ thống Memory Database đang tắt hoặc không có nhân vật nào đáng chú ý."
 
     # 3. Chains - Sử dụng Pydantic Structured Outputs
+    whispers = state.get("cross_pollination_whispers", [])
+    whispers_str = "\n- ".join(whispers) if whispers else "Không có tiếng vọng nào từ đa vũ trụ."
+    
     structured_llm = llm.with_structured_output(HistoricalOutline)
     chain = historian_prompt | structured_llm
     
-    # 4. Thực thi
-    result = await chain.ainvoke({
-        "tick_start": tick_start,
-        "tick_end": tick_end,
-        "raw_payload": payload_str,
-        "past_memories": past_memories
-    })
+    try:
+        result = await chain.ainvoke({
+            "tick_start": tick_start,
+            "tick_end": tick_end,
+            "raw_payload": payload_str,
+            "past_memories": past_memories,
+            "whispers": whispers_str
+        })
 
     if not result:
         print("DEBUG: Lỗi cấu trúc JSON từ LLM, fallback về trạng thái rỗng.")

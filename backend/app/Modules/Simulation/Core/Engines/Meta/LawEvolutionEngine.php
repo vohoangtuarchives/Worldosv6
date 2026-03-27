@@ -51,16 +51,7 @@ class LawEvolutionEngine implements SimulationEngine
 
     public function handle(WorldState $state, TickContext $ctx): EngineResult
     {
-        $dsl = $this->ruleVm->loadDsl('innovation/leadership');
-        
-        if (empty($dsl)) {
-            return new EngineResult([], [], []);
-        }
-        
-        // Evaluate leadership/rule mutations
-        // Note: RuleVmService currently modifies state directly. 
-        // We wrap it here to stay compatible with the existing DSL executor.
-        $this->ruleVm->evaluateAndApplyWithDsl($state, $dsl, $ctx->getTick());
+        $this->ruleVm->evaluateAndApplyWithDsl($state, 'innovation/leadership', $ctx->getTick());
 
         Log::info("LawEvolutionEngine: World rules evolved via DSL for Universe {$state->get('universe_id')} at tick {$ctx->getTick()}");
 

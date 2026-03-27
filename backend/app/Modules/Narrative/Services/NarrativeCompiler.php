@@ -71,7 +71,7 @@ class NarrativeCompiler
             ['role' => 'user',   'content' => $prompt],
         ], [
             'temperature' => min(0.9, $noise + 0.3),
-            'timeout' => 30
+            'timeout' => 120
         ]);
 
     }
@@ -120,8 +120,8 @@ class NarrativeCompiler
     protected function pick(array $items): string
     {
         $prng = $this->universe 
-            ? \App\Modules\Simulation\Services\SimulationPRNG::forUniverse($this->universe)
-            : new \App\Modules\Simulation\Services\SimulationPRNG(rand(1, 1000));
+            ? \App\Modules\Simulation\Services\Ecology\SimulationPRNG::forUniverse($this->universe)
+            : new \App\Modules\Simulation\Services\Ecology\SimulationPRNG(rand(1, 1000));
             
         if (count($items) === 0) return '';
         return $prng->randomElement($items);

@@ -6,7 +6,7 @@ use App\Models\Universe;
 use App\Models\InstitutionalEntity;
 use App\Models\Chronicle;
 use Illuminate\Support\Facades\Log;
-use App\Modules\Simulation\Services\WorldTemplateManager;
+use App\Modules\Simulation\Services\Meta\WorldTemplateManager;
 
 class AscensionEngine
 {

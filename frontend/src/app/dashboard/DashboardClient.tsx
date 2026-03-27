@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Globe, 
   Activity, 
@@ -15,9 +15,13 @@ import Link from 'next/link';
 import { useObserverUniverseSummaries } from '@/modules/observer/api';
 import { ObserverLoadingState } from '@/modules/observer/components/ObserverLoadingState';
 import { ObserverErrorState } from '@/modules/observer/components/ObserverErrorState';
+import MultiverseTicker from '@/components/media/MultiverseTicker';
+import VFXOverlay from '@/components/media/VFXOverlay';
+import MediaStationPanel from '@/components/media/MediaStationPanel';
 
 const DashboardClient = () => {
   const { data: universes, isLoading, isError, refetch } = useObserverUniverseSummaries();
+  const [selectedNarrative, setSelectedNarrative] = React.useState<any>(null);
 
   if (isLoading) return <ObserverLoadingState lines={8} />;
   
@@ -41,6 +45,19 @@ const DashboardClient = () => {
 
   return (
     <div className="space-y-8 pb-12">
+      <VFXOverlay />
+      
+      <AnimatePresence>
+        {selectedNarrative && (
+          <MediaStationPanel 
+            activeNarrative={selectedNarrative} 
+            onClose={() => setSelectedNarrative(null)} 
+          />
+        )}
+      </AnimatePresence>
+
+      <MultiverseTicker onHeadlineClick={(n) => setSelectedNarrative(n)} />
+
       {/* Hero Header */}
       <section className="relative overflow-hidden rounded-[32px] border border-white/10 bg-void/40 p-10 shadow-2xl">
         <div className="absolute top-0 right-0 w-1/3 h-full bg-primary/5 blur-[100px] rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none" />

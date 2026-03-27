@@ -20,7 +20,10 @@ class Narrative extends Model
         'field_effects',
         'tags',
         'is_active',
-        'source_event_id'
+        'source_event_id',
+        'news_headline',
+        'news_slogan',
+        'vfx_config'
     ];
 
     protected $casts = [
@@ -29,5 +32,6 @@ class Narrative extends Model
         'virality' => 'float',
         'distortion' => 'float',
         'is_active' => 'boolean',
+        'vfx_config' => 'array'
     ];
 }

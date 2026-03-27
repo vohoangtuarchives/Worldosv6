@@ -351,7 +351,7 @@ class WorldKernel
         $client = app(\App\Contracts\SimulationEngineClientInterface::class);
         
         try {
-            $sagaBuilder = app(\App\Modules\Simulation\Services\SagaBuilderService::class);
+            $sagaBuilder = app(\App\Modules\Simulation\Services\Narrative\SagaBuilderService::class);
             $activeSagas = $sagaBuilder->buildActiveSagas($universeId, $tick);
 
             $result = $client->processActorsSoa(

@@ -21,7 +21,7 @@ class MemoryReflectionEngine implements SimulationEngine
     public function phase(): string { return 'META'; }
     public function priority(): int { return 400; }
     public function priorityCategory(): string { return 'STOCHASTIC'; }
-    public function tickRate(): int { return 1; }
+    public function tickRate(): int { return 5; }
     public function isParallelSafe(): bool { return true; }
 
     public function handle(WorldState $state, TickContext $ctx): EngineResult

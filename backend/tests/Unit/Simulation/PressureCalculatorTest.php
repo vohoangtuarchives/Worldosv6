@@ -2,7 +2,7 @@
 
 namespace Tests\Unit\Simulation;
 
-use App\Modules\Simulation\Services\PressureCalculator;
+use App\Modules\Simulation\Services\Ecology\PressureCalculator;
 use PHPUnit\Framework\TestCase;
 
 class PressureCalculatorTest extends TestCase

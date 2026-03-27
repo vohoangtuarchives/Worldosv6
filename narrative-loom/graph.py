@@ -6,12 +6,17 @@ from engines.attractor_engine import attractor_engine_node
 from engines.arc_engine import arc_engine_node
 from engines.phase_engine import phase_engine_node
 from engines.singularity_engine import singularity_engine_node
+from engines.style_analyzer import style_analyzer_node
+from agents.chief_editor import chief_editor_agent
 from agents.historian import historian_agent
 from agents.psychologist import psychologist_agent
 from agents.director import director_agent
 from agents.wordsmith import wordsmith_agent
 from agents.critic import critic_agent
 from agents.archivist import archivist_agent
+from agents.mythologist import mythologist_agent
+from agents.news_anchor import news_anchor_agent
+from agents.vfx_director import vfx_director_agent
 
 # Khởi tạo Graph
 workflow = StateGraph(NarrativeState)
@@ -23,25 +28,31 @@ workflow.add_node("Attractor_Engine", attractor_engine_node)
 workflow.add_node("Dramatic_Arc", arc_engine_node)
 workflow.add_node("Phase_Engine", phase_engine_node)
 workflow.add_node("Singularity_Engine", singularity_engine_node)
+workflow.add_node("Style_Analyzer", style_analyzer_node)
+workflow.add_node("Chief_Editor", chief_editor_agent)
 workflow.add_node("The_Historian", historian_agent)
 workflow.add_node("The_Psychologist", psychologist_agent)
 workflow.add_node("The_Director", director_agent)
 workflow.add_node("The_Wordsmith", wordsmith_agent)
 workflow.add_node("The_Critic", critic_agent)
 workflow.add_node("The_Archivist", archivist_agent)
+workflow.add_node("The_Mythologist", mythologist_agent)
+workflow.add_node("News_Anchor", news_anchor_agent)
+workflow.add_node("VFX_Director", vfx_director_agent)
 
 # 2. Tuần tự kết nối
 workflow.set_entry_point("Event_Normalizer")
 
 workflow.add_edge("Event_Normalizer", "Entropy_Engine")
 workflow.add_edge("Entropy_Engine", "Attractor_Engine")
-workflow.add_edge("Attractor_Engine", "Dramatic_Arc")
+workflow.add_edge("Attractor_Engine", "Style_Analyzer")
+workflow.add_edge("Style_Analyzer", "Dramatic_Arc")
 workflow.add_edge("Dramatic_Arc", "Phase_Engine")
 workflow.add_edge("Phase_Engine", "Singularity_Engine")
-workflow.add_edge("Singularity_Engine", "The_Historian")
-workflow.add_edge("The_Historian", "The_Psychologist")
-
-## Psychologist -> Director (Dàn dựng Storyboard từ Psychology + History)
+workflow.add_edge("Singularity_Engine", "Chief_Editor")
+workflow.add_edge("Chief_Editor", "The_Historian")
+workflow.add_edge("The_Historian", "The_Mythologist")
+workflow.add_edge("The_Mythologist", "The_Psychologist")
 workflow.add_edge("The_Psychologist", "The_Director")
 
 workflow.add_edge("The_Director", "The_Wordsmith")
@@ -65,7 +76,9 @@ workflow.add_conditional_edges(
     }
 )
 
-workflow.add_edge("The_Archivist", END)
+workflow.add_edge("The_Archivist", "News_Anchor")
+workflow.add_edge("News_Anchor", "VFX_Director")
+workflow.add_edge("VFX_Director", END)
 
 # Tương lai có thể thêm Edge có Điều Kiện (Conditional Edges): 
 # Ví dụ: Nếu Storyboard dở -> Yêu cầu Director viết lại thay vì đi đến Wordsmith.

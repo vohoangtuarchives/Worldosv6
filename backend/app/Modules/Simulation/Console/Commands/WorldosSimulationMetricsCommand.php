@@ -4,7 +4,7 @@ namespace App\Modules\Simulation\Console\Commands;
 
 use App\Models\Universe;
 use App\Models\UniverseSnapshot;
-use App\Modules\Simulation\Services\SimulationMetricsLogger;
+use App\Modules\Simulation\Services\Core\SimulationMetricsLogger;
 use Illuminate\Console\Command;
 
 /**

@@ -9,19 +9,19 @@ use App\Modules\Simulation\Actions\RunMicroModeAction;
 use App\Modules\Simulation\Actions\ForkUniverseAction;
 use App\Modules\Simulation\Actions\TimelineMergeAction;
 use App\Modules\Simulation\Repositories\UniverseRepository;
-use App\Modules\Simulation\Services\ImplicitOrchestratorService;
+use App\Modules\Simulation\Services\Core\ImplicitOrchestratorService;
 use App\Modules\Simulation\Core\Engines\Meta\AttractorEngine;
 use App\Modules\Simulation\Core\Engines\Meta\DynamicAttractorEngine;
 use App\Modules\Simulation\Core\Runtime\RuleVM\EventTriggerProcessor;
 use App\Modules\Simulation\Contracts\UniverseRepositoryInterface;
-use App\Modules\Simulation\Services\VoidExplorationEngine;
-use App\Modules\Simulation\Services\EpochEngine;
-use App\Modules\Simulation\Services\ObservationInterferenceEngine;
-use App\Modules\Simulation\Services\TrajectoryModelingEngine;
+use App\Modules\Simulation\Services\Meta\VoidExplorationEngine;
+use App\Modules\Simulation\Services\Cosmology\EpochEngine;
+use App\Modules\Simulation\Services\Core\ObservationInterferenceEngine;
+use App\Modules\Simulation\Services\Meta\TrajectoryModelingEngine;
 use App\Modules\Simulation\Core\Support\SimulationRandom;
 use App\Models\UniverseSnapshot;
 use App\Modules\Simulation\Core\Runtime\Domain\UniverseState;
-use App\Modules\Simulation\Services\CosmicEnergyPoolService;
+use App\Modules\Simulation\Services\Cosmology\CosmicEnergyPoolService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Log;
 
@@ -35,38 +35,38 @@ class EvaluateSimulationResult
         protected ImplicitOrchestratorService $orchestrator,
         protected UniverseRepository $universeRepository,
         protected UniverseRepositoryInterface $simulationUniverseRepository,
-        protected \App\Modules\Simulation\Services\PressureCalculator $pressureCalculator,
-        protected \App\Modules\Simulation\Services\CosmicPhaseDetector $cosmicPhaseDetector,
+        protected \App\Modules\Simulation\Services\Ecology\PressureCalculator $pressureCalculator,
+        protected \App\Modules\Simulation\Services\Cosmology\CosmicPhaseDetector $cosmicPhaseDetector,
         protected \App\Modules\Institutions\Services\GreatFilterEngine $greatFilterEngine,
         protected \App\Modules\Institutions\Services\AscensionEngine $ascensionEngine,
-        protected \App\Modules\Simulation\Services\ConvergenceEngine $convergenceEngine,
+        protected \App\Modules\Simulation\Services\Meta\ConvergenceEngine $convergenceEngine,
         protected \App\Modules\Institutions\Services\WorldEdictEngine $worldEdictEngine,
         protected \App\Modules\Institutions\Services\OmegaPointEngine $omegaPointEngine,
         protected \App\Modules\Institutions\Services\ZoneConflictEngine $zoneConflictEngine,
         protected VoidExplorationEngine $voidExplorationEngine,
         protected EpochEngine $epochEngine,
-        protected \App\Modules\Simulation\Services\CausalCorrectionEngine $causalCorrectionEngine,
-        protected \App\Modules\Simulation\Services\ResonanceEngine $resonanceEngine,
+        protected \App\Modules\Simulation\Services\Core\CausalCorrectionEngine $causalCorrectionEngine,
+        protected \App\Modules\Simulation\Services\Culture\ResonanceEngine $resonanceEngine,
         protected ObservationInterferenceEngine $observationInterferenceEngine,
         protected TrajectoryModelingEngine $trajectoryModelingEngine,
         protected \App\Modules\Intelligence\Services\AI\EpistemicService $epistemicService,
         protected \App\Modules\Narrative\Services\NarrativeCompiler $narrativeCompiler,
-        protected \App\Modules\Simulation\Services\MultiverseInteractionService $multiverseInteractionService,
-        protected \App\Modules\Simulation\Services\WorldRegulatorEngine $worldRegulatorEngine,
+        protected \App\Modules\Simulation\Services\Meta\MultiverseInteractionService $multiverseInteractionService,
+        protected \App\Modules\Simulation\Services\Meta\WorldRegulatorEngine $worldRegulatorEngine,
         protected AttractorEngine $attractorEngine,
         protected DynamicAttractorEngine $dynamicAttractorEngine,
         protected EventTriggerProcessor $eventTriggerProcessor,
-        protected \App\Modules\Simulation\Services\IdeologyEvolutionEngine $ideologyEvolutionEngine,
-        protected \App\Modules\Simulation\Services\GreatPersonEngine $greatPersonEngine,
-        protected \App\Modules\Simulation\Services\GreatPersonLegacyService $greatPersonLegacyService,
+        protected \App\Modules\Simulation\Services\Culture\IdeologyEvolutionEngine $ideologyEvolutionEngine,
+        protected \App\Modules\Simulation\Services\Core\GreatPersonEngine $greatPersonEngine,
+        protected \App\Modules\Simulation\Services\Core\GreatPersonLegacyService $greatPersonLegacyService,
         protected TimelineMergeAction $timelineMergeAction,
-        protected \App\Modules\Simulation\Services\MacroAgentSpawnService $macroAgentSpawnService,
+        protected \App\Modules\Simulation\Services\Core\MacroAgentSpawnService $macroAgentSpawnService,
         protected \App\Modules\Simulation\Core\Engines\Meta\CapabilityEngine $capabilityEngine,
         protected \App\Modules\Simulation\Core\Engines\Meta\ActorDecisionEngine $actorDecisionEngine,
         protected \App\Modules\Simulation\Core\Engines\Meta\ArtifactCreationEngine $artifactCreationEngine,
         protected \App\Modules\Simulation\Core\Engines\Social\IdeaDiffusionEngine $ideaDiffusionEngine,
-        protected \App\Modules\Simulation\Services\InstitutionDecayService $institutionDecayService,
-        protected \App\Modules\Simulation\Services\EventNormalizer $eventNormalizer,
+        protected \App\Modules\Simulation\Services\Society\InstitutionDecayService $institutionDecayService,
+        protected \App\Modules\Simulation\Services\Core\EventNormalizer $eventNormalizer,
         protected \App\Modules\Narrative\Services\HistoricalFactEngine $historicalFactEngine,
         protected \App\Modules\Simulation\Core\Contracts\WorldEventBusInterface $worldEventBus,
         protected \App\Modules\Narrative\Services\NarrativeMemoryGraphService $narrativeMemoryGraph,
@@ -75,11 +75,11 @@ class EvaluateSimulationResult
         protected \App\Modules\Narrative\Services\ReligionSpreadEngine $religionSpreadEngine,
         protected \App\Modules\Narrative\Services\CausalTrajectoryFulfillment $causal_trajectoryFulfillment,
         protected CosmicEnergyPoolService $cosmicEnergyPoolService,
-        protected \App\Modules\Simulation\Services\AdaptiveSchedulerService $adaptiveScheduler,
-        protected \App\Modules\Simulation\Services\HeroLifecycleService $heroLifecycleService,
+        protected \App\Modules\Simulation\Services\Core\AdaptiveSchedulerService $adaptiveScheduler,
+        protected \App\Modules\Simulation\Services\Core\HeroLifecycleService $heroLifecycleService,
         protected \App\Modules\Intelligence\Services\BiologyMetricsService $biologyMetrics,
         protected \App\Modules\Intelligence\Services\EcosystemMetricsService $ecosystemMetrics,
-        protected \App\Modules\Simulation\Services\GenreEvolutionService $genreEvolutionService,
+        protected \App\Modules\Simulation\Services\Culture\GenreEvolutionService $genreEvolutionService,
     ) {}
 
     public function handle(UniverseSimulationPulsed $event): void
@@ -320,7 +320,7 @@ class EvaluateSimulationResult
             return;
         }
 
-        $activeCount = \App\Models\Universe::where($saga->id)
+        $activeCount = \App\Models\Universe::where('saga_id', $saga->id)
             ->where('status', 'active')
             ->count();
 

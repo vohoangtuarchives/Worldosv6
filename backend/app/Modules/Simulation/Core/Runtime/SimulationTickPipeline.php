@@ -4,7 +4,7 @@ namespace App\Modules\Simulation\Core\Runtime;
 
 use App\Models\Universe;
 use App\Models\UniverseSnapshot;
-use App\Modules\Simulation\Services\SimulationTracer;
+use App\Modules\Simulation\Services\Core\SimulationTracer;
 use App\Modules\Simulation\Core\Runtime\Contracts\SimulationStageInterface;
 use App\Modules\Simulation\Core\Runtime\Contracts\TickSchedulerInterface;
 use Illuminate\Support\Facades\Cache;
@@ -22,7 +22,7 @@ final class SimulationTickPipeline
         protected \App\Modules\Simulation\Core\Runtime\State\StateManager $stateManager,
         protected \App\Modules\Simulation\Core\Runtime\EventDrivenScheduler $performanceScheduler,
         protected \App\Modules\Simulation\Core\Engines\Biological\AutopoieticEvolutionEngine $evolutionEngine,
-        protected \App\Modules\Simulation\Services\RuleMutationService $mutationService,
+        protected \App\Modules\Simulation\Services\Core\RuleMutationService $mutationService,
         protected \App\Modules\Simulation\Core\Engines\Meta\InformationPropagationEngine $infoEngine,
         protected \App\Modules\Simulation\Core\Engines\Meta\PowerStructureEngine $powerEngine,
         protected \App\Modules\Simulation\Core\Engines\Meta\CulturalInfluenceEngine $cultureEngine,
@@ -32,7 +32,7 @@ final class SimulationTickPipeline
         protected \App\Modules\Simulation\Core\Engines\Meta\ThermodynamicPhaseEngine $phaseEngine,
         protected \App\Modules\Simulation\Core\Engines\Meta\SingularityStabilityEngine $stabilityEngine,
         protected \App\Modules\Simulation\Core\Engines\Meta\AscensionEngine $ascensionEngine,
-        protected \App\Modules\Simulation\Services\ZenithMetricsService $metricsService,
+        protected \App\Modules\Simulation\Services\Ecology\ZenithMetricsService $metricsService,
         protected \App\Modules\Simulation\Core\Engines\Meta\CausalHistoryEngine $causalHistoryEngine,
         protected \App\Modules\Simulation\Core\Runtime\WorldKernel $kernel,
         protected \App\Modules\Narrative\Services\NarrativeEngine $narrativeEngine

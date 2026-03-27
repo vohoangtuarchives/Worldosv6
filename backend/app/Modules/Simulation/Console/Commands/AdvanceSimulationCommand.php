@@ -2,7 +2,7 @@
 
 namespace App\Modules\Simulation\Console\Commands;
 
-use App\Modules\Simulation\Services\ImplicitOrchestratorService;
+use App\Modules\Simulation\Services\Core\ImplicitOrchestratorService;
 use Illuminate\Console\Command;
 use App\Models\World;
 

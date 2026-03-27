@@ -6,7 +6,7 @@ use App\Contracts\Repositories\BranchEventRepositoryInterface;
 use App\Contracts\Repositories\UniverseRepositoryInterface;
 use App\Models\Universe;
 use App\Modules\Simulation\Entities\BranchEventEntity;
-use App\Modules\Simulation\Services\ImplicitOrchestratorService;
+use App\Modules\Simulation\Services\Core\ImplicitOrchestratorService;
 use App\Modules\Simulation\Core\Runtime\RuleVM\RuleVmService;
 use Illuminate\Support\Collection;
 use function resource_path;

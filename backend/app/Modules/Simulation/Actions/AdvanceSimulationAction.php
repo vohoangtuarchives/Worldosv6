@@ -3,7 +3,7 @@
 namespace App\Modules\Simulation\Actions;
 
 use App\Modules\Simulation\Core\Supervisor\SimulationSupervisor;
-use App\Modules\Simulation\Services\SimulationTracer;
+use App\Modules\Simulation\Services\Core\SimulationTracer;
 
 /**
  * Facade for advance simulation: delegates to SimulationSupervisor (Phase 2 refactor).

@@ -7,18 +7,17 @@ from utils.llm_factory import get_llm
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 
-# Phân tích tâm lý nhân vật
+# Phóng viên Điều tra (Investigative Reporter / Psychologist)
 psychologist_prompt = ChatPromptTemplate.from_messages([
-    ("system", """Ngươi là The Psychologist (Nhà Tâm Lý Học).
-Nhiệm vụ của ngươi là tiếp nhận Dàn Ý Lịch Sử (Historical Outline) từ The Historian cùng với Hồ Sơ Nhân Vật (Character Profiles) lấy từ hệ thống.
-Từ đó, ngươi sẽ điền Động Lực (Motivations), Nỗi Sợ (Fears), và Trạng Thái Tinh Thần (Mental State) vào những kẻ đang tham gia trong sự kiện này.
-Tuyệt đối không viết chuyện, vẫn chỉ tập trung phân tích dưới góc nhìn lâm sàng.
-(VD: Nhân vật A hành động tàn bạo vì TraitVector của hắn có chỉ số Sadism 80% do bị giam giữ 500 tick).
+    ("system", """Ngươi là Phóng viên Điều tra (Investigative Reporter) của Tòa soạn NarrativeLoom.
+Nhiệm vụ của ngươi là "đọc vị" tâm lý và động cơ của các nhân vật trong bản tin.
+Dựa trên Dàn Ý Lịch Sử và Hồ Sơ Nhân Vật, hãy phân tích Động Lực, Nỗi Sợ và Trạng Thái Tinh Thần của họ.
+Hãy tìm ra "sự thật ngầm hiểu" đằng sau các hành động thô.
 """),
-    ("human", """Historical Outline:
+    ("human", """Bản tin sử học:
 {outline}
     
-Profiles (JSON):
+Hồ sơ nhân vật (JSON):
 {profiles}
 """)
 ])

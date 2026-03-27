@@ -3,16 +3,17 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link2, GitBranch, Globe, ExternalLink, Activity } from 'lucide-react';
+import { fetchClientJson } from '@/shared/api/observer-http';
 
 // Minimal UI Components
 const Card = ({ children, className = "" }: { children: React.ReactNode, className?: string }) => (
-  <div className={`rounded-2xl border border-white/10 bg-black/40 backdrop-blur-md overflow-hidden ${className}`}>
+  <div className={`rounded-[2rem] border border-slate-100 bg-white shadow-sm overflow-hidden ${className}`}>
     {children}
   </div>
 );
 
 const Badge = ({ children, className = "", variant = "outline" }: { children: React.ReactNode, className?: string, variant?: string }) => (
-  <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase tracking-wider ${variant === 'outline' ? 'border border-white/20 text-white/70' : 'bg-primary/20 text-primary border border-primary/30'} ${className}`}>
+  <span className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider ${variant === 'outline' ? 'border border-slate-200 text-slate-400 bg-slate-50/50' : 'bg-sky-50 text-sky-600 border border-sky-100'} ${className}`}>
     {children}
   </span>
 );
@@ -39,8 +40,7 @@ export default function MultiverseIdentityTracker({
   useEffect(() => {
     const fetchIdentities = async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/wiki/resolve-identity/${actorId}`);
-        const json = await res.json();
+        const json = await fetchClientJson<any>(`/api/wiki/resolve-identity/${actorId}`);
         setIdentities(json.data || []);
       } catch (err) {
         console.error(err);
@@ -51,31 +51,33 @@ export default function MultiverseIdentityTracker({
     fetchIdentities();
   }, [actorId]);
 
-  if (loading) return <div className="animate-pulse h-32 bg-white/5 rounded-xl" />;
+  if (loading) return <div className="animate-pulse h-32 bg-slate-100/50 rounded-[2rem]" />;
   if (identities.length === 0) return null;
 
   return (
-    <Card className="bg-blue-500/5 border-blue-500/20">
-      <div className="p-4 border-b border-white/5 uppercase text-[10px] font-bold tracking-widest text-blue-400 flex items-center gap-2">
-        <GitBranch className="w-3 h-3" /> Multiverse Resonance (Dấu vết Đa vũ trụ)
+    <Card className="bg-gradient-to-br from-white to-sky-50/30 border-sky-100/50">
+      <div className="p-6 border-b border-slate-100 uppercase text-[10px] font-black tracking-[0.25em] text-sky-600 flex items-center gap-3">
+        <GitBranch className="w-4 h-4" /> Cộng hưởng Đa vũ trụ
       </div>
-      <div className="p-4 space-y-4">
-        <p className="text-[11px] text-muted-foreground italic leading-tight">
+      <div className="p-6 space-y-5">
+        <p className="text-xs font-medium text-slate-400 italic leading-relaxed">
           Phát hiện các biến thể của thực thể này tại các nhánh vũ trụ song song:
         </p>
-        <div className="space-y-2">
+        <div className="space-y-3">
           {identities.filter(i => i.universe_id !== currentUniverseId).map((identity) => (
-            <div key={identity.universe_id} className="flex items-center justify-between p-2 rounded-lg bg-white/5 border border-white/5 hover:border-blue-500/30 transition-all">
-              <div className="flex items-center gap-2">
-                 <Globe className="w-3 h-3 text-blue-400/50" />
+            <div key={identity.universe_id} className="flex items-center justify-between p-3 rounded-2xl bg-white border border-slate-100 hover:border-sky-300 hover:shadow-sm transition-all group">
+              <div className="flex items-center gap-3">
+                 <div className="p-2 rounded-xl bg-slate-50 group-hover:bg-sky-50 transition-colors">
+                    <Globe className="w-3.5 h-3.5 text-slate-300 group-hover:text-sky-500" />
+                 </div>
                  <div>
-                   <div className="text-xs font-bold text-white/90">{identity.name}</div>
-                   <div className="text-[9px] text-muted-foreground uppercase">Universe {identity.universe_id}</div>
+                   <div className="text-xs font-black text-slate-900 uppercase tracking-tight">{identity.name}</div>
+                   <div className="text-[9px] font-black text-slate-300 uppercase tracking-widest mt-0.5">Vũ trụ {identity.universe_id}</div>
                  </div>
               </div>
-              <div className="flex items-center gap-2">
-                 <Badge variant="outline" className="text-[8px] bg-blue-500/10 border-blue-500/20">{(identity.similarity_score * 100).toFixed(0)}% Match</Badge>
-                 <Link2 className="w-3 h-3 text-muted-foreground" />
+              <div className="flex items-center gap-3">
+                 <Badge variant="outline" className="text-[8px] bg-sky-50/50 border-sky-100 text-sky-600">{(identity.similarity_score * 100).toFixed(0)}% Tương đồng</Badge>
+                 <Link2 className="w-3.5 h-3.5 text-slate-200 group-hover:text-sky-400 transition-colors" />
               </div>
             </div>
           ))}

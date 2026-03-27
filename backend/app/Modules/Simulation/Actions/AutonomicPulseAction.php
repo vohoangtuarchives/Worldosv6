@@ -8,9 +8,9 @@ class AutonomicPulseAction
 {
     public function __construct(
         protected AdvanceSimulationAction $advanceAction,
-        protected \App\Modules\Simulation\Services\WorldRegulatorEngine $worldAutonomicEngine,
-        protected \App\Modules\Simulation\Services\MultiverseSchedulerEngine $scheduler,
-        protected \App\Modules\Simulation\Services\EvolutionarySparkService $sparkService
+        protected \App\Modules\Simulation\Services\Meta\WorldRegulatorEngine $worldAutonomicEngine,
+        protected \App\Modules\Simulation\Services\Meta\MultiverseSchedulerEngine $scheduler,
+        protected \App\Modules\Simulation\Services\Ecology\EvolutionarySparkService $sparkService
     ) {}
 
     /**

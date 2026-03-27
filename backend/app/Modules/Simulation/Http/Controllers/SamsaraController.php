@@ -3,7 +3,7 @@
 namespace App\Modules\Simulation\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Modules\Simulation\Services\SamsaraService;
+use App\Modules\Simulation\Services\Cosmology\SamsaraService;
 use Illuminate\Http\JsonResponse;
 
 class SamsaraController extends Controller

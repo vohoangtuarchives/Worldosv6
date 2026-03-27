@@ -16,10 +16,10 @@ const Shell = ({ children }: { children: React.ReactNode }) => {
   // For now, let's use it everywhere as requested.
   
   return (
-    <div className={`min-h-screen relative flex bg-background text-foreground transition-colors duration-1000 ${eraClass}`}>
+    <div className={`min-h-screen relative flex bg-slate-50 text-slate-900 transition-colors duration-1000 ${eraClass}`}>
       {/* Visual Background Elements */}
-      <div className="fixed inset-0 bg-grid-pattern opacity-10 pointer-events-none z-0" />
-      <div className="fixed inset-0 bg-gradient-to-tr from-background via-background/95 to-primary/5 pointer-events-none z-0" />
+      <div className="fixed inset-0 bg-grid-slate-200/50 [mask-image:linear-gradient(to_bottom,white,transparent)] pointer-events-none z-0" />
+      <div className="fixed inset-0 bg-gradient-to-tr from-slate-50 via-white/80 to-sky-50/30 pointer-events-none z-0" />
       
       <Sidebar />
       

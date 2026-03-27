@@ -72,6 +72,7 @@ const ObserverDials = () => {
   const [entropy] = useState(0.42);
   const [stability] = useState(94.5);
   const [density] = useState(72);
+  const [mediaFreq] = useState(88.4);
 
   return (
     <div className="relative flex h-full w-full flex-col gap-6 rounded-[var(--radius)] border border-white/5 bg-card/10 p-5 backdrop-blur-2xl shadow-[inset_0_0_40px_rgba(0,0,0,0.2)]">
@@ -87,6 +88,7 @@ const ObserverDials = () => {
         <Dial label="Reality Entropy" value={entropy} min={0} max={1} unit="lambda" color="hsl(var(--cosmos))" />
         <Dial label="Stability Target" value={stability} min={0} max={100} unit="%" color="hsl(var(--accent))" />
         <Dial label="Narrative Density" value={density} min={0} max={100} unit="Hz" color="hsl(var(--nebula))" />
+        <Dial label="Media Frequency" value={mediaFreq} min={0} max={100} unit="MHz" color="hsl(var(--primary))" />
       </div>
 
       <div className="flex justify-center gap-3">

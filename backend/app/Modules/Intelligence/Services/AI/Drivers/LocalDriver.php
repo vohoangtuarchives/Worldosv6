@@ -16,18 +16,23 @@ class LocalDriver implements LlmDriverInterface
     public function chat(array $messages, array $options = []): ?string
     {
         try {
-            $response = Http::timeout($options['timeout'] ?? 60)
+            $timeout = $options['timeout'] ?? 60;
+            $response = Http::connectTimeout(10)
+                ->timeout($timeout)
                 ->post($this->url, [
                     'model' => $this->model,
                     'messages' => $messages,
                     'temperature' => $options['temperature'] ?? 0.7,
+                    'max_tokens' => $options['max_tokens'] ?? 512,
                 ]);
 
             if ($response->successful()) {
                 return $response->json('choices.0.message.content');
             }
+
+            Log::warning("LocalDriver HTTP {$response->status()}: " . substr($response->body(), 0, 200));
         } catch (\Throwable $e) {
-            Log::debug("LocalDriver debug (silent): " . $e->getMessage());
+            Log::warning("LocalDriver error [{$this->model}]: " . $e->getMessage());
         }
 
         return null;

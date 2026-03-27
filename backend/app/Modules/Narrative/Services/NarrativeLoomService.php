@@ -24,12 +24,25 @@ class NarrativeLoomService
      */
     public function weave(int $worldId, ?int $tickStart = null, ?int $tickEnd = null): array
     {
+        $world = \App\Models\World::find($worldId);
+        $genre = $world ? ($world->current_genre ?? $world->base_genre) : 'generic';
+
+        // Fetch high-virality narratives from OTHER universes as whispers
+        $whispers = \App\Models\Narrative::where('is_active', true)
+            ->where('universe_id', '!=', $world->universes()->first()?->id)
+            ->where('virality', '>', 0.7)
+            ->limit(3)
+            ->pluck('story')
+            ->toArray();
+
         try {
             /** @var \Illuminate\Http\Client\Response $response */
             $response = Http::timeout($this->timeout)->post("{$this->baseUrl}/weave-chronicles", [
                 'world_id' => $worldId,
                 'tick_start' => $tickStart,
                 'tick_end' => $tickEnd,
+                'genre' => $genre,
+                'whispers' => $whispers,
             ]);
 
             if ($response->successful()) {

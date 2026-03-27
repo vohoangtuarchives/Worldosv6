@@ -7,7 +7,7 @@ use App\Modules\Intelligence\Actions\DecideUniverseAction;
 use App\Modules\Simulation\Actions\ForkUniverseAction;
 use App\Modules\Simulation\Actions\TimelineMergeAction;
 use App\Modules\Simulation\Repositories\UniverseRepository;
-use App\Modules\Simulation\Services\ImplicitOrchestratorService;
+use App\Modules\Simulation\Services\Core\ImplicitOrchestratorService;
 use Illuminate\Support\Facades\Log;
 
 /**

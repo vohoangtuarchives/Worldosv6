@@ -5,7 +5,7 @@ namespace Database\Seeders;
 use App\Models\Multiverse;
 use App\Models\Universe;
 use App\Models\World;
-use App\Modules\Simulation\Services\ImplicitOrchestratorService;
+use App\Modules\Simulation\Services\Core\ImplicitOrchestratorService;
 use Illuminate\Database\Seeder;
 
 class CosmologySeeder extends Seeder

@@ -98,9 +98,10 @@ class MultiverseMapController extends Controller
             return [
                 'id'        => (string) $w->id,
                 'label'     => $w->name,
-                'sub'       => $w->current_genre ?? $w->origin ?? 'Unknown genre',
+                'genre'     => $w->current_genre ?? $w->origin ?? 'generic',
                 'sci'       => (int) round($avgSci),
                 'universes' => $universes->values(),
+                'status'    => $w->universes->every(fn($u) => $u->status === 'collapsed') ? 'dead' : 'blooming',
             ];
         });
 
@@ -109,6 +110,39 @@ class MultiverseMapController extends Controller
             'label'  => 'The Multiverse',
             'sub'    => 'WorldOS — Simulation Active',
             'worlds' => $worldsData->values(),
+        ]);
+    }
+
+    /**
+     * Narrative Resonance: Returns active narratives and their spatial influence.
+     * This "pollen" data allows Bloom UI to visualize story spreading across universes.
+     */
+    public function resonance(): JsonResponse
+    {
+        $activeNarratives = \App\Models\Narrative::where('is_active', true)
+            ->orderBy('virality', 'desc')
+            ->limit(20)
+            ->get();
+
+        $resonance = $activeNarratives->map(function (\App\Models\Narrative $n) {
+            return [
+                'id' => $n->id,
+                'universe_id' => $n->universe_id,
+                'headline' => $n->news_headline,
+                'slogan' => $n->news_slogan,
+                'story_snippet' => substr($n->story, 0, 150) . '...',
+                'intensity' => $n->virality, // Bloom intensity
+                'distortion' => $n->distortion, // Reality ripple effect
+                'vfx' => $n->vfx_config,
+                'tags' => $n->tags,
+                'effects' => $n->field_effects,
+                'origin_tick' => $n->tick_born,
+            ];
+        });
+
+        return response()->json([
+            'resonance_pollen' => $resonance,
+            'global_narrative_entropy' => $activeNarratives->avg('distortion') ?? 0,
         ]);
     }
 }

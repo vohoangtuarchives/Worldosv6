@@ -166,17 +166,40 @@ export interface OmenContext {
   world_fields: Record<string, number>;
 }
 
+export interface ResonancePollen {
+  id: number;
+  universe_id: number;
+  headline: string;
+  slogan: string;
+  intensity: number;
+  distortion: number;
+  vfx: {
+    effect_type: string;
+    intensity: number;
+    color_scheme: string;
+    bloom_pollen_type: string;
+  };
+  origin_tick: number;
+  story_snippet: string;
+  tags: string[];
+}
+
+export interface ResonanceResponse {
+  resonance_pollen: ResonancePollen[];
+  global_narrative_entropy: number;
+}
+
 export const observerSections = [
-  { label: 'Overview', href: '' },
-  { label: 'Reality', href: '/reality' },
+  { label: 'Tổng quan', href: '' },
+  { label: 'Thực tại', href: '/reality' },
   { label: 'Wiki', href: '/wiki' },
-  { label: 'Omen Lab', href: '/omen-lab' },
-  { label: 'Timeline', href: '/timeline' },
-  { label: 'Chronicles', href: '/chronicles' },
-  { label: 'Myth Scars', href: '/myth-scars' },
-  { label: 'Actors', href: '/actors' },
-  { label: 'Axioms', href: '/axioms' },
-  { label: 'Control', href: '/control' },
-  { label: 'Forks', href: '/forks' },
-  { label: 'Snapshots', href: '/snapshots' },
+  { label: 'Phòng Lab Omen', href: '/omen-lab' },
+  { label: 'Dòng thời gian', href: '/timeline' },
+  { label: 'Biên niên sử', href: '/chronicles' },
+  { label: 'Vết sẹo Thần thoại', href: '/myth-scars' },
+  { label: 'Thực thể', href: '/actors' },
+  { label: 'Tiên đề', href: '/axioms' },
+  { label: 'Điều khiển', href: '/control' },
+  { label: 'Nhánh', href: '/forks' },
+  { label: 'Ảnh chụp', href: '/snapshots' },
 ];

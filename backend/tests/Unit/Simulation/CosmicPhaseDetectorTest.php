@@ -3,7 +3,7 @@
 namespace Tests\Unit\Simulation;
 
 use App\Models\UniverseSnapshot;
-use App\Modules\Simulation\Services\CosmicPhaseDetector;
+use App\Modules\Simulation\Services\Cosmology\CosmicPhaseDetector;
 use Tests\TestCase;
 
 class CosmicPhaseDetectorTest extends TestCase

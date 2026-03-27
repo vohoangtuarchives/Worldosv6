@@ -49,35 +49,35 @@ class SimulationServiceProvider extends ServiceProvider
             ]);
         });
 
-        $this->app->singleton(\App\Modules\Simulation\Services\ConvergenceEngine::class);
-        $this->app->singleton(\App\Modules\Simulation\Services\ResonanceEngine::class);
-        $this->app->singleton(\App\Modules\Simulation\Services\CausalCorrectionEngine::class);
-        $this->app->singleton(\App\Modules\Simulation\Services\PressureCalculator::class);
-        $this->app->singleton(\App\Modules\Simulation\Services\CosmicPhaseDetector::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Meta\ConvergenceEngine::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Culture\ResonanceEngine::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Core\CausalCorrectionEngine::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Ecology\PressureCalculator::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Cosmology\CosmicPhaseDetector::class);
         $this->app->singleton(\App\Modules\Simulation\Services\ScenarioEngine::class);
-        $this->app->singleton(\App\Modules\Simulation\Services\MultiverseInteractionService::class);
-        $this->app->singleton(\App\Modules\Simulation\Services\WorldRegulatorEngine::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Meta\MultiverseInteractionService::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Meta\WorldRegulatorEngine::class);
 
-        $this->app->singleton(\App\Modules\Simulation\Services\AutonomicEvolutionEngine::class);
-        $this->app->singleton(\App\Modules\Simulation\Services\MultiverseSchedulerEngine::class);
-        $this->app->singleton(\App\Modules\Simulation\Services\TimelineSelectionEngine::class);
-        $this->app->singleton(\App\Modules\Simulation\Services\NarrativeExtractionEngine::class);
-        $this->app->singleton(\App\Modules\Simulation\Services\CivilizationMemoryEngine::class);
-        $this->app->singleton(\App\Modules\Simulation\Services\MythologyGeneratorEngine::class);
-        $this->app->singleton(\App\Modules\Simulation\Services\IdeologyEvolutionEngine::class);
-        $this->app->singleton(\App\Modules\Simulation\Services\GreatPersonEngine::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Society\AutonomicEvolutionEngine::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Meta\MultiverseSchedulerEngine::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Meta\TimelineSelectionEngine::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Narrative\NarrativeExtractionEngine::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Narrative\CivilizationMemoryEngine::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Culture\MythologyGeneratorEngine::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Culture\IdeologyEvolutionEngine::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Core\GreatPersonEngine::class);
         $this->app->bind(
             \App\Contracts\UniverseSimilarityServiceInterface::class,
-            \App\Modules\Simulation\Services\StateVectorUniverseSimilarityService::class
+            \App\Modules\Simulation\Services\Core\StateVectorUniverseSimilarityService::class
         );
         $this->app->bind(\App\Contracts\CausalityGraphServiceInterface::class, function ($app) {
             return config('worldos.causality.driver', 'null') === 'redis'
-                ? $app->make(\App\Modules\Simulation\Services\RedisCausalityGraphService::class)
-                : $app->make(\App\Modules\Simulation\Services\NullCausalityGraphService::class);
+                ? $app->make(\App\Modules\Simulation\Services\Core\RedisCausalityGraphService::class)
+                : $app->make(\App\Modules\Simulation\Services\Core\NullCausalityGraphService::class);
         });
         $this->app->bind(
             \App\Contracts\UniverseEvaluatorInterface::class,
-            \App\Modules\Simulation\Services\AutonomicEvolutionEngine::class
+            \App\Modules\Simulation\Services\Society\AutonomicEvolutionEngine::class
         );
 
         // State Management (Phase 37)
@@ -140,7 +140,7 @@ class SimulationServiceProvider extends ServiceProvider
         $this->app->singleton(\App\Modules\Simulation\Core\Engines\Meta\OmegaConvergenceEngine::class);
         $this->app->singleton(\App\Modules\Simulation\Core\Engines\Meta\CausalBridgeEngine::class);
         $this->app->singleton(\App\Modules\Simulation\Core\Engines\Meta\PostApotheosisEngine::class);
-        $this->app->singleton(\App\Modules\Simulation\Services\ObserverSpectrumService::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Core\ObserverSpectrumService::class);
         $this->app->singleton(\App\Modules\Simulation\Core\Engines\Meta\ResonanceBleedingEngine::class);
         $this->app->singleton(\App\Modules\Simulation\Core\Engines\Meta\DynamicLawEngine::class);
         $this->app->singleton(\App\Modules\Simulation\Core\Engines\Meta\DeepTimeMemoryEngine::class);
@@ -154,45 +154,45 @@ class SimulationServiceProvider extends ServiceProvider
         $this->app->singleton(\App\Modules\Simulation\Core\Engines\Physics\MetabolicEngine::class);
         $this->app->singleton(\App\Modules\Simulation\Core\Engines\Meta\IdeologyEngine::class);
         $this->app->singleton(\App\Modules\Simulation\Core\Engines\Meta\CulturalInfluenceEngine::class);
-        $this->app->singleton(\App\Modules\Simulation\Services\CausalCacheService::class);
-        $this->app->singleton(\App\Modules\Simulation\Services\RuleMutationService::class);
-        $this->app->singleton(\App\Modules\Simulation\Services\StructuralHashService::class);
-        $this->app->singleton(\App\Modules\Simulation\Services\HolographicCompressionService::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Core\CausalCacheService::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Core\RuleMutationService::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Core\StructuralHashService::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Core\HolographicCompressionService::class);
 
         // Batch 1: Physics & Metaphysics
-        $this->app->singleton(\App\Modules\Simulation\Services\HeatDeathService::class);
-        $this->app->singleton(\App\Modules\Simulation\Services\RealityCalibrationService::class);
-        $this->app->singleton(\App\Modules\Simulation\Services\CosmicEnergyPoolService::class);
-        $this->app->singleton(\App\Modules\Simulation\Services\SamsaraService::class);
-        $this->app->singleton(\App\Modules\Simulation\Services\SoulAnchorService::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Cosmology\HeatDeathService::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Cosmology\RealityCalibrationService::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Cosmology\CosmicEnergyPoolService::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Cosmology\SamsaraService::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Society\SoulAnchorService::class);
 
         // Batch 2: Social & Civilization
-        $this->app->singleton(\App\Modules\Simulation\Services\CivilizationDiscoveryService::class);
-        $this->app->singleton(\App\Modules\Simulation\Services\DemographicRatesService::class);
-        $this->app->singleton(\App\Modules\Simulation\Services\SocialGraphService::class);
-        $this->app->singleton(\App\Modules\Simulation\Services\LegitimacyEliteService::class);
-        $this->app->singleton(\App\Modules\Simulation\Services\UrbanStressAgricultureService::class);
-        $this->app->singleton(\App\Modules\Simulation\Services\DemographicStages::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Politics\CivilizationDiscoveryService::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Society\DemographicRatesService::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Society\SocialGraphService::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Society\LegitimacyEliteService::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Ecology\UrbanStressAgricultureService::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Ecology\DemographicStages::class);
 
         // Batch 3: Narrative & Cognition
-        $this->app->singleton(\App\Modules\Simulation\Services\ActorCognitiveService::class);
-        $this->app->singleton(\App\Modules\Simulation\Services\CivilizationNarrativeInterpreter::class);
-        $this->app->singleton(\App\Modules\Simulation\Services\GrandNarrativeService::class);
-        $this->app->singleton(\App\Modules\Simulation\Services\HeroLifecycleService::class);
-        $this->app->singleton(\App\Modules\Simulation\Services\IdeologyConversionService::class);
-        $this->app->singleton(\App\Modules\Simulation\Services\KnowledgeGraphService::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Society\ActorCognitiveService::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Narrative\CivilizationNarrativeInterpreter::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Narrative\GrandNarrativeService::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Core\HeroLifecycleService::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Culture\IdeologyConversionService::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Core\KnowledgeGraphService::class);
 
         // Batch 4: Technical & Infrastructure
-        $this->app->singleton(\App\Modules\Simulation\Services\SimulationClock::class);
-        $this->app->singleton(\App\Modules\Simulation\Services\SimulationPRNG::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Cosmology\SimulationClock::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Ecology\SimulationPRNG::class);
 
         // Batch 5: Intelligence & Emergence
-        $this->app->singleton(\App\Modules\Simulation\Services\AnomalyGeneratorService::class);
-        $this->app->singleton(\App\Modules\Simulation\Services\EvolutionarySparkService::class);
-        $this->app->singleton(\App\Modules\Simulation\Services\SelfImprovingSimulationService::class);
-        $this->app->singleton(\App\Modules\Simulation\Services\TheDreamingService::class);
-        $this->app->singleton(\App\Modules\Simulation\Services\ZenithMetricsService::class);
-        $this->app->singleton(\App\Modules\Simulation\Services\ReasoningService::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Ecology\AnomalyGeneratorService::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Ecology\EvolutionarySparkService::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Core\SelfImprovingSimulationService::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Society\TheDreamingService::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Ecology\ZenithMetricsService::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Core\ReasoningService::class);
 
         // Batch 6: Rule & DSL Engines
         $this->app->singleton(\App\Modules\Simulation\Core\Runtime\RuleVM\EffectExecutor::class);
@@ -204,38 +204,38 @@ class SimulationServiceProvider extends ServiceProvider
         $this->app->singleton(\App\Modules\Simulation\Core\Runtime\RuleVM\EventTriggerProcessor::class);
 
         // Batch 7: Infrastructure & Support
-        $this->app->singleton(\App\Modules\Simulation\Services\SimulationMetricsExporter::class);
-        $this->app->singleton(\App\Modules\Simulation\Services\SimulationMetricsLogger::class);
-        $this->app->singleton(\App\Modules\Simulation\Services\SimulationTracer::class);
-        $this->app->singleton(\App\Modules\Simulation\Services\MetricsExtractor::class);
-        $this->app->singleton(\App\Modules\Simulation\Services\WorldSimulationStatusService::class);
-        $this->app->singleton(\App\Modules\Simulation\Services\StateVectorUniverseSimilarityService::class);
-        $this->app->singleton(\App\Modules\Simulation\Services\NullUniverseSimilarityService::class);
-        $this->app->singleton(\App\Modules\Simulation\Services\UniverseRuntimeService::class);
-        $this->app->singleton(\App\Modules\Simulation\Services\CheatGranterService::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Core\SimulationMetricsExporter::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Core\SimulationMetricsLogger::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Core\SimulationTracer::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Core\MetricsExtractor::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Meta\WorldSimulationStatusService::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Core\StateVectorUniverseSimilarityService::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Core\NullUniverseSimilarityService::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Meta\UniverseRuntimeService::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Core\CheatGranterService::class);
 
         // Batch 8: Multiverse-Level Logic
-        $this->app->singleton(\App\Modules\Simulation\Services\MultiverseSovereigntyService::class);
-        $this->app->singleton(\App\Modules\Simulation\Services\MultiverseSynthesisService::class);
-        $this->app->singleton(\App\Modules\Simulation\Services\CosmogenesisService::class);
-        $this->app->singleton(\App\Modules\Simulation\Services\TemporalSyncService::class);
-        $this->app->singleton(\App\Modules\Simulation\Services\ParadoxResolver::class);
-        $this->app->singleton(\App\Modules\Simulation\Services\ResonanceAuditorService::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Meta\MultiverseSovereigntyService::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Meta\MultiverseSynthesisService::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Cosmology\CosmogenesisService::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Meta\TemporalSyncService::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Meta\ParadoxResolver::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Culture\ResonanceAuditorService::class);
 
         // Batch 9: Emergent Physics & Social
-        $this->app->singleton(\App\Modules\Simulation\Services\FieldDiffusionEngine::class);
-        $this->app->singleton(\App\Modules\Simulation\Services\GeographyResourceService::class);
-        $this->app->singleton(\App\Modules\Simulation\Services\GreatPersonLegacyService::class);
-        $this->app->singleton(\App\Modules\Simulation\Services\InnovationRateService::class);
-        $this->app->singleton(\App\Modules\Simulation\Services\InstitutionDecayService::class);
-        $this->app->singleton(\App\Modules\Simulation\Services\KernelMutationService::class);
-        $this->app->singleton(\App\Modules\Simulation\Services\MacroAgentSpawnService::class);
-        $this->app->singleton(\App\Modules\Simulation\Services\MetaEdictService::class);
-        $this->app->singleton(\App\Modules\Simulation\Services\SurvivalPruningService::class);
-        $this->app->singleton(\App\Modules\Simulation\Services\VaultService::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Core\FieldDiffusionEngine::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Ecology\GeographyResourceService::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Core\GreatPersonLegacyService::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Core\InnovationRateService::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Society\InstitutionDecayService::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Ecology\KernelMutationService::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Core\MacroAgentSpawnService::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Core\MetaEdictService::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Ecology\SurvivalPruningService::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Cosmology\VaultService::class);
 
         // Batch 10: FFI & Clients
-        $this->app->singleton(\App\Modules\Simulation\Services\AxiomRegistry::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Cosmology\AxiomRegistry::class);
         
         // Vocation V1 Engine Services
         $this->app->singleton(\App\Modules\Simulation\Vocation\DSL\ExpressionEngine::class);
@@ -243,9 +243,9 @@ class SimulationServiceProvider extends ServiceProvider
         $this->app->singleton(\App\Modules\Simulation\Vocation\Services\VocationEvolutionService::class);
         $this->app->singleton(\App\Modules\Simulation\Vocation\Services\VocationEngine::class);
 
-        $this->app->singleton(\App\Modules\Simulation\Services\HttpSimulationEngineClient::class);
-        $this->app->singleton(\App\Modules\Simulation\Services\StubSimulationEngineClient::class);
-        $this->app->singleton(\App\Modules\Simulation\Services\FfiActorEngine::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Core\HttpSimulationEngineClient::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Core\StubSimulationEngineClient::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Core\FfiActorEngine::class);
         $this->app->singleton(\App\Modules\Simulation\Services\FeatureExtractionService::class);
 
         // Phase 100: Power System Transition (Decoupling Era from Power System)
@@ -638,12 +638,12 @@ class SimulationServiceProvider extends ServiceProvider
         $this->app->singleton(\App\Modules\Simulation\Core\Engines\Meta\SingularityStabilityEngine::class);
         $this->app->singleton(\App\Modules\Simulation\Core\Engines\Meta\AscensionEngine::class, function ($app) {
             return new \App\Modules\Simulation\Core\Engines\Meta\AscensionEngine(
-                $app->make(\App\Modules\Simulation\Services\WorldTemplateManager::class),
+                $app->make(\App\Modules\Simulation\Services\Meta\WorldTemplateManager::class),
                 $app->make(\App\Contracts\LlmNarrativeClientInterface::class),
             );
         });
-        $this->app->singleton(\App\Modules\Simulation\Services\ZenithMetricsService::class);
-        $this->app->singleton(\App\Modules\Simulation\Services\ReasoningService::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Ecology\ZenithMetricsService::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Core\ReasoningService::class);
 
         // AdvanceSimulationAction (Legacy facade, keep until fully replaced by WorldKernel)
         $this->app->singleton(\App\Modules\Intelligence\Services\CivilizationCollapseEngine::class);
@@ -679,7 +679,7 @@ class SimulationServiceProvider extends ServiceProvider
         // WorldKernel (Phase 80) is the new System-driven core.
 
         // Simulation Runtime: Tick Scheduler + Pipeline + Orchestrator (refactor from AdvanceSimulationAction)
-        $this->app->singleton(\App\Modules\Simulation\Services\SimulationClock::class);
+        $this->app->singleton(\App\Modules\Simulation\Services\Cosmology\SimulationClock::class);
         $this->app->singleton(\App\Modules\Simulation\Core\Runtime\Contracts\TickSchedulerInterface::class, \App\Modules\Simulation\Core\Runtime\PhaseScheduler::class);
         $this->app->singleton(\App\Modules\Simulation\Core\Runtime\SimulationTickPipeline::class, function ($app) {
             $scheduler = $app->make(\App\Modules\Simulation\Core\Runtime\Contracts\TickSchedulerInterface::class);
@@ -720,7 +720,7 @@ class SimulationServiceProvider extends ServiceProvider
                 $app->make(\App\Modules\Simulation\Core\Runtime\State\StateManager::class),
                 $app->make(\App\Modules\Simulation\Core\Runtime\EventDrivenScheduler::class),
                 $app->make(\App\Modules\Simulation\Core\Engines\Biological\AutopoieticEvolutionEngine::class),
-                $app->make(\App\Modules\Simulation\Services\RuleMutationService::class),
+                $app->make(\App\Modules\Simulation\Services\Core\RuleMutationService::class),
                 $app->make(\App\Modules\Simulation\Core\Engines\Meta\InformationPropagationEngine::class),
                 $app->make(\App\Modules\Simulation\Core\Engines\Meta\PowerStructureEngine::class),
                 $app->make(\App\Modules\Simulation\Core\Engines\Meta\CulturalInfluenceEngine::class),
@@ -730,7 +730,7 @@ class SimulationServiceProvider extends ServiceProvider
                 $app->make(\App\Modules\Simulation\Core\Engines\Meta\ThermodynamicPhaseEngine::class),
                 $app->make(\App\Modules\Simulation\Core\Engines\Meta\SingularityStabilityEngine::class),
                 $app->make(\App\Modules\Simulation\Core\Engines\Meta\AscensionEngine::class),
-                $app->make(\App\Modules\Simulation\Services\ZenithMetricsService::class),
+                $app->make(\App\Modules\Simulation\Services\Ecology\ZenithMetricsService::class),
                 $app->make(\App\Modules\Simulation\Core\Engines\Meta\CausalHistoryEngine::class),
                 $app->make(\App\Modules\Simulation\Core\Runtime\WorldKernel::class),
                 $app->make(\App\Modules\Narrative\Services\NarrativeEngine::class),
@@ -827,6 +827,7 @@ class SimulationServiceProvider extends ServiceProvider
                 \App\Modules\Simulation\Console\Commands\WorldosEnginesCommand::class,
                 \App\Modules\Simulation\Console\Commands\WorldosEngineProductsCommand::class,
                 \App\Modules\Simulation\Console\Commands\WorldosMetricsReportCommand::class,
+                \App\Modules\Simulation\Console\Commands\WorldosSimCommand::class,
             ]);
         }
     }

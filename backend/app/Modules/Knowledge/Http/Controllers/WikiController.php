@@ -5,7 +5,7 @@ namespace App\Modules\Knowledge\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Models\Actor;
 use App\Modules\Knowledge\Services\WikiEngineService;
-use App\Modules\Simulation\Services\AxiomRegistry;
+use App\Modules\Simulation\Services\Cosmology\AxiomRegistry;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -78,6 +78,30 @@ class WikiController extends Controller
     {
         return response()->json([
             'data' => $this->axiomRegistry->getAll()
+        ]);
+    }
+
+    /**
+     * Tìm kiếm các phiên bản song song của một identity
+     */
+    public function resolveIdentity(int $actorId): JsonResponse
+    {
+        $actor = Actor::findOrFail($actorId);
+        $parallelVersions = $this->wikiEngine->resolveParallelIdentities($actor);
+        
+        $mapped = $parallelVersions->map(function($p) {
+            return [
+                'universe_id' => (string)$p->universe_id,
+                'actor_id' => (string)$p->id,
+                'name' => $p->name,
+                'role' => $p->role,
+                'similarity_score' => 1.0, // Default for exact match
+                'status' => $p->is_alive ? 'active' : 'dormant'
+            ];
+        });
+
+        return response()->json([
+            'data' => $mapped
         ]);
     }
 }

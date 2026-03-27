@@ -6,17 +6,17 @@ use App\Models\World;
 use App\Models\Universe;
 use App\Models\UniverseSnapshot;
 use App\Models\Chronicle;
-use App\Modules\Simulation\Services\UniverseRuntimeService;
-use App\Modules\Simulation\Services\TemporalSyncService;
-use App\Modules\Simulation\Services\AnomalyGeneratorService;
+use App\Modules\Simulation\Services\Meta\UniverseRuntimeService;
+use App\Modules\Simulation\Services\Meta\TemporalSyncService;
+use App\Modules\Simulation\Services\Ecology\AnomalyGeneratorService;
 
 class PulseWorldAction
 {
     public function __construct(
-        protected \App\Modules\Simulation\Services\UniverseRuntimeService $runtime,
-        protected \App\Modules\Simulation\Services\WorldRegulatorEngine $autonomicEngine,
-        protected \App\Modules\Simulation\Services\TemporalSyncService $temporalSync,
-        protected \App\Modules\Simulation\Services\AnomalyGeneratorService $anomalyGenerator,
+        protected \App\Modules\Simulation\Services\Meta\UniverseRuntimeService $runtime,
+        protected \App\Modules\Simulation\Services\Meta\WorldRegulatorEngine $autonomicEngine,
+        protected \App\Modules\Simulation\Services\Meta\TemporalSyncService $temporalSync,
+        protected \App\Modules\Simulation\Services\Ecology\AnomalyGeneratorService $anomalyGenerator,
         protected \App\Modules\Simulation\Core\Domain\Services\UniverseRebirthDomainService $rebirthService
     ) {}
 
