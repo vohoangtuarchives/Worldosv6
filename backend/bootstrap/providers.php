@@ -13,4 +13,5 @@ return [
     App\Modules\WorldOS\Providers\WorldOSServiceProvider::class,
     App\Modules\Knowledge\Providers\KnowledgeServiceProvider::class,
     Laravel\Sanctum\SanctumServiceProvider::class,
+    Laravel\Octane\OctaneServiceProvider::class,
 ];

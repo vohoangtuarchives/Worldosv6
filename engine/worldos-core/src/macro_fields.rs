@@ -2,10 +2,10 @@
 //! Ported from PHP CivilizationFieldTheoryEngine for performance and architectural purity.
 //! Equation: F_i(t+1) = prev + tanh(Signal + Interaction) * 0.1 + Noise
 
-use crate::types::{UniverseState, CivilizationFields};
+use crate::types::{UniverseState, CivilizationFields, Fix};
 
 pub struct MacroFieldEngine {
-    pub evolution_factor: f64,
+    pub evolution_factor: Fix,
 }
 
 impl MacroFieldEngine {
@@ -42,7 +42,7 @@ impl MacroFieldEngine {
         state.global_fields = next_fields;
     }
 
-    fn evolve(&self, prev: f64, signal: f64, interaction: f64, noise: f64) -> f64 {
+    fn evolve(&self, prev: Fix, signal: Fix, interaction: Fix, noise: Fix) -> Fix {
         let delta = (signal - prev + interaction).tanh();
         prev + (delta * self.evolution_factor) + noise
     }
@@ -63,11 +63,11 @@ impl MacroFieldEngine {
         let resonance = state.global_fields.resonance;
         
         CivilizationFields {
-            survival: (0.5 * (1.0 - avg_stress) + 0.5 * avg_pop).clamp(0.0, 1.0),
+            survival: (0.5 * (1.0 - avg_stress + 0.5 * avg_pop)).clamp(0.0, 1.0),
             power: (0.7 * avg_pop + 0.3 * state.knowledge_core).clamp(0.0, 1.0),
             wealth: avg_wealth.clamp(0.0, 1.0),
             knowledge: state.knowledge_core.clamp(0.0, 1.0),
-            meaning: (0.6 * (1.0 - avg_entropy) + 0.4 * resonance).clamp(0.0, 1.0),
+            meaning: (0.6 * (1.0 - avg_entropy + 0.4 * resonance)).clamp(0.0, 1.0),
             
             authority: (0.5 * state.global_fields.power + 0.5 * state.global_fields.order_macro).clamp(0.0, 1.0),
             fear_macro: (0.8 * avg_stress + 0.2 * avg_entropy).clamp(0.0, 1.0),

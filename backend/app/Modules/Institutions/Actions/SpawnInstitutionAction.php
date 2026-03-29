@@ -12,16 +12,16 @@ class SpawnInstitutionAction
         private InstitutionalRepositoryInterface $institutionalRepository
     ) {}
 
-    public function handle(Universe $universe, int $zoneId, int $tick, string $type): InstitutionalEntity
+    public function handle(Universe $universe, int $zoneId, int $tick, string $type, string $era = 'genesis'): InstitutionalEntity
     {
-        $name = $this->generateName($type);
+        $name = $this->generateName($type, $era);
 
         $entity = new InstitutionalEntity(
             id: null,
             universeId: $universe->id,
             name: $name,
             entityType: $type,
-            ideologyVector: $this->randomIdeology(),
+            ideologyVector: $this->randomIdeology($era),
             influenceMap: ["$zoneId" => 0.25],
             orgCapacity: 15.0,
             institutionalMemory: 0.5,
@@ -34,32 +34,64 @@ class SpawnInstitutionAction
         return $entity;
     }
 
-    private function generateName(string $type): string
+    private function generateName(string $type, string $era): string
     {
-        $prefixes = [
-            'cult' => ['U minh', 'Huyền ảo', 'Hư vô', 'Tà phái', 'Thiên đạo'],
-            'order' => ['Hoàng gia', 'Thánh khiết', 'Trưởng lão', 'Chính nghĩa', 'Hàn lâm'],
-            'rebel' => ['Khởi nghĩa', 'Tự do', 'Bóng đêm', 'Phá xiềng', 'Rạng đông'],
-            'civilization' => ['Đại', 'Cổ', 'Tân', 'Thần', 'Lạc']
+        $eraPrefixes = [
+            'paleolithic' => [
+                'cult' => ['Lửa thiêng', 'Bóng đêm', 'Sấm sét', 'Đất mẹ', 'Huyền bí'],
+                'order' => ['Hội đồng', 'Gia tộc', 'Liên minh', 'Lớp trẻ', 'Săn bắn'],
+                'rebel' => ['Phản kháng', 'Tự do', 'Dời hang', 'Bẻ cung', 'Lửa mới'],
+                'civilization' => ['Lạc', 'Việt', 'Bách Bình', 'Âu', 'Văn Lang']
+            ],
+            'medieval' => [
+                'cult' => ['U minh', 'Huyền ảo', 'Thiên đạo', 'Tà phái', 'U cung'],
+                'order' => ['Hoàng gia', 'Thánh khiết', 'Trưởng lão', 'Chính nghĩa', 'Hàn lâm'],
+                'rebel' => ['Khởi nghĩa', 'Phá xiềng', 'Rạng đông', 'Áo vải', 'Cần vương'],
+                'civilization' => ['Đại', 'Thần', 'Long', 'Phượng', 'Chính']
+            ],
+            'cyberpunk' => [
+                'cult' => ['Data-Zen', 'Silicon', 'Mã nguồn', 'Vô ảnh', 'Hư vô'],
+                'order' => ['Tập đoàn', 'Hệ thống', 'Liên hợp', 'Công nghệ', 'An ninh'],
+                'rebel' => ['Glitch', 'Virus', 'Mạng lưới', 'Underground', 'Neon'],
+                'civilization' => ['Metropolis', 'Neo', 'Hyper', 'Titan', 'Apex']
+            ]
         ];
         
-        $suffixes = [
-            'cult' => ['Giáo', 'Hội', 'Tông', 'U cung', 'Miếu'],
-            'order' => ['Hội', 'Hiệp hội', 'Viện', 'Môn', 'Các'],
-            'rebel' => ['Quân', 'Đoàn', 'Mạng', 'Hội', 'Đảng'],
-            'civilization' => ['Quốc', 'Bang', 'Tộc', 'Triều', 'Đế Chế']
+        $eraSuffixes = [
+            'paleolithic' => [
+                'cult' => ['Đàn', 'Mã', 'Huyệt', 'Miếu', 'Đền'],
+                'order' => ['Bộ lạc', 'Bầy', 'Đội', 'Đoàn', 'Nhóm'],
+                'rebel' => ['Phe', 'Cánh', 'Lớp', 'Toán', 'Đội'],
+                'civilization' => ['Tộc', 'Đàn', 'Sóc', 'Bản', 'Mường']
+            ],
+            'medieval' => [
+                'cult' => ['Giáo', 'Hội', 'Tông', 'Cung', 'Tự'],
+                'order' => ['Viện', 'Môn', 'Các', 'Phủ', 'Sảnh'],
+                'rebel' => ['Quân', 'Đoàn', 'Mạng', 'Hội', 'Đảng'],
+                'civilization' => ['Quốc', 'Bang', 'Triều', 'Đế Chế', 'Làng']
+            ],
+            'cyberpunk' => [
+                'cult' => ['Node', 'Layer', 'Sect', 'Cloud', 'Core'],
+                'order' => ['Corp', 'System', 'Syndicate', 'Agency', 'Foundation'],
+                'rebel' => ['Cell', 'Node', 'Net', 'Faction', 'Unit'],
+                'civilization' => ['City', 'Arcology', 'District', 'Hub', 'Sphere']
+            ]
         ];
         
+        $eraKey = strtolower($era);
+        if (!isset($eraPrefixes[$eraKey])) $eraKey = 'medieval'; // Fallback
+
         $typeKey = $type === 'CIVILIZATION' ? 'civilization' : $type;
-        $prefix = $prefixes[$typeKey][array_rand($prefixes[$typeKey])] ?? 'Vô danh';
-        $suffix = $suffixes[$typeKey][array_rand($suffixes[$typeKey])] ?? 'Thể';
+        $prefix = $eraPrefixes[$eraKey][$typeKey][array_rand($eraPrefixes[$eraKey][$typeKey])] ?? 'Vô danh';
+        $suffix = $eraSuffixes[$eraKey][$typeKey][array_rand($eraSuffixes[$eraKey][$typeKey])] ?? 'Thể';
         
         return $prefix . ' ' . $suffix . ' - ' . mt_rand(100, 999);
     }
 
-    private function randomIdeology(): array
+    private function randomIdeology(string $era): array
     {
-        return [
+        $era = strtolower($era);
+        $base = [
             'tradition' => (mt_rand(0, 100) / 100.0),
             'innovation' => (mt_rand(0, 100) / 100.0),
             'trust' => (mt_rand(0, 100) / 100.0),
@@ -67,6 +99,18 @@ class SpawnInstitutionAction
             'respect' => (mt_rand(0, 100) / 100.0),
             'myth' => (mt_rand(0, 100) / 100.0),
         ];
+
+        if ($era === 'paleolithic') {
+            $base['myth'] = max(0.6, $base['myth']);
+            $base['tradition'] = max(0.7, $base['tradition']);
+            $base['innovation'] = min(0.3, $base['innovation']);
+        } elseif ($era === 'cyberpunk') {
+            $base['innovation'] = max(0.7, $base['innovation']);
+            $base['myth'] = min(0.4, $base['myth']);
+            $base['trust'] = min(0.5, $base['trust']);
+        }
+
+        return $base;
     }
 }
 

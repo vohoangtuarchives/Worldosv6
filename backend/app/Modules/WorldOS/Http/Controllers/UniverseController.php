@@ -280,6 +280,13 @@ class UniverseController extends Controller
         return response()->json([
             'universe_id' => $universe->id,
             'tick' => (int) ($snapshot->tick ?? 0),
+            'era' => $universe->world->civilization_era ?? 'genesis',
+            'pulse' => [
+                'entropy' => (float) ($snapshot->entropy ?? 0),
+                'stability_index' => (float) ($snapshot->stability_index ?? 0),
+                'entropy_threshold' => 1.0, // Default threshold
+                'collapse_probability' => (float) ($stateVector['collapse_probability'] ?? 0),
+            ],
             'layers' => [
                 'physical' => $physical,
                 'life' => $life,
@@ -291,7 +298,8 @@ class UniverseController extends Controller
                 'complexity' => (float)($stateVector['civilization']['discovery']['fitness'] ?? 0),
                 'knowledge_nodes' => count($stateVector['civilization']['knowledge_graph']['nodes'] ?? []),
                 'settlements' => $stateVector['civilization']['settlements'] ?? [],
-            ]
+            ],
+            'vfx_config' => WorldOsResourceSupport::getVfxConfigForEra($universe->world->civilization_era),
         ]);
     }
 

@@ -59,6 +59,57 @@ class MemoryService
         ]);
     }
 
+    /**
+     * Find memories that resonate with the given content.
+     * Returns a collection of resonating memories with their resonance scores.
+     */
+    public function findResonance(string $content, ?int $universeId, float $threshold = 0.75, int $limit = 3): array
+    {
+        $qvec = $this->vectorizer->vectorize($content);
+        
+        $builder = DB::table('ai_memories');
+        if ($universeId !== null) {
+            $builder->where(function ($q) use ($universeId) {
+                $q->where('universe_id', $universeId)->orWhereNull('universe_id');
+            });
+        }
+
+        // Only search memories that haven't expired
+        $builder->where(function ($q) {
+            $q->whereNull('expires_at')->orWhere('expires_at', '>', now());
+        });
+
+        // We use a candidate pool to avoid calculating cosine for everything in DB (if not using VectorDB)
+        $candidates = $builder->orderByDesc('importance')
+            ->orderByDesc('created_at')
+            ->limit(200)
+            ->get(['id', 'content', 'embedding', 'importance', 'category', 'tick']);
+
+        $resonances = [];
+        foreach ($candidates as $candidate) {
+            $emb = is_string($candidate->embedding) ? json_decode($candidate->embedding, true) : $candidate->embedding;
+            if (!is_array($emb)) continue;
+
+            $similarity = $this->cosine($qvec, $emb);
+            
+            if ($similarity >= $threshold) {
+                $resonances[] = [
+                    'id' => $candidate->id,
+                    'content' => $candidate->content,
+                    'score' => $similarity,
+                    'importance' => $candidate->importance,
+                    'category' => $candidate->category,
+                    'original_tick' => $candidate->tick ?? 0
+                ];
+            }
+        }
+
+        // Sort by resonance score
+        usort($resonances, fn($a, $b) => $b['score'] <=> $a['score']);
+
+        return array_slice($resonances, 0, $limit);
+    }
+
     public function search(string $query, ?int $universeId = null, int $limit = 5, array $filters = []): array
     {
         $driver = (string) config('worldos.memory.driver', 'db_json');

@@ -81,12 +81,18 @@ class CentrifugoBroadcaster extends Broadcaster
         // Build newline-delimited JSON body for batch publishing
         $body = "";
         foreach ($this->formatChannels($channels) as $channel) {
+            $isBinary = isset($payload['tick']); // Nếu là nhịp đập vũ trụ, phát dạng nhị phân
+            
+            $params = ['channel' => $channel];
+            if ($isBinary) {
+                $params['data_base64'] = base64_encode(json_encode($payload));
+            } else {
+                $params['data'] = $payload;
+            }
+
             $body .= json_encode([
                 'method' => 'publish',
-                'params' => [
-                    'channel' => $channel,
-                    'data' => $payload,
-                ],
+                'params' => $params,
             ]) . "\n";
         }
 

@@ -24,7 +24,7 @@ pub fn deserialize_state(state_input: &[u8]) -> Result<UniverseState, String> {
     }
 }
 
-pub fn run_advance(
+pub async fn run_advance(
     universe_id: u64,
     ticks: u64,
     state_input: &[u8],
@@ -84,6 +84,13 @@ pub fn run_advance(
     let instability_gradient = state.instability_gradient;
     let global_fields_json = serde_json::to_string(&state.global_fields).unwrap_or_else(|_| "{}".to_string());
 
+    // Sprint 1.2: Event Sourcing via Kafka
+    let _ = crate::kafka::send_state_update(
+        "worldos.sim.events",
+        &universe_id.to_string(),
+        &snap
+    ).await;
+ 
     Ok((snap.tick, state_vector_json, entropy, stability_index, metrics_json, sci, instability_gradient, global_fields_json))
 }
 
@@ -104,7 +111,7 @@ pub fn run_merge(state_a_input: &[u8], state_b_input: &[u8]) -> Result<(u64, Str
     Ok((snap.tick, state_vector_json, entropy, stability_index, metrics_json, sci, instability_gradient, global_fields_json))
 }
 
-pub fn run_observe(
+pub async fn run_observe(
     universe_id: u64,
     zone_index: u32,
     intensity: f64,
@@ -139,6 +146,13 @@ pub fn run_observe(
     let instability_gradient = state.instability_gradient;
     let global_fields_json = serde_json::to_string(&state.global_fields).unwrap_or_else(|_| "{}".to_string());
 
+    // Sprint 1.2: Event Sourcing via Kafka
+    let _ = crate::kafka::send_state_update(
+        "worldos.sim.events",
+        &universe_id.to_string(),
+        &snap
+    ).await;
+ 
     Ok((snap.tick, state_vector_json, entropy, stability_index, metrics_json, sci, instability_gradient, global_fields_json))
 }
 
@@ -270,6 +284,9 @@ pub fn run_process_actors_soa(
             calamities: vec![],
         };
     }
+
+    // Helper map for zone contexts if needed for scars
+    let zone_context_map: std::collections::HashMap<u32, (f64, f64)> = std::collections::HashMap::new(); 
 
     let chunk_size = 17;
     let results: Vec<(ActorSoaOutput, Vec<AgentScar>, Vec<NewActor>, i32, f32)> = (0..count)
@@ -423,6 +440,8 @@ pub fn run_process_actors_soa(
                     category: "TRAUMA".to_string(), 
                     description: format!("Actor {} suffered a severe emotional trauma.", id),
                     raw_payload_json: format!("{{\"trauma\": {}, \"delta\": {}}}", final_trauma, t_delta),
+                    caused_by_id: 0,
+                    metadata_json: format!("{{\"entropy\": {}}}", 0.5), // Placeholder
                 });
                 // Shift: increase FEAR(11) and VENGEANCE(12)
                 current_traits[11] = (current_traits[11] + 0.05).min(1.0);
@@ -437,6 +456,8 @@ pub fn run_process_actors_soa(
                     category: "STARVATION_THREAT".to_string(),
                     description: format!("Actor {} is on the brink of starvation.", id),
                     raw_payload_json: format!("{{\"hunger\": {}}}", final_hunger),
+                    caused_by_id: 0,
+                    metadata_json: "{}".to_string(),
                 });
                 // Shift: increase PRAGMATISM(7), decrease EMPATHY(4)
                 current_traits[7] = (current_traits[7] + 0.1).min(1.0);
@@ -451,6 +472,8 @@ pub fn run_process_actors_soa(
                     category: "SUDDEN_WEALTH".to_string(),
                     description: format!("Actor {} gained significant resources suddenly.", id),
                     raw_payload_json: format!("{{\"delta\": {}}}", resource_delta),
+                    caused_by_id: 0,
+                    metadata_json: "{}".to_string(),
                 });
                 // Shift: increase PRIDE(15), increase AMBITION(1)
                 current_traits[15] = (current_traits[15] + 0.1).min(1.0);
@@ -489,6 +512,8 @@ pub fn run_process_actors_soa(
                     } else {
                         vec![]
                     },
+                    intent_slug: "ACTION_PERFORMED".to_string(), // Placeholder, logic can be more specific
+                    mental_state_json: format!("{{\"hunger\":{},\"energy\":{},\"fear\":{}}}", final_hunger, e_val, saga_fear),
                 },
                 actor_scars, 
                 actor_spawned,

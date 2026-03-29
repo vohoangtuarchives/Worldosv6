@@ -2,22 +2,22 @@
 
 import React, { useState } from 'react';
 import { useAiDiagnosticsMutation } from '../api';
-import { ObserverPanel } from './ObserverPanel';
 import { 
   Terminal, 
   Send, 
   ShieldCheck, 
   AlertCircle, 
   Loader2, 
-  Cpu,
   Brain,
   Network,
   Activity,
   ChevronRight
 } from 'lucide-react';
+import { HUD_TOKENS } from '@/modules/observer/components/ui/design-tokens';
 
 /**
  * AiDiagnosticsLab: Phòng thí nghiệm để xác minh kết nối và xác thực AI Driver.
+ * Phiên bản v6.2: Refactored for architecture and performance.
  */
 export function AiDiagnosticsLab() {
   const [driver, setDriver] = useState('openrouter');
@@ -42,14 +42,14 @@ export function AiDiagnosticsLab() {
          </div>
          <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-slate-50 border border-slate-200 shadow-inner">
             <Network className="w-4 h-4 text-slate-400" />
-            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Giao diện_Lõi_v1.2</span>
+            <span className={HUD_TOKENS.text_hud_badge + " text-slate-400"}>Giao diện_Lõi_v6.2</span>
          </div>
       </div>
 
       <div className="grid gap-8">
         <div className="grid gap-6 sm:grid-cols-2">
           <div className="space-y-3">
-            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Giao diện Trình điều khiển</label>
+            <label className={HUD_TOKENS.text_hud_label + " ml-1"}>Giao diện Trình điều khiển</label>
             <div className="relative">
               <select 
                 value={driver}
@@ -69,7 +69,7 @@ export function AiDiagnosticsLab() {
           </div>
           
           <div className="space-y-3">
-            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Trạng thái Thần kinh</label>
+            <label className={HUD_TOKENS.text_hud_label + " ml-1"}>Trạng thái Thần kinh</label>
             <div className="flex h-[52px] items-center gap-4 rounded-2xl border border-slate-100 bg-slate-50/50 px-5 shadow-inner">
               {mutation.isPending ? (
                 <Loader2 size={16} className="animate-spin text-sky-500" />
@@ -80,7 +80,7 @@ export function AiDiagnosticsLab() {
               ) : (
                 <div className="h-2 w-2 rounded-full bg-slate-200" />
               )}
-              <span className={`text-[11px] font-black uppercase tracking-widest ${
+              <span className={HUD_TOKENS.text_hud_badge + ` ${
                 mutation.isPending ? 'text-sky-500 animate-pulse' : 
                 mutation.isSuccess ? 'text-emerald-600' : 
                 mutation.isError ? 'text-rose-600' : 
@@ -93,7 +93,7 @@ export function AiDiagnosticsLab() {
         </div>
 
         <div className="space-y-3">
-          <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Dò tìm Nhân quả (Prompt)</label>
+          <label className={HUD_TOKENS.text_hud_label + " ml-1"}>Dò tìm Nhân quả (Prompt)</label>
           <div className="relative group">
             <textarea
               value={prompt}
@@ -106,14 +106,14 @@ export function AiDiagnosticsLab() {
               disabled={mutation.isPending}
               className="absolute bottom-4 right-4 flex items-center gap-3 px-6 py-2.5 rounded-xl bg-sky-600 text-white hover:bg-sky-700 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-30 shadow-md shadow-sky-500/20"
             >
-              <span className="text-[11px] font-black uppercase tracking-widest">Chạy_Dò_tìm</span>
+              <span className={HUD_TOKENS.text_hud_badge}>Chạy_Dò_tìm</span>
               {mutation.isPending ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
             </button>
           </div>
         </div>
 
         {/* Diagnostic Output Terminal */}
-        <div className="relative rounded-2xl border border-slate-200 bg-slate-900 overflow-hidden group shadow-xl">
+        <div className="relative rounded-3xl border border-slate-200 bg-slate-900 overflow-hidden group shadow-2xl">
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-sky-500/40 to-transparent" />
           
           <div className="px-5 py-4 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
@@ -122,10 +122,10 @@ export function AiDiagnosticsLab() {
                 <span>LUỒNG_DỮ_LIỆU_TRÍ_TUỆ</span>
              </div>
              {response?.meta?.latency && (
-               <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-sky-500/10 border border-sky-500/20">
-                  <Activity size={12} className="text-sky-400 animate-pulse" />
-                  <span className="text-[10px] font-bold text-sky-400">{response.meta.latency}ms</span>
-               </div>
+                <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-sky-500/10 border border-sky-500/20">
+                   <Activity size={12} className="text-sky-400 animate-pulse" />
+                   <span className="text-[10px] font-bold text-sky-400">{response.meta.latency}ms</span>
+                </div>
              )}
           </div>
           
@@ -154,41 +154,18 @@ export function AiDiagnosticsLab() {
         </div>
 
         {/* Security Footer */}
-        <div className="flex items-center gap-5 p-6 rounded-2xl border border-slate-100 bg-slate-50/50 border-l-4 border-l-sky-500/50 shadow-sm">
+        <div className="flex items-center gap-5 p-6 rounded-3xl border border-slate-100 bg-slate-50/50 border-l-4 border-l-sky-500/50 shadow-sm">
            <div className="p-3 rounded-2xl bg-sky-100/50 text-sky-600 shadow-inner">
               <ShieldCheck size={24} />
            </div>
-           <div>
-              <p className="text-xs font-black text-slate-900 uppercase tracking-widest">Giao thức_An ninh_V5</p>
-              <p className="text-[10px] text-slate-400 font-bold uppercase mt-2 leading-relaxed">
-                 Tất cả các giao dịch thần kinh đều được mã hóa đầu cuối và nhật ký thông qua tầng quan sát APEX. Truy cập trái phép sẽ bị truy vết qua dòng nhân quả.
+           <div className="space-y-1">
+              <p className={HUD_TOKENS.text_hud_badge + " text-slate-900"}>Giao thức_An ninh_V6</p>
+              <p className="text-[10px] text-slate-400 font-bold uppercase leading-relaxed">
+                 Tất cả các giao dịch thần kinh được mã hóa đầu cuối thông qua AppData Lõi.
               </p>
            </div>
         </div>
       </div>
-      
-      <style jsx global>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 5px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: #f1f5f9;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #cbd5e1;
-          border-radius: 10px;
-        }
-        .custom-scrollbar-dark::-webkit-scrollbar {
-          width: 5px;
-        }
-        .custom-scrollbar-dark::-webkit-scrollbar-track {
-          background: rgba(15, 23, 42, 0.5);
-        }
-        .custom-scrollbar-dark::-webkit-scrollbar-thumb {
-          background: rgba(14, 165, 233, 0.2);
-          border-radius: 10px;
-        }
-      `}</style>
     </div>
   );
 }

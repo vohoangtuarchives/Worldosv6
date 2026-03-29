@@ -9,7 +9,7 @@ use crate::types::*;
 
 
 /// Doc 21 §4: Phase-dependent diffusion multiplier (collapse spreads faster).
-fn phase_diffusion_factor(phase: CascadePhase) -> f64 {
+fn phase_diffusion_factor(phase: CascadePhase) -> Fix {
     use crate::constants;
     match phase {
         CascadePhase::Normal => constants::PHASE_DIFFUSION_NORMAL,
@@ -52,7 +52,7 @@ impl UniverseState {
         self.global_entropy = self.zones.iter().map(|z| z.state.entropy).sum::<f64>() / n;
         self.knowledge_core = self.zones.iter().map(|z| z.state.embodied_knowledge).sum::<f64>() / n;
         
-        let avg_stress: f64 = self.zones.iter().map(|z| z.state.material_stress).sum::<f64>() / n;
+        let avg_stress: Fix = self.zones.iter().map(|z| z.state.material_stress).sum::<f64>() / n;
         self.sci = (1.0 - (avg_stress * 0.4 + self.global_entropy * 0.2)).clamp(0.0, 1.0);
         self.instability_gradient = (avg_stress - 0.5).max(0.0) * 2.0;
 
@@ -91,7 +91,7 @@ impl UniverseState {
     }
 
     /// Single zone for testing / minimal run.
-    pub fn with_one_zone(universe_id: u64, base_mass: f64) -> Self {
+    pub fn with_one_zone(universe_id: u64, base_mass: Fix) -> Self {
         let mut z = ZoneState::new(base_mass);
         z.update_material_stress();
         Self {
@@ -164,12 +164,17 @@ impl UniverseState {
         for (idx, z) in self.zones.iter_mut().enumerate() {
             // Ecological Update (§Phase 2)
             if let Some(event_desc) = eco_engine.update(&mut z.state) {
-                 self.scars.push(serde_json::json!({
-                    "type": "ecological_event",
-                    "description": event_desc,
-                    "zone_id": z.id,
-                    "tick": self.tick
-                }));
+                 self.scars.push(crate::types::StructuredScar {
+                    tick: self.tick,
+                    category: "ecological_event".to_string(),
+                    description: event_desc.clone(),
+                    actor_id: None,
+                    zone_id: Some(z.id),
+                    caused_by_id: None,
+                    metadata: serde_json::json!({
+                        "event": event_desc
+                    }),
+                });
             }
 
             let base = z.state.base_mass;
@@ -177,7 +182,7 @@ impl UniverseState {
             let entropy = z.state.entropy;
 
             // Organization: some base_mass -> structured; entropy += k1 * delta_structured
-            let extraction_rate = 0.01_f64.min((base - structured).max(0.0) / (base + 1e-6));
+            let extraction_rate = (0.01_f64).min((base - structured).max(0.0) / (base + 1e-6));
             let delta_structured = base * extraction_rate * 0.1;
             z.state.structured_mass += delta_structured;
             z.state.entropy += k1 * delta_structured;
@@ -193,7 +198,7 @@ impl UniverseState {
             // Material Pressure Resolver (WorldOS V6 §8.3)
             // Resonance: >=2 materials same slug -> 1.5x effect; else 1.0
             let mat_count = z.state.active_materials.len();
-            let mut material_stress_delta = 0.0_f64;
+            let mut material_stress_delta = 0.0;
             if mat_count > 0 {
                 let count_by_slug: HashMap<String, u32> = z.state.active_materials.iter()
                     .fold(HashMap::new(), |mut m, mat| {
@@ -290,29 +295,19 @@ impl UniverseState {
         }
 
         // Phase 2: aggregate global_entropy, knowledge_core, SCI
-        let n = self.zones.len() as f64;
-        if n > 0.0 {
-            self.global_entropy = self
-                .zones
-                .iter()
-                .map(|z| z.state.entropy)
-                .sum::<f64>()
-                / n;
-            self.knowledge_core = self
-                .zones
-                .iter()
-                .map(|z| z.state.embodied_knowledge)
-                .sum::<f64>()
-                / n;
+        let n_len = self.zones.len();
+        if n_len > 0 {
+            let n = n_len as f64;
+            self.global_entropy = self.zones.iter().map(|z| z.state.entropy).sum::<f64>() / n;
+            self.knowledge_core = self.zones.iter().map(|z| z.state.embodied_knowledge).sum::<f64>() / n;
             
-            let _avg_frontier: f64 = self.zones.iter().map(|z| z.state.knowledge_frontier).sum::<f64>() / n;
-            let _avg_ceiling: f64 = self.zones.iter().map(|z| z.state.tech_ceiling).sum::<f64>() / n;
+            let _avg_frontier = self.zones.iter().map(|z| z.state.knowledge_frontier).sum::<f64>() / n;
+            let _avg_ceiling = self.zones.iter().map(|z| z.state.tech_ceiling).sum::<f64>() / n;
             
             // SCI = 1.0 - (average material stress * entropy weight)
             // Tuning (§V23): Reduced decay weights from 0.7/0.3 to 0.4/0.2 to prevent premature collapse at tick 96.
-            let avg_stress: f64 = self.zones.iter().map(|z| z.state.material_stress).sum::<f64>() / n;
+            let avg_stress = self.zones.iter().map(|z| z.state.material_stress).sum::<f64>() / n;
             self.sci = (1.0 - (avg_stress * 0.4 + self.global_entropy * 0.2)).clamp(0.0, 1.0);
-            
             
             // Toggle Micro Mode if gradient is high
             self.instability_gradient = (avg_stress - 0.5).max(0.0) * 2.0; 
@@ -327,7 +322,26 @@ impl UniverseState {
         }
 
         // Level-8: Archetype Discovery — recognize civilization patterns
+        let prev_archetype = self.archetype_discovery.clone();
         self.run_archetype_discovery();
+        if let Some(discovery) = &self.archetype_discovery {
+            let is_new = prev_archetype.map(|p| p.name != discovery.name).unwrap_or(true);
+            if is_new {
+                self.scars.push(crate::types::StructuredScar {
+                    tick: self.tick,
+                    category: "archetype_discovery".to_string(),
+                    description: format!("Civilization Pattern Recognized: {}", discovery.name),
+                    actor_id: None,
+                    zone_id: None,
+                    caused_by_id: None,
+                    metadata: serde_json::json!({
+                        "archetype": discovery.name,
+                        "distance": discovery.distance,
+                        "is_novel": discovery.is_novel
+                    }),
+                });
+            }
+        }
 
         // Level-8: Narrative Synthesis
         let culture_engine = crate::culture_engine::CultureEngine::new(0.01);
@@ -349,8 +363,8 @@ impl UniverseState {
         let mut tech_deltas = vec![0.0; self.zones.len()];
         let mut culture_deltas = vec![CulturalVector::default(); self.zones.len()];
         let mut civ_field_deltas = vec![CivilizationFields::default(); self.zones.len()];
-        let mut population_deltas = vec![0.0; self.zones.len()];
-        let mut trade_deltas = vec![0.0; self.zones.len()];
+        let mut population_deltas = vec![0.0_f64; self.zones.len()];
+        let mut trade_deltas = vec![0.0_f64; self.zones.len()];
 
         // Effective wealth per zone for trade flow (Deep Sim Phase C): wealth_proxy if set, else from resource_capacity or (base_mass, material_stress).
         let effective_wealth: Vec<f64> = self.zones.iter()
@@ -438,26 +452,27 @@ impl UniverseState {
                     civ_diff_sum.belonging += ghost.civ_fields.belonging - zone.state.civ_fields.belonging;
                 }
             }
-
-            let beta_zone = beta * phase_factor;
-            entropy_deltas[i] = beta_zone * s_diff_sum / n_len;
-            tech_deltas[i] = beta_zone * 0.5 * t_diff_sum / n_len;
             
-            culture_deltas[i].tradition_rigidity = beta_zone * c_diff_sum.tradition_rigidity / n_len;
-            culture_deltas[i].innovation_openness = beta_zone * c_diff_sum.innovation_openness / n_len;
-            culture_deltas[i].collective_trust = beta_zone * c_diff_sum.collective_trust / n_len;
-            culture_deltas[i].violence_tolerance = beta_zone * c_diff_sum.violence_tolerance / n_len;
-            culture_deltas[i].institutional_respect = beta_zone * c_diff_sum.institutional_respect / n_len;
-            culture_deltas[i].myth_belief = beta_zone * c_diff_sum.myth_belief / n_len;
+            let n_len_fix = n_len;
+            let beta_zone = beta * phase_factor;
+            entropy_deltas[i] = beta_zone * s_diff_sum / n_len_fix;
+            tech_deltas[i] = beta_zone * 0.5 * t_diff_sum / n_len_fix;
+            
+            culture_deltas[i].tradition_rigidity = beta_zone * c_diff_sum.tradition_rigidity / n_len_fix;
+            culture_deltas[i].innovation_openness = beta_zone * c_diff_sum.innovation_openness / n_len_fix;
+            culture_deltas[i].collective_trust = beta_zone * c_diff_sum.collective_trust / n_len_fix;
+            culture_deltas[i].violence_tolerance = beta_zone * c_diff_sum.violence_tolerance / n_len_fix;
+            culture_deltas[i].institutional_respect = beta_zone * c_diff_sum.institutional_respect / n_len_fix;
+            culture_deltas[i].myth_belief = beta_zone * c_diff_sum.myth_belief / n_len_fix;
 
-            civ_field_deltas[i].survival = beta_zone * civ_diff_sum.survival / n_len;
-            civ_field_deltas[i].reproduction = beta_zone * civ_diff_sum.reproduction / n_len;
-            civ_field_deltas[i].wealth = beta_zone * civ_diff_sum.wealth / n_len;
-            civ_field_deltas[i].power = beta_zone * civ_diff_sum.power / n_len;
-            civ_field_deltas[i].knowledge = beta_zone * civ_diff_sum.knowledge / n_len;
-            civ_field_deltas[i].meaning = beta_zone * civ_diff_sum.meaning / n_len;
-            civ_field_deltas[i].status = beta_zone * civ_diff_sum.status / n_len;
-            civ_field_deltas[i].belonging = beta_zone * civ_diff_sum.belonging / n_len;
+            civ_field_deltas[i].survival = beta_zone * civ_diff_sum.survival / n_len_fix;
+            civ_field_deltas[i].reproduction = beta_zone * civ_diff_sum.reproduction / n_len_fix;
+            civ_field_deltas[i].wealth = beta_zone * civ_diff_sum.wealth / n_len_fix;
+            civ_field_deltas[i].power = beta_zone * civ_diff_sum.power / n_len_fix;
+            civ_field_deltas[i].knowledge = beta_zone * civ_diff_sum.knowledge / n_len_fix;
+            civ_field_deltas[i].meaning = beta_zone * civ_diff_sum.meaning / n_len_fix;
+            civ_field_deltas[i].status = beta_zone * civ_diff_sum.status / n_len_fix;
+            civ_field_deltas[i].belonging = beta_zone * civ_diff_sum.belonging / n_len_fix;
 
             // Flow deltas (Population & Trade) require local update for both sides if local,
             // or just local side if neighbor is ghost.

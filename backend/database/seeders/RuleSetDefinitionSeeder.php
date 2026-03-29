@@ -36,6 +36,7 @@ class RuleSetDefinitionSeeder extends Seeder
             // --- SPECIAL: ANIME & MAGITECH ---
             $this->makeDefinition($registry, 'anime_naruto', 'Thế Giới Ninja', 3, ['anime', 'naruto'], 'wuxia_high'),
             $this->makeDefinition($registry, 'magitech_eastern', 'Ma Pháp Cơ Giới', 4, ['magitech', 'eastern'], 'xianxia_classical'),
+            $this->makeDefinition($registry, 'magitech_nano_resonance', 'Cộng Hưởng Nano', 4, ['magitech', 'nano'], 'realistic_modern'),
             $this->makeDefinition($registry, 'fantasy_classic', 'Fantasy Cổ Điển', 2, ['fantasy'], 'realistic_medieval'),
 
             // --- TIER 6-7: METAPHYSICAL ---
@@ -65,6 +66,11 @@ class RuleSetDefinitionSeeder extends Seeder
         if (str_contains($id, 'wuxia_jianghu')) $physics['gravity'] = 0.8;
         if (str_contains($id, 'wuxia_high')) $physics['gravity'] = 0.5;
         if (str_contains($id, 'xianxia')) $physics['gravity'] = 0.3;
+        if (str_contains($id, 'nano_resonance')) {
+            $physics['gravity'] = 0.8;
+            $physics['molecular_resonance'] = true;
+            $physics['ambient_nanites'] = true;
+        }
         if ($id === 'dao_absolute') $physics['concept_governed'] = true;
 
         return [
@@ -96,6 +102,7 @@ class RuleSetDefinitionSeeder extends Seeder
         if (str_contains($id, 'wuxia_jianghu')) return [["id" => "internal_qi", "type" => "internal"]];
         if (str_contains($id, 'xianxia')) return [["id" => "spiritual_qi", "type" => "universal"]];
         if (str_contains($id, 'fantasy')) return [["id" => "mana", "type" => "ambient"]];
+        if (str_contains($id, 'nano_resonance')) return [["id" => "nano_flux", "type" => "molecular_resonance"]];
         if (str_contains($id, 'anime_naruto')) return [["id" => "chakra", "type" => "hybrid"]];
         if (str_contains($id, 'anime_dragonball')) return [["id" => "ki", "type" => "explosive"]];
         return [];

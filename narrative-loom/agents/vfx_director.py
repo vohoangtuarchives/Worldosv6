@@ -2,16 +2,17 @@ import os
 import json
 from typing import Dict, Any
 from state import NarrativeState
-from utils.llm_factory import get_llm
+from utils.llm_factory import get_llm, get_llm_for_agent
+from nodes.universe_bridge import record_universe_whisper
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
 from pydantic import BaseModel, Field
 
 class VFXConfig(BaseModel):
-    effect_type: str = Field(description="Loại hiệu ứng (glitch, ripples, bloom_glow, static, vortex)")
-    intensity: float = Field(description="Cường độ hiệu ứng (0.0 - 1.0)")
-    color_scheme: str = Field(description="Tông màu (neon, dark, ethereal, solar, chaotic)")
-    bloom_pollen_type: str = Field(description="Loại hạt phấn (sparkles, ash, geometric, organic)")
+    primary_color: str = Field(description="Mã màu Hex (VD: #ff4500 cho Paleo, #00f3ff cho Sci-fi)")
+    distortion: float = Field(description="Độ biến dạng thực tại (0.0 - 1.0)")
+    particle_density: int = Field(description="Mật độ hạt (40 - 200)")
+    atmosphere_filter: str = Field(description="Bộ lọc khí quyển (none, mist, sepia, grain, glitch, aurora, dust)")
 
 # Kỹ thuật viên Hình ảnh (Visual Director) - Người điều phối hiệu ứng trên UI
 vfx_director_prompt = ChatPromptTemplate.from_messages([
@@ -37,9 +38,8 @@ async def vfx_director_agent(state: NarrativeState, config: Dict[str, Any] = Non
     genre = state.get("genre", "generic")
     headline = state.get("news_headline", "")
     
-    provider = "local"
-    model_name = os.getenv("LOCAL_MODEL_NAME", "qwen3.5-9b-uncensored-hauhaucs-aggressive")
-    llm = get_llm(provider=provider, model_name=model_name)
+    # 🌟 DYNAMIC ROUTING: Chọn mô hình tối ưu cho đạo diễn hình ảnh
+    llm = get_llm_for_agent("vfx_director", world_id=state.get("world_id"), current_tick=state.get("tick_end"))
     
     # Sử dụng JsonOutputParser
     parser = JsonOutputParser(pydantic_object=VFXConfig)
@@ -55,11 +55,14 @@ async def vfx_director_agent(state: NarrativeState, config: Dict[str, Any] = Non
     except Exception as e:
         print(f"DEBUG: VFX Director error: {e}")
         result = {
-            "effect_type": "bloom_glow",
-            "intensity": 0.5,
-            "color_scheme": "ethereal",
-            "bloom_pollen_type": "sparkles"
+            "primary_color": "#8b5cf6",
+            "distortion": 0.4,
+            "particle_density": 80,
+            "atmosphere_filter": "none"
         }
+    
+    # 🌟 RECORD WHISPER: Ghi lại tiếng vọng đa vũ trụ nếu sự kiện đủ lớn
+    record_universe_whisper(state)
     
     return {
         **state, 

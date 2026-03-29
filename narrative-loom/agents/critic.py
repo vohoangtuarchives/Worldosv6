@@ -2,7 +2,7 @@ import os
 from typing import Dict, Any
 from state import NarrativeState
 
-from utils.llm_factory import get_llm
+from utils.llm_factory import get_llm, get_llm_for_agent
 from langchain_core.prompts import ChatPromptTemplate
 from schemas import CriticReview
 
@@ -21,9 +21,8 @@ async def critic_agent(state: NarrativeState, config: Dict[str, Any] = None) -> 
     prose = state.get("final_prose", "")
     storyboard = state.get("storyboard", "")
     
-    provider = "local"
-    model_name = os.getenv("LOCAL_MODEL_NAME", "MythoMax-L2-13B")
-    llm = get_llm(provider=provider, model_name=model_name)
+    # 🌟 DYNAMIC ROUTING: Phân bổ mô hình rà soát cho Critic
+    llm = get_llm_for_agent("critic", world_id=state.get("world_id"), current_tick=state.get("tick_end"))
     structured_llm = llm.with_structured_output(CriticReview)
     
     chain = critic_prompt | structured_llm

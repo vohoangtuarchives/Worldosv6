@@ -12,6 +12,11 @@ backend/.env*
 frontend/.env*
 auth.json
 
+# Octane Binaries (Do not copy host architecture binaries to Docker)
+backend/frankenphp
+backend/frankenphp.exe
+backend/frankenphp-*
+
 # Caches and temporary files
 backend/bootstrap/cache/*.php
 !backend/bootstrap/cache/.gitignore

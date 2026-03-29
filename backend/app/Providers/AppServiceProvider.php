@@ -71,6 +71,7 @@ class AppServiceProvider extends ServiceProvider
             $registry->register($app->make(\App\Modules\Narrative\Services\Strategies\ParadoxNarrativeStrategy::class));
             $registry->register($app->make(\App\Modules\Narrative\Services\Strategies\AnomalyNarrativeStrategy::class));
             $registry->register($app->make(\App\Modules\Narrative\Services\Strategies\LegacyNarrativeStrategy::class));
+            $registry->register($app->make(\App\Modules\Narrative\Services\Strategies\NanoMagicStrategy::class));
             return $registry;
         });
         $this->app->singleton(\App\Modules\Narrative\Services\NarrativeCache::class);
@@ -138,6 +139,10 @@ class AppServiceProvider extends ServiceProvider
         \Illuminate\Support\Facades\Event::listen(
             \App\Modules\Simulation\Events\SimulationEventOccurred::class,
             \App\Modules\Narrative\Listeners\RecordHistoricalFact::class
+        );
+        \Illuminate\Support\Facades\Event::listen(
+            \App\Modules\Simulation\Events\SimulationEventOccurred::class,
+            \App\Modules\Simulation\Listeners\ApplyMemoryResonance::class
         );
     }
 }

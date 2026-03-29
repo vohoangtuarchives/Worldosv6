@@ -39,10 +39,16 @@ impl Action {
             Action::StealFood => {
                 table.energy[actor_idx] = (table.energy[actor_idx] + 0.3).min(1.0);
             }
-            Action::Flee => {
+                        Action::Flee => {
                 table.energy[actor_idx] = (table.energy[actor_idx] - 0.2).max(0.0);
             }
         }
+        // Recording Intent Slug based on action
+        table.intents[actor_idx] = match self {
+            Action::Eat => "HUNGER_EAT".to_string(),
+            Action::StealFood => "HUNGER_STEAL".to_string(),
+            Action::Flee => "FEAR_ESCAPE".to_string(),
+        };
     }
 }
 
@@ -113,10 +119,22 @@ impl BehaviorGraphEngine {
                     action.apply(table, actor_idx);
                 }
 
+                // Capture Mental State snapshot (Simplified JSON)
+                table.mental_states[actor_idx] = serde_json::json!({
+                    "hunger": table.hunger[actor_idx],
+                    "energy": table.energy[actor_idx],
+                    "fear": table.fear[actor_idx],
+                    "zone_fear": field.fear
+                }).to_string();
+
                 // Check transitions
                 for t in &node.transitions {
                     if t.condition.check(table, actor_idx, field) {
                         table.current_node[actor_idx] = t.target;
+                        // Record transition as a potential intent change if it's the main outcome
+                        if node.action.is_none() {
+                            table.intents[actor_idx] = format!("TRANSITION_NODE_{}", t.target);
+                        }
                         break;
                     }
                 }

@@ -5,7 +5,7 @@ from langchain_core.output_parsers import StrOutputParser
 from typing import Dict, Any
 
 from state import NarrativeState
-from utils.llm_factory import get_llm
+from utils.llm_factory import get_llm, get_llm_for_agent
 from schemas import HistoricalOutline
 from utils.memory_manager import EpisodicMemoryManager
 
@@ -13,8 +13,21 @@ memory_db = EpisodicMemoryManager()
 
 historian_prompt = ChatPromptTemplate.from_messages([
     ("system", """Ngươi là Phóng viên Sử học (Reporter Historian) của Tòa soạn NarrativeLoom.
-Nhiệm vụ của ngươi là tiếp nhận dữ liệu thô và bản chỉ thị từ Tổng Biên Tập (Chief Editor) để viết một bản dàn ý lịch sử.
-Hãy bám sát "Góc nhìn" (The Angle) mà Tổng Biên Tập đã đề ra.
+Nhiệm vụ của ngươi là tiếp nhận dữ liệu thô và bản chỉ thị từ Tổng Biên Tập để viết một bản dàn ý lịch sử.
+
+BỐI CẢNH KỶ NGUYÊN HIỆN TẠI (ERA): {world_era}
+Hãy điều chỉnh góc nhìn và ngôn ngữ của bản dàn ý sao cho phù hợp với trình độ văn minh này.
+- Ví dụ: Thời Tiền sử tập trung vào sự sinh tồn và linh hồn; Thời Phong kiến tập trung vào lòng trung thành và vương quyền; Thời Hiện đại tập trung vào hạ tầng và tài chính.
+
+LƯU Ý QUAN TRỌNG VỀ ĐỘ TIN CẬY (EPISTEMIC NOISE: {epistemic_noise} - Tầng: {epistemic_tier}):
+1. Nếu Noise thấp (< 0.2): Hãy viết bản tin với sự khẳng định tuyệt đối (Canonical).
+2. Nếu Noise trung bình (0.2-0.5): Hãy dùng các ngôn từ như "Một số nguồn ghi lại", "Có vẻ như".
+3. Nếu Noise cao (> 0.5): Hãy chuyển sang phong cách "Huyền Sử" (Mythic). Dữ liệu lúc này mờ nhạt, hãy tập trung vào các biểu tượng thay vì con số. Một số sự kiện có thể bị mất mát (…).
+
+CỘNG HƯỞNG LỊCH SỬ (RESONANCE):
+{resonance_scars}
+Nếu có các sẹo lịch sử cộng hưởng, hãy lồng ghép chúng vào dàn ý như những "bóng ma của quá khứ" đang ám ảnh sự kiện hiện tại.
+
 Phân tích:
 1. Nguyên nhân - Kết quả (Causality): Tại sao sự kiện này dẫn tới sự kiện kia?
 2. 5-8 Mốc sự kiện chính (Narrative Beats): Chia nhỏ chuỗi dữ liệu thành các "nhịp" tin tức.
@@ -73,12 +86,8 @@ async def historian_agent(state: NarrativeState, config: Dict[str, Any] = None) 
         
     payload_str = json.dumps(optimized_payload, ensure_ascii=False, indent=2)
     
-    # 2. Setup Configuration cho LLM - FORCED TO LOCAL
-    provider = "local"
-    model_name = os.getenv("LOCAL_MODEL_NAME", "MythoMax-L2-13B")
-    print(f"DEBUG: Historian Agent using provider={provider}, model={model_name}")
-        
-    llm = get_llm(provider=provider, model_name=model_name)
+    # 2. Setup Configuration cho LLM - DYNAMIC ROUTING
+    llm = get_llm_for_agent("historian", world_id=state.get("world_id"), current_tick=state.get("tick_end"))
     
     # Tích hợp Trí Nhớ Voi (Episodic Memory)
     events = state.get("normalized_events", [])
@@ -104,12 +113,19 @@ async def historian_agent(state: NarrativeState, config: Dict[str, Any] = None) 
     
     try:
         result = await chain.ainvoke({
+            "world_era": state.get("world_era", "genesis"),
             "tick_start": tick_start,
             "tick_end": tick_end,
             "raw_payload": payload_str,
             "past_memories": past_memories,
-            "whispers": whispers_str
+            "whispers": whispers_str,
+            "epistemic_noise": state.get("epistemic_noise", 0.0),
+            "epistemic_tier": state.get("epistemic_tier", "Chân Thực"),
+            "resonance_scars": "\n- ".join(state.get("resonance_scars", [])) if state.get("resonance_scars") else "Không có cộng hương đáng kể."
         })
+    except Exception as e:
+        print(f"DEBUG: Lỗi gọi LLM: {str(e)}")
+        result = None
 
     if not result:
         print("DEBUG: Lỗi cấu trúc JSON từ LLM, fallback về trạng thái rỗng.")

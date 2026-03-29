@@ -2,6 +2,7 @@
 
 use crate::constants;
 use crate::types::{CascadePhase, WorldConfig, UniverseState};
+use serde::{Serialize, Deserialize};
 
 fn phase_name(p: CascadePhase) -> &'static str {
     match p {
@@ -12,6 +13,7 @@ fn phase_name(p: CascadePhase) -> &'static str {
     }
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum SimEvent {
     Crisis,
     Famine,
@@ -45,9 +47,14 @@ pub fn tick_with_cascade(
         let phase = state.zones[i].state.cascade_phase;
 
         // Doc 21 §10: Hazard model — P(phase change) = sigmoid(pressure); deterministic RNG(seed, tick, zone_id).
+        let p_f64: f64 = p;
+        let threshold_f64: f64 = constants::COLLAPSE_THRESHOLD;
+        let steepness_f64: f64 = constants::HAZARD_SIGMOID_STEEPNESS;
+ 
         let p_transition = 1.0
             / (1.0
-                + (-constants::HAZARD_SIGMOID_STEEPNESS * (p - constants::COLLAPSE_THRESHOLD)).exp());
+                + (-steepness_f64 * (p_f64 - threshold_f64)).exp());
+        
         let seed_u = match &world.world_seed {
             Some(serde_json::Value::Number(n)) => n.as_u64().unwrap_or(0),
             _ => world.world_id.wrapping_add(state.universe_id),
@@ -69,7 +76,7 @@ pub fn tick_with_cascade(
                 CascadePhase::Collapse => (CascadePhase::Collapse, SimEvent::Crisis), // hold Collapse, still emit Crisis
             };
             state.zones[i].state.cascade_phase = next_phase;
-            events.push(event);
+            events.push(event.clone());
             if phase == CascadePhase::Normal {
                 events.push(SimEvent::Crisis);
             }
@@ -77,7 +84,18 @@ pub fn tick_with_cascade(
             if p > 0.8 {
                 events.push(SimEvent::MicroMode);
                 state.trigger_micro_mode(i);
-                state.scars.push(format!("Tick {}: Micro-Mode Triggered (Zone {})", state.tick, i).into());
+                state.scars.push(crate::types::StructuredScar {
+                    tick: state.tick,
+                    category: "system_state".to_string(),
+                    description: format!("Micro-Mode Triggered in Zone {}", i),
+                    actor_id: None,
+                    zone_id: Some(i as u32),
+                    caused_by_id: None,
+                    metadata: serde_json::json!({
+                        "pressure": p,
+                        "mode": "micro"
+                    }),
+                });
             }
             // Escalating entropy/trauma: Famine light, Riots stronger, Collapse heaviest
             let (entropy_step, trauma_step) = match next_phase {
@@ -89,7 +107,20 @@ pub fn tick_with_cascade(
             state.zones[i].state.entropy = (state.zones[i].state.entropy + entropy_step).min(1.0);
             state.zones[i].state.trauma = (state.zones[i].state.trauma + trauma_step).min(1.0);
             state.zones[i].state.update_material_stress();
-            state.scars.push(format!("Tick {}: {} (Zone {})", state.tick, phase_name(next_phase), i).into());
+            state.scars.push(crate::types::StructuredScar {
+                tick: state.tick,
+                category: "cascade_event".to_string(),
+                description: format!("Transition to Phase: {}", phase_name(next_phase)),
+                actor_id: None,
+                zone_id: Some(i as u32),
+                caused_by_id: None,
+                metadata: serde_json::json!({
+                    "phase": phase_name(next_phase),
+                    "entropy": state.zones[i].state.entropy,
+                    "trauma": state.zones[i].state.trauma,
+                    "pressure": p
+                }),
+            });
             if next_phase == CascadePhase::Collapse {
                 state.zones[i].state.active_materials.clear();
                 // Doc 21 §4b.II: Reset dynamics — reduce pressure components to avoid runaway collapse.
@@ -134,7 +165,18 @@ pub fn tick_with_cascade(
         for (agent_id, trait_idx) in deity_interventions {
             events.push(SimEvent::DeityIntervention);
             state.perform_deity_intervention(i, trait_idx);
-            state.scars.push(format!("Tick {}: DEITY INTERVENTION by Agent {} (Trait {})", state.tick, agent_id, trait_idx).into());
+            state.scars.push(crate::types::StructuredScar {
+                tick: state.tick,
+                category: "divine_intervention".to_string(),
+                description: format!("Deity Intervention triggered by Trait {}", trait_idx),
+                actor_id: Some(agent_id),
+                zone_id: Some(i as u32),
+                caused_by_id: None,
+                metadata: serde_json::json!({
+                    "trait_index": trait_idx,
+                    "impact": "high"
+                }),
+            });
         }
 
         // Phase 57: Quantum Realities & Observer Effect (§57)
@@ -170,7 +212,17 @@ pub fn tick_with_cascade(
 
         if collapse_triggered {
             events.push(SimEvent::WavefunctionCollapse);
-            state.scars.push(format!("Tick {}: Wavefunction Collapse (Zone {})", state.tick, i).into());
+            state.scars.push(crate::types::StructuredScar {
+                tick: state.tick,
+                category: "quantum_event".to_string(),
+                description: format!("Wavefunction Collapse in Zone {}", i),
+                actor_id: None,
+                zone_id: Some(i as u32),
+                caused_by_id: None,
+                metadata: serde_json::json!({
+                    "event": "superposition_end"
+                }),
+            });
         }
 
         // Phase 61: Spontaneous Birth Trigger (§V9)
@@ -182,7 +234,18 @@ pub fn tick_with_cascade(
             let seed = (state.tick + i as u64) % 1000;
             if seed == 0 {
                 events.push(SimEvent::Cosmogenesis);
-                state.scars.push(format!("Tick {}: CƠN SỐT SÁNG THẾ (Cosmogenesis) tại Zone {}", state.tick, i).into());
+                state.scars.push(crate::types::StructuredScar {
+                    tick: state.tick,
+                    category: "singularity".to_string(),
+                    description: format!("COSMOGENESIS: A child universe is born in Zone {}", i),
+                    actor_id: None,
+                    zone_id: Some(i as u32),
+                    caused_by_id: None,
+                    metadata: serde_json::json!({
+                        "knowledge": state.zones[i].state.embodied_knowledge,
+                        "sci": state.sci
+                    }),
+                });
             }
         }
     }
@@ -212,15 +275,20 @@ pub fn tick_with_cascade(
             1 => SimEvent::BlackSwanPlague,
             _ => SimEvent::BlackSwanProphet,
         };
-        events.push(event);
-        state.scars.push(
-            format!(
-                "Tick {}: Black Swan (Zone {})",
-                state.tick,
-                zone_idx
-            )
-            .into(),
-        );
+        events.push(event.clone());
+        state.scars.push(crate::types::StructuredScar {
+            tick: state.tick,
+            category: "black_swan".to_string(),
+            description: format!("Black Swan Event: {:?}", event),
+            actor_id: None,
+            zone_id: Some(zone_idx as u32),
+            caused_by_id: None,
+            metadata: serde_json::json!({
+                "type": format!("{:?}", event),
+                "entropy_impact": 0.2,
+                "trauma_impact": 0.15
+            }),
+        });
     }
 
     // Limit cascade depth

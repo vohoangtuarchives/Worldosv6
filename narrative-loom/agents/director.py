@@ -2,7 +2,7 @@ import os
 from typing import Dict, Any
 from state import NarrativeState
 
-from utils.llm_factory import get_llm
+from utils.llm_factory import get_llm, get_llm_for_agent
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 
@@ -12,8 +12,17 @@ from schemas import Storyboard
 director_prompt = ChatPromptTemplate.from_messages([
     ("system", """Ngươi là Thư ký Tòa soạn (Managing Editor) của Tòa soạn NarrativeLoom. 
 Nhiệm vụ của ngươi là tổng hợp các bản tin từ Phóng viên Sử học, Phóng viên Văn hóa và Phóng viên Điều tra để xây dựng một Cấu trúc bài viết (Storyboard).
-Hãy bám sát "Góc nhìn" (The Angle) mà Tổng Biên Tập đã đề ra.
+
+KỶ NGUYÊN HIỆN TẠI (ERA): {world_era}
+Hãy bám sát "Góc nhìn" (The Angle) mà Tổng Biên Tập đã đề ra. 
 Chia nhỏ bài viết thành các phân đoạn (Scenes), xác định bối cảnh, nhân vật và xung đột trung tâm cho mỗi đoạn.
+
+QUY TẮC THỊ GIÁC (VFX):
+Hãy thiết kế `vfx_config` phản ánh đúng tinh thần của {world_era}.
+- Paleo/Cave: Màu lửa (#ff4500), biến dạng cao (distortion: 0.8), hạt dày (100).
+- Feudal: Màu vàng hoàng tộc (#ffd700), ổn định (distortion: 0.2), sương mù (mist).
+- Cyberpunk: Màu xanh Neon (#00f3ff), nhiễu loạn (distortion: 0.5), glitch.
+
 Đầu ra PHẢI tuân thủ nghiêm ngặt chuẩn định dạng JSON Schema của Storyboard.
 """),
     ("human", """Bản tin sử học & Thần thoại:
@@ -51,14 +60,8 @@ async def director_agent(state: NarrativeState, config: Dict[str, Any] = None) -
                 world_state = f"Độ nguyên vẹn nhân quả (Causal Integrity): {causal}%. Tình trạng sụp đổ (Collapse Active): {collapse}."
                 break
     
-    provider = "local" # Khuyên dùng GPT-4o cho tác vụ lập dàn ý kịch bản hình ảnh (Spatial Reasoning tốt)
-    model_name = os.getenv("LOCAL_MODEL_NAME", "MythoMax-L2-13B")
-    
-    if config and config.get("configurable"):
-        provider = config["configurable"].get("director_provider", provider)
-        model_name = config["configurable"].get("director_model", model_name)
-        
-    llm = get_llm(provider=provider, model_name=model_name)
+    # 🌟 DYNAMIC ROUTING: Cấp AI trình độ cao cho Tổng đạo diễn kịch bản
+    llm = get_llm_for_agent("director", world_id=state.get("world_id"), current_tick=state.get("tick_end"))
     structured_llm = llm.with_structured_output(Storyboard)
     chain = director_prompt | structured_llm
     
@@ -71,6 +74,7 @@ async def director_agent(state: NarrativeState, config: Dict[str, Any] = None) -
         outline_str = str(outline_data)
         
     result = await chain.ainvoke({
+        "world_era": state.get("world_era", "genesis"),
         "outline": outline_str,
         "psychology": state.get("psychological_profiles", {}).get("analysis", ""),
         "world_state": world_state

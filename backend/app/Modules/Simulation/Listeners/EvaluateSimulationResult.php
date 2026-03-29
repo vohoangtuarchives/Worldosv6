@@ -177,6 +177,12 @@ class EvaluateSimulationResult
                         $this->historicalFactEngine->record($worldEvent, $snapshot);
                         $this->worldEventBus->publish($worldEvent);
                     }
+
+                    // Individual Scars (Phase 3: Deep Causal Chain)
+                    foreach ($event->engineResponse['scars'] ?? [] as $scar) {
+                        $scarEvent = $this->eventNormalizer->normalizeScarToEvent($universe, $scar);
+                        $this->worldEventBus->publish($scarEvent);
+                    }
                 } catch (\Throwable $e) {
                     \Illuminate\Support\Facades\Log::warning('EventNormalizer/HistoricalFact failed: ' . $e->getMessage());
                 }

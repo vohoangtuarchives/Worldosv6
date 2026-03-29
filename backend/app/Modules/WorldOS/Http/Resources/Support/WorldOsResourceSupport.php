@@ -108,4 +108,23 @@ final class WorldOsResourceSupport
 
         return $deltas;
     }
+
+    public static function getVfxConfigForEra(?string $era): array
+    {
+        $era = strtolower($era ?? 'genesis');
+
+        $configs = [
+            'paleo' => ['primary_color' => '#ff4500', 'distortion' => 0.8, 'particle_density' => 120, 'atmosphere_filter' => 'mist'],
+            'medieval' => ['primary_color' => '#ffd700', 'distortion' => 0.15, 'particle_density' => 60, 'atmosphere_filter' => 'sepia'],
+            'ancient_east' => ['primary_color' => '#059669', 'distortion' => 0.25, 'particle_density' => 80, 'atmosphere_filter' => 'mist'],
+            'modern_war' => ['primary_color' => '#475569', 'distortion' => 0.45, 'particle_density' => 50, 'atmosphere_filter' => 'grain'],
+            'modern' => ['primary_color' => '#0ea5e9', 'distortion' => 0.35, 'particle_density' => 40, 'atmosphere_filter' => 'none'],
+            'sci_fi' => ['primary_color' => '#00f3ff', 'distortion' => 0.6, 'particle_density' => 150, 'atmosphere_filter' => 'glitch'],
+            'post_apoc' => ['primary_color' => '#92400e', 'distortion' => 0.7, 'particle_density' => 100, 'atmosphere_filter' => 'dust'],
+            'fantasy' => ['primary_color' => '#8b5cf6', 'distortion' => 0.4, 'particle_density' => 90, 'atmosphere_filter' => 'aurora'],
+            'genesis' => ['primary_color' => '#8b5cf6', 'distortion' => 0.4, 'particle_density' => 80, 'atmosphere_filter' => 'none'],
+        ];
+
+        return $configs[$era] ?? $configs['genesis'];
+    }
 }

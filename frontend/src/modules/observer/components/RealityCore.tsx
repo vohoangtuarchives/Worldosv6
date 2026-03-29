@@ -1,10 +1,10 @@
 'use client';
 
-import { useRef } from 'react';
+import { useRef, useMemo, useEffect } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { Float, MeshDistortMaterial, OrbitControls, Sparkles } from '@react-three/drei';
+import { Float, MeshDistortMaterial, OrbitControls } from '@react-three/drei';
 import { motion } from 'framer-motion';
-import type { Mesh } from 'three';
+import * as THREE from 'three';
 import type { RealityPulse } from '@/modules/observer/contracts';
 
 function formatPercent(value: number) {
@@ -51,9 +51,74 @@ function getVisualState(pulse?: RealityPulse) {
   };
 }
 
-function CoreMesh({ intensity, autonomyActive, color }: { intensity: number; autonomyActive: boolean; color: string }) {
-  const meshRef = useRef<Mesh>(null);
-  const shellRef = useRef<Mesh>(null);
+// === HARDCORE: INSTANCED RENDERING HYPER-OPTIMIZATION ===
+// Thay vì dùng Sparkles (điểm ảnh 2D), ta dùng InstancedMesh để render hàng vạn hình khối 3D thụ thụ
+// chỉ bằng ĐÚNG 1 DRAW CALL duy nhất trên GPU. Máy yếu vẫn mượt.
+function InstancedAnomalySwarm({ count, color, era, entropy, stabilityIndex }: { count: number; color: string; era?: string; entropy?: number; stabilityIndex?: number }) {
+  const meshRef = useRef<THREE.InstancedMesh>(null);
+  const workerRef = useRef<Worker | null>(null);
+  const bufferRef = useRef<ArrayBuffer | null>(null);
+
+  useEffect(() => {
+    // Khởi tạo Worker từ file vừa tạo (Next.js xử lý URL này tự động)
+    const worker = new Worker(new URL('../workers/realityPhysics.worker.ts', import.meta.url));
+    workerRef.current = worker;
+
+    worker.onmessage = (e: MessageEvent) => {
+      const { type, buffer } = e.data;
+      if (type === 'INIT_DONE' || type === 'TICK_DONE') {
+        // Nhận lại quyền sở hữu Buffer từ Worker
+        bufferRef.current = buffer;
+        
+        if (meshRef.current && type === 'TICK_DONE') {
+          // Gắn ma trận tọa độ vào Mesh và báo React Three Fiber vẽ lại
+          const view = new Float32Array(buffer);
+          meshRef.current.instanceMatrix.array.set(view);
+          meshRef.current.instanceMatrix.needsUpdate = true;
+        }
+      }
+    };
+
+    worker.postMessage({ type: 'INIT', payload: { count } });
+
+    return () => {
+      worker.terminate();
+    };
+  }, [count]);
+
+  useFrame(() => {
+    // Nếu có buffer sẵn (tức là Worker đã nhả lại) và lưới đã được khởi tạo
+    if (workerRef.current && bufferRef.current && meshRef.current) {
+      const buf = bufferRef.current;
+      // Tạm "khóa" buffer ở luồng chính để đợi Worker xử lý, tránh gửi đúp
+      bufferRef.current = null; 
+      
+      workerRef.current.postMessage({
+        type: 'TICK',
+        payload: { buffer: buf, era, entropy, stabilityIndex }
+      }, [buf]); // Truyền nguyên gốc Object để tối đa CPU, Zero-Copy Mode
+    }
+  });
+
+  return (
+    <instancedMesh ref={meshRef} args={[undefined, undefined, count]} frustumCulled={false}>
+      {['sci_fi', 'cyberpunk', 'modern_war'].includes(era || '') ? (
+        <boxGeometry />
+      ) : ['paleo', 'paleolithic', 'post_apoc'].includes(era || '') ? (
+        <tetrahedronGeometry />
+      ) : ['ancient_east', 'fantasy'].includes(era || '') ? (
+        <octahedronGeometry />
+      ) : (
+        <sphereGeometry args={[1, 8, 8]} />
+      )}
+      <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.8} roughness={0.2} metalness={0.9} />
+    </instancedMesh>
+  );
+}
+
+function CoreMesh({ intensity, autonomyActive, color, distort, era, particleDensity, pulse }: { intensity: number; autonomyActive: boolean; color: string; distort: number; era: string; particleDensity: number; pulse?: RealityPulse }) {
+  const meshRef = useRef<THREE.Mesh>(null);
+  const shellRef = useRef<THREE.Mesh>(null);
 
   useFrame((state) => {
     const time = state.clock.getElapsedTime();
@@ -77,33 +142,78 @@ function CoreMesh({ intensity, autonomyActive, color }: { intensity: number; aut
       <Float speed={2 + intensity * 2} rotationIntensity={0.5 + intensity} floatIntensity={1.2 + intensity}>
         <mesh ref={meshRef}>
           <icosahedronGeometry args={[1.15, 1]} />
-          <MeshDistortMaterial color={color} roughness={0.15} metalness={0.55} distort={0.25 + intensity * 0.5} speed={1.2 + intensity * 2.8} />
+          <MeshDistortMaterial color={color} roughness={0.15} metalness={0.55} distort={distort} speed={1.2 + intensity * 2.8} />
         </mesh>
       </Float>
       <mesh ref={shellRef} scale={1.52} rotation={[0.4, 0.2, 0.4]}>
         <octahedronGeometry args={[1.2, 0]} />
         <meshStandardMaterial color={color} transparent opacity={autonomyActive ? 0.22 : 0.1} wireframe />
       </mesh>
-      <Sparkles count={autonomyActive ? 110 : 48} scale={autonomyActive ? 4.2 : 3.1} size={autonomyActive ? 5 : 3} speed={autonomyActive ? 1.5 : 0.45} color={autonomyActive ? '#fde68a' : color} />
+      {/* Hyper-Optimized Instanced Rendering */}
+      <InstancedAnomalySwarm 
+        count={particleDensity * (autonomyActive ? 2 : 1)} 
+        color={color} 
+        era={era} 
+        entropy={pulse?.entropy}
+        stabilityIndex={pulse?.stabilityIndex}
+      />
       <OrbitControls enableZoom={false} enablePan={false} autoRotate autoRotateSpeed={autonomyActive ? 0.8 : 0.35} />
     </>
   );
 }
 
-export function RealityCore({ pulse }: { pulse?: RealityPulse }) {
+export interface VfxConfig {
+  primary_color: string;
+  distortion: number;
+  particle_density: number;
+  atmosphere_filter: string;
+}
+
+const eraPresets: Record<string, VfxConfig> = {
+  paleolithic: { primary_color: '#ff4500', distortion: 0.8, particle_density: 120, atmosphere_filter: 'mist' },
+  medieval: { primary_color: '#ffd700', distortion: 0.15, particle_density: 60, atmosphere_filter: 'sepia' },
+  modern: { primary_color: '#0ea5e9', distortion: 0.35, particle_density: 40, atmosphere_filter: 'none' },
+  cyberpunk: { primary_color: '#00f3ff', distortion: 0.6, particle_density: 150, atmosphere_filter: 'glitch' },
+  genesis: { primary_color: '#8b5cf6', distortion: 0.4, particle_density: 80, atmosphere_filter: 'neon' },
+};
+
+export function RealityCore({ pulse, era, vfxConfig }: { pulse?: RealityPulse; era?: string; vfxConfig?: VfxConfig }) {
+  // Ưu tiên truyền từ Backend, nếu không dùng Presets cứng
+  const vfx = vfxConfig || (era ? (eraPresets[era.toLowerCase()] || eraPresets.genesis) : eraPresets.genesis);
   const visual = getVisualState(pulse);
+  
+  // Mix visual state (stability) with era state (style)
+  const finalColor = pulse && pulse.entropy >= pulse.entropyThreshold ? visual.color : vfx.primary_color;
+  const finalDistort = vfx.distortion + (visual.intensity * 0.2);
+
   const pressure = (pulse && (pulse.entropyThreshold ?? 0) > 0) ? Math.min((pulse.entropy ?? 0) / pulse.entropyThreshold, 1.4) : 0;
 
   return (
-    <div className="relative overflow-hidden rounded-[32px] border border-slate-200 bg-white p-5 shadow-sm">
+    <div className={`relative overflow-hidden rounded-[32px] border border-slate-200 bg-white p-5 shadow-sm transition-all duration-1000 ${
+      vfx.atmosphere_filter === 'sepia' || vfx.atmosphere_filter === 'dust' ? 'sepia-[0.25]' : 
+      vfx.atmosphere_filter === 'glitch' ? 'hue-rotate-30 saturate-150' : 
+      vfx.atmosphere_filter === 'mist' ? 'blur-[0.5px]' :
+      vfx.atmosphere_filter === 'aurora' ? 'hue-rotate-180 brightness-110' :
+      vfx.atmosphere_filter === 'grain' ? 'contrast-125' :
+      ''
+    }`}>
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_35%,rgba(59,130,246,0.05),transparent_24%),radial-gradient(circle_at_50%_70%,rgba(59,130,246,0.02),transparent_28%)]" />
       <div className="relative grid gap-5 lg:grid-cols-[minmax(0,1.05fr)_minmax(280px,0.95fr)]">
         <div className="relative h-[360px] overflow-hidden rounded-[28px] border border-slate-200 bg-slate-900 shadow-inner">
           <Canvas camera={{ position: [0, 0, 4.5], fov: 42 }}>
-            <CoreMesh intensity={visual.intensity} autonomyActive={visual.autonomyActive} color={visual.color} />
+            <CoreMesh 
+              intensity={visual.intensity} 
+              autonomyActive={visual.autonomyActive} 
+              color={finalColor} 
+              distort={finalDistort}
+              era={era?.toLowerCase() || 'genesis'}
+              particleDensity={vfx.particle_density}
+              pulse={pulse}
+            />
           </Canvas>
           <motion.div
-            className="pointer-events-none absolute inset-x-8 bottom-8 h-4 rounded-full bg-sky-500/20"
+            className="pointer-events-none absolute inset-x-8 bottom-8 h-4 rounded-full"
+            style={{ backgroundColor: `${finalColor}33` }}
             initial={{ opacity: 0.35 }}
             animate={{ opacity: [0.15, 0.6, 0.15], scaleX: [0.8, 1 + Math.min(pressure, 1) * 0.24, 0.8] }}
             transition={{ duration: pulse && pulse.entropy >= pulse.entropyThreshold ? 0.7 : 2.1, repeat: Infinity, ease: 'easeInOut' }}

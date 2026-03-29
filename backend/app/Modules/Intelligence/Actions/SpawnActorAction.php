@@ -39,16 +39,36 @@ class SpawnActorAction
             $metrics['metabolism'] = $base * (0.6 + 0.2 * $agg);
         }
 
+        $era = strtolower($data['era'] ?? 'genesis');
+        $name = $data['name'];
+        $archetype = $data['archetype'];
+        $biography = $data['biography'] ?? null;
+
+        // Era-Specific Archetype and Biography Adjustment
+        if ($era === 'paleolithic') {
+            if ($archetype === 'Leader') {
+                $archetype = 'Alpha';
+                $name = "Tù trưởng " . $name;
+                $biography = $biography ?: "Một thợ săn dũng cảm vươn lên dẫn dắt bộ lạc bằng sức mạnh và sự khôn ngoan nguyên thủy.";
+            }
+        } elseif ($era === 'cyberpunk') {
+            if ($archetype === 'Leader') {
+                $archetype = 'CEO';
+                $name = "Giám đốc " . $name;
+                $biography = $biography ?: "Một kiến trúc sư dữ liệu nắm giữ quyền lực thông qua mạng lưới thông tin và vốn hóa thị trường.";
+            }
+        }
+
         $actor = new ActorEntity(
             id: null,
             universeId: $data['universe_id'],
-            name: $data['name'],
-            archetype: $data['archetype'],
+            name: $name,
+            archetype: $archetype,
             traits: $traits,
             metrics: $metrics,
             isAlive: true,
             generation: $data['generation'] ?? 1,
-            biography: $data['biography'] ?? null
+            biography: $biography
         );
 
         $this->actorRepository->save($actor);

@@ -66,6 +66,30 @@ class EventNormalizer
             $this->eventBus->publish($event);
         }
     }
+
+    /**
+     * Map a single AgentScar from gRPC response to a WorldEvent.
+     */
+    public function normalizeScarToEvent(Universe $universe, array $scar): WorldEvent
+    {
+        $payload = array_merge($scar['raw_payload'] ?? [], [
+            'caused_by_id' => $scar['caused_by_id'] ?? 0,
+            'metadata' => $scar['metadata'] ?? [],
+            'description' => $scar['description'] ?? '',
+        ]);
+
+        return WorldEvent::create(
+            type: $scar['category'] ?? 'AGENT_SCAR',
+            universeId: (int) $universe->id,
+            tick: (int) $scar['tick'],
+            location: null,
+            actors: [$scar['actor_id']],
+            impactScore: 0.5, // Default, can be refined based on delta
+            causes: $scar['caused_by_id'] ? [$scar['caused_by_id']] : [],
+            payload: $payload,
+            parentId: $scar['caused_by_id'] ?: null
+        );
+    }
 }
 
 

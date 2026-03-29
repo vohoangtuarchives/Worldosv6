@@ -17,9 +17,9 @@ services:
     networks:
       - internal
 
-  # Cache
+  # Cache (Redis Stack with Vector Support)
   redis:
-    image: redis:8-alpine
+    image: redis/redis-stack-server:latest
     restart: always
     volumes:
       - worldos_prod_redisdata:/data
@@ -113,9 +113,11 @@ services:
       CENTRIFUGO_URL: http://centrifugo:8000
       CENTRIFUGO_KEY: ${CENTRIFUGO_KEY:-api_key}
       CENTRIFUGO_SECRET: ${CENTRIFUGO_SECRET:-secret}
+      SOCIAL_ENGINE_URL: http://social_engine:5001/api/v1
+      SOCIAL_ENGINE_MOCK: "true"
+    ports:
+      - "8000:8000"
     volumes:
-      - ../backend:/var/www
-      - /var/www/vendor
       - backend_storage:/var/www/storage
       - backend_bootstrap_cache:/var/www/bootstrap/cache
       - backend_public:/var/www/public
@@ -153,10 +155,10 @@ services:
       CENTRIFUGO_URL: http://centrifugo:8000
       CENTRIFUGO_KEY: ${CENTRIFUGO_KEY:-api_key}
       CENTRIFUGO_SECRET: ${CENTRIFUGO_SECRET:-secret}
-    command: php artisan schedule:work
+      SOCIAL_ENGINE_URL: http://social_engine:5001/api/v1
+      SOCIAL_ENGINE_MOCK: "true"
+    command: ["php", "artisan", "schedule:work"]
     volumes:
-      - ../backend:/var/www
-      - /var/www/vendor
       - backend_storage:/var/www/storage
       - backend_bootstrap_cache:/var/www/bootstrap/cache
     depends_on:
@@ -193,10 +195,10 @@ services:
       CENTRIFUGO_URL: http://centrifugo:8000
       CENTRIFUGO_KEY: ${CENTRIFUGO_KEY:-api_key}
       CENTRIFUGO_SECRET: ${CENTRIFUGO_SECRET:-secret}
-    command: php artisan queue:work
+      SOCIAL_ENGINE_URL: http://social_engine:5001/api/v1
+      SOCIAL_ENGINE_MOCK: "true"
+    command: ["php", "artisan", "queue:work"]
     volumes:
-      - ../backend:/var/www
-      - /var/www/vendor
       - backend_storage:/var/www/storage
       - backend_bootstrap_cache:/var/www/bootstrap/cache
     depends_on:
@@ -252,8 +254,28 @@ services:
       GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
       GROQ_API_KEY: ${GROQ_API_KEY:-}
       LOCAL_LLM_URL: ${LOCAL_LLM_URL:-}
+      REDIS_URL: redis://redis:6379/0
+      SEMANTIC_CACHE_ENABLED: "true"
+      LLM_CACHE_ENABLED: "true"
     depends_on:
       - backend
+    networks:
+      - internal
+
+  # Social Engine (Python/FastAPI Swarm AI)
+  social_engine:
+    build:
+      context: ../sim/social-engine
+      dockerfile: Dockerfile
+      provenance: false
+    restart: always
+    environment:
+      PORT: 5001
+      LLM_API_KEY: ${OPENAI_API_KEY:-}
+      LLM_MODEL_NAME: ${LLM_MODEL_NAME:-gpt-4o-mini}
+      ZEP_API_KEY: ${ZEP_API_KEY:-}
+      REDIS_URL: redis://redis:6379/0
+      LLM_CACHE_ENABLED: "true"
     networks:
       - internal
 

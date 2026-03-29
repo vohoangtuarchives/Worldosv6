@@ -1,8 +1,8 @@
 use crate::types::*;
 
 pub struct PotentialFieldEngine {
-    pub decay: f64,
-    pub diffusion_rate: f64,
+    pub decay: Fix,
+    pub diffusion_rate: Fix,
 }
 
 impl PotentialFieldEngine {
@@ -58,6 +58,7 @@ impl PotentialFieldEngine {
             }
 
             let n_len = neighbors.len() as f64;
+            if n_len < 1e-9 { continue; }
             let next = &mut next_pressures[i];
             let diff = &diffusion_sums[i];
 

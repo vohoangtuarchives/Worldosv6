@@ -2,6 +2,7 @@ from typing import TypedDict, List, Dict, Any
 
 class NarrativeState(TypedDict):
     world_id: int
+    world_era: str | None
     tick_start: int | None
     tick_end: int | None
     
@@ -37,5 +38,15 @@ class NarrativeState(TypedDict):
     revision_count: int
     
     past_memories: str
+    
+    epistemic_noise: float
+    epistemic_tier: str
+    resonance_scars: List[str]
+    reality_stability: float
+    
+    power_system: str | None
+    power_system_manifesto: str | None
+    era_context: str | None
+    vfx_hints: Dict[str, Any] | None
     
     current_agent: str

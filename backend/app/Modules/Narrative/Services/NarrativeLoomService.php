@@ -39,9 +39,11 @@ class NarrativeLoomService
             /** @var \Illuminate\Http\Client\Response $response */
             $response = Http::timeout($this->timeout)->post("{$this->baseUrl}/weave-chronicles", [
                 'world_id' => $worldId,
+                'world_era' => $world->civilization_era ?? 'genesis',
                 'tick_start' => $tickStart,
                 'tick_end' => $tickEnd,
                 'genre' => $genre,
+                'power_system' => $world->power_system_type ?? null,
                 'whispers' => $whispers,
             ]);
 

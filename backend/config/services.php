@@ -44,4 +44,10 @@ return [
         'url' => env('NARRATIVE_LOOM_URL', 'http://narrative_loom:8001'),
     ],
 
+    'social_engine' => [
+        'url' => env('SOCIAL_ENGINE_URL', 'http://127.0.0.1:5001/api/v1'),
+        'agents_count' => env('SOCIAL_ENGINE_AGENTS_COUNT', 10),
+        'mock_mode' => env('SOCIAL_ENGINE_MOCK', false),
+    ],
+
 ];

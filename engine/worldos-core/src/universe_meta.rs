@@ -1,5 +1,4 @@
 use crate::types::*;
-use crate::constants;
 
 impl UniverseState {
     pub fn run_archetype_discovery(&mut self) {
@@ -153,11 +152,15 @@ impl UniverseState {
                 z.state.entropy = (z.state.entropy + 0.5).min(1.0);
                 z.state.active_materials.clear(); 
             }
-            self.scars.push(serde_json::json!({
-                "type": "meta_cycle",
-                "description": format!("Phát động Meta-Cycle tại tick {}", self.tick),
-                "tick": self.tick
-            }));
+            self.scars.push(StructuredScar {
+                tick: self.tick,
+                category: "meta_cycle".to_string(),
+                description: format!("Phát động Meta-Cycle tại tick {}", self.tick),
+                actor_id: None,
+                zone_id: None,
+                caused_by_id: None,
+                metadata: serde_json::json!({ "tick": self.tick }),
+            });
             return true;
         }
         false

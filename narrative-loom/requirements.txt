@@ -13,6 +13,7 @@ pytest
 pytest-asyncio
 pytest-mock
 chromadb
-sentence-transformers
+fastembed==0.2.7
 langchain-community
 langchain-chroma
+redis==5.0.3

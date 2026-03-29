@@ -4,6 +4,7 @@ import httpx
 import os
 from typing import Dict, Any
 from dotenv import load_dotenv
+from utils.manifesto_loader import loader
 
 load_dotenv()
 
@@ -11,9 +12,11 @@ app = FastAPI(title="NarrativeLoom API", version="1.0.0")
 
 class ChronicleRequest(BaseModel):
     world_id: int
+    world_era: str | None = "genesis"
     tick_start: int | None = None
     tick_end: int | None = None
     genre: str | None = "generic"
+    power_system: str | None = None
     whispers: list[str] | None = []
 
 @app.get("/")
@@ -33,10 +36,10 @@ def get_config():
             "wordsmith": {"provider": "anthropic", "model": "claude-3-opus-20240229", "role": "Literary Prose"}
         },
         "providers": {
+            "openrouter": {"status": "online" if os.getenv("OPENROUTER_API_KEY") else "missing_key"},
             "openai": {"status": "online" if os.getenv("OPENAI_API_KEY") else "missing_key"},
-            "anthropic": {"status": "online" if os.getenv("ANTHROPIC_API_KEY") else "missing_key"},
-            "google": {"status": "online" if os.getenv("GOOGLE_API_KEY") else "missing_key"},
-            "local": {"status": "online", "url": os.getenv("LOCAL_LLM_URL", "http://host.docker.internal:1234/v1")}
+            "google": {"status": "online" if os.getenv("GOOGLE_API_KEY") else "online"},
+            "local": {"status": "online", "url": os.getenv("LOCAL_LLM_URL", "http://localhost:11434")}
         }
     }
 
@@ -65,9 +68,15 @@ async def weave_chronicles(req: ChronicleRequest):
     # Ví dụ: Mặc định Historian=GPT-4o, Wordsmith=Claude-3.
     from graph import app as loom_app
     
+    # 2b. Load Reality Knowledge (Decoupled Knowledge Layer)
+    power_manifesto = loader.get_power_manifesto(req.power_system, req.world_era) if req.power_system else ""
+    era_context = loader.get_era_context(req.world_era) if req.world_era else ""
+    vfx_hints = loader.get_vfx_hints(req.world_era) if req.world_era else {}
+    
     # State ban đầu
     initial_state = {
         "world_id": req.world_id,
+        "world_era": req.world_era or "genesis",
         "tick_start": req.tick_start,
         "tick_end": req.tick_end,
         "genre": req.genre or "generic",
@@ -77,20 +86,22 @@ async def weave_chronicles(req: ChronicleRequest):
         "psychological_profiles": {},
         "storyboard": "",
         "final_prose": "",
-        "feedback": "",
-        "current_agent": "system"
+        "feedback": {},
+        "revision_count": 0,
+        "current_agent": "system",
+        "epistemic_noise": 0.0,
+        "epistemic_tier": "Chân Thực",
+        "resonance_scars": [],
+        "power_system": req.power_system,
+        "power_system_manifesto": power_manifesto,
+        "era_context": era_context,
+        "vfx_hints": vfx_hints
     }
     
     run_config = {
         "configurable": {
-            "historian_provider": "local",
-            "historian_model": os.getenv("LOCAL_MODEL_NAME", "MythoMax-L2-13B"),
-            "psychologist_provider": "local",
-            "psychologist_model": os.getenv("LOCAL_MODEL_NAME", "MythoMax-L2-13B"),
-            "director_provider": "local", 
-            "director_model": os.getenv("LOCAL_MODEL_NAME", "MythoMax-L2-13B"),
-            "wordsmith_provider": "local",
-            "wordsmith_model": os.getenv("LOCAL_MODEL_NAME", "MythoMax-L2-13B") 
+            "use_cache": True,
+            "routing_strategy": "openrouter"
         }
     }
     
@@ -113,6 +124,8 @@ async def weave_chronicles(req: ChronicleRequest):
     
     return {
         "message": "Narrative Synthesis Complete.",
+        "world_id": req.world_id,
+        "tick_end": req.tick_end,
         "chronicles_count": len(data.get("data", [])),
         "supported_models": ["openai", "anthropic", "google", "groq", "local", "alibaba"],
         "historical_outline": final_state.get("historical_outline"),
@@ -120,8 +133,21 @@ async def weave_chronicles(req: ChronicleRequest):
         "final_prose": final_prose,
         "news_headline": final_state.get("news_headline"),
         "news_slogan": final_state.get("news_slogan"),
-        "vfx_config": final_state.get("vfx_config")
+        "vfx_config": final_state.get("vfx_config") or final_state.get("vfx_hints")
     }
+
+# ── Cache Invalidation ────────────────────────────────────────────────────────
+
+from utils.cache_manager import cache_manager
+
+@app.post("/invalidate-cache")
+async def invalidate_cache(world_id: int):
+    """Xóa bộ nhớ đệm cho một World cụ thể khi có biến động lớn hoặc Reset."""
+    try:
+        cache_manager.invalidate_world_cache(world_id)
+        return {"status": "success", "message": f"Cache for world {world_id} invalidated."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # ── Actor Intent Endpoint ─────────────────────────────────────────────────────

@@ -1,7 +1,7 @@
 import os
 from typing import Dict, Any
 from state import NarrativeState
-from utils.llm_factory import get_llm
+from utils.llm_factory import get_llm, get_llm_for_agent
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 
@@ -33,9 +33,8 @@ async def chief_editor_agent(state: NarrativeState, config: Dict[str, Any] = Non
     singularity = state.get("singularity", "None")
     genre = state.get("genre", "Generic")
     
-    provider = "local"
-    model_name = os.getenv("LOCAL_MODEL_NAME", "MythoMax-L2-13B")
-    llm = get_llm(provider=provider, model_name=model_name)
+    # 🌟 DYNAMIC ROUTING: Cấp quyền Tổng biên tập sử dụng Model Pro nhất
+    llm = get_llm_for_agent("chief_editor", world_id=state.get("world_id"), current_tick=state.get("tick_end"))
     chain = chief_editor_prompt | llm | StrOutputParser()
     
     result = await chain.ainvoke({

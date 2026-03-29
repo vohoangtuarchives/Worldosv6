@@ -26,9 +26,8 @@ async def mythologist_agent(state: NarrativeState, config: Dict[str, Any] = None
     outline = state.get("historical_outline", "")
     style = state.get("style_guidelines", "")
     
-    provider = "local"
-    model_name = os.getenv("LOCAL_MODEL_NAME", "MythoMax-L2-13B")
-    llm = get_llm(provider=provider, model_name=model_name)
+    # 🌟 DYNAMIC ROUTING: Phân bổ mô hình cho Mythologist (GD2)
+    llm = get_llm_for_agent("mythologist", world_id=state.get("world_id"), current_tick=state.get("tick_end"))
     chain = mythologist_prompt | llm | StrOutputParser()
     
     result = await chain.ainvoke({

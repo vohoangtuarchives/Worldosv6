@@ -13,50 +13,75 @@ class EpistemicService
     /**
      * Calculate Knowledge Noise (N_k) based on entropy and universe state.
      * Scale: 0.0 (Perfect Clarity) to 1.0 (Absolute Obscurity).
+     * Implements "Self-Decaying Truth": Noise increases with time and entropy autonomously.
      */
     public function calculateNoise(Universe $universe, float $entropy): float
     {
-        $baseNoise = $entropy * 0.5; // Entropy directly contributes to data decay
+        // 1. Entropy-driven Decay (T1)
+        $baseNoise = $entropy * 0.4; 
 
-        // Active crises increase noise significantly
+        // 2. Temporal Decay (T8 - Hữu hạn): Càng xa điểm Genesis, dữ liệu càng mờ
+        $tick = $universe->current_tick;
+        $temporalNoise = min(0.3, ($tick / 100000) * 0.1); 
+
+        // 3. Active crises increase noise (Local Emergence)
         $vec = $universe->state_vector ?? [];
         $activeCrisesCount = count($vec['active_crises'] ?? []);
-        $crisisBoost = $activeCrisesCount * 0.15;
+        $crisisBoost = $activeCrisesCount * 0.1;
 
-        // "Void Breach" crisis adds massive instability
-        if (isset($vec['active_crises']['void_breach'])) {
-            $crisisBoost += 0.3;
-        }
+        // 4. Structural Instability (SCI penalty)
+        $sci = $universe->snapshots()->latest()->first()?->metrics['ip_score'] ?? 0.5;
+        $sciPenalty = (1.0 - $sci) * 0.2;
 
-        return min(1.0, max(0.0, $baseNoise + $crisisBoost));
+        return min(1.0, max(0.0, $baseNoise + $temporalNoise + $crisisBoost + $sciPenalty));
     }
 
     /**
      * Distort a data vector based on the current noise level.
-     * Used for "Perceived Archive" instead of "Canonical Archive".
+     * Uses Deterministic PRNG from Universe Seed (Self-Regulating Reality).
      */
-    public function distort(array $data, float $noise): array
+    public function distort(Universe $universe, array $data, float $noise): array
     {
-        if ($noise <= 0.05) {
-            return $data; // Near perfect clarity
+        if ($noise <= 0.02) {
+            return $data; // Perfect clarity threshold
         }
 
+        // Initialize deterministic random for this specific universe state
+        $prng = \App\Modules\Simulation\Services\Ecology\SimulationPRNG::forUniverse($universe);
+        
         $distorted = [];
         foreach ($data as $key => $value) {
             if (is_numeric($value)) {
-                // Apply Gaussian-like noise: distorted = value + (noise * random_offset)
-                $prng = \App\Modules\Simulation\Services\Ecology\SimulationPRNG::forUniverse($universe);
+                // Structured Noise: Consistent distortion for the same state
                 $offset = ($prng->nextFloat() * 2 - 1) * $noise;
                 $distorted[$key] = max(0.0, min(1.0, (float)$value + $offset));
             } elseif (is_array($value)) {
-                $distorted[$key] = $this->distort($value, $noise);
+                $distorted[$key] = $this->distort($universe, $value, $noise);
             } else {
-                // For strings, we could potentially scramble some characters, but let's keep it simple for now
-                $distorted[$key] = $value;
+                // String distortion: Obscure parts of strings if noise is high
+                if ($noise > 0.6 && strlen($value) > 10) {
+                    $distorted[$key] = $this->obscureText($value, $noise, $prng);
+                } else {
+                    $distorted[$key] = $value;
+                }
             }
         }
 
         return $distorted;
+    }
+
+    /**
+     * Obscure text segments based on noise level.
+     */
+    protected function obscureText(string $text, float $noise, $prng): string
+    {
+        $words = explode(' ', $text);
+        foreach ($words as &$word) {
+            if ($prng->nextFloat() < ($noise - 0.4)) {
+                $word = str_repeat('…', min(3, strlen($word)));
+            }
+        }
+        return implode(' ', $words);
     }
 
     /**

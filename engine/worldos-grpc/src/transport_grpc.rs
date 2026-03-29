@@ -26,7 +26,7 @@ impl SimulationEngine for EngineService {
     ) -> Result<Response<AdvanceResponse>, Status> {
         let req = request.into_inner();
         let state_input = req.state_input.as_slice();
-        match engine::run_advance(req.universe_id, req.ticks, state_input, req.world_config) {
+        match engine::run_advance(req.universe_id, req.ticks, state_input, req.world_config).await {
             Ok((tick, state_vector_json, entropy, stability_index, metrics_json, sci, instability_gradient, global_fields_json)) => {
                 let snapshot = UniverseSnapshot {
                     universe_id: req.universe_id,
@@ -82,7 +82,7 @@ impl SimulationEngine for EngineService {
         request: Request<ObserveRequest>,
     ) -> Result<Response<ObserveResponse>, Status> {
         let req = request.into_inner();
-        match engine::run_observe(req.universe_id, req.zone_index, req.intensity, &req.state_input) {
+        match engine::run_observe(req.universe_id, req.zone_index, req.intensity, &req.state_input).await {
             Ok((tick, state_vector_json, entropy, stability_index, metrics_json, sci, instability_gradient, global_fields_json)) => {
                 let snapshot = UniverseSnapshot {
                     universe_id: req.universe_id,
@@ -110,37 +110,36 @@ impl SimulationEngine for EngineService {
         request: Request<BatchAdvanceRequest>,
     ) -> Result<Response<BatchAdvanceResponse>, Status> {
         let req = request.into_inner();
-        let responses: Vec<AdvanceResponse> = req
-            .requests
-            .into_iter()
-            .map(|r| {
-                let state_input = r.state_input.as_slice();
-                match engine::run_advance(r.universe_id, r.ticks, state_input, r.world_config) {
-                    Ok((tick, state_vector_json, entropy, stability_index, metrics_json, sci, instability_gradient, global_fields_json)) => {
-                        AdvanceResponse {
-                            ok: true,
-                            error_message: String::new(),
-                            snapshot: Some(UniverseSnapshot {
-                                universe_id: r.universe_id,
-                                tick,
-                                state_vector_json,
-                                entropy,
-                                stability_index,
-                                metrics_json,
-                                sci,
-                                instability_gradient,
-                                global_fields_json,
-                            }),
-                        }
-                    }
-                    Err(e) => AdvanceResponse {
+        let mut responses: Vec<AdvanceResponse> = Vec::with_capacity(req.requests.len());
+        for r in req.requests {
+            let state_input = r.state_input.as_slice();
+            match engine::run_advance(r.universe_id, r.ticks, state_input, r.world_config).await {
+                Ok((tick, state_vector_json, entropy, stability_index, metrics_json, sci, instability_gradient, global_fields_json)) => {
+                    responses.push(AdvanceResponse {
+                        ok: true,
+                        error_message: String::new(),
+                        snapshot: Some(UniverseSnapshot {
+                            universe_id: r.universe_id,
+                            tick,
+                            state_vector_json,
+                            entropy,
+                            stability_index,
+                            metrics_json,
+                            sci,
+                            instability_gradient,
+                            global_fields_json,
+                        }),
+                    });
+                }
+                Err(e) => {
+                    responses.push(AdvanceResponse {
                         ok: false,
                         error_message: e,
                         snapshot: None,
-                    },
+                    });
                 }
-            })
-            .collect();
+            }
+        }
         Ok(Response::new(BatchAdvanceResponse { responses }))
     }
 

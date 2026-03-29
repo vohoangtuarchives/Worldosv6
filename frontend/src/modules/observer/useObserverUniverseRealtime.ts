@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Centrifuge } from 'centrifuge';
 import { toast } from 'sonner';
@@ -39,10 +39,39 @@ export function useObserverUniverseRealtime(universeId: string): ObserverRealtim
 
     const pulseSubscription = centrifuge.newSubscription(`universes.${universeId}`);
     pulseSubscription.on('publication', (ctx) => {
-      const payload = (ctx.data ?? {}) as UniversePulsePublication;
+      // BINARY READY PROTOCOL (Hardfork 1.3)
+      // Check if data is binary array (ArrayBuffer/Uint8Array)
+      let payload: UniversePulsePublication = {};
+      try {
+        if (ctx.data instanceof Uint8Array || ctx.data instanceof ArrayBuffer) {
+           // Trong tương lai, cắm thư viện MsgPack.decode(ctx.data) tại đây.
+           // Hiện tại dùng TextDecoder làm phương án dự phòng cho UTF-8 raw byte.
+           const decoder = new TextDecoder('utf-8');
+           payload = JSON.parse(decoder.decode(ctx.data as BufferSource)) as UniversePulsePublication;
+        } else if (typeof ctx.data === 'string') {
+           payload = JSON.parse(ctx.data) as UniversePulsePublication;
+        } else {
+           payload = (ctx.data ?? {}) as UniversePulsePublication;
+        }
+      } catch (e) {
+        console.warn('Centrifugo decoding error (expected binary/JSON):', e);
+        payload = (ctx.data ?? {}) as UniversePulsePublication;
+      }
+
       const tickLabel = typeof payload.tick === 'number' ? `Tick ${payload.tick.toLocaleString()}` : 'Universe pulse';
       setLastEventLabel(tickLabel);
-      void invalidateObserverUniverseQueries(queryClient, universeId, ['detail', 'metrics', 'realityPulse', 'timeline']);
+      
+      // Stage 4.3: Zero-Fetch Update. Không cần request lại HTTP, nạp thẳng vào cache.
+      queryClient.setQueryData(['universes', universeId, 'realityPulse'], (old: any) => {
+        return {
+          ...old,
+          ...payload,
+          // Map fields from publication to RealityPulse if needed (they are already compatible)
+        };
+      });
+
+      // Chỉ invalidate các phần khác không có trong Pulse nhị phân
+      void queryClient.invalidateQueries({ queryKey: ['universes', universeId, 'metrics'] });
     });
 
     const mutationSubscription = centrifuge.newSubscription(`universes.${universeId}.autopoiesis`);

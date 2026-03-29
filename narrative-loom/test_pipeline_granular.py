@@ -10,12 +10,11 @@ from agents.historian import historian_agent
 from agents.psychologist import psychologist_agent
 from agents.director import director_agent
 from agents.wordsmith import wordsmith_agent
+from mock_data import get_mock_historian_state
 
-async def run_historian():
-    print(">>> Stage 1: Testing Historian...")
-    # Fetch data mock hoặc thật
-    # Giả lập data chronicle từ Universe 1
-    state = get_mock_historian_state()
+async def run_historian(noise: float = 0.05):
+    print(f">>> Stage 1: Testing Historian (Noise: {noise})...")
+    state = get_mock_historian_state(noise)
     
     result = await historian_agent(state)
     with open("test_historian_output.json", "w", encoding="utf-8") as f:
@@ -52,7 +51,8 @@ async def main():
     
     try:
         if stage == "historian" or stage == "all":
-            state = await run_historian()
+            noise = float(sys.argv[2]) if len(sys.argv) > 2 else 0.05
+            state = await run_historian(noise)
         else:
             with open("test_historian_output.json", "r", encoding="utf-8") as f:
                 state = json.load(f)

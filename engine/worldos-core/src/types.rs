@@ -2,6 +2,8 @@ use std::collections::HashMap;
 use crate::agent::Agent;
 use serde::{Deserialize, Serialize};
 use crate::sharding::{ShardId, ShardMap, GhostZone};
+ 
+pub type Fix = f64;
 
 /// World: genotype, immutable rules. Not ticked.
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -25,16 +27,16 @@ pub struct UniverseState {
     pub universe_id: u64,
     pub tick: u64,
     pub zones: Vec<ZoneStateSerial>,
-    pub global_entropy: f64,
-    pub knowledge_core: f64,
+    pub global_entropy: Fix,
+    pub knowledge_core: Fix,
     #[serde(default)]
-    pub instability_gradient: f64,
+    pub instability_gradient: Fix,
     #[serde(default)]
-    pub sci: f64, // Structural Coherence Index (§4.3)
+    pub sci: Fix, // Structural Coherence Index (§4.3)
     #[serde(default)]
     pub global_fields: CivilizationFields,
     #[serde(default)]
-    pub scars: Vec<serde_json::Value>,
+    pub scars: Vec<StructuredScar>,
     #[serde(default)]
     pub attractors: Vec<CivilizationAttractor>,
     #[serde(default)]
@@ -57,7 +59,7 @@ pub struct UniverseState {
     #[serde(default)]
     pub fork_recommendation: bool,
     #[serde(default)]
-    pub axioms: HashMap<String, f64>,
+    pub axioms: HashMap<String, Fix>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -72,11 +74,11 @@ pub struct ZoneId(pub u32);
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct KernelGenome {
-    pub diffusion_rate: f64,
-    pub entropy_coefficient: f64,
-    pub mutation_rate: f64,
-    pub attractor_gravity: f64,
-    pub complexity_bonus: f64,
+    pub diffusion_rate: Fix,
+    pub entropy_coefficient: Fix,
+    pub mutation_rate: Fix,
+    pub attractor_gravity: Fix,
+    pub complexity_bonus: Fix,
 }
 
 impl Default for KernelGenome {
@@ -95,31 +97,31 @@ impl Default for KernelGenome {
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct CulturalVector {
     #[serde(default)]
-    pub tradition_rigidity: f64,
+    pub tradition_rigidity: Fix,
     #[serde(default)]
-    pub innovation_openness: f64,
+    pub innovation_openness: Fix,
     #[serde(default)]
-    pub collective_trust: f64,
+    pub collective_trust: Fix,
     #[serde(default)]
-    pub violence_tolerance: f64,
+    pub violence_tolerance: Fix,
     #[serde(default)]
-    pub institutional_respect: f64,
+    pub institutional_respect: Fix,
     #[serde(default)]
-    pub myth_belief: f64,
+    pub myth_belief: Fix,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct ZonePressures {
     #[serde(default)]
-    pub war: f64,
+    pub war: Fix,
     #[serde(default)]
-    pub economic: f64,
+    pub economic: Fix,
     #[serde(default)]
-    pub religious: f64,
+    pub religious: Fix,
     #[serde(default)]
-    pub migration: f64,
+    pub migration: Fix,
     #[serde(default)]
-    pub innovation: f64,
+    pub innovation: Fix,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -128,36 +130,51 @@ pub struct NarrativeTag {
     pub weight: f32,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct StructuredScar {
+    pub tick: u64,
+    pub category: String,
+    pub description: String,
+    #[serde(default)]
+    pub actor_id: Option<u64>,
+    #[serde(default)]
+    pub zone_id: Option<u32>,
+    #[serde(default)]
+    pub caused_by_id: Option<u64>,
+    #[serde(default)]
+    pub metadata: serde_json::Value,
+}
+
 /// Level 7 Attractor Fields: Survival, Power, Wealth, Knowledge, Meaning.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct CivilizationFields {
     #[serde(default)]
-    pub survival: f64,
+    pub survival: Fix,
     #[serde(default)]
-    pub reproduction: f64,
+    pub reproduction: Fix,
     #[serde(default)]
-    pub wealth: f64,
+    pub wealth: Fix,
     #[serde(default)]
-    pub power: f64,
+    pub power: Fix,
     #[serde(default)]
-    pub knowledge: f64,
+    pub knowledge: Fix,
     #[serde(default)]
-    pub meaning: f64,
+    pub meaning: Fix,
     #[serde(default)]
-    pub status: f64,
+    pub status: Fix,
     #[serde(default)]
-    pub belonging: f64,
+    pub belonging: Fix,
     // Macro Phase 4 Purification
     #[serde(default)]
-    pub authority: f64,
+    pub authority: Fix,
     #[serde(default)]
-    pub fear_macro: f64,
+    pub fear_macro: Fix,
     #[serde(default)]
-    pub order_macro: f64,
+    pub order_macro: Fix,
     #[serde(default)]
-    pub entropy_macro: f64,
+    pub entropy_macro: Fix,
     #[serde(default)]
-    pub resonance: f64,
+    pub resonance: Fix,
 }
 
 /// Cascade phase per zone: pressure above threshold advances Normal → Famine → Riots → Collapse.
@@ -209,14 +226,14 @@ pub enum CivilizationPhase {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ArchetypeProfile {
     pub name: String,
-    pub survival: f64,
-    pub reproduction: f64,
-    pub wealth: f64,
-    pub power: f64,
-    pub knowledge: f64,
-    pub meaning: f64,
-    pub status: f64,
-    pub belonging: f64,
+    pub survival: Fix,
+    pub reproduction: Fix,
+    pub wealth: Fix,
+    pub power: Fix,
+    pub knowledge: Fix,
+    pub meaning: Fix,
+    pub status: Fix,
+    pub belonging: Fix,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -243,11 +260,11 @@ pub enum Biome {
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct EcologicalFields {
     #[serde(default)]
-    pub biodiversity: f64,
+    pub biodiversity: Fix,
     #[serde(default)]
-    pub biomass: f64,
+    pub biomass: Fix,
     #[serde(default)]
-    pub resource_stress: f64,
+    pub resource_stress: Fix,
 }
 
 /// Civilization Attractor: zone emits field that pulls neighbor civ_fields (Rome, Athens, Venice...).
@@ -286,40 +303,43 @@ pub struct FutureOutcome {
 
 impl CulturalVector {
     pub fn clamp_mut(&mut self) {
-        let clamp = |v: &mut f64| *v = v.clamp(0.0, 1.0);
-        clamp(&mut self.tradition_rigidity);
-        clamp(&mut self.innovation_openness);
-        clamp(&mut self.collective_trust);
-        clamp(&mut self.violence_tolerance);
-        clamp(&mut self.institutional_respect);
-        clamp(&mut self.myth_belief);
+        let zero = 0.0;
+        let one = 1.0;
+        self.tradition_rigidity = self.tradition_rigidity.clamp(zero, one);
+        self.innovation_openness = self.innovation_openness.clamp(zero, one);
+        self.collective_trust = self.collective_trust.clamp(zero, one);
+        self.violence_tolerance = self.violence_tolerance.clamp(zero, one);
+        self.institutional_respect = self.institutional_respect.clamp(zero, one);
+        self.myth_belief = self.myth_belief.clamp(zero, one);
     }
 }
 
 impl CivilizationFields {
     pub fn clamp_mut(&mut self) {
-        let clamp = |v: &mut f64| *v = v.clamp(0.0, 1.0);
-        clamp(&mut self.survival);
-        clamp(&mut self.power);
-        clamp(&mut self.wealth);
-        clamp(&mut self.knowledge);
-        clamp(&mut self.meaning);
-        clamp(&mut self.authority);
-        clamp(&mut self.fear_macro);
-        clamp(&mut self.order_macro);
-        clamp(&mut self.entropy_macro);
-        clamp(&mut self.resonance);
+        let zero = 0.0;
+        let one = 1.0;
+        self.survival = self.survival.clamp(zero, one);
+        self.power = self.power.clamp(zero, one);
+        self.wealth = self.wealth.clamp(zero, one);
+        self.knowledge = self.knowledge.clamp(zero, one);
+        self.meaning = self.meaning.clamp(zero, one);
+        self.authority = self.authority.clamp(zero, one);
+        self.fear_macro = self.fear_macro.clamp(zero, one);
+        self.order_macro = self.order_macro.clamp(zero, one);
+        self.entropy_macro = self.entropy_macro.clamp(zero, one);
+        self.resonance = self.resonance.clamp(zero, one);
     }
 }
 
 impl ZonePressures {
     pub fn clamp_mut(&mut self) {
-        let clamp = |v: &mut f64| *v = v.clamp(0.0, 1.0);
-        clamp(&mut self.war);
-        clamp(&mut self.economic);
-        clamp(&mut self.religious);
-        clamp(&mut self.migration);
-        clamp(&mut self.innovation);
+        let zero = 0.0;
+        let one = 1.0;
+        self.war = self.war.clamp(zero, one);
+        self.economic = self.economic.clamp(zero, one);
+        self.religious = self.religious.clamp(zero, one);
+        self.migration = self.migration.clamp(zero, one);
+        self.innovation = self.innovation.clamp(zero, one);
     }
 }
 
@@ -327,35 +347,35 @@ impl ZonePressures {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ZoneState {
     #[serde(default)]
-    pub base_mass: f64,
+    pub base_mass: Fix,
     #[serde(default)]
-    pub structured_mass: f64,
+    pub structured_mass: Fix,
     #[serde(default)]
-    pub free_energy: f64,
+    pub free_energy: Fix,
     /// Normalized [0,1]: higher = more disorder/fragility.
     #[serde(default)]
-    pub entropy: f64,
+    pub entropy: Fix,
     #[serde(default)]
     pub cultural: CulturalVector,
     /// MaterialStress ∝ entropy + depletion + structured fragility (§4.1).
     #[serde(default)]
-    pub material_stress: f64,
+    pub material_stress: Fix,
     #[serde(default)]
-    pub embodied_knowledge: f64,
+    pub embodied_knowledge: Fix,
     #[serde(default)]
-    pub inequality: f64,
+    pub inequality: Fix,
     #[serde(default)]
-    pub trauma: f64,
+    pub trauma: Fix,
     #[serde(default)]
-    pub tech_ceiling: f64,
+    pub tech_ceiling: Fix,
     #[serde(default)]
-    pub knowledge_frontier: f64,
+    pub knowledge_frontier: Fix,
     #[serde(default)]
     pub active_materials: Vec<ActiveMaterial>,
     #[serde(default)]
     pub agents: Vec<Agent>,
     #[serde(default)]
-    pub regional_scars: f64, // Normalized scar pressure (0.0 - 1.0)
+    pub regional_scars: Fix, // Normalized scar pressure (0.0 - 1.0)
     #[serde(default)]
     pub quantum_overlay: Option<QuantumOverlay>,
     #[serde(default)]
@@ -384,9 +404,9 @@ pub struct ZoneState {
 /// Quantum Overlay: Controls probabilistic state and observer effect (§57).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct QuantumOverlay {
-    pub superposition_depth: f64, // 0.0 (Collapsed) to 1.0 (Deep Superposition)
-    pub observer_presence: f64,    // 0.0 to 1.0
-    pub probability_decay: f64,    // Speed of collapse
+    pub superposition_depth: Fix, // 0.0 (Collapsed) to 1.0 (Deep Superposition)
+    pub observer_presence: Fix,    // 0.0 to 1.0
+    pub probability_decay: Fix,    // Speed of collapse
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -452,6 +472,8 @@ pub struct ActorTable {
     pub current_node: Vec<u16>,    // Current node ID in the Behavior Graph
     pub heroic_type: Vec<u8>,      // V7: 0=None, 1=Scientist, etc.
     pub lineage_id: Vec<u64>,     // V7: 0=None
+    pub intents: Vec<String>,      // Decision intent slug
+    pub mental_states: Vec<String>, // JSON serialized mental state
 }
 
 impl ActorTable {
@@ -470,6 +492,8 @@ impl ActorTable {
         self.current_node.push(0); // 0 = Idle node
         self.heroic_type.push(0);
         self.lineage_id.push(0);
+        self.intents.push(String::new());
+        self.mental_states.push(String::new());
     }
 }
 
@@ -541,7 +565,7 @@ pub struct PressureCoefficients {
 }
 
 impl ZoneState {
-    pub fn new(base_mass: f64) -> Self {
+    pub fn new(base_mass: Fix) -> Self {
         Self {
             base_mass,
             structured_mass: 0.0,
@@ -561,7 +585,7 @@ impl ZoneState {
             cascade_phase: CascadePhase::Normal,
             civ_fields: CivilizationFields::default(),
             phase: CivilizationPhase::Tribal,
-            population_proxy: 0.0,
+            population_proxy: 0.0, // Keeping flow-specific proxies float for now to minimize ripple
             resource_capacity: 0.0,
             wealth_proxy: 0.0,
             biome: Biome::Barren,
@@ -585,7 +609,7 @@ impl ZoneState {
         } else {
             0.0
         };
-        let fragility = self.entropy * (self.structured_mass / (self.base_mass + 1e-6));
+        let fragility = self.entropy * (self.structured_mass / (self.base_mass + 0.000001));
         // MaterialStress = f(entropy, depletion, fragility) + scar pressure (§4.1)
         self.material_stress = (self.entropy * 0.3 + depletion * 0.2 + fragility * 0.2 + self.regional_scars * 0.3).clamp(0.0, 1.0);
     }
@@ -626,7 +650,7 @@ pub struct SimulationMetrics {
     pub instability_gradient: f64,
     pub zone_count: u32,
     pub civ_fields: CivilizationFields,
-    pub scars: Vec<serde_json::Value>,
+    pub scars: Vec<StructuredScar>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

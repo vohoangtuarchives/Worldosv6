@@ -19,6 +19,7 @@ class ActorIntentRequest(BaseModel):
     archetype: str
     traits: Dict[str, float]
     universe_context: UniverseContextIn
+    world_era: str | None = "genesis"
     recent_biography: str = ""
     available_actions: List[str] = [
         "revolt", "form_contract", "migrate",
@@ -41,7 +42,9 @@ INTENT_SYSTEM = """Ngươi là tâm trí bên trong của một actor trong th�
 Nhiệm vụ: đọc trạng thái nội tâm và bối cảnh thế giới, sau đó quyết định hành động tiếp theo.
 Chỉ trả về JSON thuần túy, không giải thích thêm."""
 
-INTENT_HUMAN = """Actor: {actor_name} ({archetype})
+INTENT_HUMAN = """Actor: {actor_name}
+Vai trò/Hệ tư tưởng: {archetype}
+Kỷ nguyên hiện tại: {world_era}
 
 Trait vector (thang 0-1):
 {traits_formatted}
@@ -51,18 +54,24 @@ Bối cảnh thế giới tại tick {tick}:
 - Ổn định: {stability}
 - Cường độ huyền thoại: {myth}
 
-Tiểu sử gần đây:
+Tiểu sử và bối cảnh xã hội gần đây:
 {biography}
 
 Hành động có thể chọn:
 {actions_formatted}
 
-Quyết định hành động tiếp theo. Trả về JSON theo format chính xác này:
+Quyết định hành động tiếp theo. Hãy đảm bảo:
+1. Hành động và lý do (reasoning) phải TUÂN THỦ TUYỆT ĐỐI bối cảnh văn minh của Kỷ nguyên {world_era}.
+2. Nếu là thời Tiền sử (Paleolithic), hãy dùng ngôn ngữ bản năng, tâm linh, bộ lạc.
+3. Nếu là thời Trung cổ (Medieval), hãy dùng ngôn ngữ danh dự, đức tin, giai cấp.
+4. Nếu là thời Cyberpunk, hãy dùng ngôn ngữ kỹ thuật số, thực dụng, tập đoàn.
+
+Trả về JSON theo format chính xác này:
 {{
   "action": "<một trong các hành động ở trên>",
   "intensity": <số thập phân 0.0-1.0, mức độ mạnh của hành động>,
   "target": "<tên actor mục tiêu nếu cần hoặc null>",
-  "reasoning": "<1 câu tiếng Việt giải thích lý do hành động — dùng làm nhật ký nhân vật>",
+  "reasoning": "<1 câu tiếng Việt giải thích lý do hành động — phải khớp với vai trò {archetype} trong thời đại {world_era}>",
   "confidence": <số thập phân 0.0-1.0, mức độ chắc chắn của quyết định>
 }}"""
 
@@ -91,6 +100,7 @@ async def intent_agent(req: ActorIntentRequest) -> ActorIntentResponse:
 
     # Build prompt values
     prompt_values = {
+        "world_era": req.world_era or "genesis",
         "actor_name": req.actor_name,
         "archetype": req.archetype,
         "traits_formatted": traits_lines,

@@ -197,18 +197,32 @@ class GrpcSimulationEngineClient implements SimulationEngineClientInterface
         ];
     }
 
-    public function processActorsSoa(int $tick, array $ids, array $zoneIds, array $hunger, array $energy, array $fear, array $trauma, array $heroicTypes, array $lineageIds, array $memes, array $traitsMatrix,
+    public function processActorsSoa(
+        int $tick,
+        array $ids,
+        array $zoneIds,
+        array $hunger,
+        array $energy,
+        array $fear,
+        array $trauma,
+        array $heroicTypes,
+        array $lineageIds,
+        array $memes,
+        array $traitsMatrix,
         array $behaviorStates = [],
         array $behaviorGraphs = [],
         array $archetypes = [],
         array $socialGraph = [],
         array $edicts = [],
+        array $factionIds = [],
         array $factionLoyalty = [],
         bool $isObserved = false,
         array $narrativeContext = [],
         array $factionRelations = [],
         array $beliefDefinitions = [],
-        array $beliefAlignments = []
+        array $beliefAlignments = [],
+        array $techDefinitions = [],
+        array $actorTechLevels = []
     ): array {
         $request = new \Worldos\Simulation\ProcessActorsSoaRequest();
         $request->setTick($tick);
@@ -368,6 +382,8 @@ class GrpcSimulationEngineClient implements SimulationEngineClientInterface
                 'new_energy' => $out->getNewEnergy(),
                 'new_trauma' => $out->getNewTrauma(),
                 'resource_delta' => method_exists($out, 'getResourceDelta') ? $out->getResourceDelta() : 0.0,
+                'intent_slug' => method_exists($out, 'getIntentSlug') ? $out->getIntentSlug() : 'IDLE',
+                'mental_state' => method_exists($out, 'getMentalStateJson') ? json_decode($out->getMentalStateJson(), true) : [],
             ];
         }
 
@@ -380,6 +396,8 @@ class GrpcSimulationEngineClient implements SimulationEngineClientInterface
                     'category' => method_exists($scar, 'getCategory') ? $scar->getCategory() : 'UNKNOWN',
                     'description' => $scar->getDescription(),
                     'raw_payload' => json_decode($scar->getRawPayloadJson(), true) ?: [],
+                    'caused_by_id' => method_exists($scar, 'getCausedById') ? $scar->getCausedById() : 0,
+                    'metadata' => method_exists($scar, 'getMetadataJson') ? json_decode($scar->getMetadataJson(), true) : [],
                 ];
             }
         }

@@ -3,7 +3,7 @@ from state import NarrativeState
 import httpx
 import os
 
-from utils.llm_factory import get_llm
+from utils.llm_factory import get_llm, get_llm_for_agent
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 
@@ -72,15 +72,8 @@ async def psychologist_agent(state: NarrativeState, config: Dict[str, Any] = Non
     if not fetched_profiles:
         fetched_profiles = {"warning": "Không tìm thấy dữ liệu số học bên trong raw_payload. Có thể các event này tạo ra từ phiên bản engine cũ."}
     
-    # 2. Xử lý thông qua LLM
-    provider = "local" # Default The Psychologist uses Anthropic for better analytical reasoning
-    model_name = os.getenv("LOCAL_MODEL_NAME", "MythoMax-L2-13B")
-    
-    if config and config.get("configurable"):
-        provider = config["configurable"].get("psychologist_provider", provider)
-        model_name = config["configurable"].get("psychologist_model", model_name)
-        
-    llm = get_llm(provider=provider, model_name=model_name)
+    # 2. DYNAMIC ROUTING: Cấp AI trình độ cao cho nhà tâm lý học
+    llm = get_llm_for_agent("psychologist", world_id=state.get("world_id"), current_tick=state.get("tick_end"))
     chain = psychologist_prompt | llm | StrOutputParser()
     
     result = await chain.ainvoke({

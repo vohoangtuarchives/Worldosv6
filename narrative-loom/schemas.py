@@ -16,9 +16,16 @@ class Scene(BaseModel):
     central_conflict: str = Field(description="Mâu thuẫn và diễn biến hành động cốt lõi trong phân cảnh")
     involved_characters: List[str] = Field(description="Danh sách ID hoặc Tên nhân vật/phe phái tham gia")
 
+class VfxConfig(BaseModel):
+    primary_color: str = Field(description="Mã màu HEX đại diện cho kỷ nguyên này (VD: #ff4500 cho Lửa)")
+    distortion: float = Field(description="Mức độ biến dạng thực tại từ 0.0 đến 1.0")
+    particle_density: int = Field(description="Mật độ hạt ánh sáng/năng lượng (Dày hay mỏng)")
+    atmosphere_filter: str = Field(description="Loại filter không khí: 'mist', 'glitch', 'sepia', 'neon'")
+
 class Storyboard(BaseModel):
     title: str = Field(description="Tên của phân đoạn hoặc chương truyện điện ảnh")
     scenes: List[Scene] = Field(description="Danh sách các phân cảnh chi tiết, nối tiếp nhau")
+    vfx_config: VfxConfig = Field(description="Cấu hình thị giác chung cho phân đoạn này")
 
 class CriticReview(BaseModel):
     score: int = Field(description="Điểm đánh giá chất lượng văn bản từ 1-10 (10 là kiệt tác)")

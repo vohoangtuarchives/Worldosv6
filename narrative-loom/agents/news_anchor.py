@@ -1,7 +1,7 @@
 import os
 from typing import Dict, Any
 from state import NarrativeState
-from utils.llm_factory import get_llm
+from utils.llm_factory import get_llm, get_llm_for_agent
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
 from pydantic import BaseModel, Field
@@ -32,9 +32,8 @@ async def news_anchor_agent(state: NarrativeState, config: Dict[str, Any] = None
     prose = state.get("final_prose", "")
     angle = state.get("past_memories", "").split("[CHIEF EDITOR ANGLE]:")[-1]
     
-    provider = "local"
-    model_name = os.getenv("LOCAL_MODEL_NAME", "qwen3.5-9b-uncensored-hauhaucs-aggressive")
-    llm = get_llm(provider=provider, model_name=model_name)
+    # 🌟 DYNAMIC ROUTING: Chọn mô hình tối ưu cho phát thanh viên
+    llm = get_llm_for_agent("news_anchor", world_id=state.get("world_id"), current_tick=state.get("tick_end"))
     
     # Sử dụng JsonOutputParser để lấy dữ liệu có cấu trúc
     parser = JsonOutputParser(pydantic_object=NewsHeadline)

@@ -246,6 +246,8 @@ message AgentScar {
     string category = 3; // e.g. "combat", "trade", "birth"
     string description = 4;
     string raw_payload_json = 5;
+    uint64 caused_by_id = 6; // Causal link to parent event
+    string metadata_json = 7; // Environmental context snapshot
 }
 
 message NewActor {
@@ -267,6 +269,8 @@ message ActorSoaOutput {
     repeated float new_faction_loyalty = 9;
     repeated float new_belief_alignments = 10;
     repeated float new_tech_levels = 11;
+    string intent_slug = 12; // Decision intent (e.g. "FEAR_ESCAPE", "HUNGER_HUNT")
+    string mental_state_json = 13; // Detailed SoA snapshot
 }
 
 message ZoneMetrics {

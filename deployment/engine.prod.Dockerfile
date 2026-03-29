@@ -1,5 +1,5 @@
 # ── Stage 1: Chef (Prepare recipe) ────────────────────────────────────────
-FROM lukemathwalker/cargo-chef:latest-rust-1.85-slim-bookworm AS chef
+FROM lukemathwalker/cargo-chef:latest-rust-slim-bookworm AS chef
 WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends \
     pkg-config protobuf-compiler libssl-dev perl make g++ \

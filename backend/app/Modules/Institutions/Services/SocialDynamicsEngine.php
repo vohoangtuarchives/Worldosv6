@@ -53,6 +53,7 @@ class SocialDynamicsEngine
             'entropy' => $entropy,
             'stability' => $stability,
             'resonance_field' => $resonance,
+            'era' => $state->get('era', 'genesis'),
             'fields' => $state->getFields()
         ];
 

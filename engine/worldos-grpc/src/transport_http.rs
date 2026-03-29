@@ -95,7 +95,7 @@ async fn advance_http(Json(body): Json<AdvanceHttpRequest>) -> Json<AdvanceHttpR
         }
     });
 
-    match engine::run_advance(body.universe_id, body.ticks, &state_bytes, world_meta) {
+    match engine::run_advance(body.universe_id, body.ticks, &state_bytes, world_meta).await {
         Ok((tick, state_vector, entropy, stability_index, metrics, sci, instability_gradient, global_fields)) => {
             Json(AdvanceHttpResponse {
                 ok: true,
@@ -139,7 +139,7 @@ async fn observe_http(Json(body): Json<ObserveHttpRequest>) -> Json<AdvanceHttpR
         body.zone_index,
         body.intensity,
         body.state_input.as_bytes(),
-    ) {
+    ).await {
         Ok((tick, state_vector, entropy, stability_index, metrics, sci, instability_gradient, global_fields)) => {
             Json(AdvanceHttpResponse {
                 ok: true,
@@ -217,59 +217,58 @@ pub struct BatchAdvanceHttpResponse {
 }
 
 async fn batch_advance_http(Json(body): Json<BatchAdvanceHttpRequest>) -> Json<BatchAdvanceHttpResponse> {
-    let responses = body
-        .requests
-        .into_iter()
-        .map(|req| {
-            let state_bytes = req
-                .state_input
-                .as_ref()
-                .map(|v| serde_json::to_vec(v).unwrap_or_default())
-                .unwrap_or_default();
+    let mut responses = Vec::with_capacity(body.requests.len());
+    for req in body.requests {
+        let state_bytes = req
+            .state_input
+            .as_ref()
+            .map(|v| serde_json::to_vec(v).unwrap_or_default())
+            .unwrap_or_default();
 
-            let world_meta = req.world_config.map(|wc| {
-                let g = wc.genome.unwrap_or_default();
-                WorldConfig {
-                    world_id: wc.world_id,
-                    origin: wc.origin,
-                    axiom_json: wc.axiom.map(|v| v.to_string()).unwrap_or_else(|| "{}".to_string()),
-                    world_seed_json: wc.world_seed.map(|v| v.to_string()).unwrap_or_else(|| "{}".to_string()),
-                    genome: Some(KernelGenome {
-                        diffusion_rate: g.diffusion_rate,
-                        entropy_coefficient: g.entropy_coefficient,
-                        mutation_rate: g.mutation_rate,
-                        attractor_gravity: g.attractor_gravity,
-                        complexity_bonus: g.complexity_bonus,
+        let world_meta = req.world_config.map(|wc| {
+            let g = wc.genome.unwrap_or_default();
+            WorldConfig {
+                world_id: wc.world_id,
+                origin: wc.origin,
+                axiom_json: wc.axiom.map(|v| v.to_string()).unwrap_or_else(|| "{}".to_string()),
+                world_seed_json: wc.world_seed.map(|v| v.to_string()).unwrap_or_else(|| "{}".to_string()),
+                genome: Some(KernelGenome {
+                    diffusion_rate: g.diffusion_rate,
+                    entropy_coefficient: g.entropy_coefficient,
+                    mutation_rate: g.mutation_rate,
+                    attractor_gravity: g.attractor_gravity,
+                    complexity_bonus: g.complexity_bonus,
+                }),
+            }
+        });
+
+        match engine::run_advance(req.universe_id, req.ticks, &state_bytes, world_meta).await {
+            Ok((tick, state_vector, entropy, stability_index, metrics, sci, instability_gradient, global_fields)) => {
+                responses.push(AdvanceHttpResponse {
+                    ok: true,
+                    error_message: String::new(),
+                    snapshot: Some(AdvanceHttpSnapshot {
+                        universe_id: req.universe_id,
+                        tick,
+                        state_vector,
+                        entropy,
+                        stability_index,
+                        metrics,
+                        sci,
+                        instability_gradient,
+                        global_fields,
                     }),
-                }
-            });
-
-            match engine::run_advance(req.universe_id, req.ticks, &state_bytes, world_meta) {
-                Ok((tick, state_vector, entropy, stability_index, metrics, sci, instability_gradient, global_fields)) => {
-                    AdvanceHttpResponse {
-                        ok: true,
-                        error_message: String::new(),
-                        snapshot: Some(AdvanceHttpSnapshot {
-                            universe_id: req.universe_id,
-                            tick,
-                            state_vector,
-                            entropy,
-                            stability_index,
-                            metrics,
-                            sci,
-                            instability_gradient,
-                            global_fields,
-                        }),
-                    }
-                }
-                Err(e) => AdvanceHttpResponse {
+                });
+            }
+            Err(e) => {
+                responses.push(AdvanceHttpResponse {
                     ok: false,
                     error_message: e,
                     snapshot: None,
-                },
+                });
             }
-        })
-        .collect();
+        }
+    }
 
     Json(BatchAdvanceHttpResponse { responses })
 }
