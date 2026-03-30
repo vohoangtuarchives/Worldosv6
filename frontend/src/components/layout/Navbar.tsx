@@ -11,7 +11,7 @@ const Navbar = () => {
   } = useSimulationStore();
 
   return (
-    <nav className="fixed top-0 left-[72px] right-0 h-16 flex items-center justify-between px-6 bg-white border-b border-slate-200 shadow-sm z-40">
+    <nav className="fixed top-0 left-[78px] right-0 h-16 flex items-center justify-between px-8 bg-white/70 backdrop-blur-md border-b border-slate-100 z-40 transition-all duration-300">
       <div className="flex items-center gap-6">
         <div className="flex flex-col">
           <span className="text-[10px] text-sky-600 uppercase tracking-[0.2em] font-bold">Trạng thái Quan sát</span>

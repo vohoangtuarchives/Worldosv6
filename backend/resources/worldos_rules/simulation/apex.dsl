@@ -6,8 +6,8 @@ when
 meta.trajectory_locked == true
 then
         // Ngăn chặn sự thay đổi của hằng số và entropy
-modify "fields.entropy" set scale(0.1);
-modify "stability_index" set floor(0.9);
+modify "fields.entropy" set 0.1;
+modify "stability_index" set 0.9;
 metadata log "Apex Shield Trajectory is locked. Perturbations suppressed.";
 
 rule Singularity Collapse Gating
@@ -24,5 +24,5 @@ when
 meta.causal_divergence > 0.7
 then
         // Tự động triệt tiêu các biến động nhân quả quá lớn
-modify "meta.rule_mutation_rate" set scale(0.2);
+modify "meta.rule_mutation_rate" set 0.2;
 metadata log "Apex Stability Paradox dampening active.";

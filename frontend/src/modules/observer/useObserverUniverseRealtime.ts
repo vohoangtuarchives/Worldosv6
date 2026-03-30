@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Centrifuge } from 'centrifuge';
 import { toast } from 'sonner';
@@ -62,7 +62,7 @@ export function useObserverUniverseRealtime(universeId: string): ObserverRealtim
       setLastEventLabel(tickLabel);
       
       // Stage 4.3: Zero-Fetch Update. Không cần request lại HTTP, nạp thẳng vào cache.
-      queryClient.setQueryData(['universes', universeId, 'realityPulse'], (old: any) => {
+      queryClient.setQueryData(['universes', universeId, 'realityPulse'], (old: Record<string, unknown> | undefined) => {
         return {
           ...old,
           ...payload,

@@ -2,34 +2,35 @@
 
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useQuery } from '@tanstack/react-query';
-import { observerKeys } from '@/modules/observer/api';
-import { fetchClientJson } from '@/shared/api/observer-http';
-import type { ResonanceResponse } from '@/modules/observer/types';
+import { useMultiverseResonance } from '@/modules/observer/api';
 
 const VFXOverlay = () => {
-  const { data } = useQuery<ResonanceResponse>({
-    queryKey: observerKeys.multiverse.resonance,
-    queryFn: () => fetchClientJson('/api/apex/multiverse/resonance'),
-    refetchInterval: 10000,
-  });
+  const { data } = useMultiverseResonance();
 
-  const [activeEffect, setActiveEffect] = useState<any>(null);
+  const [activeEffect, setActiveEffect] = useState<{ effect_type: string } | null>(null);
 
   useEffect(() => {
     if (data && data.resonance_pollen && data.resonance_pollen.length > 0) {
       // Find the narrative with the highest distortion or intensity
       const highestDistortion = [...data.resonance_pollen].sort((a, b) => b.distortion - a.distortion)[0];
       
-      if (highestDistortion && highestDistortion.distortion > 0.5) {
-        setActiveEffect(highestDistortion.vfx);
+      // Only apply global VFX if distortion is EXTREMELY high (e.g., > 0.8)
+      // Otherwise, let the local UniverseCard handle it
+      if (highestDistortion && highestDistortion.distortion > 0.8) {
+        // Use a timeout to avoid synchronous setState during effect execution
+        const triggerTimer = setTimeout(() => {
+          setActiveEffect(highestDistortion.vfx);
+        }, 0);
         
         // Clear effect after some time to avoid permanent glitch
-        const timer = setTimeout(() => {
+        const clearTimer = setTimeout(() => {
           setActiveEffect(null);
         }, 3000);
         
-        return () => clearTimeout(timer);
+        return () => {
+          clearTimeout(triggerTimer);
+          clearTimeout(clearTimer);
+        };
       }
     }
   }, [data]);

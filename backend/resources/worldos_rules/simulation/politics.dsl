@@ -19,7 +19,7 @@ civilization.politics.elite_overproduction > 0.1
 then:
 drift stability_index by -0.1
 drift civilization.politics.legitimacy by -0.05
-emit EVENT_POLITICAL_TENSION { severity: "rising"
+emit EVENT_POLITICAL_TENSION { severity: "rising" };
 
 rule High_Entropy_Unrest
 scope: global
@@ -27,7 +27,7 @@ when:
 entropy > 0.8
 then:
 drift stability_index by -0.2
-emit GOVERNANCE_CRISIS { cause: "entropy_leak"
+emit GOVERNANCE_CRISIS { cause: "entropy_leak" };
 
 rule Legitimacy_Recovery
 scope: global
@@ -44,7 +44,7 @@ civilization.politics.social_cohesion > 0.8
 then:
     # Sự gắn kết xã hội cao thông qua huyền thoại chung củng cố tính chính danh
 drift civilization.politics.legitimacy by 0.1
-emit SOCIAL_HARMONY { description: "Huyền thoại chung đã tạo nên sự đồng thuận vĩ đại."
+emit SOCIAL_HARMONY { description: "Huyền thoại chung đã tạo nên sự đồng thuận vĩ đại." };
 
 rule Technocratic_Efficiency
 scope: global

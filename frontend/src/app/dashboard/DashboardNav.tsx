@@ -7,11 +7,11 @@ import { motion } from 'framer-motion';
 import { Cpu, LayoutDashboard, Globe, BookOpen, Activity } from 'lucide-react';
 
 const navItems = [
-  { name: 'OBSERVER_HUB', path: '/dashboard', icon: LayoutDashboard },
-  { name: 'UNIVERSES', path: '/dashboard', icon: Globe },
-  { name: 'AI_ORCHESTRATOR', path: '/dashboard/ai-config', icon: Cpu },
-  { name: 'SIM_CHRONICLE', path: '/dashboard/narrative', icon: BookOpen },
-  { name: 'Z-METRICS', path: '/dashboard/metrics', icon: Activity },
+  { name: 'HUB QUAN SÁT', path: '/dashboard', icon: LayoutDashboard },
+  { name: 'DANH SÁCH VŨ TRỤ', path: '/dashboard', icon: Globe },
+  { name: 'ĐIỀU HÀNH AI', path: '/dashboard/ai-config', icon: Cpu },
+  { name: 'BIÊN NIÊN SỬ', path: '/dashboard/narrative', icon: BookOpen },
+  { name: 'CHỈ SỐ Z-METRICS', path: '/dashboard/metrics', icon: Activity },
 ];
 
 const DashboardNav = () => {

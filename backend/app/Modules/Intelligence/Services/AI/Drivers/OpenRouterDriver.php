@@ -47,4 +47,11 @@ class OpenRouterDriver implements LlmDriverInterface
             throw $e;
         }
     }
+
+    public function generate(string $prompt, array $options = []): ?string
+    {
+        return $this->chat([
+            ['role' => 'user', 'content' => $prompt]
+        ], $options);
+    }
 }

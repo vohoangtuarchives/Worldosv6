@@ -36,4 +36,11 @@ class OpenAiDriver implements LlmDriverInterface
 
         return null;
     }
+
+    public function generate(string $prompt, array $options = []): ?string
+    {
+        return $this->chat([
+            ['role' => 'user', 'content' => $prompt]
+        ], $options);
+    }
 }

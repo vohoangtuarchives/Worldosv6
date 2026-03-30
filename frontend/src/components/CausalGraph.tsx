@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo } from 'react';
 import {
   ReactFlow,
   Background,
@@ -31,7 +31,7 @@ const CausalGraph = ({ chronicles }: CausalGraphProps) => {
         const raw = typeof c.raw_payload === 'string' ? JSON.parse(c.raw_payload) : c.raw_payload;
         if (raw?.loom_result?.news_headline) headline = raw.loom_result.news_headline;
         if (raw?.loom_result?.news_slogan) slogan = raw.loom_result.news_slogan;
-      } catch (e) {}
+      } catch { }
 
       return {
         id: c.id?.toString() || idx.toString(),
@@ -39,7 +39,7 @@ const CausalGraph = ({ chronicles }: CausalGraphProps) => {
           label: (
             <div className="flex flex-col gap-1">
               <span className="font-bold text-[9px] text-primary/90">{headline}</span>
-              <span className="text-[7px] text-white/50 italic">"{slogan}"</span>
+              <span className="text-[7px] text-white/50 italic">&quot;{slogan}&quot;</span>
             </div>
           )
         },
@@ -79,8 +79,8 @@ const CausalGraph = ({ chronicles }: CausalGraphProps) => {
     return edges;
   }, [initialNodes]);
 
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const [nodes, , onNodesChange] = useNodesState(initialNodes);
+  const [edges, , onEdgesChange] = useEdgesState(initialEdges);
 
   return (
     <section className="h-full w-full rounded-[28px] border border-white/10 bg-card/45 backdrop-blur-xl overflow-hidden relative">

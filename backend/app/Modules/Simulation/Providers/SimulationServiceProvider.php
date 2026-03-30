@@ -71,7 +71,7 @@ class SimulationServiceProvider extends ServiceProvider
             \App\Modules\Simulation\Services\Core\StateVectorUniverseSimilarityService::class
         );
         $this->app->bind(\App\Contracts\CausalityGraphServiceInterface::class, function ($app) {
-            return config('worldos.causality.driver', 'null') === 'redis'
+            return \config('worldos.causality.driver', 'null') === 'redis'
                 ? $app->make(\App\Modules\Simulation\Services\Core\RedisCausalityGraphService::class)
                 : $app->make(\App\Modules\Simulation\Services\Core\NullCausalityGraphService::class);
         });
@@ -86,33 +86,33 @@ class SimulationServiceProvider extends ServiceProvider
         // Simulation Kernel (effect-based, deterministic tick) + Event Bus (Tier 3, Phase 5 Track A)
         $this->app->singleton(\App\Modules\Simulation\Core\SimulationEventBus::class);
         $this->app->bind(\App\Modules\Simulation\Core\Contracts\WorldEventBusBackendInterface::class, function ($app) {
-            $driver = config('worldos.event_bus.driver', 'database');
+            $driver = \config('worldos.event_bus.driver', 'database');
             return $driver === 'redis_stream'
-                ? new \App\Modules\Simulation\Core\EventBus\RedisStreamWorldEventBusBackend(true, config('worldos.event_bus.stream_key'))
+                ? new \App\Modules\Simulation\Core\EventBus\RedisStreamWorldEventBusBackend(true, \config('worldos.event_bus.stream_key'))
                 : $app->make(\App\Modules\Simulation\Core\EventBus\DatabaseWorldEventBusBackend::class);
         });
         $this->app->singleton(\App\Modules\Simulation\Core\Contracts\WorldEventBusInterface::class, \App\Modules\Simulation\Core\WorldEventBus::class);
         $this->app->singleton(\App\Modules\Simulation\Core\WorldEventBus::class);
         $this->app->bind(\App\Contracts\SimulationEventStreamProducerInterface::class, function ($app) {
-            if (! config('worldos.event_stream.kafka_enabled', false)) {
+            if (! \config('worldos.event_stream.kafka_enabled', false)) {
                 return $app->make(\App\Modules\Simulation\Services\EventStream\NullSimulationEventStreamProducer::class);
             }
             return new \App\Modules\Simulation\Services\EventStream\KafkaRestSimulationEventStreamProducer(
-                config('worldos.event_stream.rest_proxy_url'),
-                config('worldos.event_stream.topic_simulation_advanced'),
-                config('worldos.event_stream.topic_events'),
+                \config('worldos.event_stream.rest_proxy_url'),
+                \config('worldos.event_stream.topic_simulation_advanced'),
+                \config('worldos.event_stream.topic_events'),
             );
         });
         $this->app->bind(\App\Modules\Simulation\Core\Contracts\WorldOsGraphServiceInterface::class, function ($app) {
-            $enabled = config('worldos.graph.enabled', false);
-            $uri = config('worldos.graph.uri', '');
+            $enabled = \config('worldos.graph.enabled', false);
+            $uri = \config('worldos.graph.uri', '');
             if (! $enabled || $uri === '') {
                 return $app->make(\App\Modules\Simulation\Core\Graph\NullWorldOsGraphService::class);
             }
             return new \App\Modules\Simulation\Core\Graph\Neo4jWorldOsGraphService(
                 $uri,
-                config('worldos.graph.username'),
-                config('worldos.graph.password')
+                \config('worldos.graph.username'),
+                \config('worldos.graph.password')
             );
         });
         $this->app->singleton(\App\Modules\Simulation\Core\EffectResolver::class);
@@ -647,7 +647,7 @@ class SimulationServiceProvider extends ServiceProvider
 
         // AdvanceSimulationAction (Legacy facade, keep until fully replaced by WorldKernel)
         $this->app->singleton(\App\Modules\Intelligence\Services\CivilizationCollapseEngine::class);
-        $this->app->tag(config('worldos.engine_registry.engines', []), 'simulation_engine');
+        $this->app->tag(\config('worldos.engine_registry.engines', []), 'simulation_engine');
         $this->app->singleton(\App\Modules\Simulation\Core\EngineRegistry::class, function ($app) {
             $registry = new \App\Modules\Simulation\Core\EngineRegistry();
             foreach ($app->tagged('simulation_engine') as $engine) {
@@ -741,11 +741,11 @@ class SimulationServiceProvider extends ServiceProvider
 
         // State cache (optional) — Phase 2 §2.3
         $this->app->bind(\App\Modules\Simulation\Core\Contracts\StateCacheInterface::class, function ($app) {
-            $driver = config('worldos.state_cache.driver', 'null');
+            $driver = \config('worldos.state_cache.driver', 'null');
             if ($driver === 'redis') {
                 return new \App\Modules\Simulation\Core\StateCache\RedisStateCache(
-                    config('worldos.state_cache.key_prefix', 'worldos:'),
-                    config('worldos.state_cache.ttl_seconds', 300)
+                    \config('worldos.state_cache.key_prefix', 'worldos:'),
+                    \config('worldos.state_cache.ttl_seconds', 300)
                 );
             }
             return $app->make(\App\Modules\Simulation\Core\StateCache\NullStateCache::class);
@@ -753,11 +753,11 @@ class SimulationServiceProvider extends ServiceProvider
 
         // Snapshot archive (S3/MinIO optional) — Doc §10
         $this->app->bind(\App\Modules\Simulation\Core\Contracts\SnapshotArchiveInterface::class, function ($app) {
-            $driver = config('worldos.snapshot.archive_driver', 'null');
+            $driver = \config('worldos.snapshot.archive_driver', 'null');
             if ($driver === 's3') {
                 return new \App\Modules\Simulation\Core\SnapshotArchive\S3SnapshotArchive(
-                    config('worldos.snapshot.archive.disk', 's3'),
-                    config('worldos.snapshot.archive.prefix', 'worldos/snapshots')
+                    \config('worldos.snapshot.archive.disk', 's3'),
+                    \config('worldos.snapshot.archive.prefix', 'worldos/snapshots')
                 );
             }
             return $app->make(\App\Modules\Simulation\Core\SnapshotArchive\NullSnapshotArchive::class);

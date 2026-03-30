@@ -52,7 +52,7 @@ export function UniverseSnapshotsClient({
                 </div>
                 <span className="text-[10px] font-black text-sky-600 bg-sky-50 px-2 py-1 rounded border border-sky-100">TICK {snapshot.tick.toLocaleString()}</span>
               </div>
-              <p className="mt-3 text-[13px] leading-6 text-slate-600 italic">"{snapshot.note}"</p>
+              <p className="mt-3 text-[13px] leading-6 text-slate-600 italic">&quot;{snapshot.note}&quot;</p>
               <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                 <div className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 shadow-inner">
                   <p className="text-[10px] uppercase font-bold tracking-widest text-slate-400">Entropy</p>

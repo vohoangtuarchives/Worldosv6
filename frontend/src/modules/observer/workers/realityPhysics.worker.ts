@@ -28,7 +28,7 @@ self.onmessage = (e: MessageEvent) => {
     
     // Khởi tạo buffer đầu tiên và gửi lại Main Thread
     const initialBuffer = new ArrayBuffer(count * 16 * 4); // 16 floats (ma trận 4x4) * 4 bytes/float
-    (self as any).postMessage({ type: 'INIT_DONE', buffer: initialBuffer }, [initialBuffer]);
+    (self as unknown as Worker).postMessage({ type: 'INIT_DONE', buffer: initialBuffer }, [initialBuffer]);
   }
 
   if (type === 'TICK' && isReady) {
@@ -80,6 +80,6 @@ self.onmessage = (e: MessageEvent) => {
 
     // Gửi trả buffer đã được tính toán xong về lại Main Thread.
     // Dùng Transferable Object (tham số 2: [view.buffer]) để cắt dứt hoàn toàn chi phí Copy Data.
-    (self as any).postMessage({ type: 'TICK_DONE', buffer: view.buffer }, [view.buffer]);
+    (self as unknown as Worker).postMessage({ type: 'TICK_DONE', buffer: view.buffer }, [view.buffer]);
   }
 };

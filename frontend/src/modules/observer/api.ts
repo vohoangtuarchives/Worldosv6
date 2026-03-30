@@ -16,6 +16,7 @@ import type {
   TimelineEvent,
   UniverseDetail,
   UniverseSummary,
+  ResonanceResponse,
 } from '@/modules/observer/types';
 import { asArray, asNumber, asRecord, asString, fetchClientJson, fetchServerJson, requestClientJson } from '@/shared/api/observer-http';
 
@@ -47,6 +48,10 @@ export const observerKeys = {
   },
   forks: {
     compare: (universeId: string, branchId: string) => ['observer', 'universes', universeId, 'forks', branchId, 'compare'] as const,
+  },
+  config: {
+    keys: ['observer', 'config', 'keys'] as const,
+    settings: ['observer', 'config', 'settings'] as const,
   },
 };
 
@@ -672,6 +677,58 @@ async function getObserverBranchComparisonClient(universeId: string, branchId: s
   return comparison;
 }
 
+// --- AI Configuration & Key Management ---
+
+export interface AiKeyEntry {
+  id: number;
+  provider: string;
+  label: string | null;
+  model_group: string;
+  is_free: boolean;
+  usage_count: number;
+  status: 'active' | 'cooldown' | 'expired';
+  last_used_at: string | null;
+  cooldown_until: string | null;
+  key_preview: string;
+}
+
+async function getAiKeysClient(): Promise<AiKeyEntry[]> {
+  const payload = await fetchClientJson<unknown>('/api/worldos/config/keys');
+  return asArray(unwrapPayload(payload)) as AiKeyEntry[];
+}
+
+async function storeAiKeyClient(data: { provider: string; api_key: string; label?: string; is_free?: boolean }): Promise<void> {
+  await requestClientJson('/api/worldos/config/keys', { method: 'POST', body: JSON.stringify(data) });
+}
+
+async function deleteAiKeyClient(id: number): Promise<void> {
+  await requestClientJson(`/api/worldos/config/keys/${id}`, { method: 'DELETE' });
+}
+
+async function getAiSettingsClient(): Promise<Record<string, unknown>> {
+  const payload = await fetchClientJson<unknown>('/api/worldos/config/settings');
+  const data = asRecord(unwrapPayload(payload)) ?? {};
+  
+  // Parse JSON values
+  return Object.entries(data).reduce((acc, [key, value]) => {
+    try {
+      acc[key] = typeof value === 'string' && (value.startsWith('{') || value.startsWith('[')) 
+        ? JSON.parse(value) 
+        : value;
+    } catch {
+      acc[key] = value;
+    }
+    return acc;
+  }, {} as Record<string, unknown>);
+}
+
+async function updateAiSettingClient(key: string, value: unknown): Promise<void> {
+  await requestClientJson('/api/worldos/config/settings', {
+    method: 'POST',
+    body: JSON.stringify({ key, value })
+  });
+}
+
 export async function getObserverUniverseSummariesServer(): Promise<UniverseSummary[]> {
   const payload = await fetchObserverResourceServer('/api/worldos/universes');
   return payload
@@ -788,6 +845,14 @@ export function useObserverUniverseSummaries(initialData?: UniverseSummary[]) {
   });
 }
 
+export function useMultiverseResonance() {
+  return useQuery<ResonanceResponse>({
+    queryKey: observerKeys.multiverse.resonance,
+    queryFn: () => fetchClientJson('/api/apex/multiverse/resonance'),
+    refetchInterval: 10000, // Refetch every 10 seconds
+  });
+}
+
 export function useObserverUniverseDetail(universeId: string, initialData: UniverseDetail) {
   return useQuery({
     queryKey: observerKeys.universes.detail(universeId),
@@ -875,7 +940,7 @@ export function useObserverUniverseTimeline(universeId: string, initialData: Tim
   });
 }
 
-export function useObserverActorDetail(actorId: string, initialData: ActorDetail) {
+export function useObserverActorDetail(actorId: string, initialData?: ActorDetail) {
   return useQuery({
     queryKey: observerKeys.actors.detail(actorId),
     queryFn: () => getObserverActorDetailClient(actorId),
@@ -1018,6 +1083,53 @@ export function useObserverOmenContext(universeId: string) {
     queryKey: observerKeys.universes.omenContext(universeId),
     queryFn: () => getObserverOmenContext(universeId),
     enabled: !!universeId,
+  });
+}
+
+// --- AI Config Hooks ---
+
+export function useAiKeys() {
+  return useQuery({
+    queryKey: observerKeys.config.keys,
+    queryFn: getAiKeysClient,
+  });
+}
+
+export function useAiKeysMutation() {
+  const queryClient = useQueryClient();
+  
+  const storeMutation = useMutation({
+    mutationFn: storeAiKeyClient,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: observerKeys.config.keys });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteAiKeyClient,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: observerKeys.config.keys });
+    },
+  });
+
+  return { storeMutation, deleteMutation };
+}
+
+export function useAiSettings() {
+  return useQuery({
+    queryKey: observerKeys.config.settings,
+    queryFn: getAiSettingsClient,
+  });
+}
+
+export function useAiSettingsMutation() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ key, value }: { key: string; value: unknown }) => updateAiSettingClient(key, value),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: observerKeys.config.settings });
+    },
   });
 }
 

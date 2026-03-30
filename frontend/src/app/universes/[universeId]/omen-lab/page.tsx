@@ -13,7 +13,7 @@ export default function OmenLabPage({ params }: { params: { universeId: string }
   const { universeId } = params;
   const contextQuery = useObserverOmenContext(universeId);
   const [isWeaving, setIsWeaving] = useState(false);
-  const [omenResult, setOmenResult] = useState<any>(null);
+  const [omenResult, setOmenResult] = useState<{ type: string; description: string; sci_modifier: number; entropy_modifier: number } | null>(null);
 
   const weaveOmen = async () => {
     setIsWeaving(true);
@@ -89,9 +89,9 @@ export default function OmenLabPage({ params }: { params: { universeId: string }
                       <History size={14} /> Recent Chronicles
                    </h4>
                    <div className="space-y-3">
-                      {context?.recent_history.slice(0, 2).map((c: any, idx: number) => (
+                      {context?.recent_history.slice(0, 2).map((c: { summary: string }, idx: number) => (
                         <div key={idx} className="text-sm text-muted-foreground italic border-l-2 border-primary/30 pl-3 py-1">
-                           "{c.summary}"
+                           &quot;{c.summary}&quot;
                         </div>
                       ))}
                    </div>

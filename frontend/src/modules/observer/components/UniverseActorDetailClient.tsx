@@ -6,7 +6,7 @@ import { ObserverErrorState } from '@/modules/observer/components/ObserverErrorS
 import { ObserverLoadingState } from '@/modules/observer/components/ObserverLoadingState';
 import { ObserverPanel } from '@/modules/observer/components/ObserverPanel';
 import type { ActorDecision, ActorDetail, ActorEventEntry } from '@/modules/observer/types';
-import { HUDCard, HUDBadge } from '@/modules/observer/components/ui/hud-primitives';
+import { HUDBadge } from '@/modules/observer/components/ui/hud-primitives';
 
 export function UniverseActorDetailClient({
   actorId,

@@ -19,6 +19,7 @@ pub mod ruleset;
 pub mod ecological_engine;
 pub mod macro_fields;
 pub mod potential_fields;
+pub mod systems;
 
 
 pub use agent::{Agent, TraitVector};

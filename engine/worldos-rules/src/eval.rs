@@ -16,6 +16,8 @@ pub enum RuleOutput {
     AdjustEntropy { delta: f64 },
     AddPath { path: String, delta: f64 },
     SetPath { path: String, value: Value },
+    Decay { path: String, factor: f64 },
+    Pressure { name: String, op: String, value: f64 },
     SpawnActor { kind: String },
     Drift { path: String, target: Option<f64>, speed: Option<f64> },
     Calc { name: String, value: Value },
@@ -101,6 +103,44 @@ pub fn eval_expr(state: &Value, locals: &HashMap<String, Value>, expr: &Expr, mu
             if n == "random" && args.is_empty() {
                 let v = rng.as_mut().map(|r| r.gen::<f64>()).unwrap_or(0.5);
                 return Value::Number(serde_json::Number::from_f64(v).unwrap_or(serde_json::Number::from(0)));
+            }
+            if n == "count" && args.len() == 1 {
+                if let Expr::Path(path) = &args[0] {
+                    if let Some(val) = get_path(state, path) {
+                        let count = match val {
+                            Value::Array(a) => a.len(),
+                            Value::Object(o) => o.len(),
+                            _ => 0,
+                        };
+                        return Value::Number(serde_json::Number::from(count));
+                    }
+                }
+                return Value::Number(serde_json::Number::from(0));
+            }
+            if n == "has_scar" && args.len() == 1 {
+                let scar_name = match eval_expr(state, locals, &args[0], rng.as_mut().map(|r| &mut **r)) {
+                    Value::String(s) => s,
+                    _ => return Value::Bool(false),
+                };
+                if let Some(scars) = get_path(state, "scars") {
+                    if let Some(obj) = scars.as_object() {
+                        return Value::Bool(obj.contains_key(&scar_name));
+                    }
+                }
+                return Value::Bool(false);
+            }
+            if n == "get_trait" && args.len() == 1 {
+                let idx = as_f64(&eval_expr(state, locals, &args[0], rng.as_mut().map(|r| &mut **r))).unwrap_or(0.0) as usize;
+                if let Some(traits) = get_path(state, "meta.traits") {
+                    if let Some(arr) = traits.as_array() {
+                        return arr.get(idx).cloned().unwrap_or(Value::Null);
+                    }
+                }
+                return Value::Null;
+            }
+            if n == "saturate" && args.len() == 1 {
+                let x = as_f64(&eval_expr(state, locals, &args[0], rng.as_mut().map(|r| &mut **r))).unwrap_or(0.0);
+                return Value::Number(serde_json::Number::from_f64(x.clamp(0.0, 1.0)).unwrap_or(serde_json::Number::from(0)));
             }
             Value::Null
         }
@@ -244,6 +284,19 @@ impl RuleVm {
                         let v = eval_expr(state, &locals, value, rng.as_mut().map(|r| &mut **r));
                         locals.insert(path.clone(), v.clone());
                         out.push(RuleOutput::SetPath { path: path.clone(), value: v });
+                    }
+                    Action::Decay { path, factor } => {
+                        let f = eval_expr_to_f64(state, &locals, factor, rng.as_mut().map(|r| &mut **r));
+                        out.push(RuleOutput::Decay { path: path.clone(), factor: f });
+                    }
+                    Action::Pressure { name, op, value } => {
+                        let v = eval_expr_to_f64(state, &locals, value, rng.as_mut().map(|r| &mut **r));
+                        let op_str = match op {
+                            crate::ast::PressureOp::Add => "add",
+                            crate::ast::PressureOp::Set => "set",
+                            crate::ast::PressureOp::Sub => "sub",
+                        };
+                        out.push(RuleOutput::Pressure { name: name.clone(), op: op_str.to_string(), value: v });
                     }
                     Action::SpawnActor { kind } => out.push(RuleOutput::SpawnActor { kind: kind.clone() }),
                     Action::Drift { path, target, speed } => {

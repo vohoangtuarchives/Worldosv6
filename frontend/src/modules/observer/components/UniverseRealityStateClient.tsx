@@ -19,7 +19,24 @@ import { HUDCard, HUDBadge, HUDProgress, DataValue } from '@/modules/observer/co
 import { useObserverUniverseRealtime } from '@/modules/observer/useObserverUniverseRealtime';
 import { HUD_TOKENS } from '@/modules/observer/components/ui/design-tokens';
 import { RealityCore, VfxConfig } from '@/modules/observer/components/RealityCore';
-import type { UniverseDetail } from '@/modules/observer/types';
+
+interface Settlement {
+  name: string;
+  population: number;
+  stability: number;
+}
+
+interface MaterialItem {
+  id: string | number;
+  name: string;
+  current_value?: number;
+}
+
+interface MaterialCategory {
+  ontology: string;
+  count: number;
+  items: MaterialItem[];
+}
 
 interface RealityState {
   universe_id: number;
@@ -32,17 +49,18 @@ interface RealityState {
     collapse_probability: number;
   };
   layers: {
-    physical: any;
-    life: any;
-    social: any;
-    narrative: any;
+    physical: Record<string, unknown>;
+    life: Record<string, unknown>;
+    social: Record<string, unknown>;
+    narrative: Record<string, unknown>;
   };
-  materials: any[];
+  materials: MaterialCategory[];
   civilization: {
     complexity: number;
     knowledge_nodes: number;
-    settlements: any[];
+    settlements: Settlement[];
   };
+
   vfx_config: VfxConfig;
 }
 
@@ -207,14 +225,14 @@ export default function UniverseRealityStateClient({
         {/* Materials List */}
         <HUDCard title="Bản thể học Vật chất" icon={Database}>
           <div className="p-0 max-h-[250px] overflow-y-auto pr-2 custom-scrollbar space-y-5">
-            {state.materials.map((cat: any) => (
+            {state.materials.map((cat: MaterialCategory) => (
               <div key={cat.ontology} className="space-y-3">
                 <div className="flex justify-between items-center bg-sky-50 px-3 py-1.5 rounded-xl">
                   <span className="text-[10px] font-black uppercase text-sky-700">{cat.ontology}</span>
                   <span className="text-[9px] bg-sky-500 text-white px-2 py-0.5 rounded-full font-black">{cat.count} UNIT</span>
                 </div>
                 <div className="grid gap-2">
-                  {cat.items.slice(0, 4).map((item: any) => (
+                  {cat.items.slice(0, 4).map((item: MaterialItem) => (
                     <div key={item.id} className="text-xs p-3 bg-slate-50 hover:bg-sky-50 rounded-xl flex justify-between items-center border border-slate-100 group transition-all">
                       <span className="text-slate-700 font-black">{item.name}</span>
                       <span className="font-black text-sky-600 bg-white px-2 py-0.5 rounded shadow-sm">{(item.current_value ?? 0).toFixed(1)}</span>
@@ -237,7 +255,7 @@ export default function UniverseRealityStateClient({
           >
             <HUDCard title={`Chẩn đoán Thực tại: ${layerLabels[activeLayer]}`} icon={Activity}>
               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6 py-4">
-                {(Object.entries(state.layers[activeLayer] || {})).map(([key, value]: [string, any], idx) => (
+                {(Object.entries(state.layers[activeLayer] || {})).map(([key, value]: [string, unknown], idx) => (
                   <motion.div 
                     key={key} 
                     initial={{ opacity: 0 }} 
@@ -260,7 +278,7 @@ export default function UniverseRealityStateClient({
                     <h4 className={HUD_TOKENS.text_hud_label}>Tập hợp Xã hội phát hiện</h4>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                    {state.civilization.settlements.map((s: any, i: number) => (
+                    {state.civilization.settlements.map((s: Settlement, i: number) => (
                       <div key={i} className="p-5 rounded-2xl border border-slate-100 bg-white shadow-sm hover:border-sky-300 hover:shadow-md transition-all group overflow-hidden">
                         <div className="flex justify-between items-start mb-4">
                           <span className="font-black text-slate-900 text-sm">{s.name}</span>

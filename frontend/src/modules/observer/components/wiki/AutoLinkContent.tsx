@@ -8,7 +8,7 @@ interface AutoLinkContentProps {
   className?: string;
 }
 
-export default function AutoLinkContent({ content, universeId, className = '' }: AutoLinkContentProps) {
+export default function AutoLinkContent({ content, className = '' }: AutoLinkContentProps) {
   // Component này nhận HTML từ backend đã được WikiEngineService gắn link
   // Và hiển thị nó với style của Wiki
   return (

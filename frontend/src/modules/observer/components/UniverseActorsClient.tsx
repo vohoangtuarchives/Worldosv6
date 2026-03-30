@@ -2,13 +2,11 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { useObserverUniverseActors } from '@/modules/observer/api';
-import { ObserverEmptyState } from '@/modules/observer/components/ObserverEmptyState';
+import { useObserverUniverseActors, useObserverActorDetail } from '@/modules/observer/api';
 import { ObserverErrorState } from '@/modules/observer/components/ObserverErrorState';
 import { ObserverLoadingState } from '@/modules/observer/components/ObserverLoadingState';
-import { ObserverPanel } from '@/modules/observer/components/ObserverPanel';
 import ActorDeepDiveSidebar from '@/modules/observer/components/ActorDeepDiveSidebar';
-import type { ActorSummary, ActorDetail } from '@/modules/observer/types';
+import type { ActorSummary } from '@/modules/observer/types';
 import { HUDCard, HUDBadge } from '@/modules/observer/components/ui/hud-primitives';
 import { 
   Users, 
@@ -31,26 +29,18 @@ export function UniverseActorsClient({
   universeId: string;
   initialActors: ActorSummary[];
 }) {
-  const [selectedActor, setSelectedActor] = useState<ActorDetail | null>(null);
+  const [selectedActorId, setSelectedActorId] = useState<string | null>(null);
   const actorsQuery = useObserverUniverseActors(universeId, initialActors);
   const actors = actorsQuery.data ?? initialActors;
 
+  // Fetch detail for selected actor
+  const { data: selectedActorDetail } = useObserverActorDetail(
+    selectedActorId ?? '',
+    undefined
+  );
+
   const handleActorClick = (summary: ActorSummary) => {
-    setSelectedActor({
-      ...summary,
-      biography: `A key entity identified as ${summary.name}, operating in the role of ${summary.role}. Recent decisions indicate an alignment toward ${summary.alignment}.`,
-      traits: {},
-      metrics: { entropy: Math.random() * 0.5 + 0.2 },
-      stats: {},
-      capabilities: {},
-      vitality: {},
-      lifeStage: 'Adult',
-      isAlive: true,
-      birthTick: 0,
-      deathTick: null,
-      supremeEntity: null,
-      recentEvents: []
-    });
+    setSelectedActorId(summary.id);
   };
 
   const totalInfluence = actors.reduce((sum, actor) => sum + actor.influence, 0);
@@ -157,7 +147,7 @@ export function UniverseActorsClient({
                 
                 <div className="mt-6 p-3 rounded-xl bg-slate-50 border border-slate-100 text-[11px] leading-relaxed text-slate-600 italic group-hover:text-slate-700 transition-colors">
                   <span className="text-sky-600 font-bold mr-2">NHẬT KÝ:</span>
-                  "{actor.lastDecision}"
+                  &quot;{actor.lastDecision}&quot;
                 </div>
                 
                 <div className="mt-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase">
@@ -175,9 +165,10 @@ export function UniverseActorsClient({
         )}
       </section>
 
+      {/* Actor Deep Dive Sidebar */}
       <ActorDeepDiveSidebar 
-        actor={selectedActor} 
-        onClose={() => setSelectedActor(null)} 
+        actor={selectedActorDetail ?? null} 
+        onClose={() => setSelectedActorId(null)} 
       />
     </div>
   );

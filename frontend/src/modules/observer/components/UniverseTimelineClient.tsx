@@ -11,20 +11,15 @@ import {
   useObserverUniverseTimeline 
 } from '@/modules/observer/api';
 import type { AutonomyAudit } from '@/modules/observer/contracts';
-import { ObserverEmptyState } from '@/modules/observer/components/ObserverEmptyState';
 import { ObserverErrorState } from '@/modules/observer/components/ObserverErrorState';
 import { ObserverLoadingState } from '@/modules/observer/components/ObserverLoadingState';
-import { ObserverPanel } from '@/modules/observer/components/ObserverPanel';
 import type { BranchSummary, ChronicleEntry, SnapshotSummary, TimelineEvent } from '@/modules/observer/types';
 import { HUDCard, HUDBadge } from '@/modules/observer/components/ui/hud-primitives';
 import { 
   History, 
   Zap, 
-  GitBranch, 
   Layers, 
-  Clock, 
   Activity, 
-  ChevronRight,
   Database,
   ShieldAlert,
   ArrowRightCircle,
@@ -113,7 +108,7 @@ export function UniverseTimelineClient({
                     <span className="text-[10px] text-sky-600 font-bold tracking-tighter">TIC-{entry.tick.toString().padStart(6, '0')}</span>
                     <HUDBadge color="primary" className="text-[8px] border-sky-200">{entry.category}</HUDBadge>
                   </div>
-                  <p className="text-[11px] leading-relaxed text-slate-600 line-clamp-3 italic">"{entry.summary}"</p>
+                  <p className="text-[11px] leading-relaxed text-slate-600 line-clamp-3 italic">&quot;{entry.summary}&quot;</p>
                   <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
                     <span className="text-[9px] text-slate-400 truncate max-w-[100px]">{entry.zone}</span>
                     <Link href={`/universes/${universeId}/chronicles?tick=${entry.tick}`} className="flex items-center gap-1 text-[9px] text-sky-600 font-bold hover:text-sky-700 transition-colors">
@@ -210,7 +205,7 @@ export function UniverseTimelineClient({
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {chronicles.slice(0, 9).map((entry) => (
               <HUDCard key={entry.id} title={entry.title} color="primary" className="hover:scale-[1.02] transition-transform">
-                <p className="text-xs leading-relaxed text-slate-600 mb-6 italic">"{entry.summary}"</p>
+                <p className="text-xs leading-relaxed text-slate-600 mb-6 italic">&quot;{entry.summary}&quot;</p>
                 <div className="flex justify-between items-center mt-auto border-t border-slate-100 pt-3">
                   <HUDBadge color="primary" className="text-[8px] border-sky-100">Mã tham chiếu: {entry.id.slice(0, 8)}</HUDBadge>
                   <Link href={`/universes/${universeId}/timeline?tick=${entry.tick}`} className="text-[9px] font-bold text-sky-600 hover:underline flex items-center gap-1">

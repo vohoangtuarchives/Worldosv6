@@ -27,6 +27,7 @@ class UniverseSummaryResource extends JsonResource
             'stability' => WorldOsResourceSupport::stabilityForUniverse($this->resource, $latestSnapshot),
             'structural_coherence' => (float) ($this->structural_coherence ?? 0),
             'entropy' => (float) ($this->entropy ?? $latestSnapshot?->entropy ?? 0),
+            'informational_mass' => (float) ($latestSnapshot?->metrics['informational_mass'] ?? $latestSnapshot?->metrics['mass'] ?? 0),
             'branch_count' => (int) ($this->child_universes_count ?? $this->childUniverses?->count() ?? 0),
             'anomaly_count' => WorldOsResourceSupport::anomalyCount($this->resource),
             'world' => $world ? (new WorldResource($world))->resolve() : null,

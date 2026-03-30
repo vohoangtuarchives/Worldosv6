@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { Link2, GitBranch, Globe, ExternalLink, Activity } from 'lucide-react';
+import { Link2, GitBranch, Globe } from 'lucide-react';
 import { fetchClientJson } from '@/shared/api/observer-http';
 
 // Minimal UI Components
@@ -40,7 +39,7 @@ export default function MultiverseIdentityTracker({
   useEffect(() => {
     const fetchIdentities = async () => {
       try {
-        const json = await fetchClientJson<any>(`/api/wiki/resolve-identity/${actorId}`);
+        const json = await fetchClientJson<{ data: ResolvedIdentity[] }>(`/api/wiki/resolve-identity/${actorId}`);
         setIdentities(json.data || []);
       } catch (err) {
         console.error(err);

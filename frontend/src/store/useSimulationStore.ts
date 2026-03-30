@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import type { ResonancePollen } from "@/modules/observer/types";
 
 export interface Universe {
   id: number;
@@ -14,7 +15,7 @@ export interface ChronicleRecord {
   title?: string;
   content?: string;
   type?: string;
-  raw_payload?: string | any;
+  raw_payload?: string | Record<string, unknown>;
 }
 
 export interface SimulationEntity {
@@ -60,6 +61,8 @@ interface SimulationState {
   realityStrain: number;
   anomalyProbability: number;
   civilizationEra: string;
+  selectedNarrative: ResonancePollen | null;
+  setSelectedNarrative: (narrative: ResonancePollen | null) => void;
   updateFromAdvance: (data: AdvancePayload) => void;
   updateTransition: (data: TransitionPayload) => void;
   addChronicle: (chronicle: ChronicleRecord) => void;
@@ -77,6 +80,9 @@ export const useSimulationStore = create<SimulationState>((set) => ({
   realityStrain: 0,
   anomalyProbability: 0,
   civilizationEra: "Genesis",
+  selectedNarrative: null,
+
+  setSelectedNarrative: (narrative) => set({ selectedNarrative: narrative }),
 
   updateFromAdvance: (data) =>
     set((state) => ({

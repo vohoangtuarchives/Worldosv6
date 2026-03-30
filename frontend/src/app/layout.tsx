@@ -1,20 +1,20 @@
 import type { Metadata } from "next";
-import { Fira_Sans, Fira_Code } from "next/font/google";
+import { IBM_Plex_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import "@xyflow/react/dist/style.css";
 import { Toaster } from 'sonner';
 import Shell from '@/components/layout/Shell';
 import { QueryProvider } from '@/components/providers/QueryProvider';
 
-const display = Fira_Sans({
-  variable: "--font-display",
+const body = IBM_Plex_Sans({
+  variable: "--font-body",
   weight: ["300", "400", "500", "600", "700"],
   subsets: ["latin", "vietnamese"],
 });
 
-const mono = Fira_Code({
-  variable: "--font-mono",
-  subsets: ["latin"],
+const heading = JetBrains_Mono({
+  variable: "--font-heading",
+  subsets: ["latin", "vietnamese"],
 });
 
 export const metadata: Metadata = {
@@ -31,7 +31,7 @@ export default function RootLayout({
   return (
     <html lang="vi">
       <body
-        className={`${display.variable} ${mono.variable} antialiased`}
+        className={`${body.variable} ${heading.variable} antialiased`}
       >
         <QueryProvider>
           <Shell>

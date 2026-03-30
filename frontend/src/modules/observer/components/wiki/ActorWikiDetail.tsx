@@ -1,22 +1,24 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
 import { 
   User, 
   Shield, 
   Zap, 
-  Activity, 
   Award, 
-  Globe, 
   History,
-  ChevronRight,
-  Info,
   BookOpen
 } from 'lucide-react';
 import { useObserverActorDetail } from '@/modules/observer/api';
 import AutoLinkContent from './AutoLinkContent';
 import MultiverseIdentityTracker from './MultiverseIdentityTracker';
+
+interface ActorEventEntry {
+  id: string | number;
+  tick: number;
+  summary: string;
+}
 
 // Minimal UI Components
 const Card = ({ children, className = "" }: { children: React.ReactNode, className?: string }) => (
@@ -38,7 +40,7 @@ export default function ActorWikiDetail({
   universeId: string;
   actorId: string;
 }) {
-  const { data: actor, isLoading } = useObserverActorDetail(actorId, undefined as any);
+  const { data: actor, isLoading } = useObserverActorDetail(actorId, undefined as never);
 
   if (isLoading) return <div className="animate-pulse h-96 bg-slate-100/50 rounded-[2.5rem]" />;
   if (!actor) return <div className="p-12 text-center text-slate-400 font-medium">Không tìm thấy thông tin thực thể này.</div>;
@@ -76,7 +78,7 @@ export default function ActorWikiDetail({
             Thông số Sinh học
           </h3>
           <Card className="p-8 space-y-6">
-            {Object.entries(actor.vitality || {}).map(([key, value]: [string, any]) => (
+            {(Object.entries(actor.vitality || {}) as [string, number][]).map(([key, value]) => (
               <div key={key} className="space-y-3">
                 <div className="flex justify-between text-[10px] font-black uppercase tracking-widest leading-none">
                    <span className="text-slate-400">{key === 'health' ? 'Sức mạnh' : key === 'energy' ? 'Năng lượng' : key === 'sanity' ? 'Tâm trí' : key}</span>
@@ -125,7 +127,7 @@ export default function ActorWikiDetail({
              </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-             {Object.entries(actor.traits || {}).map(([key, val]: [string, any]) => (
+             {(Object.entries(actor.traits || {}) as [string, string][]).map(([key, val]) => (
                <div key={key} className="flex items-center gap-5 p-5 rounded-[1.5rem] bg-white border border-slate-100 shadow-sm transition-hover hover:shadow-md hover:border-amber-100 group">
                  <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-500 transition-colors group-hover:bg-amber-500 group-hover:text-white">
                     <Award className="w-6 h-6" />
@@ -150,7 +152,7 @@ export default function ActorWikiDetail({
              </div>
           </div>
           <div className="space-y-4">
-             {actor.recentEvents?.map((event: any) => (
+             {actor.recentEvents?.map((event: ActorEventEntry) => (
                <div key={event.id} className="flex gap-6 p-6 rounded-[2rem] bg-slate-50/50 border border-slate-100 group hover:bg-white hover:shadow-md hover:border-sky-100 transition-all">
                   <div className="pt-2">
                     <div className="w-3 h-3 rounded-full bg-sky-500 border-4 border-white shadow-sm shadow-sky-200" />

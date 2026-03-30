@@ -17,7 +17,7 @@ class TimelineController extends Controller
     public function history(int $id, Request $request): JsonResponse
     {
         $limit = (int) $request->query('limit', 50);
-        $facts = DB::table('narrative_facts')
+        $facts = DB::table('historical_facts')
             ->where('universe_id', $id)
             ->orderByDesc('tick')
             ->limit($limit)

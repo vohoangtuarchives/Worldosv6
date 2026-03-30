@@ -147,7 +147,7 @@ export interface OmenContext {
     entropy: number;
     stability: number;
   };
-  axioms: Record<string, any>;
+  axioms: Record<string, unknown>;
   recent_history: {
     tick: number;
     type: string;
@@ -160,7 +160,7 @@ export interface OmenContext {
     archetype: string;
     is_heroic: boolean;
     heroic_type: string | null;
-    metrics: Record<string, any>;
+    metrics: Record<string, unknown>;
     traits: string[];
   }[];
   world_fields: Record<string, number>;

@@ -20,10 +20,11 @@ import {
   Camera,
   ChevronRight,
   Monitor,
-  Target
+  Target,
+  Cpu
 } from 'lucide-react';
 
-const iconMap: Record<string, any> = {
+const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   'Tổng quan': Home,
   'Thực tại': Globe,
   'Wiki': Search,
@@ -83,11 +84,21 @@ export function ObserverSidebar({ universeId }: { universeId: string }) {
                 <span className="truncate">{section.label}</span>
                 
                 {active && (
-                  <ChevronRight className="ml-auto w-3.5 h-3.5 text-sky-400 animate-pulse hidden xl:block" />
+                   <ChevronRight className="ml-auto w-3.5 h-3.5 text-sky-400 animate-pulse hidden xl:block" />
                 )}
               </Link>
             );
           })}
+
+          <div className="my-4 h-px bg-slate-50 mx-2" />
+
+          <Link
+            href="/dashboard/ai-config"
+            className="group flex items-center gap-4 rounded-xl px-4 py-3.5 text-[10px] font-black uppercase tracking-[0.15em] transition-all text-slate-500 border border-dashed border-slate-100 hover:border-sky-200 hover:bg-sky-50/30 hover:text-sky-600 xl:w-full"
+          >
+            <Cpu className="w-4 h-4 text-slate-300 group-hover:text-sky-500 transition-colors" />
+            <span className="truncate">Quản trị AI Hệ thống</span>
+          </Link>
         </nav>
       </div>
       

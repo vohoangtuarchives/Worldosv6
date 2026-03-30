@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { 
   Globe, 
   Activity, 
@@ -9,141 +9,147 @@ import {
   Cpu, 
   ChevronRight, 
   Zap,
-  ArrowUpRight
+  LucideIcon,
+  BarChart3,
+  Waves
 } from 'lucide-react';
 import Link from 'next/link';
-import { useObserverUniverseSummaries } from '@/modules/observer/api';
+import { useObserverUniverseSummaries, useMultiverseResonance } from '@/modules/observer/api';
 import { ObserverLoadingState } from '@/modules/observer/components/ObserverLoadingState';
 import { ObserverErrorState } from '@/modules/observer/components/ObserverErrorState';
-import MultiverseTicker from '@/components/media/MultiverseTicker';
-import VFXOverlay from '@/components/media/VFXOverlay';
-import MediaStationPanel from '@/components/media/MediaStationPanel';
+import type { UniverseSummary, ResonancePollen } from '@/modules/observer/types';
 
 const DashboardClient = () => {
   const { data: universes, isLoading, isError, refetch } = useObserverUniverseSummaries();
-  const [selectedNarrative, setSelectedNarrative] = React.useState<any>(null);
+  const { data: resonance } = useMultiverseResonance();
 
   if (isLoading) return <ObserverLoadingState lines={8} />;
-  
   if (isError) {
     return (
       <ObserverErrorState 
-        title="Multiverse Hub Offline" 
-        description="Could not synchronize with the WorldOS Kernel. Metaphysical telemetry is obscured."
+        title="Trạm Đa vũ trụ Ngoại tuyến" 
+        description="Không thể đồng bộ với Nhân WorldOS. Dữ liệu viễn thám thực tại đang bị che khuất."
         onRetry={() => void refetch()} 
       />
     );
   }
 
-  if (!universes) return null;
-
-  // Aggregate Stats (Mock or calculated from universes)
-  const totalMass = universes.reduce((acc, u) => acc + (u.informationalMass ?? 0), 0);
-  const avgEntropy = universes.length 
-    ? (universes.reduce((acc, u) => acc + (u.entropy ?? 0), 0) / universes.length)
+  const universeList = universes ?? [];
+  
+  // Aggregate Stats
+  const totalMass = universeList.reduce((acc, u) => acc + (u.informationalMass ?? 0), 0);
+  const avgEntropy = universeList.length > 0 
+    ? universeList.reduce((acc, u) => acc + (u.entropy ?? 0), 0) / universeList.length 
     : 0;
 
   return (
     <div className="space-y-8 pb-12">
-      <VFXOverlay />
-      
-      <AnimatePresence>
-        {selectedNarrative && (
-          <MediaStationPanel 
-            activeNarrative={selectedNarrative} 
-            onClose={() => setSelectedNarrative(null)} 
-          />
-        )}
-      </AnimatePresence>
-
-      <MultiverseTicker onHeadlineClick={(n) => setSelectedNarrative(n)} />
-
       {/* Hero Header */}
-      <section className="relative overflow-hidden rounded-[32px] border border-white/10 bg-void/40 p-10 shadow-2xl">
-        <div className="absolute top-0 right-0 w-1/3 h-full bg-primary/5 blur-[100px] rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+      <section className="relative overflow-hidden rounded-[40px] border border-slate-200 bg-white p-10 lg:p-14 shadow-sm">
+        <div className="absolute top-0 right-0 w-[500px] h-full bg-primary/5 blur-[120px] rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none" />
         
-        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-8">
-          <div className="space-y-4 max-w-2xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-[10px] font-mono font-bold text-primary uppercase tracking-widest">
-              <Zap size={12} />
-              Kernel Active // Multi-link
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-12">
+          <div className="space-y-6 max-w-3xl">
+            <div className="inline-flex items-center gap-3 px-4 py-1.5 rounded-full bg-primary/5 border border-primary/10 text-[10px] font-heading font-black text-primary uppercase tracking-[0.2em]">
+              <Zap size={14} fill="currentColor" />
+              Nhân đang hoạt động // Đa liên kết
             </div>
-            <h1 className="text-4xl lg:text-5xl font-display font-black tracking-tight text-white leading-[1.1]">
-              Multiverse <span className="text-primary italic">Observation</span> Hub
+            <h1 className="text-5xl lg:text-6xl font-heading font-black tracking-tighter text-slate-950 leading-[1.05]">
+              Trung tâm <span className="text-primary italic">Quan sát</span> Đa vũ trụ
             </h1>
-            <p className="text-muted-foreground leading-relaxed text-balance">
-              Theo dõi và điều phối tất cả các thực tại hiện có từ trung tâm điều khiển này. WorldOS V6 cung cấp cái nhìn toàn cảnh về Entropy, Informational Mass và sự ổn định của đa vũ trụ.
+            <p className="text-slate-500 font-medium leading-relaxed text-lg max-w-2xl">
+              Giám sát và điều phối tất cả các thực tại từ bảng điều khiển tập trung. WorldOS V6 cung cấp cái nhìn toàn cảnh về Entropy, Khối lượng Thông tin và độ ổn định liên kết giữa các thế giới.
             </p>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 lg:min-w-[400px]">
-            <QuickStat icon={Database} label="Total Mass" value={`${(totalMass / 1000).toFixed(1)}k`} />
-            <QuickStat icon={Activity} label="Avg Entropy" value={avgEntropy.toFixed(2)} color="text-amber-400" />
-            <QuickStat icon={Globe} label="Universes" value={String(universes?.length ?? 0)} />
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 lg:min-w-[440px]">
+            <QuickStat icon={Database} label="Tổng khối lượng" value={`${(totalMass / 1000).toFixed(1)}K`} unit="IM" />
+            <QuickStat icon={Activity} label="Entropy TB" value={avgEntropy.toFixed(2)} color="text-amber-600" />
+            <QuickStat icon={Globe} label="Số Vũ trụ" value={String(universes?.length ?? 0)} unit="N" />
           </div>
         </div>
       </section>
 
-      {/* Universe Grid */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold tracking-tight flex items-center gap-2">
-            <Globe size={18} className="text-primary" />
-            Active Reality Branches
-          </h2>
-          <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider">{universes?.length} ENTITIES DETECTED</span>
+      {/* Universe Grid Overlay */}
+      <div className="space-y-6">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-primary shadow-sm">
+                 <Waves size={20} />
+            </div>
+            <div>
+                 <h2 className="text-xl font-bold tracking-tight text-slate-900">
+                   Nhánh Thực tại Đang hoạt động
+                 </h2>
+                 <p className="text-[10px] font-heading font-black text-slate-400 uppercase tracking-widest mt-0.5">Cơ sở dữ liệu thực thể sống</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+             <span className="text-[10px] font-heading font-black text-primary bg-primary/5 px-3 py-1.5 rounded-lg border border-primary/10 uppercase tracking-widest">
+                {universes?.length} THỰC THỂ ĐÃ PHÁT HIỆN
+             </span>
+          </div>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-          {universes?.map((universe) => (
-            <UniverseCard key={universe.id} universe={universe} />
-          ))}
+        <div className="grid gap-8 md:grid-cols-2 xl:grid-cols-3">
+          {universes?.map((universe) => {
+            const resonanceForUniverse = resonance?.resonance_pollen.filter(p => p.universe_id === Number(universe.id));
+            return (
+              <UniverseCard 
+                key={universe.id} 
+                universe={universe} 
+                resonance={resonanceForUniverse} 
+              />
+            )
+          })}
 
           {/* New Universe Placeholder */}
           <Link 
             href="/dashboard/universes/create"
-            className="group flex flex-col items-center justify-center gap-4 rounded-[24px] border border-dashed border-white/10 bg-white/5 p-8 transition hover:border-primary/50 hover:bg-white/10"
+            className="group relative flex flex-col items-center justify-center gap-6 rounded-[32px] border-2 border-dashed border-slate-200 bg-slate-50/30 p-10 transition-all hover:border-primary/50 hover:bg-white hover:shadow-xl"
           >
-            <div className="w-12 h-12 rounded-full border border-dashed border-white/20 flex items-center justify-center text-muted-foreground group-hover:text-primary transition">
-              <Zap size={24} />
+            <div className="w-16 h-16 rounded-full border-2 border-dashed border-slate-300 flex items-center justify-center text-slate-400 group-hover:text-primary group-hover:border-primary/50 transition-all group-hover:scale-110">
+              <Zap size={32} />
             </div>
             <div className="text-center">
-              <h3 className="text-sm font-bold text-white/80 group-hover:text-white transition">Spawn New Reality</h3>
-              <p className="text-[10px] text-muted-foreground mt-1 uppercase tracking-wider">Initialize Axiom Configuration</p>
+              <h3 className="text-lg font-bold text-slate-900 group-hover:text-primary transition">Khởi tạo Thực tại mới</h3>
+              <p className="text-[10px] text-slate-400 mt-2 uppercase font-heading font-black tracking-[0.2em]">Cấu hình Tiên đề Gốc</p>
             </div>
           </Link>
         </div>
       </div>
 
-      {/* System Status Row */}
-      <div className="grid gap-6 md:grid-cols-2">
-         <Link href="/dashboard/ai-config" className="group rounded-[24px] border border-white/10 bg-card/30 p-6 flex items-center justify-between hover:border-primary/30 transition">
-            <div className="flex items-center gap-4">
-               <div className="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
-                  <Cpu size={24} />
+      {/* System Status Grid */}
+      <div className="grid gap-8 md:grid-cols-2">
+         <Link href="/dashboard/ai-config" className="group relative overflow-hidden rounded-[32px] border border-slate-200 bg-white p-8 flex items-center justify-between hover:border-primary/30 transition-all shadow-sm hover:shadow-xl">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 blur-3xl rounded-full -translate-y-1/2 translate-x-1/2" />
+            <div className="relative z-10 flex items-center gap-6">
+               <div className="w-14 h-14 rounded-2xl bg-primary shadow-lg shadow-primary/20 flex items-center justify-center text-white">
+                  <Cpu size={28} />
                </div>
                <div>
-                  <h3 className="font-bold text-white">AI Orchestrator</h3>
-                  <p className="text-xs text-muted-foreground">Manage neural drivers and model configs</p>
+                  <h3 className="text-xl font-bold text-slate-900">Điều phối AI</h3>
+                  <p className="text-sm text-slate-500 mt-1">Quản lý driver nơ-ron và cấu hình mô hình</p>
                </div>
             </div>
-            <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-primary/20 transition">
-               <ChevronRight size={16} />
+            <div className="relative z-10 w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all group-hover:translate-x-1">
+               <ChevronRight size={20} />
             </div>
          </Link>
 
-         <Link href="/dashboard/metrics" className="group rounded-[24px] border border-white/10 bg-card/30 p-6 flex items-center justify-between hover:border-cosmos/30 transition">
-            <div className="flex items-center gap-4">
-               <div className="w-12 h-12 rounded-2xl bg-cosmos/10 border border-cosmos/20 flex items-center justify-center text-cosmos">
-                  <Activity size={24} />
+         <Link href="/dashboard/metrics" className="group relative overflow-hidden rounded-[32px] border border-slate-200 bg-white p-8 flex items-center justify-between hover:border-sky-400/30 transition-all shadow-sm hover:shadow-xl">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-sky-500/5 blur-3xl rounded-full -translate-y-1/2 translate-x-1/2" />
+            <div className="relative z-10 flex items-center gap-6">
+               <div className="w-14 h-14 rounded-2xl bg-sky-600 shadow-lg shadow-sky-200 flex items-center justify-center text-white">
+                  <BarChart3 size={28} />
                </div>
                <div>
-                  <h3 className="font-bold text-white">Multiverse Analytics</h3>
-                  <p className="text-xs text-muted-foreground">Deep diagnostics of Z-Metrics & Stability</p>
+                  <h3 className="text-xl font-bold text-slate-900">Phân tích Đa vũ trụ</h3>
+                  <p className="text-sm text-slate-500 mt-1">Chẩn đoán chuyên sâu Z-Metrics & Độ ổn định</p>
                </div>
             </div>
-            <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-cosmos/20 transition">
-               <ChevronRight size={16} />
+            <div className="relative z-10 w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-sky-600 group-hover:text-white transition-all group-hover:translate-x-1">
+               <ChevronRight size={20} />
             </div>
          </Link>
       </div>
@@ -151,52 +157,90 @@ const DashboardClient = () => {
   );
 };
 
-const QuickStat = ({ icon: Icon, label, value, color = "text-primary" }: { icon: any, label: string, value: string, color?: string }) => (
-  <div className="bg-void/60 border border-white/5 rounded-2xl p-4 flex flex-col justify-center gap-1 backdrop-blur-md">
-    <div className="flex items-center gap-2 text-[8px] font-mono text-muted-foreground uppercase tracking-widest">
-      <Icon size={10} />
+const QuickStat = ({ icon: Icon, label, value, unit, color = "text-primary" }: { icon: LucideIcon, label: string, value: string, unit?: string, color?: string }) => (
+  <div className="bg-slate-50/50 border border-slate-100 rounded-[24px] p-6 flex flex-col justify-center gap-2 hover:bg-white hover:shadow-md transition-all">
+    <div className="flex items-center gap-2.5 text-[10px] font-heading font-black text-slate-400 uppercase tracking-[0.2em]">
+      <div className="w-4 h-4 rounded-md bg-white border border-slate-100 flex items-center justify-center">
+        <Icon size={10} className="text-slate-500" />
+      </div>
       {label}
     </div>
-    <div className={`text-xl font-black italic tracking-tight ${color}`}>{value}</div>
+    <div className="flex items-baseline gap-1.5">
+      <div className={`text-3xl font-heading font-black italic tracking-tighter ${color}`}>{value}</div>
+      {unit && <span className="text-[10px] font-heading font-black text-slate-300 uppercase">{unit}</span>}
+    </div>
   </div>
 );
 
-const UniverseCard = ({ universe }: { universe: any }) => (
-  <Link href={`/universes/${universe.id}`} className="group relative rounded-[24px] border border-white/10 bg-card/30 p-6 transition hover:border-primary/50 hover:bg-card/40 overflow-hidden shadow-xl">
-    {/* Status Line */}
-    <div className="flex items-center justify-between mb-6">
-      <div className="flex items-center gap-2">
-        <div className={`w-1.5 h-1.5 rounded-full ${universe.status === 'active' ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
-        <span className="text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest">{universe.status}</span>
-      </div>
-      <div className="px-2 py-0.5 rounded bg-primary/10 border border-primary/20 text-[9px] font-mono text-primary font-bold">
-        TICK {universe.currentTick}
-      </div>
-    </div>
+const UniverseCard = ({ universe, resonance }: { universe: UniverseSummary, resonance?: ResonancePollen[] }) => {
+  const hasHighDistortion = resonance?.some(r => r.distortion > 0.5);
+  const activeVfx = hasHighDistortion ? resonance?.find(r => r.distortion > 0.5)?.vfx : null;
 
-    <h3 className="text-xl font-bold tracking-tight text-white group-hover:text-primary transition">{universe.name}</h3>
-    <p className="mt-2 text-xs text-muted-foreground line-clamp-2 leading-relaxed">
-      {universe.description || 'No reality description provided for this branch.'}
-    </p>
+  return (
+    <Link href={`/universes/${universe.id}`} className="h-full">
+      <motion.div 
+        whileHover={{ y: -6 }}
+        className={`group relative flex h-full flex-col justify-between overflow-hidden rounded-[32px] border bg-white p-8 shadow-sm transition-all hover:shadow-2xl ${hasHighDistortion 
+            ? 'border-rose-500 shadow-[0_0_40px_rgba(244,63,94,0.15)] hover:border-rose-600'
+            : 'border-slate-200 hover:border-primary'
+        }`}
+      >
+        {/* Local VFX Overlay */}
+        {activeVfx && (
+          <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-[32px] z-0 opacity-40">
+            {activeVfx.effect_type === 'glitch' && (
+              <div className="absolute inset-0 bg-rose-500/10 mix-blend-screen animate-glitch-subtle" />
+            )}
+            {activeVfx.effect_type === 'bloom_glow' && (
+              <div className="absolute inset-0 bg-gradient-to-t from-primary/20 via-transparent to-transparent blur-2xl" />
+            )}
+          </div>
+        )}
 
-    {/* Metrics Minimal */}
-    <div className="mt-6 flex items-center justify-between gap-4 py-4 border-t border-white/5">
-       <div className="flex flex-col gap-1">
-          <span className="text-[8px] font-mono text-muted-foreground uppercase tracking-widest">Entropy</span>
-          <span className="text-xs font-bold text-amber-400">{(universe.entropy ?? 0).toFixed(2)}</span>
-       </div>
-       <div className="flex flex-col gap-1 items-end">
-          <span className="text-[8px] font-mono text-muted-foreground uppercase tracking-widest text-right">Mass</span>
-          <span className="text-xs font-bold text-sky-400">{(universe.informationalMass ?? 0).toFixed(1)}kg</span>
-       </div>
-    </div>
+        <div className="relative z-10">
+          {/* Status Line */}
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className={`w-2 h-2 rounded-full ${universe.status === 'active' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] animate-pulse' : 'bg-rose-500'}`} />
+              <span className="text-[10px] font-heading font-black text-slate-400 uppercase tracking-[0.2em]">{universe.status === 'active' ? 'HOẠT ĐỘNG' : 'TẠM DỪNG'}</span>
+            </div>
+            <div className={`px-2.5 py-1 rounded-lg border text-[10px] font-heading font-black tracking-widest ${hasHighDistortion ? 'bg-rose-50 border-rose-200 text-rose-600' : 'bg-primary/5 border-primary/10 text-primary'}`}>
+              TIC {universe.currentTick.toLocaleString()}
+            </div>
+          </div>
 
-    <div className="mt-4 flex items-center justify-end">
-       <div className="flex items-center gap-1 text-[10px] font-bold text-primary group-hover:translate-x-1 transition uppercase tracking-widest">
-          Enter Space <ChevronRight size={14} />
-       </div>
-    </div>
-  </Link>
-);
+          <div className="space-y-3">
+            <h3 className="text-xl font-bold text-slate-900 group-hover:text-primary transition-colors truncate" title={universe.name}>
+              {universe.name}
+            </h3>
+            <p className="text-sm text-slate-500 line-clamp-2 leading-relaxed font-medium">
+              {universe.focus || 'Nội dung thực tại đang được kiến tạo và đồng bộ hóa.'}
+            </p>
+          </div>
+        </div>
+
+        <div className="relative z-10 pt-8 mt-8 border-t border-slate-50">
+          {/* Metrics Minimal */}
+          <div className="flex items-center justify-between gap-6">
+            <div className="flex flex-col gap-1.5">
+                <span className="text-[9px] font-heading font-black text-slate-300 uppercase tracking-widest">Entropy</span>
+                <span className="text-sm font-heading font-black italic text-amber-600">{(universe.entropy ?? 0).toFixed(2)}</span>
+            </div>
+            <div className="flex flex-col gap-1.5 items-end">
+                <span className="text-[9px] font-heading font-black text-slate-300 uppercase tracking-widest text-right">Khối lượng</span>
+                <span className="text-sm font-heading font-black italic text-sky-600">{(universe.informationalMass ?? 0).toFixed(1)}KG</span>
+            </div>
+          </div>
+
+          <div className="mt-8 flex items-center justify-end">
+            <div className="flex items-center gap-2 text-[10px] font-heading font-black text-primary group-hover:gap-3 transition-all uppercase tracking-[0.2em]">
+                Truy cập <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    </Link>
+  );
+};
 
 export default DashboardClient;

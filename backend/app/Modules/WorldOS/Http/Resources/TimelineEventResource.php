@@ -20,7 +20,7 @@ class TimelineEventResource extends JsonResource
             'year' => isset($this->year) ? (int) $this->year : null,
             'category' => $category,
             'zone' => $zone,
-            'summary' => (string) ($this->summary ?? $facts[0] ?? "{$category} event recorded in {$zone}."),
+            'summary' => (string) ($this->summary ?? $facts[0] ?? $this->content ?? "{$category} event recorded in {$zone}."),
             'actors' => WorldOsResourceSupport::decodeList($this->actors ?? []),
             'institutions' => WorldOsResourceSupport::decodeList($this->institutions ?? []),
             'facts' => $facts,

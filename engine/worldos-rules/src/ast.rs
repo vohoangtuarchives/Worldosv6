@@ -108,6 +108,13 @@ pub fn condition_expr_paths(cond: &ConditionExpr) -> HashSet<String> {
     out
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum PressureOp {
+    Add,
+    Set,
+    Sub,
+}
+
 // ---------------------------------------------------------------------------
 // Action
 // ---------------------------------------------------------------------------
@@ -119,6 +126,8 @@ pub enum Action {
     AdjustEntropy(f64),
     Add { path: String, value: Expr },
     Set { path: String, value: Expr },
+    Decay { path: String, factor: Expr },
+    Pressure { name: String, op: PressureOp, value: Expr },
     SpawnActor { kind: String },
     Drift { path: String, target: Option<Expr>, speed: Option<Expr> },
     Calc { name: String, formula: Expr },

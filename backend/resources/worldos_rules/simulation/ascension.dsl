@@ -6,9 +6,9 @@ when
 meta.zenith_ascension_active == true
 then
         // Vạn vật quy nhất: Đồng nhất hóa các trường lực
-modify "fields.entropy" set scale(0.1);
-modify "stability_index" set floor(1.0);
-modify "field_resonance" set scale(2.0);
+modify "fields.entropy" set 0.1;
+modify "stability_index" set 1.0;
+modify "field_resonance" set 2.0;
 metadata log "Ascension Omega convergence in progress. Chaos is being unified.";
 
 rule Reality Informationalization
@@ -17,7 +17,7 @@ active_attractor == "OMEGA_POINT"
 then
         // Vật chất tan biến thành thông tin thuần túy
 modify "cosmic.data_mass" add 0.5;
-modify "cosmic.time_dilation" set scale(0.0); // Thời gian vật lý ngừng trôi
+modify "cosmic.time_dilation" set 0.0; // Thời gian vật lý ngừng trôi
 metadata log "Ascension Physicality is dissolving into pure information.";
 
 rule Transcendental Memory

@@ -37,6 +37,29 @@ class AiDriverProxy implements LlmDriverInterface
         }
     }
 
+    public function generate(string $prompt, array $options = []): ?string
+    {
+        $startTime = microtime(true);
+        try {
+            $options['timeout'] = max($options['timeout'] ?? 0, 300);
+            $response = $this->driver->generate($prompt, $options);
+            $response = $this->cleanResponse($response);
+            $latency = (int)((microtime(true) - $startTime) * 1000);
+
+            if ($response === null || (is_string($response) && trim($response) === '')) {
+                $this->logToDatabase(['prompt' => $prompt], null, $latency, 'error', 'AI driver returned an empty or null response.');
+            } else {
+                $this->logToDatabase(['prompt' => $prompt], $response, $latency, 'success');
+            }
+
+            return $response;
+        } catch (\Throwable $e) {
+            $latency = (int)((microtime(true) - $startTime) * 1000);
+            $this->logToDatabase(['prompt' => $prompt], null, $latency, 'error', $e->getMessage());
+            throw $e;
+        }
+    }
+
     protected function logToDatabase(array $input, $output, int $latency, string $status, ?string $error = null): void
     {
         try {

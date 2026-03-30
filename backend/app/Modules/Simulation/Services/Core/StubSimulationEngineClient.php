@@ -112,9 +112,16 @@ class StubSimulationEngineClient implements SimulationEngineClientInterface
         array $behaviorGraphs = [],
         array $archetypes = [],
         array $socialGraph = [],
-        array $narrativeContext = [],
+        array $edicts = [],
         array $factionIds = [],
-        array $factionLoyalty = []
+        array $factionLoyalty = [],
+        bool $isObserved = false,
+        array $narrativeContext = [],
+        array $factionRelations = [],
+        array $beliefDefinitions = [],
+        array $beliefAlignments = [],
+        array $techDefinitions = [],
+        array $actorTechLevels = []
     ): array {
         return array_fill(0, count($ids), ['action_id' => 0, 'new_hunger' => 0.5, 'new_energy' => 0.5, 'new_trauma' => 0.0]);
     }

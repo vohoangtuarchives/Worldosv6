@@ -258,14 +258,17 @@ class UniverseController extends Controller
 
     public function realityState(string $id, GetUniverseMaterialsAction $materialsAction): JsonResponse
     {
-        $universe = Universe::with('latestSnapshot')->findOrFail((int) $id);
+        $universe = Universe::with(['latestSnapshot', 'world'])->findOrFail((int) $id);
         $snapshot = $universe->latestSnapshot;
 
-        if (!$snapshot) {
-            return response()->json(['message' => 'No snapshot found for this universe'], 404);
+        // Use snapshot state if available, otherwise fallback to universe's genesis state vector
+        $stateVector = [];
+        if ($snapshot) {
+            $stateVector = is_array($snapshot->state_vector) ? $snapshot->state_vector : (json_decode($snapshot->state_vector, true) ?? []);
+        } else {
+            $stateVector = is_array($universe->state_vector) ? $universe->state_vector : (json_decode($universe->state_vector, true) ?? []);
         }
 
-        $stateVector = is_array($snapshot->state_vector) ? $snapshot->state_vector : (json_decode($snapshot->state_vector, true) ?? []);
         $worldState = WorldState::fromArray($stateVector);
 
         // Extract layered data
@@ -279,12 +282,12 @@ class UniverseController extends Controller
 
         return response()->json([
             'universe_id' => $universe->id,
-            'tick' => (int) ($snapshot->tick ?? 0),
+            'tick' => (int) ($snapshot?->tick ?? $universe->current_tick ?? 0),
             'era' => $universe->world->civilization_era ?? 'genesis',
             'pulse' => [
-                'entropy' => (float) ($snapshot->entropy ?? 0),
-                'stability_index' => (float) ($snapshot->stability_index ?? 0),
-                'entropy_threshold' => 1.0, // Default threshold
+                'entropy' => (float) ($snapshot?->entropy ?? $universe->entropy ?? 0),
+                'stability_index' => (float) ($snapshot?->stability_index ?? $universe->structural_coherence ?? 0),
+                'entropy_threshold' => 1.0, 
                 'collapse_probability' => (float) ($stateVector['collapse_probability'] ?? 0),
             ],
             'layers' => [
@@ -295,9 +298,9 @@ class UniverseController extends Controller
             ],
             'materials' => $materials,
             'civilization' => [
-                'complexity' => (float)($stateVector['civilization']['discovery']['fitness'] ?? 0),
-                'knowledge_nodes' => count($stateVector['civilization']['knowledge_graph']['nodes'] ?? []),
-                'settlements' => $stateVector['civilization']['settlements'] ?? [],
+                'complexity' => (float)(data_get($stateVector, 'civilization.discovery.fitness', 0)),
+                'knowledge_nodes' => count(data_get($stateVector, 'civilization.knowledge_graph.nodes', [])),
+                'settlements' => data_get($stateVector, 'civilization.settlements', []),
             ],
             'vfx_config' => WorldOsResourceSupport::getVfxConfigForEra($universe->world->civilization_era),
         ]);

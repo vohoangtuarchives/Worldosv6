@@ -35,4 +35,11 @@ class ZaiDriver implements LlmDriverInterface
 
         return $response->json('choices.0.message.content');
     }
+
+    public function generate(string $prompt, array $options = []): ?string
+    {
+        return $this->chat([
+            ['role' => 'user', 'content' => $prompt]
+        ], $options);
+    }
 }

@@ -117,9 +117,13 @@ fn parse_one_rule(name: &str, lines: &[&str]) -> Result<Rule, ParseError> {
     let mut pending_calc: Option<String> = None;
 
     for line in lines {
-        let line = line.trim();
+        let mut line = line.trim();
         if line.is_empty() || line.starts_with('#') || line.starts_with("//") {
             continue;
+        }
+        // Allow optional semicolon at the end
+        if line.ends_with(';') {
+            line = line[..line.len()-1].trim();
         }
         let lower = line.to_lowercase();
         if lower == "when" {
@@ -288,7 +292,11 @@ fn parse_action(line: &str) -> Result<Action, ParseError> {
             return Err(ParseError::InvalidAction(line.to_string()));
         }
         let path = parts[0].to_string();
-        let value = parse_expr(parts[1])?;
+        let mut value_str = parts[1].trim();
+        if value_str.starts_with('=') {
+            value_str = value_str[1..].trim();
+        }
+        let value = parse_expr(value_str)?;
         return Ok(Action::Add { path, value });
     }
     if lower.starts_with("set") {
@@ -298,8 +306,40 @@ fn parse_action(line: &str) -> Result<Action, ParseError> {
             return Err(ParseError::InvalidAction(line.to_string()));
         }
         let path = parts[0].to_string();
-        let value = parse_expr(parts[1].trim_matches('"'))?;
+        let mut value_str = parts[1].trim_matches('"').trim_matches('\'').trim();
+        if value_str.starts_with('=') {
+            value_str = value_str[1..].trim();
+        }
+        let value = parse_expr(value_str)?;
         return Ok(Action::Set { path, value });
+    }
+    if lower.starts_with("decay ") {
+        let rest = line[6..].trim();
+        let parts: Vec<&str> = rest.splitn(3, char::is_whitespace).map(|s| s.trim()).filter(|s| !s.is_empty()).collect();
+        if parts.len() >= 3 && parts[1].to_lowercase() == "factor" {
+            let path = parts[0].to_string();
+            let mut val_str = parts[2].trim();
+            if val_str.starts_with('=') {
+                val_str = val_str[1..].trim();
+            }
+            let factor = parse_expr(val_str)?;
+            return Ok(Action::Decay { path, factor });
+        }
+    }
+    if lower.starts_with("pressure ") {
+        let rest = line[9..].trim();
+        let parts: Vec<&str> = rest.splitn(3, char::is_whitespace).map(|s| s.trim()).filter(|s| !s.is_empty()).collect();
+        if parts.len() >= 3 {
+            let name = parts[0].trim_matches('"').trim_matches('\'').to_string();
+            let op = match parts[1].to_lowercase().as_str() {
+                "add" => crate::ast::PressureOp::Add,
+                "set" => crate::ast::PressureOp::Set,
+                "sub" => crate::ast::PressureOp::Sub,
+                _ => return Err(ParseError::InvalidAction(line.to_string())),
+            };
+            let value = parse_expr(parts[2])?;
+            return Ok(Action::Pressure { name, op, value });
+        }
     }
     if lower.starts_with("spawn_actor") {
         let kind = line[11..].trim().to_string(); // "spawn_actor" = 11
@@ -396,6 +436,9 @@ fn parse_expr(s: &str) -> Result<Expr, ParseError> {
     if s.starts_with('"') && s.ends_with('"') && s.len() >= 2 {
         return Ok(Expr::ConstStr(s[1..s.len() - 1].to_string()));
     }
+    if s.starts_with('\'') && s.ends_with('\'') && s.len() >= 2 {
+        return Ok(Expr::ConstStr(s[1..s.len() - 1].to_string()));
+    }
     if let Ok(n) = s.parse::<f64>() {
         return Ok(Expr::ConstFloat(n));
     }
@@ -414,7 +457,7 @@ fn parse_expr(s: &str) -> Result<Expr, ParseError> {
         };
         return Ok(Expr::FunctionCall { name, args });
     }
-    if s.contains('.') || s.chars().all(|c| c.is_alphanumeric() || c == '_') {
+    if s.contains('.') || s.contains('*') || s.chars().all(|c| c.is_alphanumeric() || c == '_') {
         return Ok(Expr::Path(s.to_string()));
     }
     Err(ParseError::InvalidExpr(s.to_string()))

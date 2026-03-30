@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, Zap, History } from 'lucide-react';
 import { useObserverUniverseChronicles, useObserverUniverseDetail, useObserverRealityPulse } from '@/modules/observer/api';
 import { ObserverEmptyState } from '@/modules/observer/components/ObserverEmptyState';
 import { ObserverPanel } from '@/modules/observer/components/ObserverPanel';
@@ -12,12 +12,13 @@ import { MutationStream } from '@/modules/observer/components/MutationStream';
 import { AiDiagnosticsLab } from '@/modules/observer/components/AiDiagnosticsLab';
 import { HUDBadge, HUDProgress } from '@/modules/observer/components/ui/hud-primitives';
 import type { ChronicleEntry, UniverseDetail } from '@/modules/observer/types';
+import { motion } from 'framer-motion';
 
 /* ── Hàm phụ trợ tính toán ngữ nghĩa ────────────────── */
 
 function getHealthStatus(entropy: number, stability: number, anomalyCount: number) {
   const score = stability * 100 - entropy * 50 - anomalyCount * 5;
-  if (score >= 70) return { label: 'ỔN ĐỊNH', status: 'nominal' as const, color: 'text-sky-600' };
+  if (score >= 70) return { label: 'ỔN ĐỊNH', status: 'nominal' as const, color: 'text-primary' };
   if (score >= 40) return { label: 'CẢNH BÁO', status: 'warning' as const, color: 'text-amber-600' };
   return { label: 'NGUY CẤP', status: 'critical' as const, color: 'text-rose-600' };
 }
@@ -30,9 +31,9 @@ function getEntropyLabel(entropy: number) {
 }
 
 function getTrendIcon(trend: string) {
-  if (trend === 'rising' || trend === 'up') return <TrendingUp className="w-3 h-3 text-sky-600" />;
-  if (trend === 'falling' || trend === 'down') return <TrendingDown className="w-3 h-3 text-rose-600" />;
-  return <Minus className="w-3 h-3 text-slate-300" />;
+  if (trend === 'rising' || trend === 'up') return <TrendingUp className="w-4 h-4 text-primary" />;
+  if (trend === 'falling' || trend === 'down') return <TrendingDown className="w-4 h-4 text-rose-600" />;
+  return <Minus className="w-4 h-4" />;
 }
 
 /* ── Component chính ─────────────────────────────────── */
@@ -53,8 +54,8 @@ export function UniverseOverviewClient({
   if (universeQuery.isError && !universeQuery.data) {
     return (
       <ObserverErrorState
-        title="Universe detail could not be loaded"
-        description="The observer workspace could not refresh the latest universe posture."
+        title="Không thể tải chi tiết Vũ trụ"
+        description="Không gian làm việc quan sát không thể cập nhật trạng thái mới nhất của thực tại này."
         onRetry={() => { void universeQuery.refetch(); }}
       />
     );
@@ -74,90 +75,112 @@ export function UniverseOverviewClient({
   const entropyLabel = getEntropyLabel(entropy);
 
   return (
-    <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 lg:grid-rows-[auto_auto_auto]">
+    <div className="grid grid-cols-1 gap-10 lg:grid-cols-12">
 
-      {/* ── Thanh sức khỏe tổng hợp ──────────────────── */}
-      <div className="lg:col-span-12">
-        <div className="flex items-center gap-4 px-4 py-3 rounded-xl border border-slate-200 bg-white shadow-sm">
-          <div className={`w-2 h-2 rounded-full ${health.status === 'nominal' ? 'bg-sky-500' : health.status === 'warning' ? 'bg-amber-500 animate-pulse' : 'bg-rose-500 animate-pulse'}`} />
-          <span className={`font-display text-[10px] font-bold uppercase tracking-[0.3em] ${health.color}`}>
-            THỰC TẠI: {health.label}
-          </span>
-          <div className="flex-1">
-            <HUDProgress value={stability * 100} color="primary" />
+      {/* ── Thực tại HUD Status Bar ─────────────────── */}
+      <motion.div 
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="lg:col-span-12"
+      >
+        <div className="flex flex-wrap items-center gap-6 px-10 py-5 rounded-3xl border border-slate-200 bg-white shadow-sm">
+          <div className="flex items-center gap-4 min-w-[200px]">
+            <div className={`w-3 h-3 rounded-full ${health.status === 'nominal' ? 'bg-primary shadow-[0_0_10px_rgba(7,89,133,0.4)]' : health.status === 'warning' ? 'bg-amber-500 animate-pulse' : 'bg-rose-500 animate-pulse'}`} />
+            <span className={`font-heading text-xs font-black uppercase tracking-[0.2em] ${health.color}`}>
+              TRẠNG THÁI: {health.label}
+            </span>
           </div>
-          <div className="flex items-center gap-4 text-[9px] font-mono text-slate-400 uppercase tracking-widest">
-            <span>{entropyLabel}</span>
-            <span>|</span>
-            <span>TICK_{universe.currentTick}</span>
+
+          <div className="flex-1 min-w-[300px]">
+             <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] font-heading font-black text-slate-400 uppercase tracking-widest">Độ nhất quán của Thực tại</span>
+                <span className="text-[10px] font-heading font-black text-primary italic">{(stability * 100).toFixed(1)}%</span>
+             </div>
+             <HUDProgress value={stability * 100} color="primary" />
+          </div>
+
+          <div className="flex items-center gap-10 text-[10px] font-heading font-black text-slate-500 uppercase tracking-widest bg-slate-50 px-6 py-2 rounded-2xl border border-slate-100">
+            <div className="flex items-center gap-2">
+                 <Zap size={12} className="text-amber-500" />
+                 {entropyLabel}
+            </div>
+            <div className="h-4 w-px bg-slate-200" />
+            <div className="flex items-center gap-2">
+                 <History size={12} className="text-primary" />
+                 TIC_{universe.currentTick.toLocaleString()}
+            </div>
           </div>
         </div>
-      </div>
+      </motion.div>
 
-      {/* Area 1: Tình hình & Dấu hiệu sống */}
+      {/* Area 1: Bối cảnh & Viễn thám */}
       <div className="lg:col-span-8">
         <ObserverPanel
-          eyebrow="Tình hình"
-          title="Tư thế nhân quả hiện tại"
+          eyebrow="BỐI CẢNH"
+          title="Trạng thái Nhân quả hiện tại"
           status={health.status}
-          metric={{ label: 'ENTROPY', value: entropy.toFixed(3) }}
+          metric={{ label: 'ENTROPY', value: entropy.toFixed(4) }}
         >
-          <div className="space-y-4 font-mono text-sm leading-7 text-foreground/80">
-            <p>{universe.focus}</p>
-            <p>
-              Workspace tự động làm mới theo tài nguyên: chronicles, forks, snapshots và mutations tiến hóa độc lập
-              mà không cần reload toàn bộ route.
+          <div className="space-y-6 font-body text-base leading-relaxed text-slate-600">
+            <p className="font-bold text-slate-900 border-l-4 border-primary/20 pl-6 italic">
+              {universe.focus || "Thực tại này đang trong quá trình kiến tạo và đồng bộ hóa dữ liệu mô phỏng từ nhân hệ thống."}
+            </p>
+            <p className="text-sm">
+                Bộ xử lý Quan sát tự động cập nhật các luồng dữ liệu: sử ký, phân nhánh, ảnh chụp và các đột biến thực tại
+                theo thời gian thực. Mọi thay đổi về tiên đề sẽ ảnh hưởng trực tiếp đến quỹ đạo nhân quả của thế giới này.
             </p>
           </div>
         </ObserverPanel>
       </div>
 
       <div className="lg:col-span-4">
-        <ObserverPanel eyebrow="Dấu hiệu sống" title="Sức khỏe thực tại" status={health.status}>
-          <div className="flex h-full items-center justify-center py-4">
+        <ObserverPanel eyebrow="VIỄN THÁM" title="Dấu hiệu Sự sống" status={health.status}>
+          <div className="flex h-full items-center justify-center py-6">
             <RealityPulse entropy={entropy} stability={stability} />
           </div>
         </ObserverPanel>
       </div>
 
-      {/* Area 2: Biên niên sử gần đây */}
+      {/* Area 2: Sử ký sự kiện */}
       <div className="lg:col-span-8">
         <ObserverPanel
-          eyebrow="Tường thuật"
-          title="Biên niên sử gần đây"
+          eyebrow="SỬ KÝ"
+          title="Biên niên sử Sự kiện"
           metric={{ label: 'TỔNG', value: String(chronicles.length) }}
         >
           {chroniclesQuery.isLoading && chronicles.length === 0 ? <ObserverLoadingState lines={3} /> : null}
           {chroniclesQuery.isError && chronicles.length === 0 ? (
             <ObserverErrorState
               title="Kho lưu trữ biên niên sử không khả dụng"
-              description="Lớp narrative không trả về dữ liệu chronicle cho nhánh vũ trụ này."
+              description="Hệ thống narrative không thể truy xuất dữ liệu chronicle cho nhánh vũ trụ này."
               onRetry={() => { void chroniclesQuery.refetch(); }}
             />
           ) : null}
           {!chroniclesQuery.isLoading && chronicles.length === 0 ? (
             <ObserverEmptyState
-              title="Chưa có biên niên sử"
-              description="Simulation chưa phát sinh tổng hợp narrative cho nhánh này."
+              title="Chưa có dữ liệu biên niên sử"
+              description="Mô phỏng chưa phát sinh các tổng hợp narrative đủ lớn cho nhánh thực tại này."
             />
           ) : null}
           {chronicles.length > 0 ? (
-            <div className="grid gap-3 md:grid-cols-2">
+            <div className="grid gap-6 md:grid-cols-2">
               {chronicles.slice(0, 4).map((entry) => (
                 <article
                   key={entry.id}
-                  className="group relative overflow-hidden rounded-lg border border-slate-200 bg-white p-4 transition-all hover:border-sky-300 hover:shadow-sm"
+                  className="group relative overflow-hidden rounded-[24px] border border-slate-100 bg-slate-50/50 p-6 transition-all hover:border-primary/30 hover:bg-white hover:shadow-lg"
                 >
-                  <div className="flex items-center justify-between gap-4">
-                    <h3 className="font-display text-sm font-bold uppercase tracking-tight text-slate-800">{entry.title}</h3>
+                  <div className="flex items-center justify-between gap-4 mb-4">
+                    <h3 className="font-heading text-xs font-bold uppercase tracking-tight text-slate-900 line-clamp-1">{entry.title}</h3>
                     <Link
                       href={`/universes/${universeId}/chronicles?tick=${entry.tick}`}
-                      className="font-mono text-[10px] text-primary/60 transition hover:text-primary"
+                      className="transition-transform group-hover:scale-110"
                     >
-                      <HUDBadge color="primary">T-{entry.tick}</HUDBadge>
+                      <HUDBadge color="primary">T-{entry.tick.toLocaleString()}</HUDBadge>
                     </Link>
                   </div>
-                  <p className="mt-2 line-clamp-2 font-mono text-xs leading-5 text-slate-500">{entry.summary}</p>
+                  <p className="line-clamp-3 text-xs leading-relaxed text-slate-500 font-medium italic">
+                    {entry.summary}
+                  </p>
                 </article>
               ))}
             </div>
@@ -165,54 +188,46 @@ export function UniverseOverviewClient({
         </ObserverPanel>
       </div>
 
-      {/* Area 3: Tín hiệu thời gian thực */}
-      <div className="lg:col-span-4 lg:row-span-1">
+      {/* Area 3: Chỉ số Quan tâm */}
+      <div className="lg:col-span-4">
         <ObserverPanel
-          eyebrow="Tín hiệu trực tiếp"
-          title="Chỉ số quan tâm"
+          eyebrow="TÍN HIỆU TRỰC TIẾP"
+          title="Mức độ Can thiệp"
           status={universe.anomalyCount > 5 ? 'warning' : 'nominal'}
         >
-          <ul className="space-y-4 font-mono text-xs text-slate-600">
-            <li className="flex items-center justify-between border-b border-slate-100 pb-2">
-              <span>Cụm dị thường</span>
-              <span className={`font-bold ${universe.anomalyCount > 5 ? 'text-amber-500' : 'text-sky-600'}`}>
-                {universe.anomalyCount}
-              </span>
-            </li>
-            <li className="flex items-center justify-between border-b border-slate-100 pb-2">
-              <span>Nhánh đang hoạt động</span>
-              <span className="font-bold text-sky-600">{universe.branchCount}</span>
-            </li>
-            <li className="flex items-center justify-between border-b border-slate-100 pb-2">
-              <span>Đồng bộ lưu trữ</span>
-              <span className="font-bold text-sky-600">{chronicles.length}</span>
-            </li>
-            <li className="flex items-center justify-between">
-              <span>Stability Index</span>
-              <span className={`font-bold ${health.color}`}>{(stability * 100).toFixed(1)}%</span>
-            </li>
+          <ul className="space-y-6">
+            <MetricItem label="Cụm dị thường" value={universe.anomalyCount} highlighted={universe.anomalyCount > 5} highlightColor="text-rose-600" />
+            <MetricItem label="Nhánh hoạt động" value={universe.branchCount} />
+            <MetricItem label="Đồng bộ sử ký" value={chronicles.length} />
+            <MetricItem label="Khối lượng thông tin" value={`${(universe.informationalMass ?? 0).toFixed(1)} IM`} />
+            <div className="pt-4 border-t border-slate-50 mt-4 flex items-center justify-between">
+                <span className="text-[10px] font-heading font-black text-slate-400 uppercase tracking-widest">Độ ổn định hệ thống</span>
+                <span className={`text-base font-heading font-black italic ${health.color}`}>{(stability * 100).toFixed(1)}%</span>
+            </div>
           </ul>
         </ObserverPanel>
       </div>
 
-      {/* Area 4: Các Axiom cơ bản */}
+      {/* Area 4: Các Tiên đề Thế giới */}
       <div className="lg:col-span-12">
-        <ObserverPanel eyebrow="Định đề" title="Tham số thế giới cơ bản">
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
+        <ObserverPanel eyebrow="TIÊN ĐỀ" title="Thông số Vật lý & Siêu hình">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
             {universe.axioms.map((axiom) => (
               <div
                 key={axiom.key}
-                className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-4 py-3 transition hover:shadow-sm group"
+                className="flex items-center justify-between rounded-2xl border border-slate-100 bg-white px-5 py-4 transition-all hover:border-primary/20 hover:shadow-md group"
               >
-                <div className="flex items-center gap-2">
-                  {getTrendIcon(axiom.trend)}
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-400 group-hover:text-primary transition-colors">
+                       {getTrendIcon(axiom.trend)}
+                  </div>
                   <div>
-                    <p className="font-display text-[10px] font-bold uppercase text-slate-800">{axiom.key}</p>
-                    <p className="text-[9px] uppercase tracking-widest text-slate-400">{axiom.trend}</p>
+                    <p className="font-heading text-[10px] font-black uppercase text-slate-900 tracking-tight leading-none">{axiom.key}</p>
+                    <p className="text-[9px] uppercase tracking-[0.2em] text-slate-400 mt-1 font-bold italic">{axiom.trend === 'up' ? 'TĂNG' : axiom.trend === 'down' ? 'GIẢM' : 'ỔN ĐỊNH'}</p>
                   </div>
                 </div>
-                <p className="font-mono text-xs font-bold text-sky-600">
-                  {(axiom.value ?? 0).toFixed(2)}
+                <p className="font-heading text-sm font-black italic text-primary">
+                  {(axiom.value ?? 0).toFixed(3)}
                 </p>
               </div>
             ))}
@@ -227,6 +242,26 @@ export function UniverseOverviewClient({
       <div className="lg:col-span-4">
         <MutationStream universeId={universeId} />
       </div>
+
+      <style jsx global>{`
+        .custom-scrollbar-light::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar-light::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar-light::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.05); border-radius: 10px; }
+      `}</style>
     </div>
+  );
+}
+
+function MetricItem({ label, value, highlighted = false, highlightColor = "text-primary" }: { label: string; value: string | number; highlighted?: boolean; highlightColor?: string }) {
+  return (
+    <li className="flex items-center justify-between group">
+      <div className="flex items-center gap-3">
+        <div className="w-1.5 h-1.5 rounded-full bg-slate-200 group-hover:bg-primary transition-colors" />
+        <span className="text-[10px] font-heading font-black text-slate-400 uppercase tracking-widest">{label}</span>
+      </div>
+      <span className={`font-heading text-sm font-black italic ${highlighted ? highlightColor : 'text-slate-900 group-hover:text-primary'} transition-colors`}>
+        {value}
+      </span>
+    </li>
   );
 }

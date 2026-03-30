@@ -6,27 +6,49 @@ import { BarChart3 } from 'lucide-react';
 
 export default function MetricsPage() {
   return (
-    <div className="flex-1 flex items-center justify-center h-full p-12">
+    <div className="flex-1 flex items-center justify-center h-full min-h-[60vh] p-12">
       <div className="text-center max-w-2xl relative">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-cosmos/5 blur-[100px] rounded-full" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-primary/5 blur-[120px] rounded-full" />
+        
         <motion.div 
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          className="relative z-10 space-y-6"
+          initial={{ scale: 0.95, opacity: 0, y: 20 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, ease: "easeOut" }}
+          className="relative z-10 space-y-8"
         >
-          <div className="w-16 h-16 mx-auto rounded-2xl bg-cosmos/10 border border-cosmos/20 flex items-center justify-center">
-            <BarChart3 size={32} className="text-cosmos" />
+          <div className="w-20 h-20 mx-auto rounded-3xl bg-primary/5 border border-primary/20 flex items-center justify-center shadow-sm">
+            <BarChart3 size={40} className="text-primary" />
           </div>
-          <h1 className="text-4xl font-display font-black tracking-tight text-foreground uppercase italic px-4 py-2 border-b-2 border-cosmos/40 inline-block">
-            Metrics Hub
-          </h1>
-          <p className="text-sm font-mono text-muted-foreground/60 uppercase tracking-[0.3em]">
-            Multiverse Data Stream & Entropy Diagnostics: Under Observation
-          </p>
-          <div className="flex items-center justify-center gap-4 pt-12">
+          
+          <div className="space-y-4">
+            <h1 className="text-5xl font-heading font-black tracking-tighter text-slate-900 uppercase italic px-8 py-3 border-b-4 border-primary/40 inline-block">
+              Trung tâm Thông số
+            </h1>
+            <p className="text-[10px] font-heading font-black text-slate-400 uppercase tracking-[0.4em] max-w-md mx-auto leading-loose">
+              Luồng Dữ liệu Đa vũ trụ & Chẩn đoán Entropy: Đang Giám sát
+            </p>
+          </div>
+
+          <div className="flex items-center justify-center gap-6 pt-12">
             {[1, 2, 3].map(i => (
-              <div key={i} className="w-2 h-2 rounded-full bg-cosmos/20 animate-pulse" style={{ animationDelay: `${i * 0.2}s` }} />
+              <motion.div 
+                key={i} 
+                animate={{ 
+                  scale: [1, 1.5, 1],
+                  opacity: [0.3, 1, 0.3]
+                }}
+                transition={{
+                  duration: 1.5,
+                  repeat: Infinity,
+                  delay: i * 0.3
+                }}
+                className="w-2.5 h-2.5 rounded-full bg-primary/30" 
+              />
             ))}
+          </div>
+
+          <div className="pt-8 text-[9px] font-heading font-bold text-slate-300 uppercase tracking-widest animate-pulse">
+            Đang đồng bộ hóa với lõi thực tại...
           </div>
         </motion.div>
       </div>

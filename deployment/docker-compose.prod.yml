@@ -92,7 +92,6 @@ services:
     environment:
       APP_ENV: production
       APP_DEBUG: "false"
-      APP_KEY: ${APP_KEY:-base64:prodplaceholderkey0000000000000000000000=}
       DB_CONNECTION: pgsql
       DB_HOST: postgres
       DB_PORT: 5432
@@ -115,9 +114,15 @@ services:
       CENTRIFUGO_SECRET: ${CENTRIFUGO_SECRET:-secret}
       SOCIAL_ENGINE_URL: http://social_engine:5001/api/v1
       SOCIAL_ENGINE_MOCK: "true"
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      NARRATIVE_LLM_KEY: ${NARRATIVE_LLM_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+
     ports:
       - "8000:8000"
     volumes:
+      - ../backend:/var/www
+      - /var/www/vendor
       - backend_storage:/var/www/storage
       - backend_bootstrap_cache:/var/www/bootstrap/cache
       - backend_public:/var/www/public
@@ -157,7 +162,11 @@ services:
       CENTRIFUGO_SECRET: ${CENTRIFUGO_SECRET:-secret}
       SOCIAL_ENGINE_URL: http://social_engine:5001/api/v1
       SOCIAL_ENGINE_MOCK: "true"
-    command: ["php", "artisan", "schedule:work"]
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      NARRATIVE_LLM_KEY: ${NARRATIVE_LLM_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+
+    command: [ "php", "artisan", "schedule:work" ]
     volumes:
       - backend_storage:/var/www/storage
       - backend_bootstrap_cache:/var/www/bootstrap/cache
@@ -197,7 +206,11 @@ services:
       CENTRIFUGO_SECRET: ${CENTRIFUGO_SECRET:-secret}
       SOCIAL_ENGINE_URL: http://social_engine:5001/api/v1
       SOCIAL_ENGINE_MOCK: "true"
-    command: ["php", "artisan", "queue:work"]
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      NARRATIVE_LLM_KEY: ${NARRATIVE_LLM_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+
+    command: [ "php", "artisan", "queue:work" ]
     volumes:
       - backend_storage:/var/www/storage
       - backend_bootstrap_cache:/var/www/bootstrap/cache
@@ -248,6 +261,7 @@ services:
       provenance: false
     restart: always
     environment:
+      DOCKER_BUILDKIT: 1
       WORLDOS_API_URL: http://nginx/api
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
@@ -276,6 +290,7 @@ services:
       ZEP_API_KEY: ${ZEP_API_KEY:-}
       REDIS_URL: redis://redis:6379/0
       LLM_CACHE_ENABLED: "true"
+      DOCKER_BUILDKIT: 1
     networks:
       - internal
 

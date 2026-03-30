@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
+
 import { Atom, TrendingUp, Info, AlertTriangle, Zap } from 'lucide-react';
 import Link from 'next/link';
 import { fetchClientJson } from '@/shared/api/observer-http';
@@ -23,7 +23,7 @@ interface AxiomDetail {
     id: string;
     name: string;
     description: string;
-    default_value: any;
+    default_value: number | string | boolean;
     dimension: string;
     tier: number;
     impact: string[];

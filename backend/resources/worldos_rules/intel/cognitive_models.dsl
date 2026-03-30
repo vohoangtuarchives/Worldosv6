@@ -43,18 +43,18 @@ priority 20
 when
     true == true
 then
-    set trait_dominance (get_trait 0)
-    set trait_ambition (get_trait 1)
-    set trait_coercion (get_trait 2)
-    set trait_empathy (get_trait 4)
-    set trait_curiosity (get_trait 8)
-    set trait_dogmatism (get_trait 9)
-    set trait_risk (get_trait 10)
-    set trait_fear (get_trait 11)
-    set trait_hope (get_trait 13)
-    set trait_pride (get_trait 15)
-    set trait_solidarity (get_trait 5)
-    set trait_pragmatism (get_trait 7)
+    set trait_dominance (trait 0)
+    set trait_ambition (trait 1)
+    set trait_coercion (trait 2)
+    set trait_empathy (trait 4)
+    set trait_curiosity (trait 8)
+    set trait_dogmatism (trait 9)
+    set trait_risk (trait 10)
+    set trait_fear (trait 11)
+    set trait_hope (trait 13)
+    set trait_pride (trait 15)
+    set trait_solidarity (trait 5)
+    set trait_pragmatism (trait 7)
 
 # --- 3. Causal Resonance ---
 

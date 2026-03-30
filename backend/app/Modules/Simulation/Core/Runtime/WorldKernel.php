@@ -355,10 +355,31 @@ class WorldKernel
             $activeSagas = $sagaBuilder->buildActiveSagas($universeId, $tick);
 
             $result = $client->processActorsSoa(
-                $tick, $ids, $zoneIds, $hunger, $energy, $fear, $trauma, $heroicTypes, $lineageIds, $memes, $traitsMatrix,
-                $behaviorStates, $behaviorGraphs, $archetypes, $socialGraph, $edicts, $activeSagas,
-                $factionIdsList, $factionLoyaltyList, $isObserved, $factionRelations, $beliefDefinitions, $beliefAlignments,
-                $techDefinitions, $actorTechLevels
+                tick: $tick,
+                ids: $ids,
+                zoneIds: $zoneIds,
+                hunger: $hunger,
+                energy: $energy,
+                fear: $fear,
+                trauma: $trauma,
+                heroicTypes: $heroicTypes,
+                lineageIds: $lineageIds,
+                memes: $memes,
+                traitsMatrix: $traitsMatrix,
+                behaviorStates: $behaviorStates,
+                behaviorGraphs: $behaviorGraphs,
+                archetypes: $archetypes,
+                socialGraph: $socialGraph,
+                edicts: $edicts,
+                factionIds: $factionIdsList,
+                factionLoyalty: $factionLoyaltyList,
+                isObserved: (bool) $isObserved,
+                narrativeContext: $activeSagas,
+                factionRelations: $factionRelations,
+                beliefDefinitions: $beliefDefinitions,
+                beliefAlignments: $beliefAlignments,
+                techDefinitions: $techDefinitions,
+                actorTechLevels: $actorTechLevels
             );
 
             // 4. Update State from Rust (Macro-level changes)

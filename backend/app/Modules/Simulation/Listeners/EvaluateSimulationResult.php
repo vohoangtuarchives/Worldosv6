@@ -22,8 +22,11 @@ use App\Modules\Simulation\Core\Support\SimulationRandom;
 use App\Models\UniverseSnapshot;
 use App\Modules\Simulation\Core\Runtime\Domain\UniverseState;
 use App\Modules\Simulation\Services\Cosmology\CosmicEnergyPoolService;
+use App\Modules\Intelligence\Entities\ActorEntity;
+use App\Modules\Simulation\Core\Runtime\State\WorldState;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Carbon;
 
 class EvaluateSimulationResult
 {
@@ -124,7 +127,7 @@ class EvaluateSimulationResult
                 $this->epochEngine->process($universeEntity, $snapshot);
                 
                 $isBeingObserved = $universe->last_observed_at && 
-                                   $universe->last_observed_at->diffInSeconds(now()) < 30;
+                                   $universe->last_observed_at->diffInSeconds(Carbon::now()) < 30;
                 $this->observationInterferenceEngine->process($universeEntity, (int)$snapshot->tick, $isBeingObserved);
                 $this->trajectoryModelingEngine->process($universeEntity, (int)$snapshot->tick);
             }
@@ -502,7 +505,7 @@ class EvaluateSimulationResult
             'stability_index' => (float) $snapshot->stability_index,
             'metrics' => $snapshot->metrics ?? [],
         ];
-        $perceivedData = $this->epistemicService->distort($canonicalData, $noise);
+        $perceivedData = $this->epistemicService->distort($universe, $canonicalData, $noise);
         if ($historicalBlock !== null) {
             $perceivedData['historical_block'] = $historicalBlock;
         }
@@ -628,7 +631,7 @@ class EvaluateSimulationResult
      */
     protected function runActorDecisionForUniverse($universe, $snapshot, \App\Modules\Simulation\Core\Support\SimulationRandom $rng): void
     {
-        $maxActors = (int) config('worldos.actor_decision.max_actors_per_pulse', 50);
+        $maxActors = (int) \config('worldos.actor_decision.max_actors_per_pulse', 50);
 
         $keyActors = \App\Models\Actor::query()
             ->where('universe_id', $universe->id)
@@ -655,7 +658,26 @@ class EvaluateSimulationResult
             $birthTick = (int) ($actor->birth_tick ?? $tick);
             $belief = $this->getBeliefContextForActor($actor);
             $environment['belief'] = $belief;
-            $dist = $this->actorDecisionEngine->getActionDistribution($traits, $capabilities, $environment, $tick, $birthTick);
+
+            // DDD Mapping
+            $actorEntity = new ActorEntity(
+                id: $actor->id,
+                universeId: (int) $actor->universe_id,
+                name: $actor->name,
+                archetype: $actor->archetype,
+                traits: $traits,
+                metrics: $actor->metrics ?? [],
+                isAlive: (bool) $actor->is_alive,
+                generation: (int) ($actor->generation ?? 1),
+                biography: $actor->biography,
+                isHeroic: (bool) $actor->is_heroic,
+                heroicType: $actor->heroic_type,
+                vocationId: $actor->vocation_id
+            );
+
+            $worldState = WorldState::fromArray($snapshot->state_vector ?? []);
+
+            $dist = $this->actorDecisionEngine->getActionDistribution($actorEntity, $worldState, $tick);
             $action = $this->actorDecisionEngine->rollAction($dist, $rng);
             \App\Models\ActorEvent::create([
                 'actor_id' => $actor->id,

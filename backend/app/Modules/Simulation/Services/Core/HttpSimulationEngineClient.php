@@ -214,29 +214,62 @@ class HttpSimulationEngineClient implements SimulationEngineClientInterface
         ];
     }
 
-    public function processActorsSoa(int $tick, array $ids, array $zoneIds, array $hunger, array $energy, array $fear, array $trauma, array $heroicTypes, array $lineageIds, array $memes, array $traitsMatrix = [], array $behaviorStates = [], array $behaviorGraphs = [], array $archetypes = [], array $socialGraph = [], array $narrativeContext = [], array $factionIds = [], array $factionLoyalty = []): array
-    {
+    public function processActorsSoa(
+        int $tick,
+        array $ids,
+        array $zoneIds,
+        array $hunger,
+        array $energy,
+        array $fear,
+        array $trauma,
+        array $heroicTypes,
+        array $lineageIds,
+        array $memes,
+        array $traitsMatrix,
+        array $behaviorStates = [],
+        array $behaviorGraphs = [],
+        array $archetypes = [],
+        array $socialGraph = [],
+        array $edicts = [],
+        array $factionIds = [],
+        array $factionLoyalty = [],
+        bool $isObserved = false,
+        array $narrativeContext = [],
+        array $factionRelations = [],
+        array $beliefDefinitions = [],
+        array $beliefAlignments = [],
+        array $techDefinitions = [],
+        array $actorTechLevels = []
+    ): array {
         $url = rtrim($this->baseUrl, '/').'/process-actors-soa';
         $payload = [
-            'tick'            => $tick,
-            'ids'             => $ids,
-            'zone_ids'        => $zoneIds,
-            'hunger'          => $hunger,
-            'energy'          => $energy,
-            'fear'            => $fear,
-            'trauma'          => $trauma,
-            'heroic_types'    => $heroicTypes,
-            'lineage_ids'     => $lineageIds,
-            'memes'           => $memes,
-            'traits_matrix'   => $traitsMatrix,
-            'behavior_states' => $behaviorStates,
-            'behavior_graphs' => [],
-            'archetypes'      => $archetypes,
-            'social_graph'    => $socialGraph,
-            'narrative_context' => $narrativeContext,
-            'faction_ids'     => $factionIds,
-            'faction_loyalty' => $factionLoyalty,
+            'tick'               => $tick,
+            'ids'                => $ids,
+            'zone_ids'           => $zoneIds,
+            'hunger'             => $hunger,
+            'energy'             => $energy,
+            'fear'               => $fear,
+            'trauma'             => $trauma,
+            'heroic_types'       => $heroicTypes,
+            'lineage_ids'        => $lineageIds,
+            'memes'              => $memes,
+            'traits_matrix'      => $traitsMatrix,
+            'behavior_states'    => $behaviorStates,
+            'behavior_graphs'    => $behaviorGraphs,
+            'archetypes'         => $archetypes,
+            'social_graph'       => $socialGraph,
+            'edicts'             => $edicts,
+            'faction_ids'        => $factionIds,
+            'faction_loyalty'    => $factionLoyalty,
+            'is_observed'        => $isObserved,
+            'narrative_context'  => $narrativeContext,
+            'faction_relations'  => $factionRelations,
+            'belief_definitions' => $beliefDefinitions,
+            'belief_alignments'  => $beliefAlignments,
+            'tech_definitions'   => $techDefinitions,
+            'actor_tech_levels'  => $actorTechLevels,
         ];
+
         try {
             $response = Http::timeout(30)->post($url, $payload);
             return $response->json() ?: [];

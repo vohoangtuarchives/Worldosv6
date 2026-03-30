@@ -1,15 +1,15 @@
 import type { ReactNode } from 'react';
 
 const statusBorders: Record<string, string> = {
-  nominal: 'border-primary/20 hover:border-primary/40',
-  warning: 'border-yellow-500/20 hover:border-yellow-500/40',
-  critical: 'border-destructive/20 hover:border-destructive/40',
+  nominal: 'border-slate-200 hover:border-primary/40',
+  warning: 'border-amber-500/30 hover:border-amber-500',
+  critical: 'border-rose-500/30 hover:border-rose-500',
 };
 
 const statusDots: Record<string, string> = {
-  nominal: 'bg-primary',
-  warning: 'bg-yellow-500 animate-pulse',
-  critical: 'bg-destructive animate-pulse',
+  nominal: 'bg-primary shadow-[0_0_8px_rgba(7,89,133,0.3)]',
+  warning: 'bg-amber-500 animate-pulse shadow-[0_0_8px_rgba(245,158,11,0.5)]',
+  critical: 'bg-rose-500 animate-pulse shadow-[0_0_10px_rgba(244,63,94,0.6)]',
 };
 
 export function ObserverPanel({
@@ -30,34 +30,47 @@ export function ObserverPanel({
   const borderClass = statusBorders[status] ?? statusBorders.nominal;
 
   return (
-    <section className={`group relative overflow-hidden rounded-xl border ${borderClass} bg-white p-5 shadow-sm transition-all hover:shadow-md sm:p-6`}>
-      <div className="absolute inset-0 bg-grid-pattern opacity-[0.02] pointer-events-none" />
-
-      {/* Thanh trạng thái trên cùng */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-2">
-          <div className={`w-1.5 h-1.5 rounded-full ${statusDots[status]}`} />
-          <p className="font-display text-[10px] uppercase tracking-[0.3em] text-slate-500 font-medium">{eyebrow}</p>
-        </div>
+    <section className={`group relative overflow-hidden h-full rounded-[32px] border ${borderClass} bg-white p-10 shadow-sm transition-all hover:shadow-xl`}>
+      <div className="absolute inset-0 bg-grid-pattern opacity-[0.015] pointer-events-none" />
+      
+      {/* HUD Header */}
+      <div className="relative z-10 flex items-center justify-between gap-6 mb-8">
         <div className="flex items-center gap-3">
+          <div className={`w-2 h-2 rounded-full ${statusDots[status]}`} />
+          <p className="text-[10px] font-heading font-black text-slate-400 uppercase tracking-[0.25em] whitespace-nowrap">
+            {eyebrow}
+          </p>
+        </div>
+        
+        <div className="flex items-center gap-4">
           {metric && (
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-[9px] font-mono text-slate-400 uppercase tracking-widest">{metric.label}</span>
-              <span className="text-sm font-mono font-bold text-sky-600">{metric.value}</span>
+            <div className="flex flex-col items-end">
+               <span className="text-[8px] font-heading font-black text-slate-300 uppercase tracking-widest">{metric.label}</span>
+               <span className="text-sm font-heading font-black italic text-primary">{metric.value}</span>
             </div>
           )}
           {badge && (
-            <span className="rounded-sm border border-sky-200 bg-sky-50 px-2 py-0.5 text-[9px] font-bold text-sky-600 tracking-wider uppercase">
+            <span className="rounded-lg border border-primary/10 bg-primary/5 px-2.5 py-1 text-[9px] font-heading font-black text-primary tracking-widest uppercase">
               {badge}
             </span>
           )}
         </div>
       </div>
 
-      <h2 className="mt-2 font-display text-lg font-bold tracking-wider uppercase text-slate-900 sm:text-xl">
-        {title}
-      </h2>
-      <div className="relative z-10 mt-5">{children}</div>
+      <div className="relative z-10 space-y-6">
+        <h2 className="text-2xl font-bold tracking-tight text-slate-900 group-hover:text-primary transition-colors">
+          {title}
+        </h2>
+        
+        <div className="pt-2">
+            {children}
+        </div>
+      </div>
+
+      {/* Decorative Corner Element */}
+      <div className="absolute bottom-0 right-0 p-4 opacity-5 group-hover:opacity-20 transition-opacity">
+         <div className="w-12 h-12 border-b-2 border-r-2 border-slate-900 rounded-br-2xl" />
+      </div>
     </section>
   );
 }

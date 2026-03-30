@@ -2,14 +2,19 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Radio, Mic2, Zap, Share2, Activity } from 'lucide-react';
+import { Radio, Mic2, Activity, X } from 'lucide-react';
+import MinimapLocator from './MinimapLocator';
+import ViralityMeter from './ViralityMeter';
+
+import type { ResonancePollen } from '@/modules/observer/types';
 
 interface MediaStationPanelProps {
-  activeNarrative: any;
+  activeNarrative: ResonancePollen | null;
+  universes: { id: number; name: string }[];
   onClose?: () => void;
 }
 
-const MediaStationPanel = ({ activeNarrative, onClose }: MediaStationPanelProps) => {
+const MediaStationPanel = ({ activeNarrative, universes, onClose }: MediaStationPanelProps) => {
   if (!activeNarrative) return null;
 
   return (
@@ -30,7 +35,7 @@ const MediaStationPanel = ({ activeNarrative, onClose }: MediaStationPanelProps)
             onClick={onClose}
             className="text-white/40 hover:text-white transition-colors"
           >
-            <Share2 className="w-4 h-4" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
@@ -38,7 +43,7 @@ const MediaStationPanel = ({ activeNarrative, onClose }: MediaStationPanelProps)
           {activeNarrative.headline}
         </h3>
         <p className="text-sm text-primary/80 italic font-medium">
-          "{activeNarrative.slogan}"
+          &quot;{activeNarrative.slogan}&quot;
         </p>
       </div>
 
@@ -65,13 +70,7 @@ const MediaStationPanel = ({ activeNarrative, onClose }: MediaStationPanelProps)
 
         {/* Media Metrics */}
         <div className="grid grid-cols-2 gap-3 pt-4">
-          <div className="bg-white/5 rounded-2xl p-4 border border-white/5">
-            <div className="flex items-center gap-2 mb-1">
-              <Zap className="w-3 h-3 text-yellow-500" />
-              <span className="text-[9px] text-white/40 uppercase font-bold">Virality</span>
-            </div>
-            <p className="text-xl font-mono text-white">{(activeNarrative.intensity * 100).toFixed(1)}%</p>
-          </div>
+          <ViralityMeter value={activeNarrative.intensity} />
           <div className="bg-white/5 rounded-2xl p-4 border border-white/5">
             <div className="flex items-center gap-2 mb-1">
               <Activity className="w-3 h-3 text-red-500" />
@@ -80,6 +79,9 @@ const MediaStationPanel = ({ activeNarrative, onClose }: MediaStationPanelProps)
             <p className="text-xl font-mono text-white">{(activeNarrative.distortion * 100).toFixed(1)}%</p>
           </div>
         </div>
+
+        {/* Minimap Locator */}
+        <MinimapLocator universes={universes} activeUniverseId={activeNarrative.universe_id} />
 
         {/* Tags */}
         <div className="flex flex-wrap gap-2">
