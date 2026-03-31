@@ -1,8 +1,8 @@
-import { getObserverUniverseSummariesServer } from "@/modules/observer/api";
-import { ObserverPortalClient } from "@/modules/observer/components/ObserverPortalClient";
 
 export default async function Home() {
-  const universes = await getObserverUniverseSummariesServer();
-
-  return <ObserverPortalClient initialUniverses={universes} />;
+  return (
+    <div>
+      <h1>Home</h1>
+    </div>
+  );
 }
