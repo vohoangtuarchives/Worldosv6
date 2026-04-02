@@ -11,7 +11,8 @@ class AiDriverProxy implements LlmDriverInterface
     public function __construct(
         protected LlmDriverInterface $driver,
         protected string $driverName,
-        protected string $feature
+        protected string $feature,
+        protected ?\App\Models\AiKeyPool $keyPoolEntry = null
     ) {}
 
     public function chat(array $messages, array $options = []): ?string
@@ -27,12 +28,16 @@ class AiDriverProxy implements LlmDriverInterface
                 $this->logToDatabase($messages, null, $latency, 'error', 'AI driver returned an empty or null response.');
             } else {
                 $this->logToDatabase($messages, $response, $latency, 'success');
+                $this->reportUsage();
             }
 
             return $response;
         } catch (\Throwable $e) {
             $latency = (int)((microtime(true) - $startTime) * 1000);
             $this->logToDatabase($messages, null, $latency, 'error', $e->getMessage());
+            
+            $this->reportUsage($e);
+            
             throw $e;
         }
     }
@@ -50,12 +55,16 @@ class AiDriverProxy implements LlmDriverInterface
                 $this->logToDatabase(['prompt' => $prompt], null, $latency, 'error', 'AI driver returned an empty or null response.');
             } else {
                 $this->logToDatabase(['prompt' => $prompt], $response, $latency, 'success');
+                $this->reportUsage();
             }
 
             return $response;
         } catch (\Throwable $e) {
             $latency = (int)((microtime(true) - $startTime) * 1000);
             $this->logToDatabase(['prompt' => $prompt], null, $latency, 'error', $e->getMessage());
+            
+            $this->reportUsage($e);
+            
             throw $e;
         }
     }
@@ -90,5 +99,29 @@ class AiDriverProxy implements LlmDriverInterface
         }
 
         return $response;
+    }
+
+    protected function reportUsage(?\Throwable $e = null): void
+    {
+        if (!$this->keyPoolEntry) {
+            return;
+        }
+
+        $errorCode = null;
+        if ($e instanceof \Illuminate\Http\Client\RequestException) {
+            $errorCode = $e->getCode();
+        } elseif ($e && method_exists($e, 'getCode')) {
+            $errorCode = $e->getCode();
+        }
+
+        // Tự động detect lỗi Rate Limit từ message nếu code không chuẩn
+        if ($e && $errorCode !== 429 && (str_contains(strtolower($e->getMessage()), 'rate limit') || str_contains($e->getMessage(), '429'))) {
+            $errorCode = 429;
+        }
+
+        app(\App\Modules\Intelligence\Actions\ReportKeyUsageAction::class)->handle(
+            $this->keyPoolEntry,
+            $errorCode
+        );
     }
 }

@@ -13,6 +13,9 @@ Route::group(['prefix' => 'ai-settings'], function () {
     Route::post('/diagnostics', [\App\Modules\Intelligence\Http\Controllers\AiDiagnosticsController::class, 'run']);
 });
 
+// AI Keys Pool
+Route::apiResource('ai-key-pool', \App\Modules\Intelligence\Http\Controllers\AiKeyPoolController::class);
+
 // AI Logs
 Route::get('/ai-logs', [\App\Modules\Intelligence\Http\Controllers\AiLogController::class, 'index']);
 Route::get('/ai-logs/{id}', [\App\Modules\Intelligence\Http\Controllers\AiLogController::class, 'show']);

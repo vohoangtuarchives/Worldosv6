@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Log;
 class AiGateway
 {
     protected array $drivers = [];
+    protected string $forcedTier = 'any';
 
     public function __construct(protected
         AiConfigManager $configManager
@@ -19,11 +20,39 @@ class AiGateway
     }
 
     /**
+     * Chỉ định Tier yêu cầu cho lần gọi driver tiếp theo.
+     */
+    public function withTier(string $tier): self
+    {
+        $this->forcedTier = $tier;
+        return $this;
+    }
+
+    /**
      * Get a driver instance by name.
      */
     public function driver(?string $name = null, string $feature = 'general'): LlmDriverInterface
     {
         $name = $name ?: $this->configManager->get('default', config('ai.default', 'local'));
+
+        // Kiểm tra xem có sử dụng Key Pool hay không
+        // Ưu tiên nếu name là 'pool' hoặc được cấu hình toàn cục
+        if ($name === 'pool' || config('ai.use_pool', false)) {
+            $key = app(\App\Modules\Intelligence\Actions\RotateKeyAction::class)->handle(
+                $this->forcedTier,
+                ($name !== 'pool') ? $name : null
+            );
+
+            if ($key) {
+                $driver = $this->createDriverFromKey($key);
+                return new AiDriverProxy($driver, $key->provider, $feature, $key);
+            }
+
+            // Nếu không tìm thấy key trong pool, fallback về config tĩnh (nếu name không phải 'pool')
+            if ($name === 'pool') {
+                throw new \RuntimeException("No available AI keys in pool for tier: {$this->forcedTier}");
+            }
+        }
 
         if (!isset($this->drivers[$name])) {
             $this->drivers[$name] = $this->createDriver($name);
@@ -93,6 +122,42 @@ class AiGateway
             ),
                 default => throw new \InvalidArgumentException("AI Driver [{$name}] not supported."),
             };
+    }
+
+    /**
+     * Tạo driver instance từ thông tin key trong Pool.
+     */
+    protected function createDriverFromKey(\App\Models\AiKeyPool $key): LlmDriverInterface
+    {
+        // Giải mã key nếu cần (giả sử dùng Crypt mặc định của Laravel)
+        $apiKey = $key->key_encrypted;
+        try {
+            if (str_contains($apiKey, ':')) { // Kiểm tra định dạng mã hóa cơ bản
+                $apiKey = \Illuminate\Support\Facades\Crypt::decryptString($apiKey);
+            }
+        } catch (\Throwable $e) {
+            // Nếu không decrypt được, coi như key thô (hoặc log lỗi)
+            Log::error("Failed to decrypt AI Key ID: {$key->id}");
+        }
+
+        return match ($key->provider) {
+            'openai' => new Drivers\OpenAiDriver(
+                $key->metadata['url'] ?? 'https://api.openai.com/v1/chat/completions',
+                $apiKey,
+                $key->metadata['model'] ?? 'gpt-3.5-turbo'
+            ),
+            'gemini' => new Drivers\OpenAiDriver(
+                $key->metadata['url'] ?? 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
+                $apiKey,
+                $key->metadata['model'] ?? 'gemini-1.5-flash'
+            ),
+            'openrouter' => new Drivers\OpenRouterDriver(
+                $key->metadata['url'] ?? 'https://openrouter.ai/api/v1/chat/completions',
+                $apiKey,
+                $key->metadata['model'] ?? 'minimax/minimax-m2.5:free'
+            ),
+            default => throw new \InvalidArgumentException("Provider [{$key->provider}] from pool not supported."),
+        };
     }
 
 }

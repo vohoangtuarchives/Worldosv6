@@ -16,6 +16,8 @@ class AiKeyPool extends Model
         'label',
         'key_encrypted',
         'model_group',
+        'tier',
+        'level',
         'is_free',
         'usage_count',
         'status',
@@ -26,6 +28,7 @@ class AiKeyPool extends Model
 
     protected $casts = [
         'is_free' => 'boolean',
+        'level' => 'integer',
         'usage_count' => 'integer',
         'last_used_at' => 'datetime',
         'cooldown_until' => 'datetime',

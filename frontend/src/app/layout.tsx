@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
+import { Providers } from "@/components/Providers";
 import "./globals.css";
 
-
-
 export const metadata: Metadata = {
-  title: "WorldOS V6",
+  title: "WorldOS",
   description: "Civilizational Dynamics Engine",
 };
 
@@ -15,8 +14,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="vi" className="dark">
-      <body className={`antialiased`}>
-        {children}
+      <body className={`antialiased font-sans`}>
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   );
