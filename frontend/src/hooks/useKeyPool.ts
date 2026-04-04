@@ -3,6 +3,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 
+export interface AiKeyMetadata {
+    url?: string;
+    model?: string;
+    [key: string]: unknown;
+}
+
 export interface AiKey {
     id: number;
     provider: string;
@@ -14,6 +20,19 @@ export interface AiKey {
     last_used_at: string | null;
     cooldown_until: string | null;
     model_group?: string;
+    metadata?: AiKeyMetadata;
+    key_preview?: string;
+}
+
+export interface AiKeyPayload {
+    provider: string;
+    label: string;
+    key?: string;
+    tier: 'free' | 'premium';
+    status?: 'active' | 'inactive' | 'cooldown';
+    level: number;
+    model_group?: string;
+    metadata?: AiKeyMetadata;
 }
 
 export function useKeyPool() {
@@ -25,11 +44,11 @@ export function useKeyPool() {
             const res = await api.get('/ai-key-pool');
             return res.data;
         },
-        refetchInterval: 10000, // Tự động refresh mỗi 10s để cập nhật trạng thái cooldown
+        refetchInterval: 10000,
     });
 
     const addMutation = useMutation({
-        mutationFn: async (newKey: Partial<AiKey> & { key: string }) => {
+        mutationFn: async (newKey: AiKeyPayload & { key: string }) => {
             const res = await api.post('/ai-key-pool', newKey);
             return res.data;
         },
@@ -39,7 +58,7 @@ export function useKeyPool() {
     });
 
     const updateMutation = useMutation({
-        mutationFn: async ({ id, data }: { id: number; data: Partial<AiKey> & { key?: string } }) => {
+        mutationFn: async ({ id, data }: { id: number; data: AiKeyPayload }) => {
             const res = await api.put(`/ai-key-pool/${id}`, data);
             return res.data;
         },

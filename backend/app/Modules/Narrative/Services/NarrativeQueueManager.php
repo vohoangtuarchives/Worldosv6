@@ -50,6 +50,31 @@ class NarrativeQueueManager
         return $this->dispatchJob($universeId, 'civilization', ['civilization_id' => (int) $civilizationId]);
     }
 
+    public function scheduleMythology(int $universeId, array $payload): ?NarrativeJob
+    {
+        $normalized = array_filter([
+            'chronicle_ids' => !empty($payload['chronicle_ids']) ? array_values(array_unique(array_map('intval', (array) $payload['chronicle_ids']))) : null,
+            'start_tick' => isset($payload['start_tick']) ? (int) $payload['start_tick'] : null,
+            'end_tick' => isset($payload['end_tick']) ? (int) $payload['end_tick'] : null,
+            'myth_type' => isset($payload['myth_type']) ? (string) $payload['myth_type'] : null,
+        ], static fn ($value) => $value !== null && $value !== []);
+
+        if ($normalized === []) {
+            return null;
+        }
+
+        return $this->dispatchJob($universeId, 'mythology', $normalized);
+    }
+
+    public function scheduleReligion(int $universeId, int $mythId): ?NarrativeJob
+    {
+        if ($mythId <= 0) {
+            return null;
+        }
+
+        return $this->dispatchJob($universeId, 'religion', ['myth_id' => (int) $mythId]);
+    }
+
     public function scheduleCausalTrajectory(int $universeId, int $tick, ?string $stateSummary = null): ?NarrativeJob
     {
         $payload = ['tick' => (int) $tick];
@@ -66,6 +91,11 @@ class NarrativeQueueManager
         return $this->dispatchJob($universeId, 'legend', $payload);
     }
 
+    public function scheduleChapter(int $universeId, ?int $seriesId = null): ?NarrativeJob
+    {
+        return $this->dispatchJob($universeId, 'chapter', ['series_id' => $seriesId]);
+    }
+
     protected function dispatchJob(int $universeId, string $engine, array $payload): NarrativeJob
     {
         $job = NarrativeJob::create([
@@ -78,5 +108,4 @@ class NarrativeQueueManager
         return $job;
     }
 }
-
 

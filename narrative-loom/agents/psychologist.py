@@ -73,7 +73,12 @@ async def psychologist_agent(state: NarrativeState, config: Dict[str, Any] = Non
         fetched_profiles = {"warning": "Không tìm thấy dữ liệu số học bên trong raw_payload. Có thể các event này tạo ra từ phiên bản engine cũ."}
     
     # 2. DYNAMIC ROUTING: Cấp AI trình độ cao cho nhà tâm lý học
-    llm = get_llm_for_agent("psychologist", world_id=state.get("world_id"), current_tick=state.get("tick_end"))
+    llm = get_llm_for_agent(
+        "psychologist",
+        world_id=state.get("world_id"),
+        current_tick=state.get("tick_end"),
+        ai_runtime=state.get("ai_runtime"),
+    )
     chain = psychologist_prompt | llm | StrOutputParser()
     
     result = await chain.ainvoke({

@@ -3,11 +3,14 @@
 namespace App\Modules\Intelligence\Services\AI\Drivers;
 
 use App\Modules\Intelligence\Contracts\LlmDriverInterface;
+use App\Modules\Intelligence\Services\AI\Drivers\Concerns\ResolvesChatResponse;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class OpenRouterDriver implements LlmDriverInterface
 {
+    use ResolvesChatResponse;
+
     public function __construct(
         protected string $url,
         protected string $key,
@@ -41,7 +44,13 @@ class OpenRouterDriver implements LlmDriverInterface
                 throw new \Exception("OpenRouter API Error: " . ($response->json('error.message') ?? $error));
             }
 
-            return $response->json('choices.0.message.content');
+            $content = $this->extractTextFromResponse($response);
+
+            if ($content === null) {
+                Log::warning("OpenRouterDriver empty content [{$this->model}]: " . substr($response->body(), 0, 200));
+            }
+
+            return $content;
         } catch (\Throwable $e) {
             Log::error("OpenRouterDriver Exception: " . $e->getMessage());
             throw $e;
@@ -53,5 +62,13 @@ class OpenRouterDriver implements LlmDriverInterface
         return $this->chat([
             ['role' => 'user', 'content' => $prompt]
         ], $options);
+    }
+
+    public function metadata(): array
+    {
+        return [
+            'url' => $this->url,
+            'model' => $this->model,
+        ];
     }
 }

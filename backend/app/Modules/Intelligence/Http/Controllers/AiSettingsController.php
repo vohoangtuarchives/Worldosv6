@@ -2,10 +2,10 @@
 
 namespace App\Modules\Intelligence\Http\Controllers;
 
+use App\Http\Controllers\Controller;
 use App\Models\AiSetting;
 use App\Modules\Intelligence\Services\AI\AiConfigManager;
 use Illuminate\Http\Request;
-use App\Http\Controllers\Controller;
 
 class AiSettingsController extends Controller
 {
@@ -14,17 +14,31 @@ class AiSettingsController extends Controller
     ) {}
 
     /**
-     * List all settings.
+     * List pool-first settings only. Legacy fixed driver credentials are hidden.
      */
     public function index()
     {
-        $settings = AiSetting::all()->map(function ($s) {
-            // Hide secret values in general listing if needed
-            if ($s->is_secret && $s->value) {
-                $s->value = '********';
-            }
-            return $s;
-        });
+        $settings = AiSetting::query()
+            ->where('key', 'not like', 'drivers.%')
+            ->get()
+            ->map(function (AiSetting $setting) {
+                $value = $this->decodeValue($setting->value);
+
+                if ($setting->is_secret && $value !== null && $value !== '') {
+                    $value = $this->maskSecrets($value);
+                }
+
+                return [
+                    'id' => $setting->id,
+                    'key' => $setting->key,
+                    'value' => $value,
+                    'group' => $setting->group,
+                    'description' => $setting->description,
+                    'is_secret' => $setting->is_secret,
+                    'created_at' => $setting->created_at,
+                    'updated_at' => $setting->updated_at,
+                ];
+            });
 
         return response()->json($settings);
     }
@@ -41,69 +55,169 @@ class AiSettingsController extends Controller
             'is_secret' => 'nullable|boolean',
         ]);
 
-        $value = $request->value;
-        
-        // Safety: If value is masked (********), do NOT overwrite the existing secret
-        if ($value === '********') {
-            $existing = AiSetting::where('key', $request->key)->first();
-            if ($existing && $existing->is_secret) {
-                $value = $existing->value;
+        $key = (string) $request->input('key');
+
+        if (str_starts_with($key, 'drivers.')) {
+            return response()->json([
+                'message' => 'Legacy fixed driver credentials are disabled. Please manage providers through AI Key Pool.',
+            ], 422);
+        }
+
+        $value = $request->input('value');
+        $existing = AiSetting::where('key', $key)->first();
+        $treatAsSecret = (bool) ($request->input('is_secret', $existing?->is_secret ?? false));
+
+        if ($key === 'use_pool') {
+            $value = true;
+        }
+
+        if ($existing && $treatAsSecret) {
+            $existingValue = $this->decodeValue($existing->value);
+
+            if ($value === '********') {
+                $value = $existingValue ?? $existing->value;
+            } elseif (is_array($value)) {
+                $value = $this->restoreMaskedSecrets(
+                    $value,
+                    is_array($existingValue) ? $existingValue : []
+                );
             }
         }
 
         $this->configManager->set(
-            $request->key,
+            $key,
             $value,
-            $request->group,
-            $request->description,
-            $request->is_secret ?? false
+            $request->input('group'),
+            $request->input('description'),
+            $treatAsSecret
         );
+
+        $this->purgeLegacyDriverSettings();
 
         return response()->json(['message' => 'Cập nhật cấu hình AI thành công.']);
     }
 
     /**
-     * Force sync cache.
+     * Force sync cache and remove legacy driver credentials from cache.
      */
     public function sync()
     {
+        $this->purgeLegacyDriverSettings(sync: false);
         $this->configManager->syncToCache();
-        return response()->json(['message' => 'Đã đồng bộ Cache AI thành công.']);
+
+        return response()->json(['message' => 'Đã đồng bộ cache AI thành công.']);
     }
 
     /**
-     * Seed from config/ai.php.
+     * Seed pool-first defaults from config/ai.php.
      */
     public function import()
     {
         $config = config('ai');
-        
-        // Default
-        $this->configManager->set('default', $config['default'], 'general', 'Driver AI mặc định');
 
-        // Features
+        $this->configManager->set('default', 'pool', 'general', 'Điểm vào mặc định cho AI Pool');
+        $this->configManager->set('use_pool', true, 'general', 'Luôn bật AI key pool');
+
         foreach ($config['features'] ?? [] as $feature => $driver) {
             $this->configManager->set("features.{$feature}", $driver, 'feature', "Hệ thống mapping cho {$feature}");
         }
 
-        // Drivers
-        foreach ($config['drivers'] ?? [] as $driver => $data) {
-            $this->configManager->set("drivers.{$driver}", $data, 'provider', "Cấu hình cho driver {$driver}", true);
-        }
+        $this->purgeLegacyDriverSettings();
 
-        // Narrative Throttling (WorldOS Config)
-        $this->configManager->set('narrative.min_tick_interval', $config['narrative']['min_tick_interval'] ?? 10, 'general', 'Số tick tối thiểu giữa các lần AI Narrative xử lý');
-        $this->configManager->set('narrative.delta_threshold', $config['narrative']['delta_threshold'] ?? 0.1, 'general', 'Ngưỡng thay đổi Entropy/Stability để kích hoạt AI');
-
-        return response()->json(['message' => 'Đã nhập cấu hình từ file thành công.']);
+        return response()->json(['message' => 'Đã nhập cấu hình pool-first từ file thành công.']);
     }
 
     /**
-     * Get list of available drivers from config.
+     * Get list of supported provider filters for pool routing.
      */
     public function drivers()
     {
-        $drivers = array_keys(config('ai.drivers', []));
-        return response()->json($drivers);
+        return response()->json(array_values(array_unique(['pool', ...array_keys(config('ai.drivers', []))])));
+    }
+
+    private function purgeLegacyDriverSettings(bool $sync = true): void
+    {
+        AiSetting::query()->where('key', 'like', 'drivers.%')->delete();
+
+        if ($sync) {
+            $this->configManager->syncToCache();
+        }
+    }
+
+    private function decodeValue(mixed $value): mixed
+    {
+        if (!is_string($value)) {
+            return $value;
+        }
+
+        $trimmed = trim($value);
+        if ($trimmed === '') {
+            return $value;
+        }
+
+        if ($trimmed[0] === '{' || $trimmed[0] === '[') {
+            $decoded = json_decode($value, true);
+            if (json_last_error() === JSON_ERROR_NONE) {
+                return $decoded;
+            }
+        }
+
+        if (in_array(strtolower($trimmed), ['true', 'false'], true)) {
+            return strtolower($trimmed) === 'true';
+        }
+
+        if (is_numeric($trimmed) && !str_contains($trimmed, ' ')) {
+            return str_contains($trimmed, '.') ? (float) $trimmed : (int) $trimmed;
+        }
+
+        return $value;
+    }
+
+    private function maskSecrets(mixed $value): mixed
+    {
+        if (is_array($value)) {
+            $masked = [];
+            foreach ($value as $key => $item) {
+                $masked[$key] = $this->isSecretField((string) $key)
+                    ? '********'
+                    : $this->maskSecrets($item);
+            }
+
+            return $masked;
+        }
+
+        return '********';
+    }
+
+    private function restoreMaskedSecrets(array $incoming, array $existing): array
+    {
+        $merged = $incoming;
+
+        foreach ($incoming as $key => $value) {
+            if ($value === '********' && array_key_exists($key, $existing)) {
+                $merged[$key] = $existing[$key];
+                continue;
+            }
+
+            if (is_array($value)) {
+                $merged[$key] = $this->restoreMaskedSecrets(
+                    $value,
+                    is_array($existing[$key] ?? null) ? $existing[$key] : []
+                );
+            }
+        }
+
+        foreach ($existing as $key => $value) {
+            if (!array_key_exists($key, $merged) && $this->isSecretField((string) $key)) {
+                $merged[$key] = $value;
+            }
+        }
+
+        return $merged;
+    }
+
+    private function isSecretField(string $key): bool
+    {
+        return in_array(strtolower($key), ['key', 'api_key', 'token', 'secret', 'password'], true);
     }
 }

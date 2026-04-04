@@ -150,6 +150,7 @@ class RunNarrativePhaseAction
     {
         $tick = (int) $snapshot->tick;
         $eraInterval = (int) config('worldos.narrative.era_interval', 200);
+        $mythologyInterval = (int) config('worldos.narrative.mythology_interval', 50);
         $religionInterval = (int) config('worldos.narrative.religion_interval', 200);
         $causal_trajectoryInterval = (int) config('worldos.narrative.causal_trajectory_interval', 500);
         $legendInterval = (int) config('worldos.narrative.legend_interval', 100);
@@ -163,6 +164,28 @@ class RunNarrativePhaseAction
                 }
             } catch (\Throwable $e) {
                 Log::warning('Narrative interval: Era detect/schedule failed: ' . $e->getMessage());
+            }
+        }
+
+        if ($mythologyInterval > 0 && $this->adaptiveScheduler->shouldRun('mythology', $universe, $snapshot)) {
+            try {
+                $startTick = max(0, $tick - $mythologyInterval);
+                $chronicleIds = \App\Models\Chronicle::query()
+                    ->where('universe_id', $universe->id)
+                    ->whereBetween('to_tick', [$startTick, $tick])
+                    ->whereIn('type', ['narrative', 'material_transition', 'war', 'collapse', 'crisis'])
+                    ->orderByDesc('importance')
+                    ->limit(8)
+                    ->pluck('id')
+                    ->all();
+
+                $this->narrativeScheduler->scheduleMythology($universe->id, [
+                    'start_tick' => $startTick,
+                    'end_tick' => $tick,
+                    'chronicle_ids' => $chronicleIds,
+                ]);
+            } catch (\Throwable $e) {
+                Log::warning('Narrative interval: Mythology failed: ' . $e->getMessage());
             }
         }
 

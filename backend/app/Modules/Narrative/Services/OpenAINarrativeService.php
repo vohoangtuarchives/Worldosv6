@@ -3,61 +3,39 @@
 namespace App\Modules\Narrative\Services;
 
 use App\Contracts\LlmNarrativeClientInterface;
-use Illuminate\Support\Facades\Http;
+use App\Modules\Intelligence\Services\AI\AiGateway;
 use Illuminate\Support\Facades\Log;
 
 /**
- * OpenAI (or OpenAI-compatible) LLM adapter for narrative generation.
+ * Legacy compatibility adapter.
+ * Narrative generation is now fully routed through AiGateway so pool/direct policy stays consistent.
  */
 class OpenAINarrativeService implements LlmNarrativeClientInterface
 {
-    protected string $apiKey;
-    protected string $model;
-    protected string $baseUrl;
-    protected int $timeout;
-
-    public function __construct()
-    {
-        $this->apiKey = (string) (config('worldos.narrative.openai_api_key') ?? config('services.openai.key') ?? '');
-        $this->model = (string) (config('worldos.narrative.model') ?? config('services.openai.model') ?? 'gpt-4o');
-        $this->baseUrl = rtrim((string) (config('worldos.narrative.base_url') ?? 'https://api.openai.com'), '/');
-        $this->timeout = (int) (config('worldos.narrative.timeout') ?? 120);
-    }
+    public function __construct(
+        protected AiGateway $aiGateway
+    ) {}
 
     public function isAvailable(): bool
     {
-        return $this->apiKey !== '';
+        return true;
     }
 
     public function generate(string $prompt, array $options = []): ?string
     {
-        if (!$this->isAvailable()) {
-            return null;
-        }
-
-        $model = $options['model'] ?? $this->model;
         $system = $options['system'] ?? 'Bạn là WorldOS, người kể chuyện về sự tiến hóa của vũ trụ. Phản hồi bằng tiếng Việt.';
         $temperature = isset($options['temperature']) ? (float) $options['temperature'] : 0.7;
 
         try {
-            $response = Http::withToken($this->apiKey)
-                ->timeout($this->timeout)
-                ->post($this->baseUrl . '/v1/chat/completions', [
-                    'model' => $model,
-                    'messages' => [
-                        ['role' => 'system', 'content' => $system],
-                        ['role' => 'user', 'content' => $prompt],
-                    ],
-                    'temperature' => $temperature,
-                ]);
-
-            if ($response->successful()) {
-                return trim((string) ($response->json('choices.0.message.content') ?? ''));
-            }
+            return $this->aiGateway->feature('narrative')->chat([
+                ['role' => 'system', 'content' => $system],
+                ['role' => 'user', 'content' => $prompt],
+            ], array_merge($options, [
+                'temperature' => $temperature,
+            ]));
         } catch (\Throwable $e) {
-            Log::error('OpenAI narrative error: ' . $e->getMessage());
+            Log::error('OpenAINarrativeService gateway error: ' . $e->getMessage());
+            return null;
         }
-
-        return null;
     }
 }

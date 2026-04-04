@@ -61,7 +61,12 @@ async def director_agent(state: NarrativeState, config: Dict[str, Any] = None) -
                 break
     
     # 🌟 DYNAMIC ROUTING: Cấp AI trình độ cao cho Tổng đạo diễn kịch bản
-    llm = get_llm_for_agent("director", world_id=state.get("world_id"), current_tick=state.get("tick_end"))
+    llm = get_llm_for_agent(
+        "director",
+        world_id=state.get("world_id"),
+        current_tick=state.get("tick_end"),
+        ai_runtime=state.get("ai_runtime"),
+    )
     structured_llm = llm.with_structured_output(Storyboard)
     chain = director_prompt | structured_llm
     

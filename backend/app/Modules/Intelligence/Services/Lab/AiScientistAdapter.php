@@ -11,14 +11,10 @@ use Illuminate\Support\Facades\Log;
  */
 class AiScientistAdapter
 {
-    private string $llmUrl;
-    private string $modelName;
-
-    public function __construct()
+    public function __construct(
+        private readonly \App\Modules\Intelligence\Services\AI\AiGateway $aiGateway
+    )
     {
-        // Using same connection config logic as narrative engine
-        $this->llmUrl = env('LOCAL_LLM_URL', 'http://host.docker.internal:1234/v1');
-        $this->modelName = env('LOCAL_LLM_MODEL', 'TheBloke/MythoMax-L2-13B-GGUF');
     }
 
     /**
@@ -35,23 +31,18 @@ class AiScientistAdapter
         $prompt .= "Theory: ";
 
         try {
-            $response = Http::timeout(120)->post("{$this->llmUrl}/chat/completions", [
-                'model' => $this->modelName,
-                'messages' => [
-                    ['role' => 'system', 'content' => 'You are a brilliant sociologist, physicist, and AI scientist observing simulated civilizations.'],
-                    ['role' => 'user', 'content' => $prompt]
-                ],
+            // Sử dụng AiGateway để tự động chọn driver (Local hoặc Pool)
+            // 'analytical' feature có thể được cấu hình trong AiConfigManager
+            return $this->aiGateway->feature('analytical')->chat([
+                ['role' => 'system', 'content' => 'You are a brilliant sociologist, physicist, and AI scientist observing simulated civilizations.'],
+                ['role' => 'user', 'content' => $prompt]
+            ], [
                 'temperature' => 0.7,
-                'max_tokens' => 300,
+                'max_tokens' => 500,
             ]);
 
-            if ($response->successful()) {
-                return $response->json('choices.0.message.content');
-            }
-            
-            Log::error("AI Scientist API failed: " . $response->body());
         } catch (\Exception $e) {
-            Log::error("AI Scientist Connection failed: " . $e->getMessage());
+            Log::error("AI Scientist Adapter failed: " . $e->getMessage());
         }
 
         return null; // Fallback

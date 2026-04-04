@@ -20,6 +20,10 @@ class UniverseMetricsResource extends JsonResource
             'actor_count' => (int) ($this->resource['actor_count'] ?? 0),
             'chronicle_count' => (int) ($this->resource['chronicle_count'] ?? 0),
             'anomaly_count' => (int) ($this->resource['anomaly_count'] ?? 0),
+            'myth_count' => (int) ($this->resource['myth_count'] ?? 0),
+            'religion_count' => (int) ($this->resource['religion_count'] ?? 0),
+            'material_identity' => $this->resource['material_identity'] ?? [],
+            'culture_identity' => $this->resource['culture_identity'] ?? [],
         ];
     }
 }

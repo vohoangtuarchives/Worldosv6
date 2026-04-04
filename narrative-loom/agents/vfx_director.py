@@ -39,7 +39,12 @@ async def vfx_director_agent(state: NarrativeState, config: Dict[str, Any] = Non
     headline = state.get("news_headline", "")
     
     # 🌟 DYNAMIC ROUTING: Chọn mô hình tối ưu cho đạo diễn hình ảnh
-    llm = get_llm_for_agent("vfx_director", world_id=state.get("world_id"), current_tick=state.get("tick_end"))
+    llm = get_llm_for_agent(
+        "vfx_director",
+        world_id=state.get("world_id"),
+        current_tick=state.get("tick_end"),
+        ai_runtime=state.get("ai_runtime"),
+    )
     
     # Sử dụng JsonOutputParser
     parser = JsonOutputParser(pydantic_object=VFXConfig)

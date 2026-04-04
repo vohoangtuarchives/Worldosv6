@@ -5,7 +5,7 @@ namespace App\Providers;
 use App\Contracts\LlmNarrativeClientInterface;
 use App\Contracts\SimulationEngineClientInterface;
 use App\Contracts\UniverseEvaluatorInterface;
-use App\Modules\Narrative\Services\OpenAINarrativeService;
+use App\Modules\Narrative\Services\GatewayNarrativeService;
 use App\Modules\Simulation\Repositories\UniverseSnapshotRepository;
 use App\Modules\Simulation\Services\Core\HttpSimulationEngineClient;
 use App\Modules\Simulation\Services\Core\StubSimulationEngineClient;
@@ -61,7 +61,7 @@ class AppServiceProvider extends ServiceProvider
             \App\Contracts\GraphProviderInterface::class,
             \App\Modules\SocialGraph\Services\RelationalGraphProvider::class
         );
-        $this->app->singleton(LlmNarrativeClientInterface::class, OpenAINarrativeService::class);
+        $this->app->singleton(LlmNarrativeClientInterface::class, GatewayNarrativeService::class);
 
         // Narrative Engine: Strategy registry + pipeline (Event Aggregator → PromptBuilder → Generator → Writer)
         $this->app->singleton(\App\Modules\Narrative\Services\NarrativeStrategyRegistry::class, function ($app) {
@@ -106,6 +106,10 @@ class AppServiceProvider extends ServiceProvider
         );
         \Illuminate\Support\Facades\Event::listen(
             \App\Modules\Simulation\Events\UniverseSimulationPulsed::class,
+            \App\Modules\Simulation\Listeners\RecordMaterialIdentityTransition::class
+        );
+        \Illuminate\Support\Facades\Event::listen(
+            \App\Modules\Simulation\Events\UniverseSimulationPulsed::class,
             \App\Modules\Simulation\Listeners\StagnationDetectorListener::class
         );
         \Illuminate\Support\Facades\Event::listen(
@@ -146,4 +150,3 @@ class AppServiceProvider extends ServiceProvider
         );
     }
 }
-

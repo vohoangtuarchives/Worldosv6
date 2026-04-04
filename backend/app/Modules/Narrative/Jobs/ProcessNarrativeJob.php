@@ -16,9 +16,9 @@ use App\Modules\Narrative\Services\NarrativeEngine;
 use App\Modules\Narrative\Services\MythologyEngine;
 use App\Modules\Narrative\Services\ReligionGenerator;
 use App\Modules\Narrative\Services\ReligionSeedDetector;
-use App\Modules\Narrative\Services\FuturePredictor;
 use App\Modules\Narrative\Services\CausalTrajectoryGenerator;
 use App\Modules\Narrative\Services\LegendEngine;
+use App\Modules\Narrative\Services\ChapterGenerator;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -44,7 +44,7 @@ class ProcessNarrativeJob implements ShouldQueue
         $this->onQueue('narrative');
     }
 
-    public function handle(NarrativeEngine $narrativeEngine, EraNarrativeEngine $eraNarrativeEngine, CivilizationChronicleEngine $civilizationChronicleEngine, MythologyEngine $mythologyEngine, ReligionGenerator $religionGenerator, ReligionSeedDetector $religionSeedDetector, CausalTrajectoryGenerator $causal_trajectoryGenerator, FuturePredictor $futurePredictor, LegendEngine $legendEngine): void
+    public function handle(NarrativeEngine $narrativeEngine, EraNarrativeEngine $eraNarrativeEngine, CivilizationChronicleEngine $civilizationChronicleEngine, MythologyEngine $mythologyEngine, ReligionGenerator $religionGenerator, ReligionSeedDetector $religionSeedDetector, CausalTrajectoryGenerator $causal_trajectoryGenerator, FuturePredictor $futurePredictor, LegendEngine $legendEngine, ChapterGenerator $chapterGenerator): void
     {
         $job = NarrativeJob::find($this->narrativeJobId);
         if (!$job) {
@@ -68,6 +68,7 @@ class ProcessNarrativeJob implements ShouldQueue
                 'religion' => $this->runReligionEngine($job, $religionGenerator, $religionSeedDetector),
                 'causal_trajectory' => $this->runCausalTrajectoryEngine($job, $causal_trajectoryGenerator, $futurePredictor),
                 'legend' => $this->runLegendEngine($job, $legendEngine),
+                'chapter' => $this->runChapterEngine($job, $chapterGenerator),
                 default => Log::warning("ProcessNarrativeJob: Unknown engine {$job->engine}, marking completed."),
             };
             $job->update(['status' => NarrativeJob::STATUS_COMPLETED]);
@@ -198,6 +199,15 @@ class ProcessNarrativeJob implements ShouldQueue
         if ($actorId) {
             $legendEngine->generateForActor($job->universe_id, $actorId);
         }
+    }
+
+    private function runChapterEngine(NarrativeJob $job, ChapterGenerator $chapterGenerator): void
+    {
+        $universe = Universe::find($job->universe_id);
+        if (!$universe) return;
+
+        $seriesId = $job->payload['series_id'] ?? null;
+        $chapterGenerator->generateForUniverse($universe, $seriesId);
     }
 }
 

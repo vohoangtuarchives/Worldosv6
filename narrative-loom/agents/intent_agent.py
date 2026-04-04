@@ -28,6 +28,8 @@ class ActorIntentRequest(BaseModel):
     # Model config — defaults to local Ollama
     provider: str = "local"
     model_name: str = ""
+    api_key: str | None = None
+    base_url: str | None = None
 
 class ActorIntentResponse(BaseModel):
     action: str
@@ -129,7 +131,12 @@ async def intent_agent(req: ActorIntentRequest) -> ActorIntentResponse:
     else:
         try:
             import asyncio
-            llm = get_llm(provider=req.provider, model_name=req.model_name)
+            llm = get_llm(
+                provider=req.provider, 
+                model_name=req.model_name,
+                api_key=req.api_key,
+                base_url=req.base_url
+            )
             chain = _prompt | llm
             result = await asyncio.to_thread(chain.invoke, prompt_values)
             raw = result.content if hasattr(result, "content") else str(result)

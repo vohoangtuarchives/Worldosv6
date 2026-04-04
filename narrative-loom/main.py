@@ -18,6 +18,7 @@ class ChronicleRequest(BaseModel):
     genre: str | None = "generic"
     power_system: str | None = None
     whispers: list[str] | None = []
+    ai_runtime: Dict[str, Any] | None = None
 
 @app.get("/")
 def read_root():
@@ -36,6 +37,7 @@ def get_config():
             "wordsmith": {"provider": "anthropic", "model": "claude-3-opus-20240229", "role": "Literary Prose"}
         },
         "providers": {
+            "zai": {"status": "online" if os.getenv("NARRATIVE_LLM_KEY") else "missing_key"},
             "openrouter": {"status": "online" if os.getenv("OPENROUTER_API_KEY") else "missing_key"},
             "openai": {"status": "online" if os.getenv("OPENAI_API_KEY") else "missing_key"},
             "google": {"status": "online" if os.getenv("GOOGLE_API_KEY") else "online"},
@@ -79,6 +81,7 @@ async def weave_chronicles(req: ChronicleRequest):
         "world_era": req.world_era or "genesis",
         "tick_start": req.tick_start,
         "tick_end": req.tick_end,
+        "ai_runtime": req.ai_runtime or None,
         "genre": req.genre or "generic",
         "cross_pollination_whispers": req.whispers or [],
         "raw_chronicles": data.get("data", []),
@@ -127,7 +130,7 @@ async def weave_chronicles(req: ChronicleRequest):
         "world_id": req.world_id,
         "tick_end": req.tick_end,
         "chronicles_count": len(data.get("data", [])),
-        "supported_models": ["openai", "anthropic", "google", "groq", "local", "alibaba"],
+        "supported_models": ["zai", "openai", "anthropic", "google", "gemini", "groq", "local", "alibaba", "openrouter"],
         "historical_outline": final_state.get("historical_outline"),
         "storyboard": final_state.get("storyboard"),
         "final_prose": final_prose,

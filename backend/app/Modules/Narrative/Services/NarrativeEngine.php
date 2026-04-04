@@ -42,6 +42,8 @@ class NarrativeEngine
                 return;
             }
 
+            Log::info("NarrativeEngine: Pulse started for Universe {$universe->id} at tick {$snapshot->tick}");
+
             // 1. Extract Narrative Context (Tokens + Events)
             $contextData = $this->extractor->extractContext(
                 $universe->id, 
@@ -105,6 +107,16 @@ class NarrativeEngine
             if (!empty($meaning->omens)) {
                 $this->feedbackService->applyOmens($universe, $meaning->omens);
             }
+
+            Log::info(
+                "NarrativeEngine: Pulse completed for Universe {$universe->id} at tick {$snapshot->tick}",
+                [
+                    'direction' => $meaning->direction,
+                    'tension' => $meaning->tension,
+                    'key_factor_count' => count($meaning->keyFactors),
+                    'omen_count' => count($meaning->omens),
+                ]
+            );
 
         } catch (\Throwable $e) {
             Log::error("NarrativeEngine: Pipeline failed for Universe {$universe->id}: " . $e->getMessage() . "\n" . $e->getTraceAsString());
@@ -176,4 +188,3 @@ EOT;
      */
     public function generateBatched($chronicles, int $windowSize): void {}
 }
-

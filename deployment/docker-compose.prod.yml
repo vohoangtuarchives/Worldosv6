@@ -89,6 +89,8 @@ services:
       context: ..
       dockerfile: deployment/backend.prod.Dockerfile
     restart: always
+    env_file:
+      - ../backend/.env
     environment:
       APP_ENV: production
       APP_DEBUG: "false"
@@ -140,10 +142,11 @@ services:
       context: ..
       dockerfile: deployment/backend.prod.Dockerfile
     restart: always
+    env_file:
+      - ../backend/.env
     environment:
       APP_ENV: production
       APP_DEBUG: "false"
-      APP_KEY: ${APP_KEY:-base64:prodplaceholderkey0000000000000000000000=}
       DB_CONNECTION: pgsql
       DB_HOST: postgres
       DB_PORT: 5432
@@ -184,10 +187,11 @@ services:
       context: ..
       dockerfile: deployment/backend.prod.Dockerfile
     restart: always
+    env_file:
+      - ../backend/.env
     environment:
       APP_ENV: production
       APP_DEBUG: "false"
-      APP_KEY: ${APP_KEY:-base64:prodplaceholderkey0000000000000000000000=}
       DB_CONNECTION: pgsql
       DB_HOST: postgres
       DB_PORT: 5432

@@ -10,12 +10,19 @@ import {
     History, 
     Menu, 
     X, 
-    Zap,
-    ChevronRight
+    Zap
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Image from 'next/image';
 
-const SidebarItem = ({ icon: Icon, label, href, active }: any) => (
+interface SidebarItemProps {
+    icon: React.ComponentType<{ size?: number; className?: string }>;
+    label: string;
+    href: string;
+    active: boolean;
+}
+
+const SidebarItem = ({ icon: Icon, label, href, active }: SidebarItemProps) => (
     <Link href={href}>
         <motion.div
             whileHover={{ x: 5 }}
@@ -39,6 +46,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
     const menuItems = [
         { icon: LayoutDashboard, label: 'Overview', href: '/dashboard' },
+        { icon: Zap, label: 'Narrative Monitor', href: '/dashboard/intelligence/monitor' },
         { icon: Database, label: 'Key Pool', href: '/dashboard/config/key-pool' },
         { icon: History, label: 'AI Logs', href: '/dashboard/logs' },
         { icon: Settings, label: 'Settings', href: '/dashboard/settings' },
@@ -100,7 +108,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                             <span className="text-[10px] text-cyan-400 font-mono tracking-tighter uppercase">Root Access</span>
                         </div>
                         <div className="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center overflow-hidden">
-                           <img src="https://api.dicebear.com/7.x/bottts/svg?seed=WorldOS" alt="avatar" />
+                           <Image
+                               src="https://api.dicebear.com/7.x/bottts/svg?seed=WorldOS"
+                               alt="avatar"
+                               width={40}
+                               height={40}
+                               unoptimized
+                           />
                         </div>
                     </div>
                 </header>

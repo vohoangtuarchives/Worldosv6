@@ -25,6 +25,7 @@ class UpdateCivilizationMetrics
         protected DynamicAttractorEngine $dynamicAttractorEngine,
         protected \App\Modules\Intelligence\Services\BiologyMetricsService $biologyMetrics,
         protected \App\Modules\Intelligence\Services\EcosystemMetricsService $ecosystemMetrics,
+        protected \App\Modules\Simulation\Services\Civilization\MaterialIdentityProjector $materialIdentityProjector,
     ) {}
 
     public function handle(UniverseSimulationPulsed $event): void
@@ -79,6 +80,7 @@ class UpdateCivilizationMetrics
             'actor_count' => $bio['total_alive'] ?? 0,
             'total_population' => $eco['total_population'] ?? 0,
             'ecosystem_metrics' => $eco,
+            'material_identity' => $this->materialIdentityProjector->projectFromState($state),
         ];
         
         $metrics = array_replace_recursive($snapshot->metrics ?? [], $calculated_metrics);

@@ -83,6 +83,7 @@ class EvaluateSimulationResult
         protected \App\Modules\Intelligence\Services\BiologyMetricsService $biologyMetrics,
         protected \App\Modules\Intelligence\Services\EcosystemMetricsService $ecosystemMetrics,
         protected \App\Modules\Simulation\Services\Culture\GenreEvolutionService $genreEvolutionService,
+        protected \App\Modules\Simulation\Services\Civilization\MaterialIdentityProjector $materialIdentityProjector,
     ) {}
 
     public function handle(UniverseSimulationPulsed $event): void
@@ -394,6 +395,7 @@ class EvaluateSimulationResult
             'actor_count' => $bio['total_alive'] ?? 0,
             'total_population' => $eco['total_population'] ?? 0,
             'ecosystem_metrics' => $eco,
+            'material_identity' => $this->materialIdentityProjector->projectFromState($state),
         ];
         // Merge: snapshot->metrics (cosmic impact from SupremeEntity) wins over calculated pressure.
         $metrics = array_replace_recursive($snapshot->metrics ?? [], $calculated_metrics);
@@ -559,9 +561,11 @@ class EvaluateSimulationResult
     {
         $tick = (int) $snapshot->tick;
         $eraInterval = (int) config('worldos.narrative.era_interval', 200);
+        $mythologyInterval = (int) config('worldos.narrative.mythology_interval', 50);
         $religionInterval = (int) config('worldos.narrative.religion_interval', 200);
         $causal_trajectoryInterval = (int) config('worldos.narrative.causal_trajectory_interval', 500);
         $legendInterval = (int) config('worldos.narrative.legend_interval', 100);
+        $chapterInterval = (int) config('worldos.narrative.chapter_interval', 150);
 
         if ($tick > 0 && $eraInterval > 0 && $this->adaptiveScheduler->shouldRun('era_detect', $universe, $snapshot)) {
             try {
@@ -572,6 +576,28 @@ class EvaluateSimulationResult
                 }
             } catch (\Throwable $e) {
                 \Illuminate\Support\Facades\Log::warning('Narrative interval: Era detect/schedule failed: ' . $e->getMessage());
+            }
+        }
+
+        if ($mythologyInterval > 0 && $this->adaptiveScheduler->shouldRun('mythology', $universe, $snapshot)) {
+            try {
+                $startTick = max(0, $tick - $mythologyInterval);
+                $chronicleIds = \App\Models\Chronicle::query()
+                    ->where('universe_id', $universe->id)
+                    ->whereBetween('to_tick', [$startTick, $tick])
+                    ->whereIn('type', ['narrative', 'material_transition', 'war', 'collapse', 'crisis'])
+                    ->orderByDesc('importance')
+                    ->limit(8)
+                    ->pluck('id')
+                    ->all();
+
+                $this->narrativeScheduler->scheduleMythology($universe->id, [
+                    'start_tick' => $startTick,
+                    'end_tick' => $tick,
+                    'chronicle_ids' => $chronicleIds,
+                ]);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Narrative interval: Mythology failed: ' . $e->getMessage());
             }
         }
 
@@ -600,6 +626,14 @@ class EvaluateSimulationResult
                 }
             } catch (\Throwable $e) {
                 \Illuminate\Support\Facades\Log::warning('Narrative interval: Legend failed: ' . $e->getMessage());
+            }
+        }
+
+        if ($chapterInterval > 0 && $this->adaptiveScheduler->shouldRun('chapter', $universe, $snapshot)) {
+            try {
+                $this->narrativeScheduler->scheduleChapter($universe->id);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Narrative interval: Chapter schedule failed: ' . $e->getMessage());
             }
         }
     }
@@ -691,8 +725,6 @@ class EvaluateSimulationResult
         }
     }
 }
-
-
 
 
 

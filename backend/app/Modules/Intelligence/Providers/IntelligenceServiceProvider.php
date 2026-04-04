@@ -55,6 +55,7 @@ class IntelligenceServiceProvider extends ServiceProvider
 
 
         $this->app->singleton(\App\Modules\Intelligence\Services\AI\SearchAiService::class);
+        $this->app->singleton(\App\Modules\Intelligence\Services\ActorIdentityService::class);
     }
 
     public function boot(): void

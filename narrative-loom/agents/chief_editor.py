@@ -34,7 +34,12 @@ async def chief_editor_agent(state: NarrativeState, config: Dict[str, Any] = Non
     genre = state.get("genre", "Generic")
     
     # 🌟 DYNAMIC ROUTING: Cấp quyền Tổng biên tập sử dụng Model Pro nhất
-    llm = get_llm_for_agent("chief_editor", world_id=state.get("world_id"), current_tick=state.get("tick_end"))
+    llm = get_llm_for_agent(
+        "chief_editor",
+        world_id=state.get("world_id"),
+        current_tick=state.get("tick_end"),
+        ai_runtime=state.get("ai_runtime"),
+    )
     chain = chief_editor_prompt | llm | StrOutputParser()
     
     result = await chain.ainvoke({

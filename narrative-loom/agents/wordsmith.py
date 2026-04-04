@@ -33,7 +33,12 @@ async def wordsmith_agent(state: NarrativeState, config: Dict[str, Any] = None) 
     print("--- RUNNING AGENT: THE WORDSMITH ---")
     
     # 🌟 DYNAMIC ROUTING: Tự động chọn mô hình chất lượng nhất cho Wordsmith
-    llm = get_llm_for_agent("wordsmith", world_id=state.get("world_id"), current_tick=state.get("tick_end"))
+    llm = get_llm_for_agent(
+        "wordsmith",
+        world_id=state.get("world_id"),
+        current_tick=state.get("tick_end"),
+        ai_runtime=state.get("ai_runtime"),
+    )
     style_guidelines = state.get("style_guidelines", "Phong cách kể chuyện tự do.")
     chain = wordsmith_prompt | llm | StrOutputParser()
     

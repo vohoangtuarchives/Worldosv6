@@ -35,6 +35,10 @@ class AiKeyPool extends Model
         'metadata' => 'array',
     ];
 
+    protected $hidden = [
+        'key_encrypted',
+    ];
+
     /**
      * Scope a query to only include active keys.
      */

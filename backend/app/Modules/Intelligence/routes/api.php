@@ -2,21 +2,27 @@
 
 use Illuminate\Support\Facades\Route;
 
+use App\Modules\Intelligence\Http\Controllers\AiLogController;
+use App\Modules\Intelligence\Http\Controllers\AiSettingsController;
+use App\Modules\Intelligence\Http\Controllers\AiDiagnosticsController;
+use App\Modules\Intelligence\Http\Controllers\AiKeyPoolController;
+
 // AI Configuration (Database & Cache)
 
 Route::group(['prefix' => 'ai-settings'], function () {
-    Route::get('/', [\App\Modules\Intelligence\Http\Controllers\AiSettingsController::class, 'index']);
-    Route::post('/update', [\App\Modules\Intelligence\Http\Controllers\AiSettingsController::class, 'update']);
-    Route::post('/sync', [\App\Modules\Intelligence\Http\Controllers\AiSettingsController::class, 'sync']);
-    Route::post('/import', [\App\Modules\Intelligence\Http\Controllers\AiSettingsController::class, 'import']);
-    Route::get('/drivers', [\App\Modules\Intelligence\Http\Controllers\AiSettingsController::class, 'drivers']);
-    Route::post('/diagnostics', [\App\Modules\Intelligence\Http\Controllers\AiDiagnosticsController::class, 'run']);
+    Route::get('/', [AiSettingsController::class, 'index']);
+    Route::post('/update', [AiSettingsController::class, 'update']);
+    Route::post('/sync', [AiSettingsController::class, 'sync']);
+    Route::post('/import', [AiSettingsController::class, 'import']);
+    Route::get('/drivers', [AiSettingsController::class, 'drivers']);
+    Route::post('/diagnostics', [AiDiagnosticsController::class, 'run']);
 });
 
 // AI Keys Pool
-Route::apiResource('ai-key-pool', \App\Modules\Intelligence\Http\Controllers\AiKeyPoolController::class);
+Route::apiResource('ai-key-pool', AiKeyPoolController::class);
 
-// AI Logs
-Route::get('/ai-logs', [\App\Modules\Intelligence\Http\Controllers\AiLogController::class, 'index']);
-Route::get('/ai-logs/{id}', [\App\Modules\Intelligence\Http\Controllers\AiLogController::class, 'show']);
-Route::delete('/ai-logs/clear', [\App\Modules\Intelligence\Http\Controllers\AiLogController::class, 'clear']);
+// AI Logs & Monitoring
+Route::get('/ai-logs/stats', [AiLogController::class, 'stats']);
+Route::get('/ai-logs', [AiLogController::class, 'index']);
+Route::get('/ai-logs/{id}', [AiLogController::class, 'show']);
+Route::delete('/ai-logs/clear', [AiLogController::class, 'clear']);

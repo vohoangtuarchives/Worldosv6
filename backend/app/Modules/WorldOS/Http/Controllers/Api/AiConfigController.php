@@ -17,22 +17,36 @@ class AiConfigController extends Controller
     ) {}
 
     /**
-     * Liệt kê các Key hiện có (đã che giấu nội dung bạy cảm).
+     * Legacy WorldOS endpoint that now exposes the richer key-pool schema.
      */
     public function listKeys(): JsonResponse
     {
-        $keys = AiKeyPool::all()->map(function ($key) {
+        $keys = AiKeyPool::all()->map(function (AiKeyPool $key) {
+            $previewSource = (string) ($key->getRawOriginal('key_encrypted') ?? $key->key_encrypted ?? '');
+            try {
+                if ($previewSource !== '' && $this->looksLikeEncryptedPayload($previewSource)) {
+                    $previewSource = Crypt::decryptString($previewSource);
+                }
+            } catch (\Throwable) {
+                // Keep encrypted preview fallback for malformed legacy rows.
+            }
+
+            $previewSuffix = strlen($previewSource) >= 4 ? substr($previewSource, -4) : $previewSource;
+
             return [
                 'id' => $key->id,
                 'provider' => $key->provider,
                 'label' => $key->label,
                 'model_group' => $key->model_group,
+                'tier' => $key->tier,
+                'level' => $key->level,
                 'is_free' => $key->is_free,
                 'usage_count' => $key->usage_count,
                 'status' => $key->status,
                 'last_used_at' => $key->last_used_at?->toIso8601String(),
                 'cooldown_until' => $key->cooldown_until?->toIso8601String(),
-                'key_preview' => '********' . substr($key->key_encrypted, -4),
+                'metadata' => $key->metadata ?? [],
+                'key_preview' => '********' . $previewSuffix,
             ];
         });
 
@@ -40,29 +54,56 @@ class AiConfigController extends Controller
     }
 
     /**
-     * Nạp Key mới vào hệ thống.
+     * Accept both legacy payloads (api_key/is_free) and the new pool schema.
      */
     public function storeKey(Request $request): JsonResponse
     {
         $request->validate([
             'provider' => 'required|string',
-            'api_key' => 'required|string',
+            'api_key' => 'required_without:key|string',
+            'key' => 'required_without:api_key|string',
             'label' => 'nullable|string',
-            'is_free' => 'boolean',
+            'is_free' => 'nullable|boolean',
+            'tier' => 'nullable|in:free,premium',
+            'level' => 'nullable|integer|min:1',
+            'model_group' => 'nullable|string',
+            'metadata' => 'nullable|array',
         ]);
 
-        $this->rotationService->registerKey(
-            $request->provider,
-            $request->api_key,
-            $request->boolean('is_free', true),
-            $request->label
+        $plainKey = (string) ($request->input('api_key') ?? $request->input('key'));
+        $isFree = $request->has('is_free')
+            ? $request->boolean('is_free')
+            : (($request->input('tier') ?? 'free') === 'free');
+
+        $key = $this->rotationService->registerKey(
+            $request->input('provider'),
+            $plainKey,
+            $isFree,
+            $request->input('label'),
+            $request->input('tier'),
+            $request->input('level'),
+            $request->input('model_group'),
+            $request->input('metadata', [])
         );
 
-        return response()->json(['message' => 'Key registered successfully.'], 201);
+        return response()->json([
+            'message' => 'Key registered successfully.',
+            'data' => [
+                'id' => $key->id,
+                'provider' => $key->provider,
+                'label' => $key->label,
+                'model_group' => $key->model_group,
+                'tier' => $key->tier,
+                'level' => $key->level,
+                'is_free' => $key->is_free,
+                'status' => $key->status,
+                'metadata' => $key->metadata ?? [],
+            ],
+        ], 201);
     }
 
     /**
-     * Xóa một Key khỏi bể chứa.
+     * Remove a key from the pool.
      */
     public function destroyKey(int $id): JsonResponse
     {
@@ -73,21 +114,21 @@ class AiConfigController extends Controller
     }
 
     /**
-     * Lấy các cấu hình AI tổng quát (Narrative Style, Agent Routing).
+     * Get general AI settings.
      */
     public function getSettings(): JsonResponse
     {
         $settings = AiSetting::whereIn('key', [
             'narrative.style',
             'agent.routing',
-            'sim.tick_rate'
+            'sim.tick_rate',
         ])->get()->pluck('value', 'key');
 
         return response()->json(['data' => $settings]);
     }
 
     /**
-     * Cập nhật cấu hình AI.
+     * Update an AI setting.
      */
     public function updateSetting(Request $request): JsonResponse
     {
@@ -102,5 +143,19 @@ class AiConfigController extends Controller
         );
 
         return response()->json(['message' => 'Setting updated.']);
+    }
+
+    private function looksLikeEncryptedPayload(string $value): bool
+    {
+        $decoded = base64_decode($value, true);
+
+        if (!is_string($decoded) || $decoded === '') {
+            return false;
+        }
+
+        $payload = json_decode($decoded, true);
+
+        return is_array($payload)
+            && isset($payload['iv'], $payload['value'], $payload['mac']);
     }
 }

@@ -9,6 +9,7 @@ class AiLog extends Model
     protected $fillable = [
         'feature',
         'driver',
+        'model',
         'input',
         'output',
         'latency_ms',

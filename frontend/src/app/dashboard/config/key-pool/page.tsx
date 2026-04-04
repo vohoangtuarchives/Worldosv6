@@ -6,10 +6,9 @@ import {
     Plus, 
     RefreshCcw, 
     Database, 
-    ShieldCheck, 
-    AlertCircle 
+    ShieldCheck
 } from 'lucide-react';
-import { useKeyPool, AiKey } from '@/hooks/useKeyPool';
+import { useKeyPool, AiKey, AiKeyPayload } from '@/hooks/useKeyPool';
 import StatsOverview from '@/components/ui/key-pool/StatsOverview';
 import KeyTable from '@/components/ui/key-pool/KeyTable';
 import KeyForm from '@/components/ui/key-pool/KeyForm';
@@ -42,23 +41,28 @@ export default function KeyPoolPage() {
             try {
                 await deleteKey(id);
                 toast.success('Asset successfully decommissioned.');
-            } catch (err) {
+            } catch {
                 // Error handled by api interceptor
             }
         }
     };
 
-    const handleFormSubmit = async (data: any) => {
+    const handleFormSubmit = async (data: AiKeyPayload) => {
         try {
             if (editingKey) {
                 await updateKey({ id: editingKey.id, data });
                 toast.success('Intelligence asset parameters updated.');
             } else {
-                await addKey(data);
+                const key = data.key;
+                if (!key) {
+                    throw new Error('API key is required when creating a new pool entry.');
+                }
+
+                await addKey({ ...data, key });
                 toast.success('New intelligence asset initialized.');
             }
-        } catch (err) {
-            // Error handled by api interceptor
+        } catch (error) {
+            throw error;
         }
     };
 
@@ -119,6 +123,7 @@ export default function KeyPoolPage() {
 
             {/* Form Modal */}
             <KeyForm 
+                key={editingKey ? `edit-${editingKey.id}` : isFormOpen ? 'new-open' : 'new-closed'}
                 isOpen={isFormOpen}
                 onClose={() => setIsFormOpen(false)}
                 onSubmit={handleFormSubmit}

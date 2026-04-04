@@ -3,11 +3,14 @@
 namespace App\Modules\Intelligence\Services\AI\Drivers;
 
 use App\Modules\Intelligence\Contracts\LlmDriverInterface;
+use App\Modules\Intelligence\Services\AI\Drivers\Concerns\ResolvesChatResponse;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 class LocalDriver implements LlmDriverInterface
 {
+    use ResolvesChatResponse;
+
     public function __construct(
         protected string $url,
         protected string $model
@@ -26,16 +29,22 @@ class LocalDriver implements LlmDriverInterface
                     'max_tokens' => $options['max_tokens'] ?? 512,
                 ]);
 
-            if ($response->successful()) {
-                return $response->json('choices.0.message.content');
+            if (!$response->successful()) {
+                Log::warning("LocalDriver HTTP {$response->status()}: " . substr($response->body(), 0, 200));
+                $response->throw();
             }
 
-            Log::warning("LocalDriver HTTP {$response->status()}: " . substr($response->body(), 0, 200));
+            $content = $this->extractTextFromResponse($response);
+
+            if ($content === null) {
+                Log::warning("LocalDriver empty content [{$this->model}]: " . substr($response->body(), 0, 200));
+            }
+
+            return $content;
         } catch (\Throwable $e) {
             Log::warning("LocalDriver error [{$this->model}]: " . $e->getMessage());
+            throw $e;
         }
-
-        return null;
     }
 
     public function generate(string $prompt, array $options = []): ?string
@@ -43,5 +52,13 @@ class LocalDriver implements LlmDriverInterface
         return $this->chat([
             ['role' => 'user', 'content' => $prompt]
         ], $options);
+    }
+
+    public function metadata(): array
+    {
+        return [
+            'url' => $this->url,
+            'model' => $this->model,
+        ];
     }
 }

@@ -17,6 +17,7 @@ Route::prefix('worldos')->group(function () {
     Route::delete('universes/{id}', [UniverseController::class , 'destroy'])->name('worldos.universes.destroy');
     Route::post('universes/{id}/toggle-status', [UniverseController::class , 'toggleStatus'])->name('worldos.universes.toggle-status');
     Route::get('universes/{id}/metrics', [UniverseController::class , 'metrics'])->name('worldos.universes.metrics');
+    Route::get('universes/{id}/dossier', [UniverseController::class , 'dossier'])->name('worldos.universes.dossier');
     Route::get('universes/{id}/reality-state', [UniverseController::class , 'realityState'])->name('worldos.universes.reality-state');
     Route::get('universes/{id}/snapshot', [UniverseController::class , 'snapshot'])->name('worldos.universes.snapshot');
     Route::post('universes/{id}/snapshots', [UniverseController::class , 'createSnapshot'])->name('worldos.universes.snapshots.create');

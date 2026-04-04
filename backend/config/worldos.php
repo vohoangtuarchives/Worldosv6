@@ -858,6 +858,7 @@ return [
         'era_interval' => (int) env('WORLDOS_NARRATIVE_ERA_INTERVAL', 200),
         'civilization_on_collapse' => true,
         'mythology_on_events' => true,
+        'mythology_interval' => (int) env('WORLDOS_NARRATIVE_MYTHOLOGY_INTERVAL', 50),
         'religion_interval' => (int) env('WORLDOS_NARRATIVE_RELIGION_INTERVAL', 200),
         'prophecy_interval' => (int) env('WORLDOS_NARRATIVE_PROPHECY_INTERVAL', 500),
         'legend_interval' => (int) env('WORLDOS_NARRATIVE_LEGEND_INTERVAL', 100),

@@ -87,7 +87,12 @@ async def historian_agent(state: NarrativeState, config: Dict[str, Any] = None) 
     payload_str = json.dumps(optimized_payload, ensure_ascii=False, indent=2)
     
     # 2. Setup Configuration cho LLM - DYNAMIC ROUTING
-    llm = get_llm_for_agent("historian", world_id=state.get("world_id"), current_tick=state.get("tick_end"))
+    llm = get_llm_for_agent(
+        "historian",
+        world_id=state.get("world_id"),
+        current_tick=state.get("tick_end"),
+        ai_runtime=state.get("ai_runtime"),
+    )
     
     # Tích hợp Trí Nhớ Voi (Episodic Memory)
     events = state.get("normalized_events", [])

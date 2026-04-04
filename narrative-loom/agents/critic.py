@@ -22,7 +22,12 @@ async def critic_agent(state: NarrativeState, config: Dict[str, Any] = None) -> 
     storyboard = state.get("storyboard", "")
     
     # 🌟 DYNAMIC ROUTING: Phân bổ mô hình rà soát cho Critic
-    llm = get_llm_for_agent("critic", world_id=state.get("world_id"), current_tick=state.get("tick_end"))
+    llm = get_llm_for_agent(
+        "critic",
+        world_id=state.get("world_id"),
+        current_tick=state.get("tick_end"),
+        ai_runtime=state.get("ai_runtime"),
+    )
     structured_llm = llm.with_structured_output(CriticReview)
     
     chain = critic_prompt | structured_llm

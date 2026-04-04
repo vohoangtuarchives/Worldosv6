@@ -42,6 +42,14 @@ return [
 
     'loom' => [
         'url' => env('NARRATIVE_LOOM_URL', 'http://narrative_loom:8001'),
+        'timeout' => env('NARRATIVE_LOOM_TIMEOUT', 600),
+    ],
+
+    'narrative_loom' => [
+        'url' => env('NARRATIVE_LOOM_URL', 'http://narrative_loom:8001'),
+        'provider' => env('NARRATIVE_LOOM_PROVIDER', 'local'),
+        'model' => env('NARRATIVE_LOOM_MODEL', env('LOCAL_LLM_MODEL', 'qwen3.5-9b-uncensored-hauhaucs-aggressive')),
+        'timeout' => env('NARRATIVE_LOOM_TIMEOUT', 600),
     ],
 
     'social_engine' => [

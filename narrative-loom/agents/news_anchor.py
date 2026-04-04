@@ -33,7 +33,12 @@ async def news_anchor_agent(state: NarrativeState, config: Dict[str, Any] = None
     angle = state.get("past_memories", "").split("[CHIEF EDITOR ANGLE]:")[-1]
     
     # 🌟 DYNAMIC ROUTING: Chọn mô hình tối ưu cho phát thanh viên
-    llm = get_llm_for_agent("news_anchor", world_id=state.get("world_id"), current_tick=state.get("tick_end"))
+    llm = get_llm_for_agent(
+        "news_anchor",
+        world_id=state.get("world_id"),
+        current_tick=state.get("tick_end"),
+        ai_runtime=state.get("ai_runtime"),
+    )
     
     # Sử dụng JsonOutputParser để lấy dữ liệu có cấu trúc
     parser = JsonOutputParser(pydantic_object=NewsHeadline)

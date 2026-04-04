@@ -75,6 +75,14 @@ class ActorEvolutionService
             $entity = $actorMap[$state->id];
             $entity->fromState($state);
             
+            // Phase 3: Update Social Class based on influence
+            $influence = (float)($entity->metrics['influence'] ?? 0.5);
+            if ($influence > 2.0) {
+                $entity->metrics['social_class'] = 'elite';
+            } elseif ($influence < 0.1) {
+                $entity->metrics['social_class'] = 'outcast';
+            }
+
             // Random life record (chance 10% per pulse for active ones)
             if ($entity->isAlive && rand(1, 100) > 90) {
                 // Not ideal putting narrative call here but works for legacy flow mapping
@@ -117,10 +125,34 @@ class ActorEvolutionService
                 'archetype' => $archetype,
                 'traits' => $this->generateRandomTraits(),
                 'biography' => "Cảm ứng thiên địa, xuất thế giữa lúc năng lượng dao động mạnh.",
-                'metrics' => ['influence' => 0.5],
+                'metrics' => $this->enrichInitialMetrics($universe, $axiom),
             ]);
             $count++;
         }
+    }
+
+    /**
+     * Phase 3: Enrich initial actor metrics with social class, origin, and livelihood.
+     */
+    private function enrichInitialMetrics(Universe $universe, array $axiom): array
+    {
+        $metrics = ['influence' => 0.5];
+        
+        // 1. Origin and Livelihood from Zone
+        $zones = $universe->world?->data['zones'] ?? [];
+        if (!empty($zones)) {
+            $randomZone = $zones[array_rand($zones)];
+            $profile = $randomZone['state']['material_profile'] ?? [];
+            
+            $metrics['origin_zone_id'] = $randomZone['id'] ?? null;
+            $metrics['livelihood'] = $profile['livelihood'] ?? 'unknown';
+            $metrics['birth_material'] = $profile['dominant_material'] ?? 'none';
+        }
+
+        // 2. Initial Social Class (Start as Citizen or Serf)
+        $metrics['social_class'] = rand(1, 100) > 80 ? 'citizen' : 'serf';
+        
+        return $metrics;
     }
 }
 

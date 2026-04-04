@@ -22,6 +22,7 @@ class SimulationServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        $this->app->register(SimulationConfigServiceProvider::class);
         $this->app->register(\App\Modules\Narrative\Providers\NarrativeServiceProvider::class);
 
         // Bindings for repositories

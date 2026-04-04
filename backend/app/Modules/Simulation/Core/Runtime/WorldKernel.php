@@ -384,7 +384,7 @@ class WorldKernel
 
             // 4. Update State from Rust (Macro-level changes)
             if (isset($result['ok']) && $result['ok']) {
-                $this->applySoaUpdatesToActors($actors, $result['outputs'] ?? []);
+                $this->applySoaUpdatesToActors($actors, $result['outputs'] ?? [], $state);
                 
                 // Update behavior states
                 if (!empty($result['behavior_states'])) {
@@ -566,7 +566,7 @@ class WorldKernel
         };
     }
 
-    private function applySoaUpdatesToActors(array $actors, array $outputs): void
+    private function applySoaUpdatesToActors(array $actors, array $outputs, \App\Modules\Simulation\Core\Runtime\State\WorldState $state): void
     {
         if (empty($outputs)) return;
         
@@ -576,11 +576,21 @@ class WorldKernel
         }
 
         $skipAttributeSync = config('worldos.event_stream.kafka_enabled', false);
+        $identityService = app(\App\Modules\Intelligence\Services\ActorIdentityService::class);
+        $zones = $state->getZones();
+        $techLevel = (float) $state->get('tech_level', 0.1);
 
         foreach ($outputs as $out) {
             $actorId = $out['actor_id'] ?? 0;
             if (isset($actorMap[$actorId])) {
                 $agent = $actorMap[$actorId];
+
+                // Phase 3: Sync Material Identity (Occupation & Equipment)
+                $zoneId = (int) ($out['new_zone_id'] ?? $agent->zone_id ?? 0);
+                $zone = $zones[$zoneId] ?? ($zones[0] ?? null);
+                if ($zone && isset($zone['state']['material_profile'])) {
+                    $identityService->syncMaterialIdentity($agent, $zone['state']['material_profile'], $techLevel);
+                }
                 
                 // If Kafka is enabled, we skip attribute sync here to reduce blocking time,
                 // as those will be handled asynchronously by the Kafka consumer.

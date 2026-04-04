@@ -5,6 +5,7 @@ class NarrativeState(TypedDict):
     world_era: str | None
     tick_start: int | None
     tick_end: int | None
+    ai_runtime: Dict[str, Any] | None
     
     raw_chronicles: List[dict]
     normalized_events: List[dict]

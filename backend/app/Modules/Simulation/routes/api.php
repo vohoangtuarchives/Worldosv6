@@ -20,4 +20,11 @@ Route::prefix('apex')->group(function () {
     // Bloom & Multiverse DAG visualization
     Route::get('/multiverse/bloom', [\App\Modules\Simulation\Http\Controllers\MultiverseMapController::class, 'bloom']);
     Route::get('/multiverse/resonance', [\App\Modules\Simulation\Http\Controllers\MultiverseMapController::class, 'resonance']);
+
+    // Phase 69: Simulation Dynamic Settings
+    Route::prefix('settings')->group(function () {
+        Route::get('/', [\App\Modules\Simulation\Http\Controllers\SimulationSettingsController::class, 'index']);
+        Route::post('/update', [\App\Modules\Simulation\Http\Controllers\SimulationSettingsController::class, 'update']);
+        Route::post('/reset', [\App\Modules\Simulation\Http\Controllers\SimulationSettingsController::class, 'reset']);
+    });
 });

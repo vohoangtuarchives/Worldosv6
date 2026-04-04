@@ -16,6 +16,18 @@ return [
 
     /*
      |--------------------------------------------------------------------------
+     | Use AI Key Pool
+     |--------------------------------------------------------------------------
+     |
+     | When enabled, the gateway will prefer rotating keys from ai_key_pool
+     | before falling back to static driver credentials.
+     |
+     */
+
+    'use_pool' => env('AI_USE_POOL', false),
+
+    /*
+     |--------------------------------------------------------------------------
      | AI Drivers Configuration
      |--------------------------------------------------------------------------
      |
@@ -35,6 +47,12 @@ return [
             'url' => 'https://api.openai.com/v1/chat/completions',
             'key' => env('OPENAI_API_KEY'),
             'model' => env('OPENAI_MODEL', 'gpt-4o'),
+        ],
+
+        'gemini' => [
+            'url' => env('GEMINI_URL', 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions'),
+            'key' => env('GEMINI_API_KEY'),
+            'model' => env('GEMINI_MODEL', 'gemini-1.5-flash'),
         ],
 
         'local' => [
