@@ -45,6 +45,8 @@ Route::prefix('worldos')->group(function () {
     Route::get('actors/{id}', [ActorController::class , 'show'])->name('worldos.actors.show');
     Route::get('actors/{id}/events', [ActorController::class , 'events'])->name('worldos.actors.events');
     Route::get('actors/{id}/decisions', [ActorController::class , 'decisions'])->name('worldos.actors.decisions');
+    Route::post('actors/{id}/mind-meld', [ActorController::class , 'mindMeld'])->name('worldos.actors.mind-meld');
+    
     Route::get('universes/{id}/supreme-entities', [ActorController::class , 'supremeEntities'])->name('worldos.universes.supreme-entities');
 
     // 5. Simulation Logic & Control (Calculation Engine)

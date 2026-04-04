@@ -60,6 +60,39 @@ pub struct UniverseState {
     pub fork_recommendation: bool,
     #[serde(default)]
     pub axioms: HashMap<String, Fix>,
+    #[serde(default)]
+    pub pending_history_events: Vec<HistoricalEventRaw>,
+    #[serde(default)]
+    pub pending_celebrities: Vec<CelebrityRaw>,
+    #[serde(default)]
+    pub pending_artifacts: Vec<ArtifactRaw>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct HistoricalEventRaw {
+    pub tick: u64,
+    pub zone_id: u32,
+    pub event_type: String,
+    pub impact_score: f64,
+    pub trigger_data: serde_json::Value,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CelebrityRaw {
+    pub id: u64,
+    pub zone_id: u32,
+    pub fame: f64,
+    pub vocation: String,
+    pub origin_tick: u64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ArtifactRaw {
+    pub id: u64,
+    pub zone_id: u32,
+    pub mass: f64,
+    pub knowledge_encoded: f64,
+    pub origin_tick: u64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

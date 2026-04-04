@@ -779,6 +779,7 @@ class SimulationServiceProvider extends ServiceProvider
                 $app->make(\App\Modules\Simulation\Core\Supervisor\Handlers\KnowledgeGraphPostSnapshotHandler::class),
                 $app->make(\App\Modules\Simulation\Core\Supervisor\Handlers\CivilizationDiscoveryPostSnapshotHandler::class),
                 $app->make(\App\Modules\Simulation\Core\Supervisor\Handlers\SelfImprovingPostSnapshotHandler::class),
+                $app->make(\App\Modules\Simulation\Core\Supervisor\Handlers\RawGenerationPostSnapshotHandler::class),
                 // RuleVm already handled in RuleStage
             ];
             return new \App\Modules\Simulation\Core\Supervisor\RuntimePipeline(
@@ -799,6 +800,16 @@ class SimulationServiceProvider extends ServiceProvider
         \Illuminate\Support\Facades\Event::listen(
             \App\Modules\Simulation\Events\EpochTransitioned::class,
             \App\Modules\Simulation\Listeners\HandleEpochTransition::class
+        );
+
+        \Illuminate\Support\Facades\Event::listen(
+            \App\Modules\SocialGraph\Events\CelebrityEmerged::class,
+            [\App\Modules\Simulation\Listeners\GenerateAssetListener::class, 'handleCelebrity']
+        );
+
+        \Illuminate\Support\Facades\Event::listen(
+            \App\Modules\World\Events\ArtifactDiscovered::class,
+            [\App\Modules\Simulation\Listeners\GenerateAssetListener::class, 'handleArtifact']
         );
 
         Route::group([

@@ -11,25 +11,30 @@ use App\Modules\WorldOS\Http\Resources\TimelineEventResource;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 
 class TimelineController extends Controller
 {
     public function history(int $id, Request $request): JsonResponse
     {
         $limit = (int) $request->query('limit', 50);
-        $facts = DB::table('historical_facts')
-            ->where('universe_id', $id)
-            ->orderByDesc('tick')
-            ->limit($limit)
-            ->get();
+        $cacheKey = "worldos:timeline:{$id}:limit:{$limit}";
 
-        return TimelineEventResource::collection($facts)
-            ->additional([
-                'meta' => [
-                    'by_type' => $facts->groupBy('type')->map(static fn ($group) => $group->count()),
-                ],
-            ])
-            ->response();
+        return Cache::remember($cacheKey, 300, function () use ($id, $limit) {
+            $facts = DB::table('historical_facts')
+                ->where('universe_id', $id)
+                ->orderByDesc('tick')
+                ->limit($limit)
+                ->get();
+
+            return TimelineEventResource::collection($facts)
+                ->additional([
+                    'meta' => [
+                        'by_type' => $facts->groupBy('type')->map(static fn ($group) => $group->count()),
+                    ],
+                ])
+                ->response();
+        });
     }
 
     public function generateChronicle(string $id, Request $request, NarrativeAiService $narrativeAi): JsonResponse

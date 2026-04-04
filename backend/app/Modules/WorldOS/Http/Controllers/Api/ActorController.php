@@ -13,6 +13,7 @@ use App\Modules\WorldOS\Http\Resources\ActorDetailResource;
 use App\Modules\WorldOS\Http\Resources\ActorEventResource;
 use App\Modules\WorldOS\Http\Resources\ActorSummaryResource;
 use App\Modules\WorldOS\Http\Resources\SupremeEntityResource;
+use App\Modules\Narrative\Services\NarrativeLoomService;
 use Illuminate\Http\JsonResponse;
 
 class ActorController extends Controller
@@ -59,5 +60,32 @@ class ActorController extends Controller
             ->get();
 
         return SupremeEntityResource::collection($entities)->response();
+    }
+
+    public function mindMeld(int $id, NarrativeLoomService $loomService): JsonResponse
+    {
+        $actor = Actor::find($id);
+        if (!$actor) {
+            return response()->json(['message' => 'Actor not found'], 404);
+        }
+
+        // Tái tạo Context: Dữ liệu hiện tại của vũ trụ + Tiểu sử Actor
+        $requestData = [
+            'actor_id' => $actor->id,
+            'universe_id' => $actor->universe_id,
+            'state' => ['health' => 100, 'stress' => 50], // Mock parameters for AI
+        ];
+
+        // Lọc qua Narrative Loom 
+        $response = $loomService->getActorIntent($requestData);
+
+        if (isset($response['ok']) && !$response['ok']) {
+            return response()->json(['message' => $response['error'] ?? 'Mind meld failed'], 503);
+        }
+
+        return response()->json([
+            'action' => $response['action'] ?? 'Đang trong trạng thái vô định nội tâm...',
+            'confidence' => $response['confidence'] ?? 50.0
+        ]);
     }
 }

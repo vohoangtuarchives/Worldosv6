@@ -1,0 +1,64 @@
+import json
+from langchain_core.prompts import ChatPromptTemplate
+from typing import Dict, Any
+
+from utils.llm_factory import get_llm_for_agent
+
+history_prompt = ChatPromptTemplate.from_messages([
+    ("system", """Ngươi là Sử Quan (History Scribe) của WorldOS.
+Hệ thống lõi (Engine) vừa đo được một biến động chấn động mức độ vĩ mô. Nhiệm vụ của ngươi là đặt tên cho Sự kiện / Kỷ nguyên này và mô tả nó.
+
+THÔNG SỐ RAW:
+- Loại Sự kiện: {event_type}
+- Zone chịu ảnh hưởng lớn nhất: {zone_id}
+- Hệ số Tác động (Impact Score): {impact_score}
+- Dữ liệu kích hoạt (Trigger Data): {trigger_data}
+
+YÊU CẦU:
+Dựa vào loại sự kiện (vd: collapse, golden_age), đặt một Tên Sự Kiện thật hoành tráng.
+Viết 1 đoạn Văn bia Lịch sử (2-3 câu) trang trọng để khắc vào Dòng thời gian (Timeline).
+Trả về JSON chứa: "event_name" và "chronicle".
+"""),
+    ("human", "Ghi chép sự kiện này vào Sử sách.")
+])
+
+async def scribe_history(req_data: dict) -> dict:
+    llm = get_llm_for_agent("historian", world_id=req_data.get("world_id"))
+    structured_llm = llm.with_structured_output(schema={"type": "object", "properties": {"event_name": {"type": "string"}, "chronicle": {"type": "string"}}, "required": ["event_name", "chronicle"]})
+    chain = history_prompt | structured_llm
+    
+    try:
+        result = await chain.ainvoke({
+            "event_type": req_data.get("event_type"),
+            "zone_id": req_data.get("zone_id", "Unknown"),
+            "impact_score": req_data.get("impact_score"),
+            "trigger_data": json.dumps(req_data.get("trigger_data", {})),
+        })
+        return result
+    except Exception as e:
+        print(f"DEBUG Error Scribe History: {e}")
+        return {"event_name": "Sự Kiện Dị Thường", "chronicle": "Một chuyển động chưa từng có đã quét qua vùng không gian này."}
+
+async def history_scribe_api(event_type: str, impact_score: float, trigger_data: dict, world_id: int) -> dict:
+    """
+    Adaptive Token Logic: Chỉ dùng AI khi impact_score >= 5.0
+    """
+    if impact_score < 5.0:
+        # Fallback to Rule-based / Raw text to save API cost
+        print(f"[Resource Saving] Scribe History bỏ qua AI vì Impact Score ({impact_score}) < 5.0")
+        name = event_type.replace("_", " ").title()
+        return {
+            "event_name": f"Minor Event: {name}",
+            "chronicle": f"Hệ thống ghi nhận sự kiện '{name}' tại Vũ trụ #{world_id}. Tác động vi mô không đủ để khắc sâu vào lịch sử."
+        }
+
+    # Trigger LLM
+    print(f"[Adaptive Narrative] Kích hoạt LLM Scribe cho Impact Score: {impact_score}")
+    req_data = {
+        "event_type": event_type,
+        "impact_score": impact_score,
+        "trigger_data": trigger_data,
+        "world_id": world_id
+    }
+    return await scribe_history(req_data)
+

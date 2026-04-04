@@ -13,7 +13,7 @@ class LoomStatusController extends Controller
      * GET /api/ip-factory/loom-status
      * Fetch status and configuration from NarrativeLoom service.
      */
-    public function index(): JsonResponse
+    public function status(): JsonResponse
     {
         $loomUrl = config('services.loom.url', 'http://narrative_loom:8001');
 

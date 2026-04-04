@@ -58,6 +58,9 @@ impl UniverseState {
             narrative_tags: Vec::new(),
             fork_recommendation: false,
             axioms: HashMap::new(),
+            pending_history_events: Vec::new(),
+            pending_celebrities: Vec::new(),
+            pending_artifacts: Vec::new(),
         }
     }
 
@@ -90,6 +93,9 @@ impl UniverseState {
             narrative_tags: Vec::new(),
             fork_recommendation: false,
             axioms: HashMap::new(),
+            pending_history_events: Vec::new(),
+            pending_celebrities: Vec::new(),
+            pending_artifacts: Vec::new(),
         }
     }
 

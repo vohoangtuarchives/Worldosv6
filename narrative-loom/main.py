@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import httpx
 import os
-from typing import Dict, Any
+from typing import Dict, Any, List, Optional
 from dotenv import load_dotenv
 from utils.manifesto_loader import loader
 
@@ -34,7 +34,8 @@ def get_config():
             "historian": {"provider": "openai", "model": "gpt-4o", "role": "Historical Outline"},
             "psychologist": {"provider": "anthropic", "model": "claude-3-opus-20240229", "role": "Psychological Analysis"},
             "director": {"provider": "openai", "model": "gpt-4o", "role": "Storyboard/Scene Direction"},
-            "wordsmith": {"provider": "anthropic", "model": "claude-3-opus-20240229", "role": "Literary Prose"}
+            "wordsmith": {"provider": "anthropic", "model": "claude-3-opus-20240229", "role": "Literary Prose"},
+            "art_director": {"provider": "openai", "model": "dall-e-3", "role": "Visual Assets Definition"}
         },
         "providers": {
             "zai": {"status": "online" if os.getenv("NARRATIVE_LLM_KEY") else "missing_key"},
@@ -175,6 +176,7 @@ async def actor_intent(req: ActorIntentRequest):
             status_code=503,
             detail=f"Intent agent failed: {str(e)}"
         )
+
 # ── Test Endpoints for Decoupled Agents ────────────────────────────────────────
 
 @app.post("/test/historian")
@@ -211,3 +213,59 @@ async def test_wordsmith(req: dict):
         "storyboard": req.get("storyboard", "")
     }
     return await wordsmith_agent(state)
+
+
+# ── Raw Generation Weaving Endpoints ───────────────────────────────────────────
+
+from agents.history_scribe import history_scribe_api
+from agents.celebrity_synthesizer import celebrity_synthesizer_api
+from agents.artifact_forger import artifact_forger_api
+from agents.art_director import generate_visual_asset
+
+@app.post("/weave-celebrity")
+async def api_weave_celebrity(req: dict):
+    """Called by Laravel when CelebrityEmerged event fires."""
+    return await celebrity_synthesizer_api(req)
+
+@app.post("/forge-artifact")
+async def api_forge_artifact(req: dict):
+    """Called by Laravel when ArtifactDiscovered event fires."""
+    return await artifact_forger_api(req)
+
+class ScribeHistoryRequest(BaseModel):
+    event_type: str
+    impact_score: float
+    trigger_data: Dict[str, Any]
+    world_id: int
+
+@app.post("/scribe-history")
+async def scribe_history(request: ScribeHistoryRequest):
+    """Scribe History Event into Narrative via history_scribe"""
+    result = await history_scribe_api(request.event_type, request.impact_score, request.trigger_data, request.world_id)
+    return {"message": "Success", "chronicle": result}
+
+class PaintAssetRequest(BaseModel):
+    prompt: str
+    is_portrait: bool = True
+
+@app.post("/paint-asset")
+async def paint_asset(request: PaintAssetRequest):
+    """Sinh ảnh từ mô tả text thông qua Art Director (DALL-E)"""
+    url = await generate_visual_asset(request.prompt, request.is_portrait)
+    if url:
+        return {"message": "Success", "image_url": url}
+    else:
+        return {"message": "Failed", "image_url": None}
+
+class ComposeTrackRequest(BaseModel):
+    epoch_name: str
+    core_theme: str
+
+@app.post("/compose-track")
+async def compose_track(request: ComposeTrackRequest):
+    """Sinh URL nhạc Ambient dựa trên chủ đề của Kỷ nguyên"""
+    from agents.audio_director import AudioDirectorAgent
+    audio_director = AudioDirectorAgent()
+    result = await audio_director.compose_soundtrack(request.epoch_name, request.core_theme)
+    return result
+

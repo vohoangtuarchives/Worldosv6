@@ -10,7 +10,8 @@ import {
     History, 
     Menu, 
     X, 
-    Zap
+    Zap,
+    Map
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
@@ -46,6 +47,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
     const menuItems = [
         { icon: LayoutDashboard, label: 'Overview', href: '/dashboard' },
+        { icon: Map, label: 'Causal Map', href: '/spatial-map' },
         { icon: Zap, label: 'Narrative Monitor', href: '/dashboard/intelligence/monitor' },
         { icon: Database, label: 'Key Pool', href: '/dashboard/config/key-pool' },
         { icon: History, label: 'AI Logs', href: '/dashboard/logs' },

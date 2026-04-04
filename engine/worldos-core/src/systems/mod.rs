@@ -6,6 +6,7 @@ pub mod local_update;
 pub mod global_update;
 pub mod diffusion;
 pub mod post_process;
+pub mod history_tracker;
 
 use crate::types::{UniverseState, WorldConfig};
 use crate::memory::ZoneActorIndex;
@@ -30,4 +31,7 @@ pub fn run_all_systems(
 
     // 4. Post-Process
     post_process::run(state);
+
+    // 5. Raw Generation (History, VIPs, Artifacts)
+    history_tracker::run(state);
 }
