@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
     Activity,
@@ -22,7 +22,7 @@ import {
     useUniverseOptions,
 } from '@/hooks/useUniverseDossier';
 
-type Dictionary = Record<string, any>;
+type Dictionary = Record<string, unknown>;
 
 interface DossierEconomy extends Dictionary {
     prosperity_index?: number;
@@ -104,7 +104,7 @@ export default function DashboardWorldDossierPage() {
         { label: 'Crisis', event: getRecord(historySpine.crisis_hint) },
     ];
 
-    const signalCards = useMemo(() => [
+    const signalCards = [
         {
             label: 'Entropy',
             value: formatMetric(metrics?.entropy, 3),
@@ -133,7 +133,7 @@ export default function DashboardWorldDossierPage() {
             icon: Orbit,
             tone: 'from-emerald-500/20 to-teal-500/10 border-emerald-500/20 text-emerald-100',
         },
-    ], [metrics, civilizationProfile, governance]);
+    ];
 
     return (
         <div className="mx-auto max-w-7xl pb-20">

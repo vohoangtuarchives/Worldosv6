@@ -8,54 +8,12 @@ export default function AtmospherePlayer() {
   const [currentTrack, setCurrentTrack] = useState<string | null>(null);
   const [trackInfo, setTrackInfo] = useState<{ epochName: string; style: string } | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [volume, setVolume] = useState(0.2); // Âm lượng chìm, nhẹ nhàng
+  const [volume] = useState(0.2); // Âm lượng chìm, nhẹ nhàng
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const playPromiseRef = useRef<Promise<void> | null>(null);
 
-  useEffect(() => {
-    if (!audioRef.current) {
-      audioRef.current = new Audio();
-      audioRef.current.loop = true;
-      audioRef.current.volume = volume;
-    }
-
-    // Khởi tạo Centrifugo WebSocket
-    const centrifuge = new Centrifuge('ws://127.0.0.1:8000/connection/websocket', {});
-    centrifuge.connect();
-
-    // Lắng nghe tín hiệu đổi nhạc qua Centrifugo (Kênh global_universe)
-    const sub = centrifuge.newSubscription('global_universe');
-    sub.on('publication', (ctx: any) => {
-      const data = ctx.data;
-      if (data && data.event === 'SoundtrackChanged') {
-        const payload = data.payload;
-        console.log("[ATMOSPHERE] Nhận sóng âm nhạc kỷ nguyên:", payload);
-        
-        handleTrackChange(payload.url, payload.epochName, payload.style);
-      }
-    });
-    
-    sub.subscribe();
-
-    // Default Fallback Ambient nếu chưa có gì
-    handleTrackChange(
-        "https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3?filename=cinematic-time-lapse-115672.mp3", 
-        "Genesis Era", 
-        "default"
-    );
-
-    return () => {
-      sub.removeAllListeners();
-      sub.unsubscribe();
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.src = "";
-      }
-    };
-  }, []); // eslint-disable-line
-
-  const handleTrackChange = (url: string, epochName: string, style: string) => {
+  function handleTrackChange(url: string, epochName: string, style: string) {
     if (!audioRef.current || currentTrack === url) return;
 
     const crossfade = async () => {
@@ -93,7 +51,49 @@ export default function AtmospherePlayer() {
     };
 
     crossfade();
-  };
+  }
+
+  useEffect(() => {
+    if (!audioRef.current) {
+      audioRef.current = new Audio();
+      audioRef.current.loop = true;
+      audioRef.current.volume = volume;
+    }
+
+    // Khởi tạo Centrifugo WebSocket
+    const centrifuge = new Centrifuge('ws://127.0.0.1:8000/connection/websocket', {});
+    centrifuge.connect();
+
+    // Lắng nghe tín hiệu đổi nhạc qua Centrifugo (Kênh global_universe)
+    const sub = centrifuge.newSubscription('global_universe');
+    sub.on('publication', (ctx: { data: { event: string; payload: { url: string; epochName: string; style: string } } }) => {
+      const data = ctx.data;
+      if (data && data.event === 'SoundtrackChanged') {
+        const payload = data.payload;
+        console.log("[ATMOSPHERE] Nhận sóng âm nhạc kỷ nguyên:", payload);
+        
+        handleTrackChange(payload.url, payload.epochName, payload.style);
+      }
+    });
+    
+    sub.subscribe();
+
+    // Default Fallback Ambient nếu chưa có gì
+    handleTrackChange(
+        "https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3?filename=cinematic-time-lapse-115672.mp3", 
+        "Genesis Era", 
+        "default"
+    );
+
+    return () => {
+      sub.removeAllListeners();
+      sub.unsubscribe();
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = "";
+      }
+    };
+  }, []); // eslint-disable-line
 
   const togglePlay = () => {
     if (!audioRef.current) return;

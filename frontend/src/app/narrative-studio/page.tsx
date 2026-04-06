@@ -1,15 +1,27 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
 import AgentNode from '@/components/ui/narrative/AgentNode';
 import api from '@/lib/api';
 import { Centrifuge } from 'centrifuge';
 
+interface AgentConfig {
+  id?: string;
+  provider: string;
+  model: string;
+  role: string;
+}
+
+interface ProviderConfig {
+  id?: string;
+  name?: string;
+  status: string;
+}
+
 interface LoomStatus {
   status: 'online' | 'offline' | 'degraded';
-  agents: Record<string, any>;
-  providers: Record<string, any>;
+  agents: Record<string, AgentConfig> | AgentConfig[];
+  providers: Record<string, ProviderConfig> | ProviderConfig[];
   version: string;
 }
 
@@ -87,12 +99,14 @@ export default function NarrativeStudio() {
         <section className="mb-12">
           <h2 className="text-xs uppercase tracking-widest text-gray-500 mb-4 border-l-2 border-violet-500 pl-2">AI Providers Network</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            {data?.providers && Object.entries(data.providers).map(([key, info]: [string, any]) => (
-              <div key={key} className="p-3 border border-white/5 bg-white/5 rounded-lg flex items-center justify-between">
-                <span className="text-xs font-bold uppercase">{key}</span>
+            {data?.providers && (Array.isArray(data.providers) ? data.providers : Object.entries(data.providers).map(([key, info]) => ({ id: key, ...info }))).map((info: ProviderConfig, idx: number) => {
+              const keyName = info.id || info.name || `provider-${idx}`;
+              return (
+              <div key={keyName} className="p-3 border border-white/5 bg-white/5 rounded-lg flex items-center justify-between">
+                <span className="text-xs font-bold uppercase">{keyName}</span>
                 <div className={`w-2 h-2 rounded-full ${info.status === 'online' ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]' : 'bg-red-500'}`} />
               </div>
-            ))}
+            )})}
           </div>
         </section>
 
@@ -101,16 +115,18 @@ export default function NarrativeStudio() {
           <h2 className="text-xs uppercase tracking-widest text-gray-500 mb-6 border-l-2 border-violet-500 pl-2">Loom Agents Topography</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 relative">
             {/* Draw imaginary connection strings later using SVG if needed */}
-            {data?.agents ? Object.entries(data.agents).map(([id, config]: [string, any], index) => (
+            {data?.agents ? (Array.isArray(data.agents) ? data.agents : Object.entries(data.agents).map(([id, config]) => ({ id, ...config }))).map((config: AgentConfig, idx: number) => {
+              const agentId = config.id || `agent-${idx}`;
+              return (
               <AgentNode 
-                key={id} 
-                id={id} 
+                key={agentId} 
+                id={agentId} 
                 provider={config.provider} 
                 model={config.model} 
                 role={config.role}
                 isActive={data?.status === 'online'} 
               />
-            )) : (
+            )}) : (
                <div className="col-span-full h-32 flex items-center justify-center border border-dashed border-gray-800 rounded-xl">
                  <span className="text-gray-600 uppercase text-xs tracking-widest">No Active Nodes Detected.</span>
                </div>
