@@ -8,6 +8,7 @@ import {
     Database, 
     ShieldCheck
 } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useKeyPool, AiKey, AiKeyPayload } from '@/hooks/useKeyPool';
 import StatsOverview from '@/components/ui/key-pool/StatsOverview';
 import KeyTable from '@/components/ui/key-pool/KeyTable';
@@ -23,6 +24,7 @@ export default function KeyPoolPage() {
         deleteKey 
     } = useKeyPool();
 
+    const queryClient = useQueryClient();
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingKey, setEditingKey] = useState<AiKey | null>(null);
 
@@ -62,7 +64,8 @@ export default function KeyPoolPage() {
                 toast.success('New intelligence asset initialized.');
             }
         } catch (error) {
-            throw error;
+            console.error('Failed to save key:', error);
+            toast.error('Failed to save intelligence asset.');
         }
     };
 
@@ -84,8 +87,8 @@ export default function KeyPoolPage() {
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <button 
-                        onClick={() => window.location.reload()}
+                    <button
+                        onClick={() => queryClient.invalidateQueries({ queryKey: ['ai-key-pool'] })}
                         className="p-3 rounded-2xl bg-slate-800/50 border border-slate-700/50 text-slate-400 hover:text-white transition-all"
                     >
                         <RefreshCcw size={20} />

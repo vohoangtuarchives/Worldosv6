@@ -1,10 +1,8 @@
 'use client';
 
-import useSWR from 'swr';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import api from '@/lib/api';
-
-const fetcher = (url: string) => api.get(url).then((res) => res.data);
 
 interface ResourceCollection<T> {
     data?: T[];
@@ -49,14 +47,12 @@ export interface UniverseDossier {
 }
 
 export function useUniverseOptions() {
-    const { data, error, isLoading } = useSWR<UniverseOption[] | ResourceCollection<UniverseOption>>(
-        '/worldos/universes',
-        fetcher,
-        {
-            refreshInterval: 15000,
-            revalidateOnFocus: true,
-        }
-    );
+    const { data, error, isLoading } = useQuery<UniverseOption[] | ResourceCollection<UniverseOption>>({
+        queryKey: ['universes'],
+        queryFn: () => api.get('/worldos/universes').then((res) => res.data),
+        refetchInterval: 15000,
+        refetchOnWindowFocus: true,
+    });
 
     const universes = Array.isArray(data) ? data : data?.data ?? [];
 
@@ -68,11 +64,17 @@ export function useUniverseOptions() {
 }
 
 export function useUniverseMetrics(universeId?: number | null) {
-    const key = universeId ? `/worldos/universes/${universeId}/metrics` : null;
-    const { data, error, isLoading, mutate } = useSWR<UniverseMetrics>(key, fetcher, {
-        refreshInterval: 10000,
-        revalidateOnFocus: true,
+    const queryClient = useQueryClient();
+
+    const { data, error, isLoading } = useQuery<UniverseMetrics>({
+        queryKey: ['universes', universeId, 'metrics'],
+        queryFn: () => api.get(`/worldos/universes/${universeId}/metrics`).then((res) => res.data),
+        enabled: !!universeId,
+        refetchInterval: 10000,
+        refetchOnWindowFocus: true,
     });
+
+    const mutate = () => queryClient.invalidateQueries({ queryKey: ['universes', universeId, 'metrics'] });
 
     return {
         metrics: data,
@@ -83,11 +85,17 @@ export function useUniverseMetrics(universeId?: number | null) {
 }
 
 export function useUniverseDossier(universeId?: number | null) {
-    const key = universeId ? `/worldos/universes/${universeId}/dossier` : null;
-    const { data, error, isLoading, mutate } = useSWR<UniverseDossier>(key, fetcher, {
-        refreshInterval: 10000,
-        revalidateOnFocus: true,
+    const queryClient = useQueryClient();
+
+    const { data, error, isLoading } = useQuery<UniverseDossier>({
+        queryKey: ['universes', universeId, 'dossier'],
+        queryFn: () => api.get(`/worldos/universes/${universeId}/dossier`).then((res) => res.data),
+        enabled: !!universeId,
+        refetchInterval: 10000,
+        refetchOnWindowFocus: true,
     });
+
+    const mutate = () => queryClient.invalidateQueries({ queryKey: ['universes', universeId, 'dossier'] });
 
     return {
         dossier: data,

@@ -84,7 +84,7 @@ class ActorEvolutionService
             }
 
             // Random life record (chance 10% per pulse for active ones)
-            if ($entity->isAlive && rand(1, 100) > 90) {
+            if ($entity->isAlive && mt_rand(1, 100) > 90) {
                 // Not ideal putting narrative call here but works for legacy flow mapping
                 $this->recordLifeEvent($entity->id, $tick, []);
             }
@@ -101,7 +101,7 @@ class ActorEvolutionService
         $traits = [];
         $dimsCount = count(\App\Modules\Intelligence\Entities\ActorEntity::TRAIT_DIMENSIONS);
         for ($i = 0; $i < $dimsCount; $i++) {
-            $traits[] = rand(0, 100) / 100.0;
+            $traits[] = mt_rand(0, 100) / 100.0;
         }
         return $traits;
     }
@@ -119,9 +119,9 @@ class ActorEvolutionService
             $axiom = $universe->world?->axiom ?? [];
             $archetype = $this->archetypeResolver->resolve($axiom, $universe->entropy ?? 0.5, $universe->structural_coherence ?? 0.5);
 
-            $this->spawnAction->handle([
+            $this->spawnAction->doExecute([
                 'universe_id' => $universe->id,
-                'name' => "Nhân Vật " . rand(100, 999),
+                'name' => "Nhân Vật " . mt_rand(100, 999),
                 'archetype' => $archetype,
                 'traits' => $this->generateRandomTraits(),
                 'biography' => "Cảm ứng thiên địa, xuất thế giữa lúc năng lượng dao động mạnh.",
@@ -150,7 +150,7 @@ class ActorEvolutionService
         }
 
         // 2. Initial Social Class (Start as Citizen or Serf)
-        $metrics['social_class'] = rand(1, 100) > 80 ? 'citizen' : 'serf';
+        $metrics['social_class'] = mt_rand(1, 100) > 80 ? 'citizen' : 'serf';
         
         return $metrics;
     }

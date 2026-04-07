@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import AgentNode from '@/components/ui/narrative/AgentNode';
 import api from '@/lib/api';
-import { Centrifuge } from 'centrifuge';
+import { createCentrifuge } from '@/lib/centrifugo';
 
 interface AgentConfig {
   id?: string;
@@ -49,9 +49,7 @@ export default function NarrativeStudio() {
     const interval = setInterval(fetchStatus, 30000); // Reduce polling to 30s only for health check
     
     // Khởi tạo Centrifugo WebSocket
-    const centrifuge = new Centrifuge('ws://127.0.0.1:8000/connection/websocket', {
-      // In production, we'd fetch a JWT token. Assuming insecure allows connection for dev:
-    });
+    const centrifuge = createCentrifuge();
 
     centrifuge.on('connected', (ctx) => {
       setLogs(prev => [...prev, `[Centrifugo] Connected to socket. Node: ${ctx.client}`]);

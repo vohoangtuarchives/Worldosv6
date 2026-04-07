@@ -19,7 +19,4 @@ def style_analyzer_node(state: NarrativeState):
     
     guidelines = style_map.get(genre, "Phong cách kể chuyện trung tính, rõ ràng và mạch lạc.")
     
-    return {
-        "style_guidelines": guidelines,
-        "current_agent": "Style_Analyzer"
-    }
+    return {**state, "style_guidelines": guidelines, "current_agent": "Style_Analyzer"}

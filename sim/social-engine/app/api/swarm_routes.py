@@ -1,3 +1,4 @@
+import uuid
 from fastapi import APIRouter, HTTPException, BackgroundTasks
 from pydantic import BaseModel
 from typing import List, Optional
@@ -32,7 +33,7 @@ async def spawn_swarm(context: WorldContext, background_tasks: BackgroundTasks):
         
         return SpawnResponse(
             success=True,
-            task_id="task_" + str(hash(context.event_trigger)),
+            task_id=str(uuid.uuid4()),
             message=f"Đã kích hoạt mô phỏng đám đông cho kỷ nguyên: {context.era} với {context.agents_count} Agents."
         )
     except Exception as e:

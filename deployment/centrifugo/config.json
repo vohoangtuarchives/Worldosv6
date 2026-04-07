@@ -1,13 +1,17 @@
 {
-    "api_key": "api_key",
-    "api_insecure": true,
-    "client_insecure": true,
-    "client_allowed_origins": ["*"],
-    "client_token_hmac_secret_key": "secret",
+    "api_key": "${CENTRIFUGO_HTTP_API_KEY}",
+    "api_insecure": false,
+    "client_insecure": false,
+    "client_allowed_origins": [
+        "http://localhost",
+        "http://localhost:80",
+        "http://localhost:3000"
+    ],
+    "client_token_hmac_secret_key": "${CENTRIFUGO_CLIENT_TOKEN_HMAC_SECRET_KEY}",
     "namespaces": [
         {
             "name": "public",
-            "publish": true,
+            "publish": false,
             "subscribe": true,
             "presence": true,
             "presence_stats": true,

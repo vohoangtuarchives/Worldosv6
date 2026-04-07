@@ -46,7 +46,9 @@ class WorldOsCacheManager:
                 
             print(f"DEBUG: Cache Hit for world {world_id} (Age: {current_tick - tick_produced} ticks)")
             return data.get("content")
-        except:
+        except Exception as e:
+            import logging
+            logging.warning(f"CacheManager: Failed to parse cached data: {e}")
             return None
 
     def set_cached_narrative(self, world_id: int, current_tick: int, prompt: str, content: str):

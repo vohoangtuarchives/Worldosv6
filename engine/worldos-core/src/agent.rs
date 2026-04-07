@@ -10,6 +10,25 @@ use serde::{Deserialize, Serialize};
 /// 11: Fear, 12: Vengeance, 13: Hope, 14: Grief, 15: Pride, 16: Shame (Emotional)
 pub type TraitVector = [f64; 17];
 
+// Trait index constants — canonical source of truth
+pub const TRAIT_DOMINANCE: usize = 0;
+pub const TRAIT_AMBITION: usize = 1;
+pub const TRAIT_COERCION: usize = 2;
+pub const TRAIT_LOYALTY: usize = 3;
+pub const TRAIT_EMPATHY: usize = 4;
+pub const TRAIT_SOLIDARITY: usize = 5;
+pub const TRAIT_CONFORMITY: usize = 6;
+pub const TRAIT_PRAGMATISM: usize = 7;
+pub const TRAIT_CURIOSITY: usize = 8;
+pub const TRAIT_DOGMATISM: usize = 9;
+pub const TRAIT_RISK_TOLERANCE: usize = 10;
+pub const TRAIT_FEAR: usize = 11;
+pub const TRAIT_VENGEANCE: usize = 12;
+pub const TRAIT_HOPE: usize = 13;
+pub const TRAIT_GRIEF: usize = 14;
+pub const TRAIT_PRIDE: usize = 15;
+pub const TRAIT_SHAME: usize = 16;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Archetype {
     Warlord,

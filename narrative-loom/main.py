@@ -114,13 +114,12 @@ async def weave_chronicles(req: ChronicleRequest):
         final_state = await loom_app.ainvoke(initial_state, config=run_config)
         final_prose = final_state.get("final_prose", "")
     except Exception as e:
-        import traceback
-        error_msg = f"LangGraph Error: {str(e)}\n{traceback.format_exc()}"
-        print(f"DEBUG ERROR: {error_msg}")
+        import logging
+        logging.exception("Narrative generation failed")
         return {
             "message": "Narrative Synthesis Failed.",
-            "error": str(e),
-            "final_prose": f"ERROR DURING GENERATION: {error_msg}"
+            "error": "Internal processing error. Check server logs for details.",
+            "final_prose": ""
         }
     
     # Khâu cuối cùng là lưu trả kết quả Final Prose về WorldOS Backend để update `content` của Chronicles, hoặc Push vào Kafka cho Frontend.

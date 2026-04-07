@@ -70,8 +70,8 @@ pub async fn run_advance(
         }
     };
 
-    let macro_idx = state.build_macro_index();
     for _ in 0..ticks {
+        let macro_idx = state.build_macro_index();
         let _events = tick_with_cascade(&mut state, &world, 4, Some(&macro_idx));
     }
 
@@ -482,9 +482,9 @@ pub fn run_process_actors_soa(
             }
 
             // Phase 13: Belief Evolution
-            let actor_traits = &traits_matrix[i * 17..(i + 1) * 17];
+            let belief_traits = &traits_matrix[i * 17..(i + 1) * 17];
             let _belief_count = belief_engine.update_alignments(&[], &[], 0).len(); // Dummy to get count if needed, but better use input
-            
+
             // We need the input alignments for this specific actor
             let belief_count_actual = if count > 0 { belief_alignments.len() / count } else { 0 };
             let actor_input_beliefs = if belief_count_actual > 0 {
@@ -493,17 +493,17 @@ pub fn run_process_actors_soa(
                 &[]
             };
 
-            let actor_new_beliefs = belief_engine.update_alignments(actor_traits, actor_input_beliefs, 1);
+            let actor_new_beliefs = belief_engine.update_alignments(belief_traits, actor_input_beliefs, 1);
 
             (
                 ActorSoaOutput {
                     actor_id: id,
-                    action_id: 0, 
+                    action_id: 0,
                     new_hunger: final_hunger,
                     new_energy: (e_val + e_delta + drift + energy_bonus).clamp(0.0, 1.0),
                     new_trauma: final_trauma,
                     resource_delta,
-                    new_traits: if traits_mutated { actor_traits.to_vec() } else { vec![] },
+                    new_traits: if traits_mutated { current_traits.to_vec() } else { vec![] },
                     new_faction_ids: vec![current_faction],
                     new_faction_loyalty: vec![current_loyalty],
                     new_belief_alignments: actor_new_beliefs,

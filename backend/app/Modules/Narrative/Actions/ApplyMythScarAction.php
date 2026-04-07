@@ -11,7 +11,7 @@ class ApplyMythScarAction
 {
     public function __construct(
         protected \App\Contracts\GraphProviderInterface $graphProvider,
-        protected \App\Modules\Simulation\Core\Runtime\RuleVM\RuleVmService $ruleVm,
+        protected \App\Contracts\RuleVmInterface $ruleVm,
         protected MythScarRepositoryInterface $mythScarRepository
     ) {}
 
@@ -33,7 +33,12 @@ class ApplyMythScarAction
         ];
 
         $dslFile = \resource_path('worldos_rules/legend/chronicles.dsl');
-        $dsl = @file_get_contents($dslFile) ?: '';
+        $dsl = '';
+        if (is_file($dslFile) && is_readable($dslFile)) {
+            $dsl = file_get_contents($dslFile) ?: '';
+        } else {
+            \Illuminate\Support\Facades\Log::warning("DSL file not found or unreadable: {$dslFile}");
+        }
         $result = $this->ruleVm->evaluateRawState($rawState, $dsl);
 
         if (!($result['ok'] ?? false)) {

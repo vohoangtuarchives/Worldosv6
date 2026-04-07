@@ -1,6 +1,6 @@
 'use client';
 
-import useSWR from 'swr';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/api';
 import { toast } from 'sonner';
 
@@ -22,19 +22,19 @@ export interface GroupedSettings {
     entropy: SimulationSetting[];
 }
 
-const fetcher = (url: string) => api.get(url).then((res) => res.data);
-
 export function useSimulationConfig() {
-    const { data: settings, error, mutate, isLoading } = useSWR<GroupedSettings>(
-        '/simulation/settings',
-        fetcher
-    );
+    const queryClient = useQueryClient();
+
+    const { data: settings, error, isLoading } = useQuery<GroupedSettings>({
+        queryKey: ['simulation', 'settings'],
+        queryFn: () => api.get('/simulation/settings').then((res) => res.data),
+    });
 
     const updateSettings = async (payload: SimulationSetting[]) => {
         try {
             await api.post('/simulation/settings/update', { settings: payload });
             toast.success('Simulation protocols updated.');
-            await mutate();
+            await queryClient.invalidateQueries({ queryKey: ['simulation', 'settings'] });
         } catch (err) {
             toast.error('Failed to update simulation protocols.');
             throw err;
@@ -45,12 +45,14 @@ export function useSimulationConfig() {
         try {
             await api.post('/simulation/settings/reset', { group });
             toast.success('Simulation protocols reset to defaults.');
-            await mutate();
+            await queryClient.invalidateQueries({ queryKey: ['simulation', 'settings'] });
         } catch (err) {
             toast.error('Failed to reset simulation protocols.');
             throw err;
         }
     };
+
+    const refresh = () => queryClient.invalidateQueries({ queryKey: ['simulation', 'settings'] });
 
     return {
         settings,
@@ -58,6 +60,6 @@ export function useSimulationConfig() {
         error,
         updateSettings,
         resetSettings,
-        refresh: mutate
+        refresh
     };
 }

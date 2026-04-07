@@ -65,7 +65,7 @@ final class MetaCosmicStage implements SimulationStageInterface
         protected \App\Modules\Intelligence\Services\ZoneFieldCalculator $zoneFieldCalculator,
         protected \App\Modules\Intelligence\Services\FieldDiffusionEngine $fieldDiffusionEngine,
         protected \App\Modules\Intelligence\Services\UniverseFitnessEvaluator $universeFitnessEvaluator,
-        protected \App\Modules\Intelligence\Services\UniverseMutationAction $universeMutationAction,
+        protected \App\Modules\Intelligence\Actions\UniverseMutationAction $universeMutationAction,
         protected \App\Modules\Intelligence\Actions\UniverseForkAction $universeForkAction,
         protected \App\Modules\Intelligence\Services\CivilizationCollapseEngine $civilizationCollapseEngine,
         protected \App\Modules\Intelligence\Services\GenomeTransitionService $genomeTransitionService,

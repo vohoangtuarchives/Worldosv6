@@ -2,8 +2,7 @@
 FROM php:8.4-fpm
 
 # Install dependencies, minimal for PHP
-RUN apt-get update && apt-get install -y \
-    git \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     unzip \
     libpq-dev \
     libzip-dev \
@@ -34,7 +33,6 @@ COPY backend/composer.json backend/composer.lock* /var/www/
 # Install dependencies (no dev, no scripts, no autoloader yet)
 # Skip audit blocks and increase timeout for slow networks
 RUN composer config process-timeout 600 \
-    && composer config audit.block-insecure false \
     && composer install --no-interaction --prefer-dist --no-dev --no-scripts --no-autoloader
 
 # Now copy the rest of the application code

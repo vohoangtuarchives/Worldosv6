@@ -146,7 +146,7 @@ class ProcessActorEnergyAction
                     );
                     if ($childCulture !== null) $childMetrics['culture'] = $childCulture;
                     
-                    $childEntity = $this->spawnActorAction->handle([
+                    $childEntity = $this->spawnActorAction->doExecute([
                         'universe_id' => $universeId,
                         'name' => $actor->name . ' Jr.',
                         'archetype' => $actor->archetype,
@@ -194,7 +194,7 @@ class ProcessActorEnergyAction
         
         for ($i = 0; $i < $count; $i++) {
             $zoneId = !empty($zones) ? ($i % count($zones)) : null;
-            $actor = $this->spawnActorAction->handle([
+            $actor = $this->spawnActorAction->doExecute([
                 'universe_id' => $universeId,
                 'name' => "Colonist " . (count($actors) + 1),
                 'archetype' => 'pioneer',

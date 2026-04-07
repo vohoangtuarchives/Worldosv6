@@ -78,29 +78,30 @@ impl BehaviorGraphEngine {
         let op = parts[1];
         let Ok(val) = parts[2].parse::<f32>() else { return false; };
 
+        use worldos_core::agent::*;
+
         let var_val = match var_name {
             "hunger" => metrics[0],
             "energy" => metrics[1],
             "fear" => metrics[2],
             "trauma" => metrics[3],
-            // 17D traits (referencing TraitVector constants index)
-            "dominance" => traits[0],
-            "ambition" => traits[1],
-            "sociability" => traits[2],
-            "loyalty" => traits[3],
-            "solidarity" => traits[4],
-            "empathy" => traits[5],
-            "pragmatism" => traits[6],
-            "curiosity" => traits[7],
-            "creativity" => traits[8],
-            "idealism" => traits[9],
-            "stability" => traits[10],
-            "neuroticism" => traits[11], // This was mapped to FEAR index 11 in PHP
-            "shame" => traits[12],
-            "guilt" => traits[13],
-            "honesty" => traits[14],
-            "spirituality" => traits[15],
-            "resilience" => traits[16],
+            // 17D traits — using canonical constants from worldos_core::agent
+            "dominance" => traits[TRAIT_DOMINANCE],
+            "ambition" => traits[TRAIT_AMBITION],
+            "coercion" => traits[TRAIT_COERCION],
+            "loyalty" => traits[TRAIT_LOYALTY],
+            "empathy" => traits[TRAIT_EMPATHY],
+            "solidarity" => traits[TRAIT_SOLIDARITY],
+            "conformity" => traits[TRAIT_CONFORMITY],
+            "pragmatism" => traits[TRAIT_PRAGMATISM],
+            "curiosity" => traits[TRAIT_CURIOSITY],
+            "dogmatism" => traits[TRAIT_DOGMATISM],
+            "risk_tolerance" => traits[TRAIT_RISK_TOLERANCE],
+            "vengeance" => traits[TRAIT_VENGEANCE],
+            "hope" => traits[TRAIT_HOPE],
+            "grief" => traits[TRAIT_GRIEF],
+            "pride" => traits[TRAIT_PRIDE],
+            "shame" => traits[TRAIT_SHAME],
             _ => 0.0,
         };
 

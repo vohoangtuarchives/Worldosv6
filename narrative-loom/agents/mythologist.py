@@ -40,7 +40,4 @@ async def mythologist_agent(state: NarrativeState, config: Dict[str, Any] = None
         "style": style
     })
     
-    # Lưu vào state để Director sử dụng
-    new_storyboard_context = state.get("storyboard", "") + f"\n\n[MYTHIC FRAGMENTS]:\n{result}"
-    
-    return {**state, "storyboard": new_storyboard_context, "current_agent": "mythologist"}
+    return {**state, "mythic_fragments": result, "current_agent": "mythologist"}

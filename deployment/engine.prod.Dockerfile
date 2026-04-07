@@ -33,6 +33,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY --from=builder /app/worldos-engine .
+RUN useradd -r -s /bin/false engine && chown engine:engine /app/worldos-engine
+USER engine
 EXPOSE 50051 50052
 ENV GRPC_ADDR=0.0.0.0:50051
 ENV HTTP_ADDR=0.0.0.0:50052

@@ -36,7 +36,12 @@ impl WasmRuleEvaluator {
                 _ => return 0.0,
             };
             let data = mem.data(&caller);
-            let path = std::str::from_utf8(&data[ptr as usize..(ptr + len) as usize]).unwrap_or("");
+            let start = ptr as usize;
+            let end = start.saturating_add(len as usize);
+            if end > data.len() {
+                return 0.0;
+            }
+            let path = std::str::from_utf8(&data[start..end]).unwrap_or("");
             let val = get_path(&caller.data().state, path);
             val.and_then(|v| v.as_f64()).unwrap_or(0.0)
         })?;
@@ -48,7 +53,12 @@ impl WasmRuleEvaluator {
                 _ => return,
             };
             let data = mem.data(&caller);
-            let name = std::str::from_utf8(&data[ptr as usize..(ptr + len) as usize]).unwrap_or("UNKNOWN").to_string();
+            let start = ptr as usize;
+            let end = start.saturating_add(len as usize);
+            if end > data.len() {
+                return;
+            }
+            let name = std::str::from_utf8(&data[start..end]).unwrap_or("UNKNOWN").to_string();
             caller.data_mut().outputs.push(RuleOutput::Event { name, payload: HashMap::new() });
         })?;
 

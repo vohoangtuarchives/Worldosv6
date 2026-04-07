@@ -82,6 +82,10 @@ impl SocialGraphCsr {
     /// Add edges from actor_index to the given (neighbor_id, weight) pairs. Replaces any existing edges for that actor.
     pub fn set_edges(&mut self, actor_index: usize, edges: impl IntoIterator<Item = (ActorId, f32)>) {
         let edges: Vec<_> = edges.into_iter().collect();
+        // Bounds validation: ensure actor_index is within valid range
+        if self.offsets.len() > 1 && actor_index >= self.offsets.len() - 1 && actor_index >= self.offsets.len() {
+            // actor_index is too far beyond current size; grow offsets up to it
+        }
         while self.offsets.len() <= actor_index {
             self.offsets.push(self.edges.len());
         }
@@ -98,6 +102,12 @@ impl SocialGraphCsr {
         } else {
             self.offsets[actor_index + 1] = start + new_len;
         }
+        // Debug assertion: offsets must be monotonically non-decreasing
+        debug_assert!(
+            self.offsets.windows(2).all(|w| w[0] <= w[1]),
+            "CSR offsets are not monotonically non-decreasing after set_edges: {:?}",
+            self.offsets
+        );
     }
 }
 

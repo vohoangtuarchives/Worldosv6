@@ -36,9 +36,9 @@ def create_app() -> FastAPI:
     # Allow CORS for observer portal if needed
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
-        allow_credentials=True,
-        allow_methods=["*"],
+        allow_origins=os.environ.get("CORS_ORIGINS", "http://localhost").split(","),
+        allow_credentials=False,
+        allow_methods=["GET", "POST"],
         allow_headers=["*"],
     )
 

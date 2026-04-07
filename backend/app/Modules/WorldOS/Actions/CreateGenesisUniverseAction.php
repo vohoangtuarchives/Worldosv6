@@ -2,12 +2,13 @@
 
 namespace App\Modules\WorldOS\Actions;
 
+use App\Contracts\ActionInterface;
 use App\Models\World;
 use App\Models\Universe;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
-class CreateGenesisUniverseAction
+class CreateGenesisUniverseAction implements ActionInterface
 {
     /**
      * Create a new World and its first Genesis Universe.
@@ -21,7 +22,12 @@ class CreateGenesisUniverseAction
      * }
      * @return Universe
      */
-    public function handle(array $data): Universe
+    public function execute(mixed ...$args): mixed
+    {
+        return $this->doExecute($args[0]);
+    }
+
+    public function doExecute(array $data): Universe
     {
         return DB::transaction(function () use ($data) {
             $name = $data['name'];

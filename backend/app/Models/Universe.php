@@ -17,10 +17,9 @@ class Universe extends Model
     use HasFactory;
     protected $fillable = [
         'world_id', 'multiverse_id', 'saga_id', 'parent_universe_id', 'forked_at_tick',
-        'seed', 'current_tick', 'level', 'epoch', 'status', 'state_vector', 'engine_manifest', 'name',
+        'current_tick', 'level', 'epoch', 'status', 'state_vector', 'name',
         'observation_load', 'last_observed_at', 'observer_bonus',
-        'structural_coherence', 'entropy', 'kernel_genome', 'fitness_score',
-        'axioms',
+        'structural_coherence', 'entropy', 'fitness_score',
     ];
 
     protected $casts = [

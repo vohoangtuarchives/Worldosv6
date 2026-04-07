@@ -65,7 +65,7 @@ async def historian_agent(state: NarrativeState, config: Dict[str, Any] = None) 
         if isinstance(raw_payload, str):
             try:
                 raw_payload = json.loads(raw_payload)
-            except:
+            except (json.JSONDecodeError, ValueError):
                 raw_payload = {}
         
         # The Historian is "blind" to math. Only extract high-level blurred intent.

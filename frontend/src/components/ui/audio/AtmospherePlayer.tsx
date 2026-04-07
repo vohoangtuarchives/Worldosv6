@@ -1,35 +1,37 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Centrifuge } from "centrifuge";
+import { createCentrifuge } from "@/lib/centrifugo";
 
 export default function AtmospherePlayer() {
   const [currentTrack, setCurrentTrack] = useState<string | null>(null);
   const [trackInfo, setTrackInfo] = useState<{ epochName: string; style: string } | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [volume] = useState(0.2); // Âm lượng chìm, nhẹ nhàng
-  
+
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const playPromiseRef = useRef<Promise<void> | null>(null);
+  const mountedRef = useRef(true);
 
-  function handleTrackChange(url: string, epochName: string, style: string) {
+  const handleTrackChange = useCallback((url: string, epochName: string, style: string) => {
     if (!audioRef.current || currentTrack === url) return;
 
     const crossfade = async () => {
         // Fade out
         let v = audioRef.current!.volume;
-        while (v > 0.05) {
+        while (v > 0.05 && mountedRef.current) {
             v -= 0.05;
             audioRef.current!.volume = Math.max(0, v);
             await new Promise(r => setTimeout(r, 100));
         }
+        if (!mountedRef.current) return;
         audioRef.current!.pause();
-        
+
         // Swap track
         audioRef.current!.src = url;
         audioRef.current!.load();
-        
+
         // Play and Fade in
         playPromiseRef.current = audioRef.current!.play();
         if (playPromiseRef.current !== undefined) {
@@ -38,12 +40,12 @@ export default function AtmospherePlayer() {
                 setIsPlaying(false);
             });
         }
-        
+
         setTrackInfo({ epochName, style });
         setCurrentTrack(url);
         setIsPlaying(true);
 
-        while (v < volume) {
+        while (v < volume && mountedRef.current) {
             v += 0.05;
             audioRef.current!.volume = Math.min(volume, v);
             await new Promise(r => setTimeout(r, 100));
@@ -51,9 +53,11 @@ export default function AtmospherePlayer() {
     };
 
     crossfade();
-  }
+  }, [currentTrack, volume]);
 
   useEffect(() => {
+    mountedRef.current = true;
+
     if (!audioRef.current) {
       audioRef.current = new Audio();
       audioRef.current.loop = true;
@@ -61,7 +65,7 @@ export default function AtmospherePlayer() {
     }
 
     // Khởi tạo Centrifugo WebSocket
-    const centrifuge = new Centrifuge('ws://127.0.0.1:8000/connection/websocket', {});
+    const centrifuge = createCentrifuge();
     centrifuge.connect();
 
     // Lắng nghe tín hiệu đổi nhạc qua Centrifugo (Kênh global_universe)
@@ -71,29 +75,31 @@ export default function AtmospherePlayer() {
       if (data && data.event === 'SoundtrackChanged') {
         const payload = data.payload;
         console.log("[ATMOSPHERE] Nhận sóng âm nhạc kỷ nguyên:", payload);
-        
+
         handleTrackChange(payload.url, payload.epochName, payload.style);
       }
     });
-    
+
     sub.subscribe();
 
     // Default Fallback Ambient nếu chưa có gì
     handleTrackChange(
-        "https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3?filename=cinematic-time-lapse-115672.mp3", 
-        "Genesis Era", 
+        "https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3?filename=cinematic-time-lapse-115672.mp3",
+        "Genesis Era",
         "default"
     );
 
     return () => {
+      mountedRef.current = false;
       sub.removeAllListeners();
       sub.unsubscribe();
+      centrifuge.disconnect();
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current.src = "";
       }
     };
-  }, []); // eslint-disable-line
+  }, [volume, handleTrackChange]);
 
   const togglePlay = () => {
     if (!audioRef.current) return;

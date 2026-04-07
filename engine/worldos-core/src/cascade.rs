@@ -130,19 +130,20 @@ pub fn tick_with_cascade(
                 state.zones[i].state.update_material_stress();
             }
             // Doc 21 §10: Event cascade — inject pressure into neighbors (no phase change; structural cascade still decides phase).
+            let zone_map: std::collections::HashMap<u32, usize> = state.zones.iter()
+                .enumerate()
+                .map(|(i, z)| (z.id, i))
+                .collect();
             let neighbor_ids: Vec<u32> = state.zones[i].neighbors.clone();
             for neighbor_id in neighbor_ids {
-                for k in 0..state.zones.len() {
-                    if state.zones[k].id == neighbor_id {
-                        state.zones[k].state.entropy =
-                            (state.zones[k].state.entropy + constants::EVENT_CASCADE_ENTROPY_NEIGHBOR).min(1.0);
-                        state.zones[k].state.trauma =
-                            (state.zones[k].state.trauma + constants::EVENT_CASCADE_TRAUMA_NEIGHBOR).min(1.0);
-                        state.zones[k].state.inequality =
-                            (state.zones[k].state.inequality + constants::EVENT_CASCADE_INEQUALITY_NEIGHBOR).min(1.0);
-                        state.zones[k].state.update_material_stress();
-                        break;
-                    }
+                if let Some(&k) = zone_map.get(&neighbor_id) {
+                    state.zones[k].state.entropy =
+                        (state.zones[k].state.entropy + constants::EVENT_CASCADE_ENTROPY_NEIGHBOR).min(1.0);
+                    state.zones[k].state.trauma =
+                        (state.zones[k].state.trauma + constants::EVENT_CASCADE_TRAUMA_NEIGHBOR).min(1.0);
+                    state.zones[k].state.inequality =
+                        (state.zones[k].state.inequality + constants::EVENT_CASCADE_INEQUALITY_NEIGHBOR).min(1.0);
+                    state.zones[k].state.update_material_stress();
                 }
             }
         } else if p < constants::COLLAPSE_THRESHOLD {

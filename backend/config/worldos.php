@@ -54,6 +54,14 @@ return [
 
     'emergence' => [
         'confidence_threshold' => (float) env('WORLDOS_EMERGENCE_CONFIDENCE_THRESHOLD', 0.7),
+        'scale' => (float) env('WORLDOS_EMERGENCE_SCALE', 0.02),
+        'max_probability' => (float) env('WORLDOS_EMERGENCE_MAX_PROBABILITY', 0.02),
+        'optimal_entropy_world_will' => (float) env('WORLDOS_EMERGENCE_OPTIMAL_ENTROPY_WORLD_WILL', 0.4),
+        'optimal_entropy_outer_god' => (float) env('WORLDOS_EMERGENCE_OPTIMAL_ENTROPY_OUTER_GOD', 0.85),
+        'ticks_per_year' => (int) env('WORLDOS_EMERGENCE_TICKS_PER_YEAR', 12),
+        'min_ticks_between_entities' => (int) env('WORLDOS_EMERGENCE_MIN_TICKS_BETWEEN', 200),
+        'max_global_entities' => (int) env('WORLDOS_EMERGENCE_MAX_GLOBAL_ENTITIES', 5),
+        'complexity_population_cap' => (int) env('WORLDOS_EMERGENCE_COMPLEXITY_POPULATION_CAP', 1_000_000),
     ],
 
     /*
@@ -589,25 +597,6 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Supreme Entity natural emergence (World Will / Outer God) — config-driven
-    |--------------------------------------------------------------------------
-    | scale: base probability scale. max_probability: safety cap. optimal_entropy_*: entropy factor peak.
-    | min_ticks_between_entities: cooldown; max_global_entities: cap active entities.
-    | complexity_population_cap: denominator for complexity = population / cap (clamped 0..1).
-    */
-    'emergence' => [
-        'scale' => (float) env('WORLDOS_EMERGENCE_SCALE', 0.02),
-        'max_probability' => (float) env('WORLDOS_EMERGENCE_MAX_PROBABILITY', 0.02),
-        'optimal_entropy_world_will' => (float) env('WORLDOS_EMERGENCE_OPTIMAL_ENTROPY_WORLD_WILL', 0.4),
-        'optimal_entropy_outer_god' => (float) env('WORLDOS_EMERGENCE_OPTIMAL_ENTROPY_OUTER_GOD', 0.85),
-        'ticks_per_year' => (int) env('WORLDOS_EMERGENCE_TICKS_PER_YEAR', 12),
-        'min_ticks_between_entities' => (int) env('WORLDOS_EMERGENCE_MIN_TICKS_BETWEEN', 200),
-        'max_global_entities' => (int) env('WORLDOS_EMERGENCE_MAX_GLOBAL_ENTITIES', 5),
-        'complexity_population_cap' => (int) env('WORLDOS_EMERGENCE_COMPLEXITY_POPULATION_CAP', 1_000_000),
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
     | Cosmic Phase (dominant axis + hysteresis)
     |--------------------------------------------------------------------------
     | Phase = argmax(faith, chaos, order, tech). Change only when
@@ -846,6 +835,19 @@ return [
     'institution' => [
         'decay_rate' => (float) env('WORLDOS_INSTITUTION_DECAY_RATE', 0.005),
         'run_decay_on_pulse' => (bool) env('WORLDOS_PULSE_RUN_INSTITUTION_DECAY', false),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Institutions — evolution thresholds and spawning config
+    |--------------------------------------------------------------------------
+    */
+    'institutions' => [
+        'stability_threshold' => (float) env('WORLDOS_INSTITUTION_STABILITY_THRESHOLD', 0.4),
+        'skip_probability' => (int) env('WORLDOS_INSTITUTION_SKIP_PROBABILITY', 3),
+        'stress_threshold' => (float) env('WORLDOS_INSTITUTION_STRESS_THRESHOLD', 0.8),
+        'org_capacity_threshold' => (int) env('WORLDOS_INSTITUTION_ORG_CAPACITY', 60),
+        'max_actors' => (int) env('WORLDOS_INSTITUTION_MAX_ACTORS', 15),
     ],
 
     /*

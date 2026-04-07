@@ -26,7 +26,7 @@ class SpawnFromEventsAction
         foreach ($events as $event) {
             $payload = $event->payload;
             if (isset($payload['winner'])) {
-                $this->spawnActorAction->handle([
+                $this->spawnActorAction->doExecute([
                     'universe_id' => $universe->id,
                     'name' => $payload['winner']['name'] ?? 'Vị Anh Hùng Vô Danh',
                     'archetype' => $payload['winner']['archetype'] ?? 'Kẻ Lang Thang',
@@ -50,7 +50,7 @@ class SpawnFromEventsAction
         $axiom = $universe->world?->axiom ?? [];
         $archetype = $this->archetypeResolver->resolve($axiom, $universe->entropy ?? 0.5, $universe->structural_coherence ?? 0.5);
 
-        $this->spawnActorAction->handle([
+        $this->spawnActorAction->doExecute([
             'universe_id' => $universe->id,
             'name' => "Nhân Vật " . rand(100, 999),
             'archetype' => $archetype,

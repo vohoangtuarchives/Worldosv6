@@ -114,7 +114,7 @@ class DetectEmergentCivilizationsAction
         }
 
         // None found, spawn new
-        $this->spawnAction->handle($universe, $primaryZone, $tick, 'CIVILIZATION');
+        $this->spawnAction->doExecute($universe, $primaryZone, $tick, 'CIVILIZATION');
     }
 }
 

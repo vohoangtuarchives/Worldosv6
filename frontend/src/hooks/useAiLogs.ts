@@ -1,6 +1,6 @@
 'use client';
 
-import useSWR from 'swr';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import api from '@/lib/api';
 
@@ -41,8 +41,6 @@ export interface AiStats {
     models: { name: string; count: number }[];
 }
 
-const fetcher = (url: string) => api.get(url).then((res) => res.data);
-
 export function useAiLogs(
     filters: {
         feature?: string;
@@ -54,14 +52,16 @@ export function useAiLogs(
         limit?: number;
     } = {}
 ) {
-    const { 
-        feature, 
-        driver, 
-        model, 
-        status, 
+    const queryClient = useQueryClient();
+
+    const {
+        feature,
+        driver,
+        model,
+        status,
         search,
-        page = 1, 
-        limit = 15 
+        page = 1,
+        limit = 15
     } = filters;
 
     const params = new URLSearchParams();
@@ -74,19 +74,21 @@ export function useAiLogs(
     params.append('page', page.toString());
     params.append('limit', limit.toString());
 
-    const { data, error, isLoading, mutate } = useSWR<PaginatedAiLogs>(
-        `/ai-logs?${params.toString()}`,
-        fetcher,
-        {
-            refreshInterval: 5000,
-            revalidateOnFocus: true,
-        }
-    );
+    const queryKey = ['ai-logs', feature, driver, model, status, search, page, limit];
+
+    const { data, error, isLoading } = useQuery<PaginatedAiLogs>({
+        queryKey,
+        queryFn: () => api.get(`/ai-logs?${params.toString()}`).then((res) => res.data),
+        refetchInterval: 5000,
+        refetchOnWindowFocus: true,
+    });
 
     const clearLogs = async () => {
         await api.delete('/ai-logs/clear');
-        mutate();
+        await queryClient.invalidateQueries({ queryKey: ['ai-logs'] });
     };
+
+    const mutate = () => queryClient.invalidateQueries({ queryKey: ['ai-logs'] });
 
     return {
         logs: data?.data || [],
@@ -105,14 +107,16 @@ export function useAiLogs(
 }
 
 export function useAiStats() {
-    const { data, error, isLoading, mutate } = useSWR<AiStats>(
-        '/ai-logs/stats',
-        fetcher,
-        {
-            refreshInterval: 5000,
-            revalidateOnFocus: true,
-        }
-    );
+    const queryClient = useQueryClient();
+
+    const { data, error, isLoading } = useQuery<AiStats>({
+        queryKey: ['ai-logs', 'stats'],
+        queryFn: () => api.get('/ai-logs/stats').then((res) => res.data),
+        refetchInterval: 5000,
+        refetchOnWindowFocus: true,
+    });
+
+    const mutate = () => queryClient.invalidateQueries({ queryKey: ['ai-logs', 'stats'] });
 
     return {
         stats: data,

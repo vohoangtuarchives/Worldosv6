@@ -2,16 +2,22 @@
 
 namespace App\Modules\Intelligence\Actions;
 
+use App\Contracts\ActionInterface;
 use App\Modules\Intelligence\Contracts\ActorRepositoryInterface;
 use App\Modules\Intelligence\Entities\ActorEntity;
 
-class SpawnActorAction
+class SpawnActorAction implements ActionInterface
 {
     public function __construct(
         private ActorRepositoryInterface $actorRepository
     ) {}
 
-    public function handle(array $data): ActorEntity
+    public function execute(mixed ...$args): mixed
+    {
+        return $this->doExecute($args[0]);
+    }
+
+    public function doExecute(array $data): ActorEntity
     {
         $metrics = $data['metrics'] ?? ['influence' => 0.5];
         if (array_key_exists('spawned_at_tick', $data)) {

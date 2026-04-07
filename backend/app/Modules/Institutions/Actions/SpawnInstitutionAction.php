@@ -2,17 +2,23 @@
 
 namespace App\Modules\Institutions\Actions;
 
+use App\Contracts\ActionInterface;
 use App\Models\Universe;
 use App\Modules\Institutions\Contracts\InstitutionalRepositoryInterface;
 use App\Modules\Institutions\Entities\InstitutionalEntity;
 
-class SpawnInstitutionAction
+class SpawnInstitutionAction implements ActionInterface
 {
     public function __construct(
         private InstitutionalRepositoryInterface $institutionalRepository
     ) {}
 
-    public function handle(Universe $universe, int $zoneId, int $tick, string $type, string $era = 'genesis'): InstitutionalEntity
+    public function execute(mixed ...$args): mixed
+    {
+        return $this->doExecute($args[0], $args[1], $args[2], $args[3], $args[4] ?? 'genesis');
+    }
+
+    public function doExecute(Universe $universe, int $zoneId, int $tick, string $type, string $era = 'genesis'): InstitutionalEntity
     {
         $name = $this->generateName($type, $era);
 

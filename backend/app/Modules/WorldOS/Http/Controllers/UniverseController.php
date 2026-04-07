@@ -31,6 +31,8 @@ use App\Modules\Intelligence\Actions\GetUniverseMaterialsAction;
 use App\Modules\Simulation\Services\Civilization\CultureIdentityProjector;
 use App\Modules\Simulation\Services\Civilization\CivilizationDossierProjector;
 use App\Modules\Simulation\Services\Civilization\MaterialIdentityProjector;
+use App\Modules\WorldOS\Services\UniverseMetricsService;
+use App\Modules\WorldOS\Services\UniverseDossierService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -67,99 +69,14 @@ class UniverseController extends Controller
         return (new UniverseDetailResource($universe))->response();
     }
 
-    public function metrics(string $id): JsonResponse
+    public function metrics(string $id, UniverseMetricsService $metricsService): JsonResponse
     {
-        $universe = Universe::with('latestSnapshot')->withCount('childUniverses')->findOrFail((int) $id);
-        $latestSnapshot = $universe->latestSnapshot;
-        $snapshotMetrics = WorldOsResourceSupport::toMetricArray($latestSnapshot?->metrics);
-        $stateVector = is_array($latestSnapshot?->state_vector) ? $latestSnapshot->state_vector : [];
-        $cultureIdentity = app(CultureIdentityProjector::class)->projectFromState($stateVector);
-
-        return (new UniverseMetricsResource([
-            'universe_id' => $universe->id,
-            'status' => WorldOsResourceSupport::normalizeUniverseStatus($universe->status),
-            'current_tick' => (int) ($universe->current_tick ?? 0),
-            'stability' => WorldOsResourceSupport::stabilityForUniverse($universe, $universe->latestSnapshot),
-            'entropy' => (float) ($universe->entropy ?? $universe->latestSnapshot?->entropy ?? 0),
-            'snapshot_count' => UniverseSnapshot::query()->where('universe_id', $universe->id)->count(),
-            'branch_count' => (int) ($universe->child_universes_count ?? 0),
-            'actor_count' => Actor::query()->where('universe_id', $universe->id)->count(),
-            'chronicle_count' => Chronicle::query()->where('universe_id', $universe->id)->count(),
-            'anomaly_count' => MythScar::query()->where('universe_id', $universe->id)->whereNull('resolved_at_tick')->count(),
-            'myth_count' => Myth::query()->where('universe_id', $universe->id)->count(),
-            'religion_count' => Religion::query()->where('universe_id', $universe->id)->count(),
-            'material_identity' => $snapshotMetrics['material_identity'] ?? [],
-            'culture_identity' => $cultureIdentity,
-        ]))->response();
+        return (new UniverseMetricsResource($metricsService->getMetrics((int) $id)))->response();
     }
 
-    public function dossier(string $id): JsonResponse
+    public function dossier(string $id, UniverseDossierService $dossierService): JsonResponse
     {
-        $universe = Universe::with('latestSnapshot')->findOrFail((int) $id);
-        $snapshot = $universe->latestSnapshot;
-        $stateVector = is_array($snapshot?->state_vector) ? $snapshot->state_vector : [];
-        $metrics = WorldOsResourceSupport::toMetricArray($snapshot?->metrics);
-
-        $materialIdentity = $metrics['material_identity'] ?? app(MaterialIdentityProjector::class)->projectFromState($stateVector);
-        $cultureIdentity = app(CultureIdentityProjector::class)->projectFromState($stateVector);
-        $historyEngine = app(HistoryEngine::class);
-        $historySpine = $historyEngine->getHistoricalSpine($universe);
-        $eraSummaries = $historyEngine->getEraSummaries($universe);
-        $dominantReligion = Religion::query()
-            ->where('universe_id', $universe->id)
-            ->orderByDesc('followers')
-            ->first();
-        $civilizationProfile = app(CivilizationDossierProjector::class)->project(
-            $universe,
-            $stateVector,
-            $materialIdentity,
-            $cultureIdentity,
-            $dominantReligion,
-        );
-
-        return (new UniverseDossierResource([
-            'universe_id' => $universe->id,
-            'name' => $universe->name ?: "Universe {$universe->id}",
-            'tick' => (int) ($snapshot?->tick ?? $universe->current_tick ?? 0),
-            'status' => WorldOsResourceSupport::normalizeUniverseStatus($universe->status),
-            'material_identity' => $materialIdentity,
-            'culture_identity' => $cultureIdentity,
-            'civilization_profile' => $civilizationProfile,
-            'civilization' => [
-                'settlement_count' => count((array) data_get($stateVector, 'civilization.settlements', [])),
-                'knowledge_node_count' => count((array) data_get($stateVector, 'civilization.knowledge_graph.nodes', [])),
-                'discovery_fitness' => (float) data_get($stateVector, 'civilization.discovery.fitness', 0),
-            ],
-            'myths' => [
-                'count' => Myth::query()->where('universe_id', $universe->id)->count(),
-                'top_types' => Myth::query()
-                    ->where('universe_id', $universe->id)
-                    ->selectRaw('myth_type, COUNT(*) as total')
-                    ->groupBy('myth_type')
-                    ->orderByDesc('total')
-                    ->limit(5)
-                    ->get()
-                    ->map(fn ($myth) => ['type' => $myth->myth_type, 'count' => (int) $myth->total])
-                    ->values()
-                    ->all(),
-            ],
-            'religions' => [
-                'count' => Religion::query()->where('universe_id', $universe->id)->count(),
-                'dominant' => $dominantReligion ? [
-                    'id' => $dominantReligion->id,
-                    'name' => $dominantReligion->name,
-                    'followers' => (int) $dominantReligion->followers,
-                    'spread_rate' => (float) $dominantReligion->spread_rate,
-                ] : null,
-            ],
-            'history' => [
-                'material_transition_count' => Chronicle::query()->where('universe_id', $universe->id)->where('type', 'material_transition')->count(),
-                'narrative_tick_count' => Chronicle::query()->where('universe_id', $universe->id)->where('type', 'narrative_tick')->count(),
-                'total_chronicle_count' => Chronicle::query()->where('universe_id', $universe->id)->count(),
-                'spine' => $historySpine,
-                'eras' => $eraSummaries,
-            ],
-        ]))->response();
+        return (new UniverseDossierResource($dossierService->getDossier((int) $id)))->response();
     }
 
     public function toggleStatus(string $id): JsonResponse
@@ -271,10 +188,14 @@ class UniverseController extends Controller
         ]))->response();
     }
 
-    public function fork(string $id, ForkUniverseAction $action): JsonResponse
+    public function fork(string $id, ForkUniverseAction $action, Request $request): JsonResponse
     {
-        $tick = (int) request()->input('tick', 0);
-        $name = request()->input('name');
+        $validated = $request->validate([
+            'tick' => 'nullable|integer|min:0',
+        ]);
+
+        $tick = (int) ($validated['tick'] ?? 0);
+        $name = $request->input('name');
         $universe = Universe::findOrFail((int) $id);
 
         $child = $action->handle($universe, $tick, $name);
@@ -300,10 +221,14 @@ class UniverseController extends Controller
         ]);
     }
 
-    public function advance(AdvanceSimulationAction $action): JsonResponse
+    public function advance(AdvanceSimulationAction $action, Request $request): JsonResponse
     {
-        $universeId = (int) request()->input('universe_id', 0);
-        $ticks = (int) request()->input('ticks', 1);
+        $validated = $request->validate([
+            'ticks_per_universe' => 'nullable|integer|min:1|max:1000',
+        ]);
+
+        $universeId = (int) $request->input('universe_id', 0);
+        $ticks = (int) $request->input('ticks', 1);
 
         return response()->json($action->execute($universeId, $ticks));
     }
@@ -332,7 +257,7 @@ class UniverseController extends Controller
             'initial_state' => ['nullable', 'array'],
         ]);
 
-        $universe = $action->handle($validated);
+        $universe = $action->doExecute($validated);
 
         return response()->json([
             'ok' => true,

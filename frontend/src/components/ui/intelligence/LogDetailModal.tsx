@@ -5,28 +5,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Command, Code2, AlertTriangle, Clock, Zap } from 'lucide-react';
 
 import { AiLog, JsonValue } from '@/hooks/useAiLogs';
+import { resolveLogModel } from '@/lib/log-utils';
 
 interface LogDetailModalProps {
     log: AiLog | null;
     open: boolean;
     onClose: () => void;
-}
-
-function extractString(value: unknown): string | null {
-    return typeof value === 'string' && value.trim() ? value.trim() : null;
-}
-
-function resolveLogModel(log: AiLog): string {
-    const input = log.input && typeof log.input === 'object' && !Array.isArray(log.input)
-        ? log.input as Record<string, unknown>
-        : null;
-
-    return (
-        extractString(log.model) ??
-        extractString(input?.model_name) ??
-        extractString(input?.model) ??
-        'unknown-model'
-    );
 }
 
 function formatJson(data: JsonValue): string {

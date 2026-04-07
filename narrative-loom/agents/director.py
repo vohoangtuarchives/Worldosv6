@@ -51,7 +51,7 @@ async def director_agent(state: NarrativeState, config: Dict[str, Any] = None) -
         if isinstance(raw, str):
             import json
             try: raw = json.loads(raw)
-            except: raw = {}
+            except (json.JSONDecodeError, ValueError): raw = {}
         if isinstance(raw, dict) and "context" in raw:
             vm = raw["context"].get("vm_state", {})
             causal = vm.get("causal_integrity")

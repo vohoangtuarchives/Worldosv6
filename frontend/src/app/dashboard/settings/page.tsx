@@ -126,6 +126,9 @@ export default function AiSettingsPage() {
                 decision: asFeatureProfile(recordMap.get('features.decision'), 'pool'),
             });
             setDiagnosticsDriver(asString(recordMap.get('default'), 'pool'));
+        } catch (error) {
+            console.error('Failed to load AI settings:', error);
+            toast.error('Failed to load AI settings.');
         } finally {
             setIsLoading(false);
         }
@@ -169,6 +172,9 @@ export default function AiSettingsPage() {
             await api.post('/ai-settings/sync');
             toast.success('AI pool routing updated.');
             await loadSettings();
+        } catch (error) {
+            console.error('Failed to save AI settings:', error);
+            toast.error('Failed to save AI settings.');
         } finally {
             setIsSaving(false);
         }
@@ -181,6 +187,9 @@ export default function AiSettingsPage() {
             await api.post('/ai-settings/import');
             toast.success('Imported pool-first defaults from config/ai.php.');
             await loadSettings();
+        } catch (error) {
+            console.error('Failed to import AI settings:', error);
+            toast.error('Failed to import AI settings.');
         } finally {
             setIsSaving(false);
         }

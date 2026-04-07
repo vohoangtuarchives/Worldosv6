@@ -16,27 +16,9 @@ import {
 import { useAiLogs, useAiStats, AiLog } from '@/hooks/useAiLogs';
 import { LogStatusBadge } from '@/components/ui/intelligence/LogStatusBadge';
 import LogDetailModal from '@/components/ui/intelligence/LogDetailModal';
+import { resolveLogModel } from '@/lib/log-utils';
 import { toast } from 'sonner';
 import api from '@/lib/api';
-
-function extractString(value: unknown): string | null {
-    return typeof value === 'string' && value.trim() ? value.trim() : null;
-}
-
-function getLogInputRecord(input: AiLog['input']): Record<string, unknown> | null {
-    return input && typeof input === 'object' && !Array.isArray(input) ? input as Record<string, unknown> : null;
-}
-
-function resolveLogModel(log: AiLog): string {
-    const input = getLogInputRecord(log.input);
-
-    return (
-        extractString(log.model) ??
-        extractString(input?.model_name) ??
-        extractString(input?.model) ??
-        'unknown-model'
-    );
-}
 
 export default function NarrativeLoomMonitor() {
     const [page, setPage] = useState(1);
@@ -123,7 +105,7 @@ export default function NarrativeLoomMonitor() {
         <div className="max-w-7xl mx-auto pb-20">
             <style jsx global>{`
                 @keyframes marquee {
-                    0% { transform: translateX(10); }
+                    0% { transform: translateX(0); }
                     100% { transform: translateX(-50%); }
                 }
                 .animate-marquee {

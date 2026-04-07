@@ -3,3 +3,8 @@ node_modules/
 out/
 .env.local
 .env.*.local
+.git/
+*.md
+.vscode/
+.idea/
+Dockerfile

@@ -5,15 +5,23 @@ import json
 from state import NarrativeState
 from typing import Dict, Any
 
+_redis_pool = None
+
+def _get_redis():
+    global _redis_pool
+    if _redis_pool is None:
+        redis_url = os.environ.get("REDIS_URL", "redis://redis:6379/0")
+        _redis_pool = redis.ConnectionPool.from_url(redis_url, decode_responses=True)
+    return redis.Redis(connection_pool=_redis_pool)
+
 def universe_bridge_node(state: NarrativeState) -> NarrativeState:
     """
     Universe Bridge Node: Lấy các tin tức/sự kiện từ các vũ trụ song song khác.
     Dùng để tạo hiệu ứng 'Deja Vu' hoặc 'Cross-Pollination' giữa các thế giới.
     """
     print("--- RUNNING NODE: UNIVERSE BRIDGE (CROSS-POLLINATION) ---")
-    
-    redis_url = os.getenv("REDIS_URL", "redis://redis:6379/0")
-    r = redis.from_url(redis_url, decode_responses=True)
+
+    r = _get_redis()
     
     whisper_key = "worldos:multiverse:whispers"
     current_world_id = state.get("world_id", 0)
@@ -29,7 +37,7 @@ def universe_bridge_node(state: NarrativeState) -> NarrativeState:
                 w_data = json.loads(w_raw)
                 if w_data.get("world_id") != current_world_id:
                     foreign_whispers.append(w_data.get("summary", ""))
-            except:
+            except (json.JSONDecodeError, ValueError, KeyError):
                 continue
                 
         # 3. Chọn ngẫu nhiên 2-3 whispers để đưa vào state
@@ -48,8 +56,7 @@ def universe_bridge_node(state: NarrativeState) -> NarrativeState:
 
 def record_universe_whisper(state: NarrativeState):
     """Hàm helper để ghi lại 'tiếng vọng' của vũ trụ này cho các thế giới khác"""
-    redis_url = os.getenv("REDIS_URL", "redis://redis:6379/0")
-    r = redis.from_url(redis_url, decode_responses=True)
+    r = _get_redis()
     
     whisper_key = "worldos:multiverse:whispers"
     

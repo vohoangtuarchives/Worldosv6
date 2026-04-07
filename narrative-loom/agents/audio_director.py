@@ -1,4 +1,5 @@
 import asyncio
+import os
 import random
 
 class AudioDirectorAgent:
@@ -22,7 +23,9 @@ class AudioDirectorAgent:
         Chỗ này sau này có thể là hàm gọi API tới HuggingFace AudioGen / Suno.
         """
         print(f"[AudioDirector] Phân tích Motif Kỷ Nguyên '{epoch_name}'...")
-        await asyncio.sleep(1.5) # Giả lập delay mạng/xử lý AI
+        delay = float(os.environ.get("AUDIO_PROCESSING_DELAY", "0"))
+        if delay > 0:
+            await asyncio.sleep(delay)
 
         core_theme_lower = core_theme.lower()
         selected_style = "default"

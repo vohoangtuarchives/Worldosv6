@@ -46,7 +46,7 @@ async def psychologist_agent(state: NarrativeState, config: Dict[str, Any] = Non
             try:
                 import json
                 raw = json.loads(raw)
-            except:
+            except (json.JSONDecodeError, ValueError):
                 raw = {}
                 
         if isinstance(raw, dict) and "context" in raw:
@@ -81,11 +81,16 @@ async def psychologist_agent(state: NarrativeState, config: Dict[str, Any] = Non
     )
     chain = psychologist_prompt | llm | StrOutputParser()
     
-    result = await chain.ainvoke({
-        "outline": outline,
-        "profiles": str(fetched_profiles)
-    })
-    
+    try:
+        result = await chain.ainvoke({
+            "outline": outline,
+            "profiles": str(fetched_profiles)
+        })
+    except Exception as e:
+        import logging
+        logging.error(f"Psychologist LLM call failed: {e}")
+        return {**state, "current_agent": "psychologist"}
+
     return {
         **state,
         "psychological_profiles": {"analysis": result},

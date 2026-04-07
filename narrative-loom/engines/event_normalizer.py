@@ -16,7 +16,7 @@ class EventNormalizer:
             import json
             try:
                 payload = json.loads(payload)
-            except:
+            except (json.JSONDecodeError, ValueError):
                 payload = {}
                 
         actors = []

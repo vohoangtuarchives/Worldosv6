@@ -18,40 +18,55 @@ interface ConfigCardProps {
     accentColor?: string;
 }
 
-const ConfigCard = ({ title, description, icon, children, onReset, accentColor = "cyan" }: ConfigCardProps) => (
-    <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="group relative overflow-hidden rounded-3xl border border-slate-800/50 bg-[#111116] p-6 hover:border-slate-700/50 transition-all duration-500 shadow-2xl shadow-black/40"
-    >
-        <div className={`absolute top-0 left-0 w-1 h-full bg-${accentColor}-500/50 opacity-0 group-hover:opacity-100 transition-opacity`} />
-        
-        <div className="flex items-start justify-between mb-6">
-            <div className="flex items-center gap-4">
-                <div className={`p-3 rounded-2xl bg-${accentColor}-500/10 text-${accentColor}-400 ring-1 ring-${accentColor}-500/20`}>
-                    {icon}
-                </div>
-                <div>
-                    <h3 className="text-lg font-black text-white tracking-tight">{title}</h3>
-                    <p className="text-xs text-slate-500 font-medium mt-0.5">{description}</p>
-                </div>
-            </div>
-            {onReset && (
-                <button 
-                    onClick={onReset}
-                    className="p-2 rounded-xl hover:bg-white/5 text-slate-600 hover:text-white transition-colors"
-                    title="Reset to default"
-                >
-                    <RotateCcw size={16} />
-                </button>
-            )}
-        </div>
+const accentColorMap: Record<string, { bg: string; text: string; ring: string; border: string }> = {
+    amber: { bg: 'bg-amber-500/10', text: 'text-amber-400', ring: 'ring-amber-500/20', border: 'bg-amber-500/50' },
+    emerald: { bg: 'bg-emerald-500/10', text: 'text-emerald-400', ring: 'ring-emerald-500/20', border: 'bg-emerald-500/50' },
+    cyan: { bg: 'bg-cyan-500/10', text: 'text-cyan-400', ring: 'ring-cyan-500/20', border: 'bg-cyan-500/50' },
+    violet: { bg: 'bg-violet-500/10', text: 'text-violet-400', ring: 'ring-violet-500/20', border: 'bg-violet-500/50' },
+    rose: { bg: 'bg-rose-500/10', text: 'text-rose-400', ring: 'ring-rose-500/20', border: 'bg-rose-500/50' },
+    indigo: { bg: 'bg-indigo-500/10', text: 'text-indigo-400', ring: 'ring-indigo-500/20', border: 'bg-indigo-500/50' },
+    orange: { bg: 'bg-orange-500/10', text: 'text-orange-400', ring: 'ring-orange-500/20', border: 'bg-orange-500/50' },
+    slate: { bg: 'bg-slate-500/10', text: 'text-slate-400', ring: 'ring-slate-500/20', border: 'bg-slate-500/50' },
+};
 
-        <div className="space-y-5">
-            {children}
-        </div>
-    </motion.div>
-);
+const ConfigCard = ({ title, description, icon, children, onReset, accentColor = "cyan" }: ConfigCardProps) => {
+    const colors = accentColorMap[accentColor] ?? accentColorMap.cyan;
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="group relative overflow-hidden rounded-3xl border border-slate-800/50 bg-[#111116] p-6 hover:border-slate-700/50 transition-all duration-500 shadow-2xl shadow-black/40"
+        >
+            <div className={`absolute top-0 left-0 w-1 h-full ${colors.border} opacity-0 group-hover:opacity-100 transition-opacity`} />
+
+            <div className="flex items-start justify-between mb-6">
+                <div className="flex items-center gap-4">
+                    <div className={`p-3 rounded-2xl ${colors.bg} ${colors.text} ring-1 ${colors.ring}`}>
+                        {icon}
+                    </div>
+                    <div>
+                        <h3 className="text-lg font-black text-white tracking-tight">{title}</h3>
+                        <p className="text-xs text-slate-500 font-medium mt-0.5">{description}</p>
+                    </div>
+                </div>
+                {onReset && (
+                    <button
+                        onClick={onReset}
+                        className="p-2 rounded-xl hover:bg-white/5 text-slate-600 hover:text-white transition-colors"
+                        title="Reset to default"
+                    >
+                        <RotateCcw size={16} />
+                    </button>
+                )}
+            </div>
+
+            <div className="space-y-5">
+                {children}
+            </div>
+        </motion.div>
+    );
+};
 
 const SettingRow = ({ label, children, detail }: { label: string; children: React.ReactNode; detail?: string }) => (
     <div className="space-y-2">

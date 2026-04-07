@@ -26,7 +26,7 @@ class InstitutionEvolutionService
         $tick = (int) $snapshot->tick;
         $entities = $this->institutionalRepository->findActiveByUniverse($universe->id);
         $zones = ($universe->state_vector ?? [])['zones'] ?? [];
-        $instability = (float) ($snapshot->stability_index ?? 1.0);
+        $stability = (float) ($snapshot->stability_index ?? 1.0);
         $era = $universe->world->civilization_era ?? 'genesis';
 
         // 1. Evolution of existing entities
@@ -47,26 +47,26 @@ class InstitutionEvolutionService
         $this->handlePotentialSpawning($universe, $tick, $zones, $era);
 
         // Crisis management
-        if ($instability < 0.4) {
+        if ($stability < config('worldos.institutions.stability_threshold', 0.4)) {
             $this->manageInstitutionalCrisis($universe, $entities, $tick, $era);
         }
     }
 
     protected function handlePotentialSpawning(Universe $universe, int $tick, array $zones, string $era): void
     {
-        if (mt_rand(0, 10) > 3) return;
+        if (mt_rand(0, 10) > config('worldos.institutions.skip_probability', 3)) return;
 
         foreach ($zones as $zone) {
             $stress = (float) ($zone['state']['material_stress'] ?? ($zone['material_stress'] ?? 0));
             $culture = $zone['culture'] ?? [];
-            
-            if ($stress > 0.8 && mt_rand(0, 5) === 0) {
-                $this->spawnAction->handle($universe, $zone['id'], $tick, 'rebel', $era);
+
+            if ($stress > config('worldos.institutions.stress_threshold', 0.8) && mt_rand(0, 5) === 0) {
+                $this->spawnAction->doExecute($universe, $zone['id'], $tick, 'rebel', $era);
                 return;
             }
 
             if (($culture['myth'] ?? 0) > 0.85 && mt_rand(0, 5) === 0) {
-                $this->spawnAction->handle($universe, $zone['id'], $tick, 'cult', $era);
+                $this->spawnAction->doExecute($universe, $zone['id'], $tick, 'cult', $era);
                 return;
             }
         }
@@ -74,10 +74,10 @@ class InstitutionEvolutionService
 
     protected function manageInstitutionalCrisis(Universe $universe, array $entities, int $tick, string $era): void
     {
-        if ($this->actorRepository->getActiveCount($universe->id) >= 15) return;
+        if ($this->actorRepository->getActiveCount($universe->id) >= config('worldos.institutions.max_actors', 15)) return;
 
         foreach ($entities as $entity) {
-            if ($entity->orgCapacity > 60 && mt_rand(0, 5) === 0) {
+            if ($entity->orgCapacity > config('worldos.institutions.org_capacity_threshold', 60) && mt_rand(0, 5) === 0) {
                 $this->spawnInstitutionalLeader($universe, $entity, $tick, $era);
             }
         }
@@ -85,7 +85,7 @@ class InstitutionEvolutionService
 
     private function spawnInstitutionalLeader(Universe $universe, $entity, int $tick, string $era): void
     {
-        $this->spawnActorAction->handle([
+        $this->spawnActorAction->doExecute([
             'universe_id' => $universe->id,
             'name' => 'Lãnh đạo của ' . $entity->name,
             'archetype' => 'Leader',
@@ -95,4 +95,3 @@ class InstitutionEvolutionService
         ]);
     }
 }
-

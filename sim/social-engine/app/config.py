@@ -21,8 +21,8 @@ class Config:
     """WorldOS Social Engine configuration class"""
     
     # Core configuration
-    SECRET_KEY = os.environ.get('SECRET_KEY', 'default-worldos-secret')
-    DEBUG = os.environ.get('DEBUG', 'True').lower() == 'true'
+    SECRET_KEY = os.environ.get('SECRET_KEY', os.urandom(32).hex())
+    DEBUG = os.environ.get('DEBUG', 'false').lower() == 'true'
     
     # JSON配置 - 禁用ASCII转义，让中文直接显示（而不是 \uXXXX 格式）
     JSON_AS_ASCII = False
