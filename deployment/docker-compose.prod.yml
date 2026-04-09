@@ -74,11 +74,11 @@ services:
     volumes:
       - worldos_prod_neo4jdata:/data
     healthcheck:
-      test: [ "CMD-SHELL", "curl -sf http://localhost:7474 || exit 1" ]
-      interval: 10s
-      timeout: 5s
+      test: [ "CMD-SHELL", "wget --no-verbose --tries=1 --spider localhost:7474 || exit 1" ]
+      interval: 15s
+      timeout: 10s
       retries: 5
-      start_period: 15s
+      start_period: 45s
     networks:
       - internal
 

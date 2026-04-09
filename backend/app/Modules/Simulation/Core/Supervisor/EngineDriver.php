@@ -96,7 +96,7 @@ final class EngineDriver
             'zones' => array_values($zones),
             'global_entropy' => (float) $globalEntropy,
             'knowledge_core' => (float) $knowledgeCore,
-            'scars' => array_values($scars),
+            'scars' => array_values(array_filter($scars, fn ($s) => is_array($s) && isset($s['tick']) && isset($s['category']))),
             'attractors' => array_values(is_array($vec['attractors'] ?? null) ? $vec['attractors'] : []),
             'dark_attractors' => array_values(is_array($vec['dark_attractors'] ?? null) ? $vec['dark_attractors'] : []),
             'institutions' => array_values($institutions->map(fn ($e) => [

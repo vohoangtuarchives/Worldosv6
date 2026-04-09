@@ -17,7 +17,7 @@ use App\Modules\Simulation\Core\Runtime\RuleVM\DslPayload;
  * RuleVmService (Standardized V10): Evaluate DSL rules against world state (Rust Rule VM).
  * Functional Core: returns an EngineResult (collection of Effects).
  */
-class RuleVmService
+class RuleVmService implements \App\Contracts\RuleVmInterface
 {
     private static array $dslFileCache = [];
     private static array $dslFileMtime = [];

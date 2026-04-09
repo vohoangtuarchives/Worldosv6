@@ -301,8 +301,8 @@ pub fn run_process_actors_soa(
             let current_b_state = behavior_states.get(i).cloned().unwrap_or(0);
             let archetype = actor_archetypes.get(i).cloned().unwrap_or("Commoner".to_string());
             
-            let current_faction = faction_ids[i];
-            let mut current_loyalty = faction_loyalty[i];
+            let current_faction = faction_ids.get(i).cloned().unwrap_or(-1);
+            let mut current_loyalty = faction_loyalty.get(i).cloned().unwrap_or(0.5);
 
             // Extract individual 17D Trait Vector
             let t_start = i * chunk_size;
@@ -331,7 +331,7 @@ pub fn run_process_actors_soa(
             for (idx, &nb_id) in n_ids.iter().enumerate() {
                 let weight = n_weights.get(idx).cloned().unwrap_or(1.0);
                 if let Some(&nb_idx) = actor_id_to_idx.get(&nb_id) {
-                    let nb_faction = faction_ids[nb_idx];
+                    let nb_faction = faction_ids.get(nb_idx).cloned().unwrap_or(-1);
                     if current_faction != 0 && nb_faction == current_faction {
                         // Cohesion: increase loyalty, decrease fear
                         current_loyalty = (current_loyalty + 0.005 * weight).min(1.0);

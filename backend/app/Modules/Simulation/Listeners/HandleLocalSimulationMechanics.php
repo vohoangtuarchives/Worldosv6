@@ -13,7 +13,7 @@ use App\Modules\Simulation\Services\Core\CausalCorrectionEngine;
 use App\Modules\Simulation\Services\Culture\ResonanceEngine;
 use App\Modules\Simulation\Services\Meta\MultiverseInteractionService;
 use App\Modules\Simulation\Services\Meta\WorldRegulatorEngine;
-use App\Modules\Simulation\Repositories\UniverseRepositoryInterface;
+use App\Modules\Simulation\Contracts\UniverseRepositoryInterface;
 use App\Modules\Simulation\Core\Support\SimulationRandom;
 use App\Modules\Institutions\Services\WorldEdictEngine;
 use App\Modules\Institutions\Services\ZoneConflictEngine;

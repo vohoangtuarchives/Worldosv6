@@ -29,7 +29,7 @@ use Illuminate\Support\Facades\DB;
  * provides "Autonomous Civilization Discovery": it logs novel archetypes
  * that emerge without being scripted.
  */
-class DecisionEngine
+class DecisionEngine implements \App\Contracts\DecisionEngineInterface
 {
     /** Score weights */
     const W_NOVELTY    = 0.50;

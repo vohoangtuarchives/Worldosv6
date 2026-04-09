@@ -40,3 +40,8 @@ async def synthesize_celebrity(req_data: dict) -> dict:
     except Exception as e:
         print(f"DEBUG Error Synthesize Celebrity: {e}")
         return {"name": "Vô Danh", "biography": "Một sự hiện diện bí ẩn vừa xuất hiện với hành tung bất định."}
+
+
+async def celebrity_synthesizer_api(req: dict) -> dict:
+    """API wrapper called from main.py when /weave-celebrity is hit."""
+    return await synthesize_celebrity(req)

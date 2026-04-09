@@ -14,7 +14,7 @@ import type {
 // ── Actor list for a universe (auto-refresh every 10s) ──
 
 export function useActors(universeId: number | null) {
-  const { data, error, isLoading } = useQuery<{ data: ActorSummary[] }>({
+  const { data, error, isLoading } = useQuery<ActorSummary[]>({
     queryKey: ['universes', universeId, 'actors'],
     queryFn: () =>
       api
@@ -26,16 +26,16 @@ export function useActors(universeId: number | null) {
   });
 
   return {
-    actors: data?.data ?? [],
+    actors: data ?? [],
     isLoading,
-    isError: error,
+    isError: !!error,
   };
 }
 
 // ── Single actor detail ──
 
 export function useActorDetail(actorId: number | null) {
-  const { data, error, isLoading } = useQuery<{ data: ActorDetail }>({
+  const { data, error, isLoading } = useQuery<ActorDetail>({
     queryKey: ['actors', actorId],
     queryFn: () =>
       api.get(`/worldos/actors/${actorId}`).then((res) => res.data),
@@ -44,16 +44,16 @@ export function useActorDetail(actorId: number | null) {
   });
 
   return {
-    actor: data?.data ?? null,
+    actor: data ?? null,
     isLoading,
-    isError: error,
+    isError: !!error,
   };
 }
 
 // ── Actor events ──
 
 export function useActorEvents(actorId: number | null) {
-  const { data, error, isLoading } = useQuery<{ data: ActorEvent[] }>({
+  const { data, error, isLoading } = useQuery<ActorEvent[]>({
     queryKey: ['actors', actorId, 'events'],
     queryFn: () =>
       api.get(`/worldos/actors/${actorId}/events`).then((res) => res.data),
@@ -62,16 +62,16 @@ export function useActorEvents(actorId: number | null) {
   });
 
   return {
-    events: data?.data ?? [],
+    events: data ?? [],
     isLoading,
-    isError: error,
+    isError: !!error,
   };
 }
 
 // ── Actor decisions ──
 
 export function useActorDecisions(actorId: number | null) {
-  const { data, error, isLoading } = useQuery<{ data: ActorDecision[] }>({
+  const { data, error, isLoading } = useQuery<ActorDecision[]>({
     queryKey: ['actors', actorId, 'decisions'],
     queryFn: () =>
       api.get(`/worldos/actors/${actorId}/decisions`).then((res) => res.data),
@@ -80,16 +80,16 @@ export function useActorDecisions(actorId: number | null) {
   });
 
   return {
-    decisions: data?.data ?? [],
+    decisions: data ?? [],
     isLoading,
-    isError: error,
+    isError: !!error,
   };
 }
 
 // ── Supreme entities for a universe ──
 
 export function useSupremeEntities(universeId: number | null) {
-  const { data, error, isLoading } = useQuery<{ data: SupremeEntity[] }>({
+  const { data, error, isLoading } = useQuery<SupremeEntity[]>({
     queryKey: ['universes', universeId, 'supreme-entities'],
     queryFn: () =>
       api
@@ -100,23 +100,21 @@ export function useSupremeEntities(universeId: number | null) {
   });
 
   return {
-    entities: data?.data ?? [],
+    entities: data ?? [],
     isLoading,
-    isError: error,
+    isError: !!error,
   };
 }
 
 // ── Mind Meld mutation ──
 
-interface MindMeldResponse {
-  data: {
-    action: string;
-    confidence: number;
-  };
+interface MindMeldResult {
+  action: string;
+  confidence: number;
 }
 
 export function useMindMeld() {
-  return useMutation<MindMeldResponse, Error, number>({
+  return useMutation<MindMeldResult, Error, number>({
     mutationFn: (actorId: number) =>
       api
         .post(`/worldos/actors/${actorId}/mind-meld`)

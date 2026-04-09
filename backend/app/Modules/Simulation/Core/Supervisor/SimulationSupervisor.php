@@ -89,7 +89,21 @@ final class SimulationSupervisor
                     throw new \Exception("SnapshotManager failed to return a model");
                 }
 
-                $snapshotEntity = $this->snapshotRepository->findById($snapshotModel->id);
+                // Handle both persisted (has ID) and virtual (no ID) snapshots
+                if ($snapshotModel->id) {
+                    $snapshotEntity = $this->snapshotRepository->findById($snapshotModel->id);
+                } else {
+                    // Virtual snapshot — build entity directly from model
+                    $stateVector = is_array($snapshotModel->state_vector) ? $snapshotModel->state_vector : [];
+                    $snapshotEntity = new \App\Modules\Simulation\Entities\SnapshotEntity(
+                        id: null,
+                        universeId: (int) $snapshotModel->universe_id,
+                        tick: (int) $snapshotModel->tick,
+                        stateVector: $stateVector,
+                        entropy: (float) ($snapshotModel->entropy ?? 0),
+                        metrics: is_array($snapshotModel->metrics) ? $snapshotModel->metrics : [],
+                    );
+                }
                 if (!$snapshotEntity) {
                     throw new \Exception("Failed to load SnapshotEntity for ID: " . $snapshotModel->id);
                 }

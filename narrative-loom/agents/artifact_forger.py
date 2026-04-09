@@ -39,3 +39,8 @@ async def forge_artifact(req_data: dict) -> dict:
     except Exception as e:
         print(f"DEBUG Error Forge Artifact: {e}")
         return {"name": "Khối Vật Chất Vô Danh", "lore": "Vật phẩm này tỏa ra ánh sáng rực rỡ nhưng không ai biết nguồn gốc của nó."}
+
+
+async def artifact_forger_api(req: dict) -> dict:
+    """API wrapper called from main.py when /forge-artifact is hit."""
+    return await forge_artifact(req)

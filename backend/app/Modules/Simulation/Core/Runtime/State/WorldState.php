@@ -1,20 +1,24 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Modules\Simulation\Core\Runtime\State;
 
 /**
  * WorldState – A structured wrapper for the Universe state_vector.
- * 
+ *
  * Provides a standardized contract for all ~100 engines.
  */
 class WorldState
 {
+    use WorldStateAccessors;
+
     /** @var \App\Modules\Intelligence\Entities\ActorEntity[] */
     protected array $actorEntities = [];
 
     /** @var \App\Modules\Institutions\Entities\InstitutionalEntity[] */
     protected array $institutionalEntities = [];
-    
+
     /** @var \App\Modules\World\Entities\ResourceEntity[] */
     protected array $resourceEntities = [];
 
@@ -36,238 +40,136 @@ class WorldState
         public array $legacy_data = [],
         public array $hyperspace_vector = [],
         public array $nested_realities = []
-    ) {}
+    ) {
+    }
 
     public static function fromArray(array $data): self
     {
-        return new self($data);
+        return WorldStateSnapshot::fromArray($data);
     }
 
     public function toArray(): array
     {
-        $data = $this->data;
-        
-        // V9: Enforce Single Source of Truth for Agent Visibility
-        if (!empty($this->actorEntities)) {
-            $alive = array_filter($this->actorEntities, fn($a) => $a->isAlive);
-            
-            // Limit actor_table size for snapshot performance, but maintain real count
-            $data['agents'] = array_map(fn($a) => [
-                'id' => $a->id,
-                'name' => $a->name,
-                'hunger' => round($a->hunger ?? 0.0, 2),
-                'energy' => round((float)($a->metrics['energy'] ?? $a->energy ?? 100), 2),
-                'zone_id' => $a->zone_id,
-                'is_alive' => $a->isAlive,
-            ], array_slice($alive, 0, 50)); 
-            
-            $data['total_population'] = count($alive);
-        }
+        return WorldStateSnapshot::toArray($this);
+    }
 
-        return $data;
+    // --- Data access for WorldStateSnapshot delegation ---
+    public function getData(): array
+    {
+        return $this->data;
+    }
+    public function setData(array $data): void
+    {
+        $this->data = $data;
     }
 
     // --- COSMIC LAYER ---
-    public function getCosmic(): array { return $this->data['cosmic'] ?? []; }
-    public function setCosmic(array $val): void { $this->data['cosmic'] = $val; }
+    public function getCosmic(): array
+    {
+        return $this->data['cosmic'] ?? [];
+    }
+    public function setCosmic(array $val): void
+    {
+        $this->data['cosmic'] = $val;
+    }
 
     // --- PLANETARY LAYER ---
-    public function getPlanetary(): array { return $this->data['planetary'] ?? []; }
-    public function setPlanetary(array $val): void { $this->data['planetary'] = $val; }
+    public function getPlanetary(): array
+    {
+        return $this->data['planetary'] ?? [];
+    }
+    public function setPlanetary(array $val): void
+    {
+        $this->data['planetary'] = $val;
+    }
 
     // --- ECOSYSTEM LAYER ---
-    public function getEcosystem(): array { return $this->data['ecosystem'] ?? []; }
-    public function setEcosystem(array $val): void { $this->data['ecosystem'] = $val; }
+    public function getEcosystem(): array
+    {
+        return $this->data['ecosystem'] ?? [];
+    }
+    public function setEcosystem(array $val): void
+    {
+        $this->data['ecosystem'] = $val;
+    }
 
     // --- ACTOR LAYER ---
-    public function getActors(): array { return $this->data['actors'] ?? []; }
-    public function setActors(array $val): void { $this->data['actors'] = $val; }
+    public function getActors(): array
+    {
+        return $this->data['actors'] ?? [];
+    }
+    public function setActors(array $val): void
+    {
+        $this->data['actors'] = $val;
+    }
 
     // --- CIVILIZATION LAYER ---
-    public function getCivilization(): array { return $this->data['civilization'] ?? []; }
-    public function setCivilization(array $val): void { $this->data['civilization'] = $val; }
-    
-    public function getFields(): array { return $this->data['fields'] ?? []; }
-    public function setFields(array $val): void { $this->data['fields'] = $val; }
-
-    /**
-     * Step 3: Field & Layer Harmonization (§Field Simulation Architecture)
-     * Maps existing CFT fields to the 4 Layers of Reality.
-     */
-    public function getPhysicalLayer(): array
+    public function getCivilization(): array
     {
-        $fields = $this->getFields();
-        return [
-            'state' => [
-                'ecosystem' => $this->getEcosystem(),
-                'planetary' => $this->getPlanetary(),
-                'cosmic' => $this->getCosmic(),
-                'resources' => $this->getResourceEntities(),
-                'zones' => $this->getZones(),
-            ],
-            'pressures' => [
-                'survival_pressure' => (float)($fields['survival'] ?? 0.0),
-                'resource_scarcity' => (float)(isset($fields['wealth']) ? (1 - $fields['wealth']) : 0.5),
-                'natural_entropy' => (float)($fields['entropy'] ?? 0.0),
-                'physical_fear' => (float)($fields['fear'] ?? 0.0),
-            ]
-        ];
+        return $this->data['civilization'] ?? [];
+    }
+    public function setCivilization(array $val): void
+    {
+        $this->data['civilization'] = $val;
     }
 
-    public function getLifeLayer(): array
+    public function getFields(): array
     {
-        $fields = $this->getFields();
-        return [
-            'state' => [
-                'actors' => $this->getActorEntities(),
-                'zones' => $this->getZones(),
-            ],
-            'pressures' => [
-                'metabolic_stress' => (float)($fields['survival'] ?? 0.0),
-                'environmental_instability' => (float)($this->get('stability_index', 1.0)),
-            ]
-        ];
+        return $this->data['fields'] ?? [];
+    }
+    public function setFields(array $val): void
+    {
+        $this->data['fields'] = $val;
     }
 
-    public function getSocialLayer(): array
+    public function getZones(): array
     {
-        $fields = $this->getFields();
-        return [
-            'state' => [
-                'institutions' => $this->getInstitutionalEntities(),
-                'civilizations' => $this->get('civilizations', []),
-                'resources' => $this->getResourceEntities(), // Required by PowerSystem
-                'actors' => $this->getActorEntities(), // Required by AllianceSystem
-                'zones' => $this->getZones(),
-            ],
-            'pressures' => [
-                'war_pressure' => (float)($fields['power'] ?? 0.0),
-                'authority_intensity' => (float)($fields['authority'] ?? 0.0),
-                'social_order' => (float)($fields['order'] ?? 1.0),
-            ]
-        ];
+        return $this->data['zones'] ?? [];
+    }
+    public function setZones(array $val): void
+    {
+        $this->data['zones'] = $val;
     }
 
-    public function getNarrativeLayer(): array
+    public function getZoneMemory(int $zoneId): array
     {
-        $fields = $this->getFields();
-        return [
-            'state' => [
-                'ideas' => $this->getIdeaEntities(),
-                'myths' => $this->get('meta.active_myths', []),
-                'narratives' => $this->get('meta.active_narratives', []),
-                'chronicles' => $this->getRecentChronicles(),
-                'persistent_myths' => $this->get('meta.persistent_myths', []),
-            ],
-            'pressures' => [
-                'collective_meaning' => (float)($fields['meaning'] ?? 0.5),
-                'knowledge_diffusion' => (float)($fields['knowledge'] ?? 0.0),
-            ]
-        ];
+        return $this->get("memory.zones.{$zoneId}", []);
+    }
+    public function setZoneMemory(int $zoneId, array $memory): void
+    {
+        $this->set("memory.zones.{$zoneId}", $memory);
     }
 
-    public function getMythicLayer(): array
+    public function getCivilizations(): array
     {
-        $fields = $this->getFields();
-        return [
-            'state' => [
-                'hyperspace' => $this->getHyperspaceVector(),
-                'nested_realities' => $this->getNestedRealities(),
-                'supreme_entities' => $this->getSupremeEntities(),
-                'resources' => $this->getResourceEntities(), // Required by ConflictSystem
-                'entropy' => $this->getEntropy(),
-                'stability_index' => $this->getStabilityIndex(),
-                'ideas' => $this->getIdeaEntities(), // Required by MythCreationSystem
-            ],
-            'pressures' => [
-                'field_resonance' => (float)($fields['resonance'] ?? 0.0),
-                'mandate_strength' => (float)($this->get('meta.mandate_of_heaven', 0.5)),
-            ]
-        ];
+        return $this->get('civilizations', []);
     }
-
-    public function getZones(): array { return $this->data['zones'] ?? []; }
-    public function setZones(array $val): void { $this->data['zones'] = $val; }
-
-    /**
-     * V9: Sync internal Agent entities to their respective Zones.
-     * Use this to rebuild zone.agents[] from the global actorEntities source.
-     */
-    public function syncAgentsToZones(): void
+    public function getKnowledge(): array
     {
-        $zones = $this->getZones();
-        $agents = $this->getActorEntities();
-        
-        $actorTable = [
-            'ids' => [],
-            'zone_ids' => [],
-            'hunger' => [],
-            'energy' => [],
-            'fear' => [],
-            'traits_mask' => [],
-            'memes_mask' => [],
-            'heroic_type' => [],
-            'lineage_id' => [],
-            'current_node' => [],
-        ];
-
-        // Group alive agents by zone
-        $agentGroups = [];
-        foreach ($agents as $agent) {
-            if ($agent->isAlive) {
-                $e = (float)($agent->metrics['energy'] ?? $agent->energy ?? 100);
-                $h = (float)($agent->hunger ?? 0.0);
-                
-                $agentGroups[$agent->zone_id][] = [
-                    'id' => $agent->id,
-                    'name' => $agent->name,
-                    'hunger' => $h,
-                    'energy' => $e,
-                ];
-
-                // Build SOA actor_table
-                $actorTable['ids'][] = (int)$agent->id;
-                $actorTable['zone_ids'][] = (int)$agent->zone_id;
-                $actorTable['hunger'][] = $h;
-                $actorTable['energy'][] = $e;
-                $actorTable['fear'][] = (float)($agent->fear ?? 0.0);
-                $actorTable['traits_mask'][] = (int)($agent->metrics['traits_mask'] ?? 0);
-                $actorTable['memes_mask'][] = (int)($agent->metrics['memes_mask'] ?? 0);
-                $actorTable['heroic_type'][] = (int)($agent->metrics['heroic_type'] ?? 0);
-                $actorTable['lineage_id'][] = (int)($agent->metrics['lineage_id'] ?? 0);
-                $actorTable['current_node'][] = (int)($agent->metrics['behavior_state'] ?? 0);
-            }
-        }
-
-        // Update zone structures
-        foreach ($zones as &$zone) {
-            $zoneId = $zone['id'];
-            $zone['agents'] = $agentGroups[$zoneId] ?? [];
-            $zone['population_proxy'] = count($zone['agents']);
-        }
-
-        $this->setZones($zones);
-        $this->set('actor_table', $actorTable);
-        $this->set('population_proxy', count($actorTable['ids']));
-        
-        \Illuminate\Support\Facades\Log::debug("WorldState: Synced " . count($actorTable['ids']) . " agents into actor_table.");
+        return $this->get('civilization.knowledge_graph', []);
     }
-
-    public function getZoneMemory(int $zoneId): array { return $this->get("memory.zones.{$zoneId}", []); }
-    public function setZoneMemory(int $zoneId, array $memory): void { $this->set("memory.zones.{$zoneId}", $memory); }
-
-    public function getCivilizations(): array { return $this->get('civilizations', []); }
-    public function getKnowledge(): array { return $this->get('civilization.knowledge_graph', []); }
 
     // --- META LAYER ---
-    public function getTimeline(): array { return $this->data['timeline'] ?? []; }
-    public function setTimeline(array $val): void { $this->data['timeline'] = $val; }
+    public function getTimeline(): array
+    {
+        return $this->data['timeline'] ?? [];
+    }
+    public function setTimeline(array $val): void
+    {
+        $this->data['timeline'] = $val;
+    }
 
     /** @return \App\Modules\Intelligence\Entities\ActorEntity[] */
-    public function getActorEntities(): array { return $this->actorEntities; }
-    
+    public function getActorEntities(): array
+    {
+        return $this->actorEntities;
+    }
+
     /** @param \App\Modules\Intelligence\Entities\ActorEntity[] $entities */
-    public function setActorEntities(array $entities): void { $this->actorEntities = $entities; }
+    public function setActorEntities(array $entities): void
+    {
+        $this->actorEntities = $entities;
+    }
 
     /**
      * Remove an actor from the local entities collection to force reload.
@@ -276,45 +178,87 @@ class WorldState
     {
         $this->actorEntities = array_filter(
             $this->actorEntities,
-            fn($a) => (int)$a->id !== $actorId
+            fn ($a) => (int)$a->id !== $actorId
         );
     }
 
     /** @return \App\Modules\Institutions\Entities\InstitutionalEntity[] */
-    public function getInstitutionalEntities(): array { return $this->institutionalEntities; }
-    
+    public function getInstitutionalEntities(): array
+    {
+        return $this->institutionalEntities;
+    }
+
     /** @param \App\Modules\Institutions\Entities\InstitutionalEntity[] $entities */
-    public function setInstitutionalEntities(array $entities): void { $this->institutionalEntities = $entities; }
+    public function setInstitutionalEntities(array $entities): void
+    {
+        $this->institutionalEntities = $entities;
+    }
 
     /** @return \App\Modules\World\Entities\ResourceEntity[] */
-    public function getResourceEntities(): array { return $this->resourceEntities; }
+    public function getResourceEntities(): array
+    {
+        return $this->resourceEntities;
+    }
 
     /** @param \App\Modules\World\Entities\ResourceEntity[] $entities */
-    public function setResourceEntities(array $entities): void { $this->resourceEntities = $entities; }
+    public function setResourceEntities(array $entities): void
+    {
+        $this->resourceEntities = $entities;
+    }
 
     /** @return \App\Modules\Intelligence\Entities\IdeaEntity[] */
-    public function getIdeaEntities(): array { return $this->ideaEntities; }
+    public function getIdeaEntities(): array
+    {
+        return $this->ideaEntities;
+    }
 
     /** @param \App\Modules\Intelligence\Entities\IdeaEntity[] $entities */
-    public function setIdeaEntities(array $entities): void { $this->ideaEntities = $entities; }
+    public function setIdeaEntities(array $entities): void
+    {
+        $this->ideaEntities = $entities;
+    }
 
     /** @return \App\Models\Chronicle[] */
-    public function getRecentChronicles(): array { return $this->recentChronicles; }
+    public function getRecentChronicles(): array
+    {
+        return $this->recentChronicles;
+    }
 
     /** @param \App\Models\Chronicle[] $chronicles */
-    public function setRecentChronicles(array $chronicles): void { $this->recentChronicles = $chronicles; }
+    public function setRecentChronicles(array $chronicles): void
+    {
+        $this->recentChronicles = $chronicles;
+    }
 
     /** @return \App\Models\SupremeEntity[] */
-    public function getSupremeEntities(): array { return $this->supremeEntities; }
+    public function getSupremeEntities(): array
+    {
+        return $this->supremeEntities;
+    }
 
     /** @param \App\Models\SupremeEntity[] $entities */
-    public function setSupremeEntities(array $entities): void { $this->supremeEntities = $entities; }
+    public function setSupremeEntities(array $entities): void
+    {
+        $this->supremeEntities = $entities;
+    }
 
-    public function getTick(): int { return (int)$this->get('tick', 0); }
-    public function getUniverseId(): int { return (int)$this->get('universe_id', 0); }
-    
-    public function isObserved(): bool { return $this->isObserved; }
-    public function setIsObserved(bool $val): void { $this->isObserved = $val; }
+    public function getTick(): int
+    {
+        return (int)$this->get('tick', 0);
+    }
+    public function getUniverseId(): int
+    {
+        return (int)$this->get('universe_id', 0);
+    }
+
+    public function isObserved(): bool
+    {
+        return $this->isObserved;
+    }
+    public function setIsObserved(bool $val): void
+    {
+        $this->isObserved = $val;
+    }
 
     // --- HELPERS ---
     public function get(string $key, mixed $default = null): mixed
@@ -329,48 +273,31 @@ class WorldState
 
     /**
      * Compute the difference between current data and an original context array.
-     * Returns a flat array of 'dot.key' => value for scalar changes, 
+     * Returns a flat array of 'dot.key' => value for scalar changes,
      * and special handling for zones/agents if needed.
      */
     public function getDiff(array $originalData): array
     {
-        $diff = [];
-        $currentData = $this->data;
-
-        // 1. Check top-level numeric fields (entropy, stability, etc.)
-        $monitoredFields = ['entropy', 'stability_index', 'civilizationComplexity', 'logic_density'];
-        foreach ($monitoredFields as $field) {
-            $old = (float)($originalData[$field] ?? 0);
-            $new = (float)($currentData[$field] ?? 0);
-            if (abs($old - $new) > 1e-6) {
-                $diff[$field] = $new;
-            }
-        }
-
-        // 2. Check Global Fields (CFT)
-        $oldFields = $originalData['fields'] ?? [];
-        $newFields = $currentData['fields'] ?? [];
-        foreach ($newFields as $key => $val) {
-            $oldVal = $oldFields[$key] ?? null;
-            if ($oldVal !== $val) {
-                $diff["fields.{$key}"] = $val;
-            }
-        }
-
-        // 3. Check Zones (Macro-resource changes)
-        // Note: Full zone diff might be heavy, but we need it for LivingWorldEngine
-        if (isset($currentData['zones'])) {
-            $diff['zones'] = $currentData['zones'];
-        }
-
-        return $diff;
+        return WorldStateSnapshot::getDiff($this, $originalData);
     }
 
-    public function getEntropy(): float { return (float)$this->get('entropy', 0.0); }
-    public function setEntropy(float $val): void { $this->set('entropy', $val); }
+    public function getEntropy(): float
+    {
+        return (float)$this->get('entropy', 0.0);
+    }
+    public function setEntropy(float $val): void
+    {
+        $this->set('entropy', $val);
+    }
 
-    public function getStabilityIndex(): float { return (float)$this->get('stability_index', 1.0); }
-    public function setStabilityIndex(float $val): void { $this->set('stability_index', $val); }
+    public function getStabilityIndex(): float
+    {
+        return (float)$this->get('stability_index', 1.0);
+    }
+    public function setStabilityIndex(float $val): void
+    {
+        $this->set('stability_index', $val);
+    }
 
     /**
      * V10: Update a global field safely by adding a delta.
@@ -381,7 +308,7 @@ class WorldState
         $current = (float)($fields[$fieldName] ?? 0.0);
         $fields[$fieldName] = max(0.0, min(1.0, $current + $delta));
         $this->setFields($fields);
-        
+
         \Illuminate\Support\Facades\Log::debug("WorldState: Field '{$fieldName}' mutated by {$delta} due to: {$reason}. New value: {$fields[$fieldName]}");
     }
 
@@ -391,21 +318,7 @@ class WorldState
      */
     public function snapshot(): self
     {
-        $copy = new self(
-            data: $this->data,
-            neighboring_realities: $this->neighboring_realities,
-            legacy_data: $this->legacy_data,
-            hyperspace_vector: $this->hyperspace_vector,
-            nested_realities: $this->nested_realities
-        );
-        $copy->actorEntities        = $this->actorEntities;
-        $copy->institutionalEntities = $this->institutionalEntities;
-        $copy->resourceEntities     = $this->resourceEntities;
-        $copy->ideaEntities         = $this->ideaEntities;
-        $copy->recentChronicles     = $this->recentChronicles;
-        $copy->supremeEntities      = $this->supremeEntities;
-        $copy->isObserved           = $this->isObserved;
-        return $copy;
+        return WorldStateSnapshot::snapshot($this);
     }
 
     /**
@@ -413,37 +326,62 @@ class WorldState
      */
     public function restoreFrom(self $snapshot): void
     {
-        $this->data                   = $snapshot->data;
-        $this->neighboring_realities  = $snapshot->neighboring_realities;
-        $this->legacy_data            = $snapshot->legacy_data;
-        $this->hyperspace_vector      = $snapshot->hyperspace_vector;
-        $this->nested_realities       = $snapshot->nested_realities;
-        $this->actorEntities          = $snapshot->actorEntities;
-        $this->institutionalEntities  = $snapshot->institutionalEntities;
-        $this->resourceEntities       = $snapshot->resourceEntities;
-        $this->ideaEntities           = $snapshot->ideaEntities;
-        $this->recentChronicles       = $snapshot->recentChronicles;
-        $this->supremeEntities        = $snapshot->supremeEntities;
-        $this->isObserved             = $snapshot->isObserved;
+        WorldStateSnapshot::restoreFrom($this, $snapshot);
     }
 
-    public function getScars(): array { return (array)$this->get('scars', []); }
-    public function setScars(array $scars): void { $this->set('scars', $scars); }
+    public function getScars(): array
+    {
+        return (array)$this->get('scars', []);
+    }
+    public function setScars(array $scars): void
+    {
+        $this->set('scars', $scars);
+    }
 
-    public function getActiveAttractor(): string { return (string)$this->get('active_attractor', 'none'); }
-    public function setActiveAttractor(string $val): void { $this->set('active_attractor', $val); }
+    public function getActiveAttractor(): string
+    {
+        return (string)$this->get('active_attractor', 'none');
+    }
+    public function setActiveAttractor(string $val): void
+    {
+        $this->set('active_attractor', $val);
+    }
 
-    public function getTopology(): array { return (array)$this->get('topology', []); }
-    public function setTopology(array $val): void { $this->set('topology', $val); }
+    public function getTopology(): array
+    {
+        return (array)$this->get('topology', []);
+    }
+    public function setTopology(array $val): void
+    {
+        $this->set('topology', $val);
+    }
 
-    public function getPreviousAttractor(): string { return (string)$this->get('previous_attractor', 'none'); }
-    public function setPreviousAttractor(string $val): void { $this->set('previous_attractor', $val); }
+    public function getPreviousAttractor(): string
+    {
+        return (string)$this->get('previous_attractor', 'none');
+    }
+    public function setPreviousAttractor(string $val): void
+    {
+        $this->set('previous_attractor', $val);
+    }
 
-    public function getAttractorStability(): float { return (float)$this->get('attractor_stability', 1.0); }
-    public function setAttractorStability(float $val): void { $this->set('attractor_stability', $val); }
+    public function getAttractorStability(): float
+    {
+        return (float)$this->get('attractor_stability', 1.0);
+    }
+    public function setAttractorStability(float $val): void
+    {
+        $this->set('attractor_stability', $val);
+    }
 
-    public function getPressures(): array { return (array)$this->get('pressures', []); }
-    public function setPressures(array $val): void { $this->set('pressures', $val); }
+    public function getPressures(): array
+    {
+        return (array)$this->get('pressures', []);
+    }
+    public function setPressures(array $val): void
+    {
+        $this->set('pressures', $val);
+    }
 
     public function getNeighboringRealities(): array
     {
@@ -479,28 +417,6 @@ class WorldState
     }
 
     /**
-     * Phase 65: Project higher-dimensional state into 3D dashboard compatible fields.
-     */
-    public function projectTo3D(): void
-    {
-        if (empty($this->hyperspace_vector)) {
-            return;
-        }
-
-        // Logic dự phóng từ 11D/22D xuống các trường 3D cơ bản (Power, Knowledge...)
-        // Giả sử các chiều từ 0-9 của hyperspace tương ứng với các trường trong CFT.
-        $dimensionMap = ['survival', 'power', 'wealth', 'knowledge', 'meaning', 'authority', 'fear', 'order', 'entropy', 'resonance'];
-        
-        $fields = $this->getFields();
-        foreach ($dimensionMap as $index => $fieldName) {
-            if (isset($this->hyperspace_vector[$index])) {
-                $fields[$fieldName] = ($fields[$fieldName] ?? 0.0) * 0.7 + $this->hyperspace_vector[$index] * 0.3;
-            }
-        }
-        $this->setFields($fields);
-    }
-
-    /**
      * Phase 66: Infinite Recursion (Nested Realities)
      */
     public function getNestedRealities(): array
@@ -523,47 +439,20 @@ class WorldState
     }
 
     // --- COMPATIBILITY ALIASES (Doc §5 legacy support) ---
-    public function getStateVector(): array { return $this->data; }
-    public function getMetrics(): array { return (array)$this->get('metrics', []); }
-    public function getStateVectorKey(string $key, mixed $default = null): mixed { return $this->get($key, $default); }
-    public function getMetric(string $key, mixed $default = null): mixed { return $this->get("metrics.{$key}", $default); }
-
-    public static function getZonePressures(array $zone): array
+    public function getStateVector(): array
     {
-        $state = $zone['state'] ?? [];
-        $pressures = $state['pressures'] ?? [];
-        
-        return [
-            'war_pressure' => (float) ($pressures['war'] ?? ($state['war_pressure'] ?? 0)),
-            'economic_pressure' => (float) ($pressures['economic'] ?? ($state['economic_pressure'] ?? 0)),
-            'religious_pressure' => (float) ($pressures['religious'] ?? ($state['religious_pressure'] ?? 0)),
-            'migration_pressure' => (float) ($pressures['migration'] ?? ($state['migration_pressure'] ?? 0)),
-            'innovation_pressure' => (float) ($pressures['innovation'] ?? ($state['innovation_pressure'] ?? 0)),
-        ];
+        return $this->data;
     }
-
-    public static function defaultZonePressureKeys(): array
+    public function getMetrics(): array
     {
-        return [
-            'war_pressure' => 0.0,
-            'economic_pressure' => 0.0,
-            'religious_pressure' => 0.0,
-            'migration_pressure' => 0.0,
-            'innovation_pressure' => 0.0,
-        ];
+        return (array)$this->get('metrics', []);
     }
-
-    public static function defaultZonePopulationKeys(): array
+    public function getStateVectorKey(string $key, mixed $default = null): mixed
     {
-        return [
-            'population_proxy' => 0.5,
-        ];
+        return $this->get($key, $default);
     }
-
-    public static function getZonePopulationProxy(array $zone): float
+    public function getMetric(string $key, mixed $default = null): mixed
     {
-        $state = $zone['state'] ?? [];
-        return (float) ($state['population_proxy'] ?? 0.5);
+        return $this->get("metrics.{$key}", $default);
     }
 }
-

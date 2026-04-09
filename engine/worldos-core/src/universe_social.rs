@@ -86,14 +86,9 @@ impl UniverseState {
         let z = &self.zones[zone_index].state;
         let base = (z.inequality * 0.2 + z.entropy * 0.3 + z.trauma * 0.2 + z.material_stress * 0.3).clamp(0.0, 1.0);
         let zone_id = self.zones[zone_index].id;
-        let agent_index: std::collections::HashMap<u64, usize> = self.macro_agents
-            .iter()
-            .enumerate()
-            .map(|(i, a)| (a.id, i))
-            .collect();
         let army_sum: f64 = if let Some(idx) = macro_idx {
             idx.actors_in_zone(zone_index).iter()
-                .filter_map(|&ma_id| agent_index.get(&(ma_id as u64)).map(|&idx| &self.macro_agents[idx]))
+                .filter_map(|&ma_id| self.macro_agents.get(ma_id as usize))
                 .filter(|ma| ma.agent_type == MacroAgentType::Army)
                 .map(|ma| if ma.leader_id.is_some() { ma.strength * 1.5 } else { ma.strength })
                 .sum()

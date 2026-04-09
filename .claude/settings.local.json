@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls:*)",
+      "Bash(printf '%s\\\\n' '# CLAUDE.md - WorldOS V6 Development Guide for AI Agents')",
+      "Bash(node:*)",
+      "Bash(docker compose:*)",
+      "Bash(docker run:*)",
+      "WebSearch",
+      "mcp__plugin_context7_context7__resolve-library-id",
+      "mcp__plugin_context7_context7__query-docs",
+      "Bash(docker info:*)",
+      "Bash(grep -E \"\\\\.php$\")",
+      "Bash(xargs grep:*)",
+      "Read(//c/projects/IPFactory/**)",
+      "Bash(cat /c/projects/IPFactory/WORLDOS*.md)",
+      "Bash(docker cp:*)",
+      "Bash(docker stats deployment-backend-1:*)",
+      "Bash(docker stats deployment-engine-1:*)",
+      "Bash(xargs -I {} basename {})",
+      "Bash(find /c/projects/IPFactory/backend/app -name \"*.php\" -type f -exec wc -l {} +)",
+      "Bash(xargs wc:*)",
+      "Bash(php -l \"app/Modules/Simulation/Core/Runtime/WorldKernel.php\")"
+    ]
+  }
+}

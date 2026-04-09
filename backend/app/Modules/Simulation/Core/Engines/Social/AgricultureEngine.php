@@ -58,7 +58,7 @@ final class AgricultureEngine implements EngineInterface
             'land_area' => (float) ($vec['land_area'] ?? 1000),
             'population' => (float) ($vec['population'] ?? 100),
             'ecological_stability' => (float) ($vec['ecology']['stability'] ?? 0.8),
-            'random_chance' => lcg_value(),
+            'random_chance' => (new \Random\Randomizer())->getFloat(0, 1),
             'instability_score' => (float) ($state->get('instability_score', 0.0)),
         ];
 

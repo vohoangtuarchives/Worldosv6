@@ -63,7 +63,7 @@ final class MeaningEngine
      */
     public function interpretFromZoneMetrics(
         array       $zoneMetrics,
-        TraitVector $traits = null,
+        ?TraitVector $traits = null,
     ): Meaning {
         $traits    = $traits ?? TraitVector::neutral();
         $entropy   = (float) ($zoneMetrics['entropy']  ?? 0.0);

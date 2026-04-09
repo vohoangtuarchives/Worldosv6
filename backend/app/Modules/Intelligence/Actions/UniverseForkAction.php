@@ -4,7 +4,7 @@ namespace App\Modules\Intelligence\Actions;
 
 use App\Models\Universe;
 use App\Models\UniverseSnapshot;
-use App\Modules\Simulation\Repositories\UniverseRepositoryInterface;
+use App\Modules\Simulation\Contracts\UniverseRepositoryInterface;
 use App\Modules\Intelligence\Actions\UniverseMutationAction;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;

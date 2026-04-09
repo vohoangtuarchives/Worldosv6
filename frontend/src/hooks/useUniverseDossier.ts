@@ -59,7 +59,7 @@ export function useUniverseOptions() {
     return {
         universes,
         isLoading,
-        isError: error,
+        isError: !!error,
     };
 }
 
@@ -79,7 +79,7 @@ export function useUniverseMetrics(universeId?: number | null) {
     return {
         metrics: data,
         isLoading,
-        isError: error,
+        isError: !!error,
         mutate,
     };
 }
@@ -100,7 +100,7 @@ export function useUniverseDossier(universeId?: number | null) {
     return {
         dossier: data,
         isLoading,
-        isError: error,
+        isError: !!error,
         mutate,
     };
 }

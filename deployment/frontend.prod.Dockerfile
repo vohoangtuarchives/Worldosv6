@@ -19,8 +19,10 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY package.json package-lock.json* ./
 COPY . .
+ARG BACKEND_URL=http://nginx
 ENV NEXT_TELEMETRY_DISABLED=1 \
-    NODE_ENV=production
+    NODE_ENV=production \
+    BACKEND_URL=${BACKEND_URL}
 RUN npm run build
 
 # Stage 3: Minimal standalone runner

@@ -100,7 +100,7 @@ export function useAiLogs(
               }
             : null,
         isLoading,
-        isError: error,
+        isError: !!error,
         mutate,
         clearLogs,
     };
@@ -121,7 +121,7 @@ export function useAiStats() {
     return {
         stats: data,
         isLoading,
-        isError: error,
+        isError: !!error,
         mutate,
     };
 }

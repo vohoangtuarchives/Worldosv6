@@ -43,29 +43,24 @@ export function useToggleUniverse() {
 
 // ── Snapshots ───────────────────────────────────
 
-interface ResourceCollection<T> {
-  data?: T[];
-}
-
 export function useSnapshots(universeId: number | null) {
-  const { data, error, isLoading } = useQuery<
-    Snapshot[] | ResourceCollection<Snapshot>
-  >({
+  const { data, error, isLoading } = useQuery<Snapshot[]>({
     queryKey: ['universes', universeId, 'snapshots'],
     queryFn: () =>
       api
         .get(`/worldos/universes/${universeId}/snapshots`, {
           params: { limit: 50 },
         })
-        .then((res) => res.data),
+        .then((res) => {
+          const payload = res.data;
+          return Array.isArray(payload) ? payload : [];
+        }),
     enabled: !!universeId,
     refetchInterval: 15000,
     refetchOnWindowFocus: true,
   });
 
-  const snapshots = Array.isArray(data) ? data : data?.data ?? [];
-
-  return { snapshots, isLoading, isError: error };
+  return { snapshots: data ?? [], isLoading, isError: !!error };
 }
 
 export function useCreateSnapshot() {
@@ -87,22 +82,21 @@ export function useCreateSnapshot() {
 // ── Forks / Branches ────────────────────────────
 
 export function useForks(universeId: number | null) {
-  const { data, error, isLoading } = useQuery<
-    BranchSummary[] | ResourceCollection<BranchSummary>
-  >({
+  const { data, error, isLoading } = useQuery<BranchSummary[]>({
     queryKey: ['universes', universeId, 'forks'],
     queryFn: () =>
       api
         .get(`/worldos/universes/${universeId}/forks`)
-        .then((res) => res.data),
+        .then((res) => {
+          const payload = res.data;
+          return Array.isArray(payload) ? payload : [];
+        }),
     enabled: !!universeId,
     refetchInterval: 15000,
     refetchOnWindowFocus: true,
   });
 
-  const forks = Array.isArray(data) ? data : data?.data ?? [];
-
-  return { forks, isLoading, isError: error };
+  return { forks: data ?? [], isLoading, isError: !!error };
 }
 
 export function useForkUniverse() {
@@ -145,11 +139,11 @@ export function useCompareBranch() {
       branchId: number;
     }) =>
       api
-        .post<{ data: BranchComparison }>(
+        .post<BranchComparison>(
           `/worldos/universes/${universeId}/forks/compare`,
           { branch_id: branchId },
         )
-        .then((res) => res.data.data),
+        .then((res) => res.data),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({
         queryKey: ['universes', variables.universeId, 'forks'],

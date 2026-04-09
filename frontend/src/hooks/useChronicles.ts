@@ -6,7 +6,7 @@ import api from '@/lib/api';
 import type { Chronicle, MythScar, Artifact } from '@/types/api';
 
 export function useChronicles(universeId: number | null) {
-    const { data, error, isLoading } = useQuery<{ data: Chronicle[] }>({
+    const { data, error, isLoading } = useQuery<Chronicle[]>({
         queryKey: ['universes', universeId, 'chronicles'],
         queryFn: () =>
             api
@@ -18,14 +18,14 @@ export function useChronicles(universeId: number | null) {
     });
 
     return {
-        chronicles: data?.data ?? [],
+        chronicles: data ?? [],
         isLoading,
-        isError: error,
+        isError: !!error,
     };
 }
 
 export function useMythScars(universeId: number | null) {
-    const { data, error, isLoading } = useQuery<{ data: MythScar[] }>({
+    const { data, error, isLoading } = useQuery<MythScar[]>({
         queryKey: ['universes', universeId, 'myth-scars'],
         queryFn: () =>
             api
@@ -37,14 +37,14 @@ export function useMythScars(universeId: number | null) {
     });
 
     return {
-        mythScars: data?.data ?? [],
+        mythScars: data ?? [],
         isLoading,
-        isError: error,
+        isError: !!error,
     };
 }
 
 export function useArtifacts(universeId: number | null) {
-    const { data, error, isLoading } = useQuery<{ data: Artifact[] }>({
+    const { data, error, isLoading } = useQuery<Artifact[]>({
         queryKey: ['universes', universeId, 'artifacts'],
         queryFn: () =>
             api
@@ -56,8 +56,8 @@ export function useArtifacts(universeId: number | null) {
     });
 
     return {
-        artifacts: data?.data ?? [],
+        artifacts: data ?? [],
         isLoading,
-        isError: error,
+        isError: !!error,
     };
 }

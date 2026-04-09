@@ -63,7 +63,7 @@ export default function ActorDetailModal({ actorId, open, onClose }: ActorDetail
     setMindMeldResult(null);
     mindMeld.mutate(actorId, {
       onSuccess: (res) => {
-        setMindMeldResult(res.data);
+        setMindMeldResult(res);
       },
     });
   };

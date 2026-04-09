@@ -2,31 +2,28 @@
 
 namespace App\Modules\Simulation\Listeners;
 
-use App\Modules\Simulation\Events\UniverseSimulationPulsed;
 use App\Modules\Intelligence\Actions\DecideUniverseAction;
 use App\Modules\Narrative\Actions\ApplyMythScarAction;
 use App\Modules\Simulation\Actions\RunMicroModeAction;
-use App\Modules\Simulation\Actions\ForkUniverseAction;
-use App\Modules\Simulation\Actions\TimelineMergeAction;
-use App\Modules\Simulation\Repositories\UniverseRepository;
-use App\Modules\Simulation\Services\Core\ImplicitOrchestratorService;
+use App\Modules\Simulation\Contracts\UniverseRepositoryInterface;
 use App\Modules\Simulation\Core\Engines\Meta\AttractorEngine;
 use App\Modules\Simulation\Core\Engines\Meta\DynamicAttractorEngine;
-use App\Modules\Simulation\Core\Runtime\RuleVM\EventTriggerProcessor;
-use App\Modules\Simulation\Contracts\UniverseRepositoryInterface;
-use App\Modules\Simulation\Services\Meta\VoidExplorationEngine;
-use App\Modules\Simulation\Services\Cosmology\EpochEngine;
-use App\Modules\Simulation\Services\Core\ObservationInterferenceEngine;
-use App\Modules\Simulation\Services\Meta\TrajectoryModelingEngine;
-use App\Modules\Simulation\Core\Support\SimulationRandom;
-use App\Models\UniverseSnapshot;
 use App\Modules\Simulation\Core\Runtime\Domain\UniverseState;
+use App\Modules\Simulation\Core\Runtime\RuleVM\EventTriggerProcessor;
+use App\Modules\Simulation\Core\Support\SimulationRandom;
+use App\Modules\Simulation\Events\UniverseSimulationPulsed;
+use App\Modules\Simulation\Repositories\UniverseRepository;
+use App\Modules\Simulation\Services\Core\ObservationInterferenceEngine;
 use App\Modules\Simulation\Services\Cosmology\CosmicEnergyPoolService;
-use App\Modules\Intelligence\Entities\ActorEntity;
-use App\Modules\Simulation\Core\Runtime\State\WorldState;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Support\Facades\Log;
+use App\Modules\Simulation\Services\Cosmology\EpochEngine;
+use App\Modules\Simulation\Services\Evaluation\ActorDecisionOrchestrator;
+use App\Modules\Simulation\Services\Evaluation\MetricsAggregationService;
+use App\Modules\Simulation\Services\Evaluation\NarrativeChronicleService;
+use App\Modules\Simulation\Services\Evaluation\StrategicActionHandler;
+use App\Modules\Simulation\Services\Meta\TrajectoryModelingEngine;
+use App\Modules\Simulation\Services\Meta\VoidExplorationEngine;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Log;
 
 class EvaluateSimulationResult
 {
@@ -34,12 +31,8 @@ class EvaluateSimulationResult
         protected DecideUniverseAction $decideUniverseAction,
         protected ApplyMythScarAction $applyMythScarAction,
         protected RunMicroModeAction $runMicroModeAction,
-        protected ForkUniverseAction $forkUniverseAction,
-        protected ImplicitOrchestratorService $orchestrator,
         protected UniverseRepository $universeRepository,
         protected UniverseRepositoryInterface $simulationUniverseRepository,
-        protected \App\Modules\Simulation\Services\Ecology\PressureCalculator $pressureCalculator,
-        protected \App\Modules\Simulation\Services\Cosmology\CosmicPhaseDetector $cosmicPhaseDetector,
         protected \App\Modules\Institutions\Services\GreatFilterEngine $greatFilterEngine,
         protected \App\Modules\Institutions\Services\AscensionEngine $ascensionEngine,
         protected \App\Modules\Simulation\Services\Meta\ConvergenceEngine $convergenceEngine,
@@ -52,8 +45,6 @@ class EvaluateSimulationResult
         protected \App\Modules\Simulation\Services\Culture\ResonanceEngine $resonanceEngine,
         protected ObservationInterferenceEngine $observationInterferenceEngine,
         protected TrajectoryModelingEngine $trajectoryModelingEngine,
-        protected \App\Modules\Intelligence\Services\AI\EpistemicService $epistemicService,
-        protected \App\Modules\Narrative\Services\NarrativeCompiler $narrativeCompiler,
         protected \App\Modules\Simulation\Services\Meta\MultiverseInteractionService $multiverseInteractionService,
         protected \App\Modules\Simulation\Services\Meta\WorldRegulatorEngine $worldRegulatorEngine,
         protected AttractorEngine $attractorEngine,
@@ -62,29 +53,19 @@ class EvaluateSimulationResult
         protected \App\Modules\Simulation\Services\Culture\IdeologyEvolutionEngine $ideologyEvolutionEngine,
         protected \App\Modules\Simulation\Services\Core\GreatPersonEngine $greatPersonEngine,
         protected \App\Modules\Simulation\Services\Core\GreatPersonLegacyService $greatPersonLegacyService,
-        protected TimelineMergeAction $timelineMergeAction,
         protected \App\Modules\Simulation\Services\Core\MacroAgentSpawnService $macroAgentSpawnService,
-        protected \App\Modules\Simulation\Core\Engines\Meta\CapabilityEngine $capabilityEngine,
-        protected \App\Modules\Simulation\Core\Engines\Meta\ActorDecisionEngine $actorDecisionEngine,
-        protected \App\Modules\Simulation\Core\Engines\Meta\ArtifactCreationEngine $artifactCreationEngine,
         protected \App\Modules\Simulation\Core\Engines\Social\IdeaDiffusionEngine $ideaDiffusionEngine,
         protected \App\Modules\Simulation\Services\Society\InstitutionDecayService $institutionDecayService,
-        protected \App\Modules\Simulation\Services\Core\EventNormalizer $eventNormalizer,
-        protected \App\Modules\Narrative\Services\HistoricalFactEngine $historicalFactEngine,
         protected \App\Modules\Simulation\Core\Contracts\WorldEventBusInterface $worldEventBus,
-        protected \App\Modules\Narrative\Services\NarrativeMemoryGraphService $narrativeMemoryGraph,
-        protected \App\Modules\Narrative\Services\NarrativeQueueManager $narrativeScheduler,
-        protected \App\Modules\Narrative\Services\EraDetector $eraDetector,
-        protected \App\Modules\Narrative\Services\ReligionSpreadEngine $religionSpreadEngine,
-        protected \App\Modules\Narrative\Services\CausalTrajectoryFulfillment $causal_trajectoryFulfillment,
         protected CosmicEnergyPoolService $cosmicEnergyPoolService,
-        protected \App\Modules\Simulation\Services\Core\AdaptiveSchedulerService $adaptiveScheduler,
         protected \App\Modules\Simulation\Services\Core\HeroLifecycleService $heroLifecycleService,
-        protected \App\Modules\Intelligence\Services\BiologyMetricsService $biologyMetrics,
-        protected \App\Modules\Intelligence\Services\EcosystemMetricsService $ecosystemMetrics,
         protected \App\Modules\Simulation\Services\Culture\GenreEvolutionService $genreEvolutionService,
-        protected \App\Modules\Simulation\Services\Civilization\MaterialIdentityProjector $materialIdentityProjector,
-    ) {}
+        protected MetricsAggregationService $metricsAggregation,
+        protected StrategicActionHandler $strategicAction,
+        protected ActorDecisionOrchestrator $actorDecisionOrchestrator,
+        protected NarrativeChronicleService $narrativeChronicleService,
+    ) {
+    }
 
     public function handle(UniverseSimulationPulsed $event): void
     {
@@ -106,7 +87,7 @@ class EvaluateSimulationResult
             $rng = new SimulationRandom((int) ($universe->seed ?? 0), (int) $snapshot->tick, 0);
 
             // Emerging Civilizations (Handled by Institutions Module)
-            if ($this->adaptiveScheduler->shouldRun('zone_conflict', $universe, $snapshot)) {
+            if ($this->narrativeChronicleService->shouldRun('zone_conflict', $universe, $snapshot)) {
                 $this->zoneConflictEngine->resolveConflicts($universe, $snapshot, $rng);
             }
 
@@ -126,8 +107,8 @@ class EvaluateSimulationResult
             if ($universeEntity) {
                 $this->voidExplorationEngine->process($universeEntity, (int)$snapshot->tick);
                 $this->epochEngine->process($universeEntity, $snapshot);
-                
-                $isBeingObserved = $universe->last_observed_at && 
+
+                $isBeingObserved = $universe->last_observed_at &&
                                    $universe->last_observed_at->diffInSeconds(Carbon::now()) < 30;
                 $this->observationInterferenceEngine->process($universeEntity, (int)$snapshot->tick, $isBeingObserved);
                 $this->trajectoryModelingEngine->process($universeEntity, (int)$snapshot->tick);
@@ -171,22 +152,12 @@ class EvaluateSimulationResult
             // 6a. WorldEvent + Historical Fact (Phase 1–2): build event → record fact → publish event.
             if (config('worldos.narrative_v2.enable_world_event', true)) {
                 try {
-                    $worldEvent = $this->eventNormalizer->buildTickSummaryEvent(
+                    $this->narrativeChronicleService->processWorldEvents(
                         $universe,
                         $snapshot,
                         $decisionData,
                         $event->engineResponse['scars'] ?? []
                     );
-                    if ($worldEvent !== null) {
-                        $this->historicalFactEngine->record($worldEvent, $snapshot);
-                        $this->worldEventBus->publish($worldEvent);
-                    }
-
-                    // Individual Scars (Phase 3: Deep Causal Chain)
-                    foreach ($event->engineResponse['scars'] ?? [] as $scar) {
-                        $scarEvent = $this->eventNormalizer->normalizeScarToEvent($universe, $scar);
-                        $this->worldEventBus->publish($scarEvent);
-                    }
                 } catch (\Throwable $e) {
                     \Illuminate\Support\Facades\Log::warning('EventNormalizer/HistoricalFact failed: ' . $e->getMessage());
                 }
@@ -202,7 +173,7 @@ class EvaluateSimulationResult
 
             // 6c. Actor Decision (Phase 2): key actors → capabilities → action_distribution → roll → actor_events
             if (config('worldos.pulse.run_actor_decision', false)) {
-                if ($this->adaptiveScheduler->shouldRun('actor_decision', $universe, $snapshot)) {
+                if ($this->narrativeChronicleService->shouldRun('actor_decision', $universe, $snapshot)) {
                     try {
                         $this->runActorDecisionForUniverse($universe, $snapshot, $rng);
                     } catch (\Throwable $e) {
@@ -211,7 +182,7 @@ class EvaluateSimulationResult
                 }
             }
             if (config('worldos.idea_diffusion.run_on_pulse', false)) {
-                if ($this->adaptiveScheduler->shouldRun('idea_diffusion', $universe, $snapshot)) {
+                if ($this->narrativeChronicleService->shouldRun('idea_diffusion', $universe, $snapshot)) {
                     try {
                         $this->ideaDiffusionEngine->process($universe, (int) $snapshot->tick);
                     } catch (\Throwable $e) {
@@ -220,7 +191,7 @@ class EvaluateSimulationResult
                 }
             }
             if (config('worldos.institution.run_decay_on_pulse', false)) {
-                if ($this->adaptiveScheduler->shouldRun('institution_decay', $universe, $snapshot)) {
+                if ($this->narrativeChronicleService->shouldRun('institution_decay', $universe, $snapshot)) {
                     try {
                         $this->institutionDecayService->process($universe, (int) $snapshot->tick);
                     } catch (\Throwable $e) {
@@ -238,15 +209,15 @@ class EvaluateSimulationResult
             // 9. Great Filter, Ascension, Supreme Entities & Convergence (Handled by Institutions Module)
             $this->greatFilterEngine->process($universe, (int)$snapshot->tick, $snapshot->state_vector ?? [], $rng);
             $this->convergenceEngine->process($universe, (int)$snapshot->tick);
-            
+
             $uState = UniverseState::fromModels($universe, $snapshot);
             $this->ascensionEngine->evaluate($uState);
-            
+
             $this->omegaPointEngine->process($universe, $snapshot);
 
             // 9b. Ideology Evolution & Great Person (Phase K)
             if (config('worldos.pulse.run_ideology', true)) {
-                if ($this->adaptiveScheduler->shouldRun('ideology_evolution', $universe, $snapshot)) {
+                if ($this->narrativeChronicleService->shouldRun('ideology_evolution', $universe, $snapshot)) {
                     try {
                         $ideologyResult = $this->ideologyEvolutionEngine->getDominantIdeology($universe);
                         if (! empty($ideologyResult['previous_dominant'])) {
@@ -263,7 +234,7 @@ class EvaluateSimulationResult
                 }
             }
             if (config('worldos.pulse.run_great_person', true)) {
-                if ($this->adaptiveScheduler->shouldRun('great_person', $universe, $snapshot)) {
+                if ($this->narrativeChronicleService->shouldRun('great_person', $universe, $snapshot)) {
                     try {
                         $this->greatPersonEngine->spawnIfEligible($universe, (int) $snapshot->tick);
                     } catch (\Throwable $e) {
@@ -278,7 +249,7 @@ class EvaluateSimulationResult
                     \Illuminate\Support\Facades\Log::warning('Pulse: Great Person legacy aggregate failed: ' . $e->getMessage());
                 }
             }
-            
+
             // Phase 7: Hero Lifecycle (latent -> myth transition)
             try {
                 $this->heroLifecycleService->process($universe, (int) $snapshot->tick);
@@ -286,17 +257,17 @@ class EvaluateSimulationResult
                 \Illuminate\Support\Facades\Log::warning('Pulse: Hero lifecycle process failed: ' . $e->getMessage());
             }
 
-        // 10. AI Narrative (Epistemic Instability)
-        $this->createNarrativeChronicle($universe, $snapshot);
+            // 10. AI Narrative (Epistemic Instability)
+            $this->createNarrativeChronicle($universe, $snapshot);
 
-        // 11. Multiverse Interaction
-        $this->multiverseInteractionService->detectResonance($universe);
+            // 11. Multiverse Interaction
+            $this->multiverseInteractionService->detectResonance($universe);
 
-        // 12. World Autonomic Regulation
-        if ($universe->world) {
-            $this->worldRegulatorEngine->process($universe->world);
-            $this->genreEvolutionService->evaluateEvolution($universe);
-        }
+            // 12. World Autonomic Regulation
+            if ($universe->world) {
+                $this->worldRegulatorEngine->process($universe->world);
+                $this->genreEvolutionService->evaluateEvolution($universe);
+            }
 
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error("Simulation evaluation failed in listener: " . $e->getMessage());
@@ -305,124 +276,27 @@ class EvaluateSimulationResult
 
     protected function handleMerge($universe, array $decision): void
     {
-        $candidateId = $decision['meta']['merge_candidate_universe_id'] ?? null;
-        if ($candidateId === null || (int) $candidateId === (int) $universe->id) {
-            return;
-        }
-        try {
-            $this->timelineMergeAction->execute((int) $universe->id, (int) $candidateId);
-            $this->universeRepository->update($universe->id, ['status' => 'archived']);
-            $this->universeRepository->update((int) $candidateId, ['status' => 'archived']);
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::warning("EvaluateSimulationResult: merge failed: " . $e->getMessage());
-        }
+        $this->strategicAction->handleMerge($universe, $decision);
     }
 
     protected function handlePromote($universe, array $decision): void
     {
-        $this->universeRepository->update($universe->id, ['status' => 'promoted']);
+        $this->strategicAction->handlePromote($universe, $decision);
     }
 
     protected function handleFork($universe, int $tick, array $decision): void
     {
-        $saga = $this->orchestrator->ensureSaga($universe);
-        if (!$saga) {
-            return;
-        }
-
-        $activeCount = \App\Models\Universe::where('saga_id', $saga->id)
-            ->where('status', 'active')
-            ->count();
-
-        $childUniverses = $this->forkUniverseAction->execute($universe, $tick, $decision);
-
-        if ($childUniverses->isNotEmpty() && $activeCount >= 1) {
-            $this->universeRepository->update($universe->id, ['status' => 'halted']);
-        }
+        $this->strategicAction->handleFork($universe, $tick, $decision);
     }
 
     protected function applySelectivePressure($universe, $snapshot, array $decisionData): void
     {
-        if (!empty($decisionData['meta']['mutation_suggestion'])) {
-            $suggestion = $decisionData['meta']['mutation_suggestion'];
-            $vec = $universe->state_vector ?? [];
-            if (empty($vec)) $vec = $snapshot->state_vector ?? [];
-            
-            $updated = false;
-
-            if (isset($suggestion['suggest_reduce_entropy'])) {
-                $vec['pressure_entropy_reduction'] = true;
-                $updated = true;
-            }
-
-            if (isset($suggestion['add_scar'])) {
-                $scars = $vec['scars'] ?? [];
-                $newScar = $suggestion['add_scar'];
-                if (!in_array($newScar, $scars)) {
-                    $scars[] = $newScar;
-                    $vec['scars'] = $scars;
-                    $updated = true;
-                }
-            }
-
-            if ($updated) {
-                 $this->universeRepository->update($universe->id, ['state_vector' => $vec]);
-            }
-        }
+        $this->strategicAction->applySelectivePressure($universe, $snapshot, $decisionData);
     }
 
     protected function storePressureMetrics($universe, $snapshot): void
     {
-        $state = $snapshot->state_vector ?? [];
-        // Đưa entropy/stability từ snapshot vào state để PressureCalculator dùng (fallback energy_level).
-        if (!isset($state['entropy'])) {
-            $state['entropy'] = $snapshot->entropy ?? 0;
-        }
-        if (!isset($state['stability_index'])) {
-            $state['stability_index'] = $snapshot->stability_index ?? 0;
-        }
-
-        $stress = $this->pressureCalculator->calculateMaterialStress($state);
-        $cosmic = $this->pressureCalculator->calculateCosmicMetrics($state);
-
-        $bio = $this->biologyMetrics->forUniverse($universe->id);
-        $eco = $this->ecosystemMetrics->forUniverse($universe);
-
-        $calculated_metrics = [
-            'material_stress' => $stress,
-            'order' => $cosmic['order'],
-            'energy_level' => $cosmic['energy_level'],
-            'actor_count' => $bio['total_alive'] ?? 0,
-            'total_population' => $eco['total_population'] ?? 0,
-            'ecosystem_metrics' => $eco,
-            'material_identity' => $this->materialIdentityProjector->projectFromState($state),
-        ];
-        // Merge: snapshot->metrics (cosmic impact from SupremeEntity) wins over calculated pressure.
-        $metrics = array_replace_recursive($snapshot->metrics ?? [], $calculated_metrics);
-
-        // Metrics invariant [0,1]: clamp when writing so downstream engines can trust values.
-        $metrics = $this->clampMetricsToUnitInterval($metrics);
-        if (isset($snapshot->entropy)) {
-            $snapshot->entropy = max(0.0, min(1.0, (float) $snapshot->entropy));
-        }
-
-        // Cosmic phase (dominant axis + hysteresis)
-        $metrics['cosmic_phase'] = $this->cosmicPhaseDetector->detect($snapshot, $metrics);
-
-        // Snapshot ảo (chưa lưu DB): cập nhật metrics vào bản ghi snapshot mới nhất để dashboard có số liệu gần đúng.
-        if (!$snapshot->exists) {
-            $latest = \App\Models\UniverseSnapshot::where('universe_id', $universe->id)
-                ->orderByDesc('tick')
-                ->first();
-            if ($latest) {
-                $latest->metrics = array_merge($latest->metrics ?? [], $metrics);
-                $latest->save();
-            }
-            return;
-        }
-
-        $snapshot->metrics = $metrics;
-        $snapshot->save();
+        $this->metricsAggregation->storePressureMetrics($universe, $snapshot);
     }
 
     /**
@@ -430,20 +304,7 @@ class EvaluateSimulationResult
      */
     protected function clampMetricsToUnitInterval(array $metrics): array
     {
-        $scalarKeys = ['material_stress', 'order', 'energy_level'];
-        foreach ($scalarKeys as $key) {
-            if (isset($metrics[$key])) {
-                $metrics[$key] = max(0.0, min(1.0, (float) $metrics[$key]));
-            }
-        }
-        if (isset($metrics['ethos']) && is_array($metrics['ethos'])) {
-            foreach (['spirituality', 'openness', 'rationality', 'hardtech'] as $dim) {
-                if (isset($metrics['ethos'][$dim])) {
-                    $metrics['ethos'][$dim] = max(0.0, min(1.0, (float) $metrics['ethos'][$dim]));
-                }
-            }
-        }
-        return $metrics;
+        return $this->metricsAggregation->clampMetricsToUnitInterval($metrics);
     }
 
     protected function detectAnomalies($universe, $snapshot): void
@@ -454,104 +315,27 @@ class EvaluateSimulationResult
         if ($entropy > 0.95) {
             event(new \App\Modules\Simulation\Events\AnomalyDetected($universe, [
                 'title' => 'Cánh cửa Hư vô (Void Gate) Mở ra',
-                'description' => 'Entropy đạt mức tới hạn ('.round($entropy*100, 2).'%). Cấu trúc thực tại đang tan biến.',
+                'description' => 'Entropy đạt mức tới hạn ('.round($entropy * 100, 2).'%). Cấu trúc thực tại đang tan biến.',
                 'severity' => 'CRITICAL'
             ]));
         } elseif ($stability < 0.2) {
-             event(new \App\Modules\Simulation\Events\AnomalyDetected($universe, [
-                'title' => 'Sụp đổ Cấu trúc Xã hội',
-                'description' => 'Chỉ số ổn định thấp kỷ lục ('.round($stability, 4).'). Các định chế đang tan rã.',
-                'severity' => 'CRITICAL'
+            event(new \App\Modules\Simulation\Events\AnomalyDetected($universe, [
+               'title' => 'Sụp đổ Cấu trúc Xã hội',
+               'description' => 'Chỉ số ổn định thấp kỷ lục ('.round($stability, 4).'). Các định chế đang tan rã.',
+               'severity' => 'CRITICAL'
             ]));
         } elseif (($snapshot->metrics['material_stress'] ?? 0) > 0.8) {
-             event(new \App\Modules\Simulation\Events\AnomalyDetected($universe, [
-                'title' => 'Căng thẳng Vật chất Cực độ',
-                'description' => 'Áp lực lên hạ tầng vượt ngưỡng an toàn. Nguy cơ ly khai diện rộng.',
-                'severity' => 'WARN'
+            event(new \App\Modules\Simulation\Events\AnomalyDetected($universe, [
+               'title' => 'Căng thẳng Vật chất Cực độ',
+               'description' => 'Áp lực lên hạ tầng vượt ngưỡng an toàn. Nguy cơ ly khai diện rộng.',
+               'severity' => 'WARN'
             ]));
         }
     }
 
     protected function createNarrativeChronicle($universe, $snapshot): void
     {
-        $entropy = (float) $snapshot->entropy;
-        $noise = $this->epistemicService->calculateNoise($universe, $entropy);
-
-        // Narrative v2: fact-first — use Historical Fact for this tick when available
-        $worldEventId = null;
-        $historicalBlock = null;
-        $fact = null;
-        if (config('worldos.narrative_v2.enable_fact_first_chronicle', true)) {
-            $fact = \App\Models\HistoricalFact::where('universe_id', $universe->id)
-                ->where('tick', $snapshot->tick)
-                ->latest()
-                ->first();
-            if ($fact !== null) {
-                $worldEventId = $fact->world_event_id;
-                $historicalBlock = [
-                    'year' => $fact->year,
-                    'tick' => $fact->tick,
-                    'category' => $fact->category,
-                    'metrics' => $fact->metrics_after ?? [],
-                    'events' => $fact->facts ?? [],
-                ];
-            }
-        }
-
-        $interpretations = [];
-        // Perspective layer disabled (PerspectiveEngine missing)
-
-        // Distort snapshot data for AI perception
-        $canonicalData = [
-            'entropy' => $entropy,
-            'stability_index' => (float) $snapshot->stability_index,
-            'metrics' => $snapshot->metrics ?? [],
-        ];
-        $perceivedData = $this->epistemicService->distort($universe, $canonicalData, $noise);
-        if ($historicalBlock !== null) {
-            $perceivedData['historical_block'] = $historicalBlock;
-        }
-
-        // Compile mythic text (compiler uses historical_block in prompt when present)
-        $narrative = $this->narrativeCompiler->setUniverse($universe)->compile($perceivedData, $noise);
-
-        $rawPayload = [
-            'action' => 'legacy_event',
-            'description' => $narrative,
-            'interpretations' => $interpretations,
-        ];
-        if ($historicalBlock !== null) {
-            $rawPayload['historical_block'] = $historicalBlock;
-        }
-
-        $chronicle = \App\Models\Chronicle::create([
-            'universe_id' => $universe->id,
-            'parent_id' => $fact?->parent_id,
-            'world_event_id' => $worldEventId,
-            'from_tick' => $snapshot->tick,
-            'to_tick' => $snapshot->tick,
-            'type' => 'narrative',
-            'raw_payload' => $rawPayload,
-            'perceived_archive_snapshot' => [
-                'noise_level' => $noise,
-                'clarity' => $this->epistemicService->getClarityLabel($noise),
-                'perceived_state' => $perceivedData,
-            ],
-        ]);
-
-        if (config('worldos.narrative_v2.enable_memory_graph', true) && $fact !== null) {
-            try {
-                $this->narrativeMemoryGraph->linkChronicleToFact($chronicle, $fact);
-            } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::warning('NarrativeMemoryGraph linkChronicleToFact failed: ' . $e->getMessage());
-            }
-        }
-
-        // Schedule LLM narrative via queue (no sync LLM call)
-        $this->narrativeScheduler->scheduleEventForChronicle($universe->id, $chronicle->id);
-
-        // Narrative 4-tier + Belief loop: interval-based jobs (era, religion spread, causal_trajectory, legend)
-        $this->runNarrativeIntervals($universe, $snapshot);
+        $this->narrativeChronicleService->createNarrativeChronicle($universe, $snapshot);
     }
 
     /**
@@ -559,83 +343,7 @@ class EvaluateSimulationResult
      */
     protected function runNarrativeIntervals(\App\Models\Universe $universe, $snapshot): void
     {
-        $tick = (int) $snapshot->tick;
-        $eraInterval = (int) config('worldos.narrative.era_interval', 200);
-        $mythologyInterval = (int) config('worldos.narrative.mythology_interval', 50);
-        $religionInterval = (int) config('worldos.narrative.religion_interval', 200);
-        $causal_trajectoryInterval = (int) config('worldos.narrative.causal_trajectory_interval', 500);
-        $legendInterval = (int) config('worldos.narrative.legend_interval', 100);
-        $chapterInterval = (int) config('worldos.narrative.chapter_interval', 150);
-
-        if ($tick > 0 && $eraInterval > 0 && $this->adaptiveScheduler->shouldRun('era_detect', $universe, $snapshot)) {
-            try {
-                $startTick = max(0, $tick - $eraInterval);
-                $era = $this->eraDetector->detectAndCreate($universe, $startTick, $tick);
-                if ($era !== null) {
-                    $this->narrativeScheduler->scheduleEra($universe->id, $startTick, $tick, $era->id);
-                }
-            } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::warning('Narrative interval: Era detect/schedule failed: ' . $e->getMessage());
-            }
-        }
-
-        if ($mythologyInterval > 0 && $this->adaptiveScheduler->shouldRun('mythology', $universe, $snapshot)) {
-            try {
-                $startTick = max(0, $tick - $mythologyInterval);
-                $chronicleIds = \App\Models\Chronicle::query()
-                    ->where('universe_id', $universe->id)
-                    ->whereBetween('to_tick', [$startTick, $tick])
-                    ->whereIn('type', ['narrative', 'material_transition', 'war', 'collapse', 'crisis'])
-                    ->orderByDesc('importance')
-                    ->limit(8)
-                    ->pluck('id')
-                    ->all();
-
-                $this->narrativeScheduler->scheduleMythology($universe->id, [
-                    'start_tick' => $startTick,
-                    'end_tick' => $tick,
-                    'chronicle_ids' => $chronicleIds,
-                ]);
-            } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::warning('Narrative interval: Mythology failed: ' . $e->getMessage());
-            }
-        }
-
-        if ($religionInterval > 0 && $this->adaptiveScheduler->shouldRun('religion_spread', $universe, $snapshot)) {
-            try {
-                $this->religionSpreadEngine->runForUniverse($universe, $tick);
-            } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::warning('Narrative interval: Religion spread failed: ' . $e->getMessage());
-            }
-        }
-
-        if ($causal_trajectoryInterval > 0 && $this->adaptiveScheduler->shouldRun('causal_trajectory', $universe, $snapshot)) {
-            try {
-                $this->narrativeScheduler->scheduleCausalTrajectory($universe->id, $tick);
-                $this->causal_trajectoryFulfillment->evaluateForUniverse($universe->id, $tick);
-            } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::warning('Narrative interval: CausalTrajectory failed: ' . $e->getMessage());
-            }
-        }
-
-        if ($legendInterval > 0 && $this->adaptiveScheduler->shouldRun('legend', $universe, $snapshot)) {
-            try {
-                $agent = \App\Models\LegendaryAgent::where('universe_id', $universe->id)->inRandomOrder()->first();
-                if ($agent !== null) {
-                    $this->narrativeScheduler->scheduleLegend($universe->id, null, $agent->id);
-                }
-            } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::warning('Narrative interval: Legend failed: ' . $e->getMessage());
-            }
-        }
-
-        if ($chapterInterval > 0 && $this->adaptiveScheduler->shouldRun('chapter', $universe, $snapshot)) {
-            try {
-                $this->narrativeScheduler->scheduleChapter($universe->id);
-            } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::warning('Narrative interval: Chapter schedule failed: ' . $e->getMessage());
-            }
-        }
+        $this->narrativeChronicleService->runNarrativeIntervals($universe, $snapshot);
     }
 
     /**
@@ -643,91 +351,14 @@ class EvaluateSimulationResult
      */
     protected function getBeliefContextForActor(\App\Models\Actor $actor): array
     {
-        $hasReligion = $actor->religions()->exists();
-        $hasCausalTrajectoryBelief = $actor->causal_trajectoryBeliefs()->exists();
-        $legendLevel = (int) $actor->legends()->max('legend_level');
-        if ($legendLevel === 0 && $actor->supremeEntity) {
-            $legendaryAgent = \App\Models\LegendaryAgent::where('original_agent_id', $actor->id)->first();
-            if ($legendaryAgent) {
-                $leg = \App\Models\Legend::where('legendary_agent_id', $legendaryAgent->id)->orderByDesc('legend_level')->first();
-                $legendLevel = $leg ? (int) $leg->legend_level : 0;
-            }
-        }
-        return [
-            'has_religion' => $hasReligion,
-            'has_causal_trajectory_belief' => $hasCausalTrajectoryBelief,
-            'legend_level' => $legendLevel,
-        ];
+        return $this->actorDecisionOrchestrator->getBeliefContextForActor($actor);
     }
 
     /**
      * Phase 2: Run CapabilityEngine + ActorDecisionEngine for key actors; record action in actor_events.
      */
-    protected function runActorDecisionForUniverse($universe, $snapshot, \App\Modules\Simulation\Core\Support\SimulationRandom $rng): void
+    protected function runActorDecisionForUniverse($universe, $snapshot, SimulationRandom $rng): void
     {
-        $maxActors = (int) \config('worldos.actor_decision.max_actors_per_pulse', 50);
-
-        $keyActors = \App\Models\Actor::query()
-            ->where('universe_id', $universe->id)
-            ->where('is_alive', true)
-            ->whereHas('supremeEntity')
-            ->orderByDesc('id')
-            ->limit($maxActors)
-            ->get();
-
-        $tick = (int) $snapshot->tick;
-        $state = (array) ($snapshot->state_vector ?? []);
-        $metrics = (array) ($snapshot->metrics ?? []);
-        $environment = [
-            'entropy' => $snapshot->entropy ?? 0.5,
-            'stability_index' => $snapshot->stability_index ?? 0.5,
-            'war_pressure' => $state['war_pressure'] ?? 0,
-        ];
-
-        foreach ($keyActors as $actor) {
-            $this->capabilityEngine->computeAndStore($actor, $tick);
-            $actor->refresh();
-            $capabilities = $actor->capabilities ?? [];
-            $traits = $actor->traits ?? array_fill(0, 17, 0.5);
-            $birthTick = (int) ($actor->birth_tick ?? $tick);
-            $belief = $this->getBeliefContextForActor($actor);
-            $environment['belief'] = $belief;
-
-            // DDD Mapping
-            $actorEntity = new ActorEntity(
-                id: $actor->id,
-                universeId: (int) $actor->universe_id,
-                name: $actor->name,
-                archetype: $actor->archetype,
-                traits: $traits,
-                metrics: $actor->metrics ?? [],
-                isAlive: (bool) $actor->is_alive,
-                generation: (int) ($actor->generation ?? 1),
-                biography: $actor->biography,
-                isHeroic: (bool) $actor->is_heroic,
-                heroicType: $actor->heroic_type,
-                vocationId: $actor->vocation_id
-            );
-
-            $worldState = WorldState::fromArray($snapshot->state_vector ?? []);
-
-            $dist = $this->actorDecisionEngine->getActionDistribution($actorEntity, $worldState, $tick);
-            $action = $this->actorDecisionEngine->rollAction($dist, $rng);
-            \App\Models\ActorEvent::create([
-                'actor_id' => $actor->id,
-                'tick' => $tick,
-                'event_type' => $action,
-                'context' => ['distribution' => $dist, 'rolled' => $action],
-            ]);
-            if ($this->actorDecisionEngine->isArtifactEligibleAction($action)) {
-                $this->artifactCreationEngine->tryCreate($actor, $universe, $tick, $action, $rng);
-            }
-        }
+        $this->actorDecisionOrchestrator->runActorDecisionForUniverse($universe, $snapshot, $rng);
     }
 }
-
-
-
-
-
-

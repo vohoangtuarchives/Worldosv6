@@ -5,20 +5,12 @@ import api from '@/lib/api';
 import type { MultiverseBloom, MultiverseResonance } from '@/types/api';
 
 // ── Multiverse Bloom ────────────────────────────
-// GET /apex/multiverse/bloom → MultiverseBloom | { data: MultiverseBloom }
 
 export function useMultiverseBloom() {
   const { data, error, isLoading } = useQuery<MultiverseBloom>({
     queryKey: ['multiverse', 'bloom'],
-    queryFn: async () => {
-      const res = await api.get('/apex/multiverse/bloom');
-      const payload = res.data;
-      // Handle both { data: MultiverseBloom } and direct MultiverseBloom
-      if (payload && typeof payload === 'object' && 'data' in payload && payload.data?.worlds) {
-        return payload.data as MultiverseBloom;
-      }
-      return payload as MultiverseBloom;
-    },
+    queryFn: () =>
+      api.get('/apex/multiverse/bloom').then((res) => res.data),
     refetchInterval: 15_000,
     refetchOnWindowFocus: true,
   });
@@ -26,30 +18,17 @@ export function useMultiverseBloom() {
   return {
     bloom: data,
     isLoading,
-    isError: error,
+    isError: !!error,
   };
 }
 
 // ── Multiverse Resonance ────────────────────────
-// GET /apex/multiverse/resonance → MultiverseResonance | { data: MultiverseResonance }
 
 export function useMultiverseResonance() {
   const { data, error, isLoading } = useQuery<MultiverseResonance>({
     queryKey: ['multiverse', 'resonance'],
-    queryFn: async () => {
-      const res = await api.get('/apex/multiverse/resonance');
-      const payload = res.data;
-      // Handle both { data: MultiverseResonance } and direct MultiverseResonance
-      if (
-        payload &&
-        typeof payload === 'object' &&
-        'data' in payload &&
-        payload.data?.resonance_pollen
-      ) {
-        return payload.data as MultiverseResonance;
-      }
-      return payload as MultiverseResonance;
-    },
+    queryFn: () =>
+      api.get('/apex/multiverse/resonance').then((res) => res.data),
     refetchInterval: 10_000,
     refetchOnWindowFocus: true,
   });
@@ -57,6 +36,6 @@ export function useMultiverseResonance() {
   return {
     resonance: data,
     isLoading,
-    isError: error,
+    isError: !!error,
   };
 }

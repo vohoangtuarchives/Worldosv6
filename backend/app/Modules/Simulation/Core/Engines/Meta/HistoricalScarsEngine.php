@@ -65,30 +65,29 @@ class HistoricalScarsEngine implements SimulationEngine
         if (empty($chronicles)) return;
 
         $scars = $state->getScars();
-        
+
         foreach ($chronicles as $chronicle) {
             $type = $chronicle->type ?? 'unknown';
             $magnitude = $this->estimateMagnitude($chronicle);
-            
+
             if ($magnitude <= 0) continue;
 
-            $scarKey = strtoupper($type) . '_SCAR';
-            
-            if (isset($scars[$scarKey])) {
-                $scars[$scarKey]['magnitude'] += $magnitude;
-                $scars[$scarKey]['last_updated_at'] = $tick;
-            } else {
-                $scars[$scarKey] = [
-                    'type' => $type,
-                    'magnitude' => $magnitude,
-                    'created_at' => $tick,
-                    'last_updated_at' => $tick,
-                    'metadata' => $chronicle->raw_payload ?? []
-                ];
-            }
+            // Append as StructuredScar-compatible format (numeric index, required fields for Rust engine)
+            $scars[] = [
+                'tick' => $tick,
+                'category' => 'historical_scar_' . $type,
+                'description' => 'Historical scar from chronicle: ' . $type,
+                'actor_id' => null,
+                'zone_id' => null,
+                'caused_by_id' => null,
+                'metadata' => array_merge(
+                    ['magnitude' => $magnitude, 'source_type' => $type],
+                    is_array($chronicle->raw_payload ?? null) ? $chronicle->raw_payload : []
+                ),
+            ];
         }
 
-        $state->setScars($scars);
+        $state->setScars(array_values($scars));
     }
 
     protected function processScarDynamics(WorldState $state, int $tick): void
