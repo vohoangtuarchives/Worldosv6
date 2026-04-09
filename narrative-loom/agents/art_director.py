@@ -1,6 +1,9 @@
+from core.agent_wrapper import agent_node
 import os
 import httpx
 from typing import Optional
+
+@agent_node("art_director")
 
 async def generate_visual_asset(prompt_text: str, is_portrait: bool = True) -> Optional[str]:
     """
@@ -54,3 +57,5 @@ async def generate_visual_asset(prompt_text: str, is_portrait: bool = True) -> O
     except Exception as e:
         print(f"ERROR: Art Director Exception: {e}")
         return None
+
+

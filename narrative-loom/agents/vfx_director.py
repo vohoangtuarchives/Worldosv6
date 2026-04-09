@@ -1,3 +1,4 @@
+from core.agent_wrapper import agent_node
 import os
 import json
 from typing import Dict, Any
@@ -28,6 +29,8 @@ Trả về định dạng JSON thuần túy.
 - Tóm tắt câu chuyện: {headline}
 """)
 ])
+
+@agent_node("vfx_director")
 
 async def vfx_director_agent(state: NarrativeState, config: Dict[str, Any] = None) -> NarrativeState:
     print("--- RUNNING AGENT: THE VFX DIRECTOR (VISUAL EFFECTS) ---")
@@ -74,3 +77,5 @@ async def vfx_director_agent(state: NarrativeState, config: Dict[str, Any] = Non
         "vfx_config": result, 
         "current_agent": "vfx_director"
     }
+
+

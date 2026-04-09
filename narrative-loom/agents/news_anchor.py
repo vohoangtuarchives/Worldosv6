@@ -1,3 +1,4 @@
+from core.agent_wrapper import agent_node
 import os
 from typing import Dict, Any
 from state import NarrativeState
@@ -25,6 +26,8 @@ Góc nhìn tòa soạn (Angle):
 {angle}
 """)
 ])
+
+@agent_node("news_anchor")
 
 async def news_anchor_agent(state: NarrativeState, config: Dict[str, Any] = None) -> NarrativeState:
     print("--- RUNNING AGENT: THE NEWS ANCHOR (BROADCASTING) ---")
@@ -62,3 +65,5 @@ async def news_anchor_agent(state: NarrativeState, config: Dict[str, Any] = None
         "news_slogan": slogan, 
         "current_agent": "news_anchor"
     }
+
+

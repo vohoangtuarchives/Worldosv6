@@ -3,21 +3,26 @@
 import { useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface ModalShellProps {
   open: boolean;
   onClose: () => void;
   title?: string;
+  subtitle?: string;
   children: React.ReactNode;
   maxWidth?: string;
+  className?: string;
 }
 
 export default function ModalShell({
   open,
   onClose,
   title,
+  subtitle,
   children,
   maxWidth = 'max-w-4xl',
+  className,
 }: ModalShellProps) {
   const handleEsc = useCallback(
     (e: KeyboardEvent) => {
@@ -44,39 +49,57 @@ export default function ModalShell({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+          transition={{ duration: 0.2 }}
+          className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label={title ?? 'Modal'}
         >
-          {/* Backdrop */}
-          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
-
-          {/* Content */}
+          {/* Backdrop – stronger blur + deeper tint */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-black/75 backdrop-blur-md"
+            onClick={onClose}
+          />
+
+          {/* Panel */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96, y: 24 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            transition={{ duration: 0.2 }}
-            className={`relative ${maxWidth} w-full max-h-[85vh] overflow-y-auto rounded-[28px] border border-slate-800 bg-[#0f0f12] p-8 shadow-2xl custom-scrollbar`}
+            exit={{ opacity: 0, scale: 0.96, y: 24 }}
+            transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+            className={cn(
+              'relative w-full max-h-[88vh] overflow-y-auto',
+              'rounded-3xl border border-[var(--border-subtle)] glass p-8 shadow-2xl',
+              'custom-scrollbar',
+              maxWidth,
+              className,
+            )}
           >
+            {/* Close button — always visible */}
+            <button
+              onClick={onClose}
+              id="modal-close-btn"
+              aria-label="Close modal"
+              className="absolute right-5 top-5 z-10 flex h-8 w-8 items-center justify-center rounded-xl border border-slate-700/50 bg-slate-800/60 text-slate-400 transition hover:bg-slate-700 hover:text-white"
+            >
+              <X size={15} />
+            </button>
+
             {/* Header */}
-            {title && (
-              <div className="mb-6 flex items-center justify-between">
-                <h2 className="text-xl font-black tracking-tight text-white">{title}</h2>
-                <button
-                  onClick={onClose}
-                  className="p-2 rounded-xl hover:bg-slate-800/50 text-slate-400 hover:text-white transition-colors"
-                >
-                  <X size={18} />
-                </button>
+            {(title || subtitle) && (
+              <div className="mb-6 pr-12">
+                {title && (
+                  <h2 className="text-xl font-bold tracking-tight text-white">{title}</h2>
+                )}
+                {subtitle && (
+                  <p className="mt-1 text-sm text-slate-500">{subtitle}</p>
+                )}
               </div>
             )}
-            {!title && (
-              <button
-                onClick={onClose}
-                className="absolute top-4 right-4 p-2 rounded-xl hover:bg-slate-800/50 text-slate-400 hover:text-white transition-colors z-10"
-              >
-                <X size={18} />
-              </button>
-            )}
+
             {children}
           </motion.div>
         </motion.div>

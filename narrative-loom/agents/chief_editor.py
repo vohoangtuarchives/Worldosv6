@@ -1,3 +1,4 @@
+from core.agent_wrapper import agent_node
 import os
 from typing import Dict, Any
 from state import NarrativeState
@@ -24,6 +25,8 @@ Giữ cho chỉ thị ngắn gọn, sắc bén và có tính định hướng ca
 Hãy đưa ra góc nhìn biên tập cho số báo này.
 """)
 ])
+
+@agent_node("chief_editor")
 
 async def chief_editor_agent(state: NarrativeState, config: Dict[str, Any] = None) -> NarrativeState:
     print("--- RUNNING AGENT: THE CHIEF EDITOR ---")
@@ -53,3 +56,5 @@ async def chief_editor_agent(state: NarrativeState, config: Dict[str, Any] = Non
     editorial_instruction = f"[CHIEF EDITOR ANGLE]:\n{result}"
     
     return {**state, "past_memories": state.get("past_memories", "") + "\n" + editorial_instruction, "current_agent": "chief_editor"}
+
+

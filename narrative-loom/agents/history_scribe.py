@@ -1,3 +1,4 @@
+from core.agent_wrapper import agent_node
 import json
 from langchain_core.prompts import ChatPromptTemplate
 from typing import Dict, Any
@@ -22,6 +23,8 @@ Trả về JSON chứa: "event_name" và "chronicle".
     ("human", "Ghi chép sự kiện này vào Sử sách.")
 ])
 
+@agent_node("history_scribe")
+
 async def scribe_history(req_data: dict) -> dict:
     llm = get_llm_for_agent("historian", world_id=req_data.get("world_id"))
     structured_llm = llm.with_structured_output(schema={"type": "object", "properties": {"event_name": {"type": "string"}, "chronicle": {"type": "string"}}, "required": ["event_name", "chronicle"]})
@@ -38,6 +41,8 @@ async def scribe_history(req_data: dict) -> dict:
     except Exception as e:
         print(f"DEBUG Error Scribe History: {e}")
         return {"event_name": "Sự Kiện Dị Thường", "chronicle": "Một chuyển động chưa từng có đã quét qua vùng không gian này."}
+
+@agent_node("history_scribe")
 
 async def history_scribe_api(event_type: str, impact_score: float, trigger_data: dict, world_id: int) -> dict:
     """
@@ -61,4 +66,6 @@ async def history_scribe_api(event_type: str, impact_score: float, trigger_data:
         "world_id": world_id
     }
     return await scribe_history(req_data)
+
+
 

@@ -1,3 +1,4 @@
+from core.agent_wrapper import agent_node
 import asyncio
 import os
 import random
@@ -16,6 +17,8 @@ class AudioDirectorAgent:
             "mystical": "https://cdn.pixabay.com/download/audio/2021/08/04/audio_0625c1539c.mp3?filename=deep-meditation-192828.mp3",
             "default": "https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3?filename=cinematic-time-lapse-115672.mp3"
         }
+
+    @agent_node("audio_director")
 
     async def compose_soundtrack(self, epoch_name: str, core_theme: str) -> dict:
         """
@@ -50,3 +53,5 @@ class AudioDirectorAgent:
             "stream_url": track_url,
             "success": True
         }
+
+

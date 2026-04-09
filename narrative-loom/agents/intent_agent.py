@@ -1,3 +1,4 @@
+from core.agent_wrapper import agent_node
 from typing import Any, Dict, List, Optional
 from pydantic import BaseModel
 from utils.llm_factory import get_llm
@@ -88,6 +89,8 @@ def _entropy_label(entropy: float) -> str:
     if entropy > 0.4: return "🟠 (căng thẳng)"
     return "🟢 (ổn định)"
 
+@agent_node("intent_agent")
+
 async def intent_agent(req: ActorIntentRequest) -> ActorIntentResponse:
     """Single-agent, no LangGraph pipeline needed — lightweight for real-time simulation."""
     import json, re, random, os
@@ -169,3 +172,5 @@ async def intent_agent(req: ActorIntentRequest) -> ActorIntentResponse:
         reasoning=parsed.get("reasoning", "Hành động vì bản năng sinh tồn."),
         confidence=float(parsed.get("confidence", 0.7)),
     )
+
+

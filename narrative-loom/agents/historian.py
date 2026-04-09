@@ -1,3 +1,4 @@
+from core.agent_wrapper import agent_node
 import json
 import os
 from langchain_core.prompts import ChatPromptTemplate
@@ -36,6 +37,8 @@ Phân tích:
 """),
     ("human", "Dữ liệu thô (Tick {tick_start} đến {tick_end}):\n\n{raw_payload}\n\nCHỈ THỊ TỪ TÒA SOẠN:\n{past_memories}\n\nTIẾNG VỌNG ĐA VŨ TRỤ:\n{whispers}")
 ])
+
+@agent_node("historian")
 
 async def historian_agent(state: NarrativeState, config: Dict[str, Any] = None) -> NarrativeState:
     """
@@ -142,3 +145,5 @@ async def historian_agent(state: NarrativeState, config: Dict[str, Any] = None) 
     
     # 5. Cập nhật State
     return {**state, "historical_outline": outline_data, "past_memories": past_memories, "current_agent": "historian"}
+
+

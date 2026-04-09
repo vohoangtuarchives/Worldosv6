@@ -1,3 +1,4 @@
+from core.agent_wrapper import agent_node
 import os
 from typing import Dict, Any
 from state import NarrativeState
@@ -14,6 +15,8 @@ Chấm điểm dựa trên: Độ sắc bén của góc nhìn, tính sống đ�
 """),
     ("human", "CẤU TRÚC BÀI VIẾT (Storyboard):\n{storyboard}\n\nBẢN THẢO CỦA PHÓNG VIÊN:\n{prose}")
 ])
+
+@agent_node("critic")
 
 async def critic_agent(state: NarrativeState, config: Dict[str, Any] = None) -> NarrativeState:
     print("--- RUNNING AGENT: THE CRITIC ---")
@@ -51,3 +54,5 @@ async def critic_agent(state: NarrativeState, config: Dict[str, Any] = None) -> 
     print(f"DEBUG: Critic Score: {report.get('score')}/10 - Passed: {report.get('is_passed')}")
     
     return {**state, "feedback": report, "revision_count": rev, "current_agent": "critic"}
+
+

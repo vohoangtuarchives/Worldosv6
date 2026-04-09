@@ -1,3 +1,4 @@
+from core.agent_wrapper import agent_node
 import json
 from langchain_core.prompts import ChatPromptTemplate
 from typing import Dict, Any
@@ -23,6 +24,8 @@ Trả về dữ liệu JSON bao gồm: "name" và "biography".
     ("human", "Hãy viết tiểu sử cho danh nhân này.")
 ])
 
+@agent_node("celebrity_synthesizer")
+
 async def synthesize_celebrity(req_data: dict) -> dict:
     llm = get_llm_for_agent("wordsmith", world_id=req_data.get("world_id"))
     structured_llm = llm.with_structured_output(schema={"type": "object", "properties": {"name": {"type": "string"}, "biography": {"type": "string"}}, "required": ["name", "biography"]})
@@ -42,6 +45,11 @@ async def synthesize_celebrity(req_data: dict) -> dict:
         return {"name": "Vô Danh", "biography": "Một sự hiện diện bí ẩn vừa xuất hiện với hành tung bất định."}
 
 
+@agent_node("celebrity_synthesizer")
+
+
 async def celebrity_synthesizer_api(req: dict) -> dict:
     """API wrapper called from main.py when /weave-celebrity is hit."""
     return await synthesize_celebrity(req)
+
+

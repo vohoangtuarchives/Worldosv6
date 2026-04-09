@@ -1,3 +1,4 @@
+from core.agent_wrapper import agent_node
 import json
 from langchain_core.prompts import ChatPromptTemplate
 from typing import Dict, Any
@@ -22,6 +23,8 @@ Trả về dữ liệu JSON bao gồm: "name" và "lore".
     ("human", "Hãy rèn tạo tác này.")
 ])
 
+@agent_node("artifact_forger")
+
 async def forge_artifact(req_data: dict) -> dict:
     llm = get_llm_for_agent("director", world_id=req_data.get("world_id"))
     structured_llm = llm.with_structured_output(schema={"type": "object", "properties": {"name": {"type": "string"}, "lore": {"type": "string"}}, "required": ["name", "lore"]})
@@ -41,6 +44,11 @@ async def forge_artifact(req_data: dict) -> dict:
         return {"name": "Khối Vật Chất Vô Danh", "lore": "Vật phẩm này tỏa ra ánh sáng rực rỡ nhưng không ai biết nguồn gốc của nó."}
 
 
+@agent_node("artifact_forger")
+
+
 async def artifact_forger_api(req: dict) -> dict:
     """API wrapper called from main.py when /forge-artifact is hit."""
     return await forge_artifact(req)
+
+

@@ -1,7 +1,9 @@
+from core.agent_wrapper import agent_node
 from typing import Dict, Any, List
 from state import NarrativeState
 
 class NarrativeSingularityEngine:
+    @agent_node("singularity_engine")
     def actor_gravity(self, events: List[Dict[str, Any]]) -> float:
         s = {}
         for e in events:
@@ -12,6 +14,7 @@ class NarrativeSingularityEngine:
         m = max(s.values())
         return min(1.0, m / max(1, sum(s.values())))
 
+    @agent_node("singularity_engine")
     def event_energy(self, events: List[Dict[str, Any]]) -> float:
         c = 0
         for e in events:
@@ -20,12 +23,14 @@ class NarrativeSingularityEngine:
                 c += 1
         return min(1.0, c / max(1, len(events)))
 
+    @agent_node("singularity_engine")
     def attractor_convergence(self, strength: Dict[str, float]) -> float:
         vals = sorted(strength.values(), reverse=True)
         if not vals:
             return 0.0
         return min(1.0, sum(vals[:3]))
 
+    @agent_node("singularity_engine")
     def detect(self, state: NarrativeState) -> Dict[str, Any] | None:
         events = state.get("filtered_events", [])
         strength = state.get("attractor_strength", {})
@@ -40,7 +45,10 @@ class NarrativeSingularityEngine:
         title = "Emergent Era"
         return {"score": score, "type": t, "title": title}
 
+@agent_node("singularity_engine")
 def singularity_engine_node(state: NarrativeState, config: Dict[str, Any] = None) -> NarrativeState:
     engine = NarrativeSingularityEngine()
     res = engine.detect(state)
     return {**state, "singularity": res, "current_agent": "singularity_engine"}
+
+

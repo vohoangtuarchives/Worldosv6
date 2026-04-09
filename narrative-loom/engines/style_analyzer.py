@@ -1,5 +1,7 @@
+from core.agent_wrapper import agent_node
 from state import NarrativeState
 
+@agent_node("style_analyzer")
 def style_analyzer_node(state: NarrativeState):
     """
     Style Analyzer: Phân tích Genre và thiết lập Style Guidelines cho câu chuyện.
@@ -20,3 +22,5 @@ def style_analyzer_node(state: NarrativeState):
     guidelines = style_map.get(genre, "Phong cách kể chuyện trung tính, rõ ràng và mạch lạc.")
     
     return {**state, "style_guidelines": guidelines, "current_agent": "Style_Analyzer"}
+
+

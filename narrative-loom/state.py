@@ -1,13 +1,30 @@
-from typing import TypedDict, List, Dict, Any
+"""
+NarrativeState — the shared state dict flowing through the LangGraph pipeline.
 
-class NarrativeState(TypedDict):
+We keep TypedDict (not Pydantic BaseModel) for native LangGraph reducer
+compatibility, but add two new tracking fields:
+  - task_id:          Celery task ID — used for Centrifugo channel routing
+  - completed_agents: accumulated list of agent names that have finished
+"""
+from typing import Any, Dict, List, Optional, TypedDict
+
+
+class NarrativeState(TypedDict, total=False):
+    # ── Core identifiers ────────────────────────────────────────
     world_id: int
-    world_era: str | None
-    tick_start: int | None
-    tick_end: int | None
-    ai_runtime: Dict[str, Any] | None
-    
+    world_era: Optional[str]
+    tick_start: Optional[int]
+    tick_end: Optional[int]
+    ai_runtime: Optional[Dict[str, Any]]
+
+    # ── Task tracking (new in v2) ────────────────────────────────
+    task_id: str                   # Celery task ID for Centrifugo routing
+    completed_agents: List[str]    # agents that have completed (for progress)
+
+    # ── Raw input ────────────────────────────────────────────────
     raw_chronicles: List[dict]
+
+    # ── Engine outputs ───────────────────────────────────────────
     normalized_events: List[dict]
     filtered_events: List[dict]
     event_scores: Dict[str, float]
@@ -16,38 +33,44 @@ class NarrativeState(TypedDict):
     dramatic_arc: Dict[str, Any]
     narrative_phase: str
     phase_score: float
-    singularity: Dict[str, Any] | None
-    
-    historical_outline: str
-    
+    singularity: Optional[Dict[str, Any]]
+
+    # ── Style / genre ────────────────────────────────────────────
     genre: str
     style_guidelines: str
-    
+
+    # ── Cross-pollination ────────────────────────────────────────
     cross_pollination_whispers: List[str]
-    
+
+    # ── Agent outputs ────────────────────────────────────────────
+    historical_outline: Any        # str | dict (HistoricalOutline)
     psychological_profiles: dict
-    
-    storyboard: str
-    
+    storyboard: Any                # str | dict (StoryboardSchema)
     final_prose: str
-    
+
+    # ── News / VFX ───────────────────────────────────────────────
     news_headline: str
     news_slogan: str
     vfx_config: dict
-    
+    vfx_hints: Optional[Dict[str, Any]]
+
+    # ── Critic loop ──────────────────────────────────────────────
     feedback: dict
     revision_count: int
-    
+
+    # ── Memory ───────────────────────────────────────────────────
     past_memories: str
-    
+
+    # ── Epistemic layer ──────────────────────────────────────────
     epistemic_noise: float
     epistemic_tier: str
     resonance_scars: List[str]
     reality_stability: float
-    
-    power_system: str | None
-    power_system_manifesto: str | None
-    era_context: str | None
-    vfx_hints: Dict[str, Any] | None
-    
+
+    # ── Reality knowledge ────────────────────────────────────────
+    power_system: Optional[str]
+    power_system_manifesto: Optional[str]
+    era_context: Optional[str]
+
+    # ── Pipeline metadata ────────────────────────────────────────
     current_agent: str

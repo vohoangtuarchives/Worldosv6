@@ -1,3 +1,4 @@
+from core.agent_wrapper import agent_node
 from typing import Dict, Any, List
 from state import NarrativeState
 
@@ -8,6 +9,7 @@ class EventNormalizer:
         "death_event": "death",
     }
 
+    @agent_node("event_normalizer")
     def normalize_event(self, e: Dict[str, Any]) -> Dict[str, Any]:
         t = e.get("type")
         nt = self.TYPE_MAP.get(t, t)
@@ -46,8 +48,11 @@ class EventNormalizer:
             "payload": payload,
         }
 
+@agent_node("event_normalizer")
 def event_normalizer_node(state: NarrativeState, config: Dict[str, Any] = None) -> NarrativeState:
     raw = state.get("raw_chronicles", [])
     normalizer = EventNormalizer()
     normalized = [normalizer.normalize_event(e) for e in raw]
     return {**state, "normalized_events": normalized, "current_agent": "event_normalizer"}
+
+

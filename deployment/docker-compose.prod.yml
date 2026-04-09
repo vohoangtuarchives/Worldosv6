@@ -257,7 +257,7 @@ services:
     networks:
       - internal
 
-  # NarrativeLoom (Python/LangGraph)
+  # NarrativeLoom API (FastAPI)
   narrative_loom:
     build:
       context: ../narrative-loom
@@ -265,17 +265,52 @@ services:
       provenance: false
     restart: always
     environment:
+      MODE: api
       WORLDOS_API_URL: http://nginx/api
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
-      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
       LOCAL_LLM_URL: ${LOCAL_LLM_URL:-}
       REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://:${REDIS_PASSWORD:-changeme_redis}@redis:6379/1
+      CENTRIFUGO_URL: http://centrifugo:8000
+      CENTRIFUGO_KEY: ${CENTRIFUGO_KEY:-changeme_centrifugo_api}
       SEMANTIC_CACHE_ENABLED: "true"
       LLM_CACHE_ENABLED: "true"
     depends_on:
       - backend
+      - redis
+    networks:
+      - internal
+
+  # NarrativeLoom Worker (Celery)
+  narrative_loom_worker:
+    build:
+      context: ../narrative-loom
+      dockerfile: Dockerfile
+      provenance: false
+    restart: always
+    environment:
+      MODE: worker
+      CELERY_CONCURRENCY: 2
+      WORLDOS_API_URL: http://nginx/api
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      LOCAL_LLM_URL: ${LOCAL_LLM_URL:-}
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://:${REDIS_PASSWORD:-changeme_redis}@redis:6379/1
+      CENTRIFUGO_URL: http://centrifugo:8000
+      CENTRIFUGO_KEY: ${CENTRIFUGO_KEY:-changeme_centrifugo_api}
+      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-}
+      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-}
+      LANGFUSE_HOST: ${LANGFUSE_HOST:-https://cloud.langfuse.com}
+      SEMANTIC_CACHE_ENABLED: "true"
+      LLM_CACHE_ENABLED: "true"
+    depends_on:
+      - redis
     networks:
       - internal
 

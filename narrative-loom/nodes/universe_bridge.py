@@ -1,3 +1,4 @@
+from core.agent_wrapper import agent_node
 import redis
 import os
 import random
@@ -14,6 +15,7 @@ def _get_redis():
         _redis_pool = redis.ConnectionPool.from_url(redis_url, decode_responses=True)
     return redis.Redis(connection_pool=_redis_pool)
 
+@agent_node("universe_bridge")
 def universe_bridge_node(state: NarrativeState) -> NarrativeState:
     """
     Universe Bridge Node: Lấy các tin tức/sự kiện từ các vũ trụ song song khác.
@@ -54,6 +56,7 @@ def universe_bridge_node(state: NarrativeState) -> NarrativeState:
         print(f"WARNING: Universe Bridge failed: {e}")
         return {**state, "cross_pollination_whispers": []}
 
+@agent_node("universe_bridge")
 def record_universe_whisper(state: NarrativeState):
     """Hàm helper để ghi lại 'tiếng vọng' của vũ trụ này cho các thế giới khác"""
     r = _get_redis()
@@ -74,3 +77,5 @@ def record_universe_whisper(state: NarrativeState):
         r.lpush(whisper_key, json.dumps(payload))
         r.ltrim(whisper_key, 0, 99)
         print("DEBUG: Epic event recorded in Multiverse Whispers.")
+
+

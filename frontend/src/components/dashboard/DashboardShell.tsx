@@ -1,247 +1,63 @@
 'use client';
 
-import React, { useState } from 'react';
-import Link from 'next/link';
+import { useState } from 'react';
 import { usePathname } from 'next/navigation';
-import {
-    LayoutDashboard,
-    Settings,
-    Database,
-    Menu,
-    X,
-    Zap,
-    Map,
-    Users,
-    Play,
-    Radio,
-    Globe,
-    Shield,
-    ChevronDown,
-} from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import Image from 'next/image';
-import { UniverseProvider, useUniverse } from '@/contexts/UniverseContext';
-
-interface SidebarItemProps {
-    icon: React.ComponentType<{ size?: number; className?: string }>;
-    label: string;
-    href: string;
-    active: boolean;
-}
-
-const SidebarItem = ({ icon: Icon, label, href, active }: SidebarItemProps) => (
-    <Link href={href}>
-        <motion.div
-            whileHover={{ x: 5 }}
-            whileTap={{ scale: 0.95 }}
-            className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 group cursor-pointer ${
-                active
-                ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 shadow-[0_0_15px_rgba(34,211,238,0.1)]'
-                : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800/50'
-            }`}
-        >
-            <Icon size={18} className={active ? 'text-cyan-400' : 'group-hover:text-slate-100'} />
-            <span className="text-sm font-medium">{label}</span>
-            {active && <motion.div layoutId="active-pill" className="ml-auto w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_8px_#22d3ee]" />}
-        </motion.div>
-    </Link>
-);
-
-const SectionLabel = ({ children }: { children: React.ReactNode }) => (
-    <div className="text-[10px] uppercase tracking-widest text-slate-500 font-bold px-4 mt-6 mb-2">
-        {children}
-    </div>
-);
-
-interface MenuSection {
-    label: string;
-    items: { icon: React.ComponentType<{ size?: number; className?: string }>; label: string; href: string }[];
-}
-
-const menuSections: MenuSection[] = [
-    {
-        label: 'Overview',
-        items: [
-            { icon: LayoutDashboard, label: 'Dossier Console', href: '/dashboard' },
-            { icon: Globe, label: 'Multiverse Map', href: '/dashboard/multiverse' },
-        ],
-    },
-    {
-        label: 'Simulation',
-        items: [
-            { icon: Play, label: 'Control Panel', href: '/dashboard/simulation' },
-            { icon: Users, label: 'Actor Registry', href: '/dashboard/actors' },
-            { icon: Map, label: 'Causal Map', href: '/dashboard/causal-map' },
-        ],
-    },
-    {
-        label: 'Monitoring',
-        items: [
-            { icon: Radio, label: 'Wavefunction', href: '/dashboard/wavefunction' },
-            { icon: Zap, label: 'Narrative Monitor', href: '/dashboard/intelligence/monitor' },
-        ],
-    },
-    {
-        label: 'System',
-        items: [
-            { icon: Database, label: 'Key Pool', href: '/dashboard/config/key-pool' },
-            { icon: Shield, label: 'AI Config', href: '/dashboard/config' },
-            { icon: Settings, label: 'Settings', href: '/dashboard/settings' },
-        ],
-    },
-];
-
-function UniverseSelector() {
-    const { universes, activeUniverseId, setSelectedUniverseId } = useUniverse();
-    const [isOpen, setIsOpen] = useState(false);
-
-    const activeUniverse = universes.find((u) => u.id === activeUniverseId);
-    const label = activeUniverse
-        ? `${activeUniverse.name || `Universe ${activeUniverse.id}`}`
-        : 'No universe';
-    const tick = activeUniverse?.current_tick ?? 0;
-
-    return (
-        <div className="relative px-4 mt-4">
-            <button
-                onClick={() => setIsOpen(!isOpen)}
-                className="w-full flex items-center justify-between gap-2 rounded-xl border border-slate-700/50 bg-slate-900/60 px-3 py-2.5 text-left transition hover:border-cyan-500/30"
-            >
-                <div className="min-w-0">
-                    <div className="text-xs font-bold text-slate-200 truncate">{label}</div>
-                    <div className="text-[10px] text-cyan-400 font-mono">Tick {tick}</div>
-                </div>
-                <ChevronDown size={14} className={`text-slate-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-            </button>
-            <AnimatePresence>
-                {isOpen && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -4 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -4 }}
-                        className="absolute left-4 right-4 top-full mt-1 z-50 rounded-xl border border-slate-700 bg-[#0f0f12] shadow-xl max-h-48 overflow-y-auto custom-scrollbar"
-                    >
-                        {universes.map((u) => (
-                            <button
-                                key={u.id}
-                                onClick={() => {
-                                    setSelectedUniverseId(u.id);
-                                    setIsOpen(false);
-                                }}
-                                className={`w-full text-left px-3 py-2 text-sm transition hover:bg-slate-800/50 ${
-                                    u.id === activeUniverseId ? 'text-cyan-400' : 'text-slate-300'
-                                }`}
-                            >
-                                <span className="font-medium">{u.name || `Universe ${u.id}`}</span>
-                                <span className="text-slate-500 ml-2 text-xs">Tick {u.current_tick ?? 0}</span>
-                            </button>
-                        ))}
-                    </motion.div>
-                )}
-            </AnimatePresence>
-        </div>
-    );
-}
+import { UniverseProvider } from '@/contexts/UniverseContext';
+import Sidebar from '@/components/shell/Sidebar';
+import AppHeader from '@/components/shell/AppHeader';
 
 function ShellContent({ children }: { children: React.ReactNode }) {
-    const [isOpen, setIsOpen] = useState(true);
-    const pathname = usePathname();
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const pathname = usePathname();
 
-    return (
-        <div className="flex min-h-screen bg-[#0a0a0c] text-slate-200 overflow-hidden">
-            {/* Sidebar */}
-            <motion.aside
-                initial={false}
-                animate={{ width: isOpen ? 260 : 0, opacity: isOpen ? 1 : 0 }}
-                className="relative h-screen bg-[#0f0f12] border-r border-slate-800/50 flex flex-col z-50 overflow-hidden"
-            >
-                <div className="p-6 flex items-center gap-3 border-b border-slate-800/50">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-600 to-purple-600 flex items-center justify-center shadow-lg shadow-cyan-900/20">
-                        <Zap size={22} className="text-white fill-white" />
-                    </div>
-                    <span className="text-xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">
-                        WorldOS V6
-                    </span>
-                </div>
+  return (
+    <div className="flex h-screen overflow-hidden bg-[var(--bg-base)] text-slate-200">
+      {/* Sidebar */}
+      <Sidebar isOpen={sidebarOpen} />
 
-                <UniverseSelector />
+      {/* Main area */}
+      <div className="flex flex-1 flex-col overflow-hidden">
+        <AppHeader
+          sidebarOpen={sidebarOpen}
+          onToggleSidebar={() => setSidebarOpen((v) => !v)}
+        />
 
-                <nav className="flex-1 p-4 pt-0 space-y-0.5 overflow-y-auto custom-scrollbar">
-                    {menuSections.map((section) => (
-                        <React.Fragment key={section.label}>
-                            <SectionLabel>{section.label}</SectionLabel>
-                            {section.items.map((item) => (
-                                <SidebarItem
-                                    key={item.href}
-                                    {...item}
-                                    active={pathname === item.href}
-                                />
-                            ))}
-                        </React.Fragment>
-                    ))}
-                </nav>
-
-                <div className="p-4 border-t border-slate-800/50">
-                    <div className="p-4 rounded-2xl bg-gradient-to-br from-slate-800/50 to-slate-900/50 border border-slate-700/50">
-                        <div className="text-xs text-slate-400 mb-1">System Status</div>
-                        <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                            <span className="text-sm font-semibold">Intelligence Active</span>
-                        </div>
-                    </div>
-                </div>
-            </motion.aside>
-
-            {/* Main Content */}
-            <main className="flex-1 h-screen overflow-y-auto relative custom-scrollbar bg-[radial-gradient(circle_at_50%_-20%,#1e1b4b,transparent)]">
-                {/* Header */}
-                <header className="sticky top-0 z-40 bg-[#0a0a0c]/80 backdrop-blur-xl border-b border-slate-800/50 px-8 py-4 flex items-center justify-between">
-                    <button
-                        onClick={() => setIsOpen(!isOpen)}
-                        className="p-2 rounded-lg hover:bg-slate-800/50 text-slate-400 hover:text-white transition-colors"
-                    >
-                        {isOpen ? <X size={20} /> : <Menu size={20} />}
-                    </button>
-
-                    <div className="flex items-center gap-4">
-                        <div className="flex flex-col items-end">
-                            <span className="text-sm font-bold">Admin Portal</span>
-                            <span className="text-[10px] text-cyan-400 font-mono tracking-tighter uppercase">Root Access</span>
-                        </div>
-                        <div className="w-10 h-10 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center overflow-hidden">
-                           <Image
-                               src="https://api.dicebear.com/7.x/bottts/svg?seed=WorldOS"
-                               alt="avatar"
-                               width={40}
-                               height={40}
-                               unoptimized
-                           />
-                        </div>
-                    </div>
-                </header>
-
-                <div className="p-8">
-                    <AnimatePresence mode="wait">
-                        <motion.div
-                            key={pathname}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -10 }}
-                            transition={{ duration: 0.3 }}
-                        >
-                            {children}
-                        </motion.div>
-                    </AnimatePresence>
-                </div>
-            </main>
-        </div>
-    );
+        <main
+          id="main-content"
+          className="flex-1 overflow-y-auto custom-scrollbar bg-[radial-gradient(ellipse_at_50%_-10%,rgba(30,27,75,0.4),transparent_60%)]"
+        >
+          <div className="mx-auto max-w-[1600px] p-6 lg:p-8">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={pathname}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+              >
+                {children}
+              </motion.div>
+            </AnimatePresence>
+          </div>
+        </main>
+      </div>
+    </div>
+  );
 }
 
-export default function DashboardShell({ children }: { children: React.ReactNode }) {
-    return (
-        <UniverseProvider>
-            <ShellContent>{children}</ShellContent>
-        </UniverseProvider>
-    );
+/**
+ * DashboardShell — root layout wrapper for all dashboard routes.
+ * Wraps content with UniverseProvider and renders the Sidebar + AppHeader.
+ */
+export default function DashboardShell({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <UniverseProvider>
+      <ShellContent>{children}</ShellContent>
+    </UniverseProvider>
+  );
 }

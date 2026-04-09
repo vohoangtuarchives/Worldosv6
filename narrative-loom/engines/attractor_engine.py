@@ -1,3 +1,4 @@
+from core.agent_wrapper import agent_node
 from typing import Dict, Any, List
 from state import NarrativeState
 
@@ -16,10 +17,12 @@ class AttractorFieldEngine:
         "battle": "warfare",
     }
 
+    @agent_node("attractor_engine")
     def classify(self, e: Dict[str, Any]) -> str:
         t = (e.get("type") or "").lower()
         return self.MAP.get(t, "misc")
 
+    @agent_node("attractor_engine")
     def group(self, events: List[Dict[str, Any]]) -> Dict[str, List[Dict[str, Any]]]:
         clusters: Dict[str, List[Dict[str, Any]]] = {}
         for e in events:
@@ -27,13 +30,17 @@ class AttractorFieldEngine:
             clusters.setdefault(a, []).append(e)
         return clusters
 
+    @agent_node("attractor_engine")
     def strength(self, clusters: Dict[str, List[Dict[str, Any]]]) -> Dict[str, float]:
         total = sum(len(v) for v in clusters.values()) or 1
         return {k: len(v)/total for k, v in clusters.items()}
 
+@agent_node("attractor_engine")
 def attractor_engine_node(state: NarrativeState, config: Dict[str, Any] = None) -> NarrativeState:
     events = state.get("filtered_events", [])
     engine = AttractorFieldEngine()
     clusters = engine.group(events)
     strength = engine.strength(clusters)
     return {**state, "attractor_clusters": clusters, "attractor_strength": strength, "current_agent": "attractor_engine"}
+
+

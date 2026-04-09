@@ -1,3 +1,4 @@
+from core.agent_wrapper import agent_node
 from typing import Dict, Any
 from state import NarrativeState
 import httpx
@@ -21,6 +22,8 @@ Hồ sơ nhân vật (JSON):
 {profiles}
 """)
 ])
+
+@agent_node("psychologist")
 
 async def psychologist_agent(state: NarrativeState, config: Dict[str, Any] = None) -> NarrativeState:
     """
@@ -96,3 +99,5 @@ async def psychologist_agent(state: NarrativeState, config: Dict[str, Any] = Non
         "psychological_profiles": {"analysis": result},
         "current_agent": "psychologist"
     }
+
+

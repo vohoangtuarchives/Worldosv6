@@ -1,8 +1,10 @@
+from core.agent_wrapper import agent_node
 from typing import Dict, Any, List
 from state import NarrativeState
 from .arc_engine import TENSION_MAP
 
 class NarrativePhaseEngine:
+    @agent_node("phase_engine")
     def event_density(self, events: List[Dict[str, Any]], window: int = 100) -> float:
         if not events:
             return 0.0
@@ -10,16 +12,19 @@ class NarrativePhaseEngine:
         span = (max(ticks) - min(ticks)) + 1
         return min(1.0, len(events) / max(1, span) * window)
 
+    @agent_node("phase_engine")
     def actor_diversity(self, events: List[Dict[str, Any]]) -> float:
         s = set(a for e in events for a in e.get("actors", []))
         return min(1.0, len(s) / 100.0)
 
+    @agent_node("phase_engine")
     def tension_energy(self, events: List[Dict[str, Any]]) -> float:
         if not events:
             return 0.0
         vals = [TENSION_MAP.get((e.get("type") or "").lower(), 0.4) for e in events]
         return min(1.0, sum(vals) / max(1, len(vals)))
 
+    @agent_node("phase_engine")
     def detect(self, events: List[Dict[str, Any]]) -> Dict[str, Any]:
         d = self.event_density(events)
         v = self.actor_diversity(events)
@@ -37,8 +42,11 @@ class NarrativePhaseEngine:
             phase = "mythic"
         return {"narrative_phase": phase, "phase_score": score}
 
+@agent_node("phase_engine")
 def phase_engine_node(state: NarrativeState, config: Dict[str, Any] = None) -> NarrativeState:
     events = state.get("filtered_events", [])
     engine = NarrativePhaseEngine()
     res = engine.detect(events)
     return {**state, **res, "current_agent": "phase_engine"}
+
+

@@ -1,9 +1,12 @@
+from core.agent_wrapper import agent_node
 import asyncio
 from typing import Dict, Any
 from state import NarrativeState
 from utils.memory_manager import EpisodicMemoryManager
 
 memory_db = EpisodicMemoryManager()
+
+@agent_node("archivist")
 
 async def archivist_agent(state: NarrativeState, config: Dict[str, Any] = None) -> NarrativeState:
     print("--- RUNNING AGENT: THE ARCHIVIST (MEMORY WIRING) ---")
@@ -37,3 +40,5 @@ async def archivist_agent(state: NarrativeState, config: Dict[str, Any] = None) 
         print("DEBUG: Archivist bị vô hiệu hóa do thiếu thư viện Vector DB (chromadb/sentence-transformers).")
 
     return {**state, "current_agent": "archivist"}
+
+

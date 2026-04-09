@@ -1,3 +1,4 @@
+from core.agent_wrapper import agent_node
 import os
 from typing import Dict, Any
 from state import NarrativeState
@@ -20,6 +21,8 @@ Chỉ thị từ Tổng Biên Tập:
 """)
 ])
 
+@agent_node("mythologist")
+
 async def mythologist_agent(state: NarrativeState, config: Dict[str, Any] = None) -> NarrativeState:
     print("--- RUNNING AGENT: THE MYTHOLOGIST ---")
     
@@ -41,3 +44,5 @@ async def mythologist_agent(state: NarrativeState, config: Dict[str, Any] = None
     })
     
     return {**state, "mythic_fragments": result, "current_agent": "mythologist"}
+
+

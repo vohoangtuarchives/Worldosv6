@@ -18,6 +18,16 @@
             "join_leave": true,
             "history_size": 10,
             "history_ttl": "60s"
+        },
+        {
+            "name": "narrative",
+            "publish": false,
+            "subscribe": true,
+            "presence": true,
+            "presence_stats": true,
+            "join_leave": true,
+            "history_size": 100,
+            "history_ttl": "600s"
         }
     ]
 }

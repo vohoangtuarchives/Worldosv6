@@ -1,3 +1,4 @@
+from core.agent_wrapper import agent_node
 import os
 from typing import Dict, Any
 from state import NarrativeState
@@ -35,6 +36,8 @@ Bối cảnh thế giới hiện tại:
 {world_state}
 """)
 ])
+
+@agent_node("director")
 
 async def director_agent(state: NarrativeState, config: Dict[str, Any] = None) -> NarrativeState:
     """
@@ -94,3 +97,5 @@ async def director_agent(state: NarrativeState, config: Dict[str, Any] = None) -
     print(f"DEBUG: Storyboard Scenes Generated: {len(result_dict.get('scenes', []))}")
     
     return {**state, "storyboard": result_dict, "current_agent": "director"}
+
+

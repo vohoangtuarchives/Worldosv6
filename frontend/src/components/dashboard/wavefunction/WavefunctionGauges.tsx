@@ -10,31 +10,33 @@ interface Props {
   informationalMass: InformationalMass | undefined;
 }
 
-function entropyTone(v: number): string {
-  if (v > 0.7) return 'from-rose-500/20 to-orange-500/10 border-rose-500/20 text-rose-200';
-  if (v < 0.3) return 'from-cyan-500/20 to-blue-500/10 border-cyan-500/20 text-cyan-200';
-  return 'from-amber-500/20 to-yellow-500/10 border-amber-500/20 text-amber-200';
+type GaugeTone = 'cyan' | 'amber' | 'danger' | 'emerald' | 'violet';
+
+function entropyTone(v: number): GaugeTone {
+  if (v > 0.7) return 'danger';
+  if (v < 0.3) return 'cyan';
+  return 'amber';
 }
 
-function stabilityTone(v: number): string {
-  if (v > 0.5) return 'from-emerald-500/20 to-green-500/10 border-emerald-500/20 text-emerald-200';
-  if (v < 0.3) return 'from-rose-500/20 to-red-500/10 border-rose-500/20 text-rose-200';
-  return 'from-amber-500/20 to-yellow-500/10 border-amber-500/20 text-amber-200';
+function stabilityTone(v: number): GaugeTone {
+  if (v > 0.5) return 'emerald';
+  if (v < 0.3) return 'danger';
+  return 'amber';
 }
 
-function collapseTone(v: number): string {
-  if (v > 0.5) return 'from-rose-500/20 to-red-500/10 border-rose-500/20 text-rose-200';
-  if (v < 0.2) return 'from-emerald-500/20 to-green-500/10 border-emerald-500/20 text-emerald-200';
-  return 'from-amber-500/20 to-yellow-500/10 border-amber-500/20 text-amber-200';
+function collapseTone(v: number): GaugeTone {
+  if (v > 0.5) return 'danger';
+  if (v < 0.2) return 'emerald';
+  return 'amber';
 }
 
 export default function WavefunctionGauges({ wavefunction, informationalMass }: Props) {
   const wf = wavefunction?.wavefunction;
 
-  const entropy = wf?.entropy ?? 0;
+  const entropy  = wf?.entropy ?? 0;
   const stability = wf?.stability_index ?? 0;
-  const collapse = wf?.collapse_probability ?? 0;
-  const mass = informationalMass?.informational_mass ?? 0;
+  const collapse  = wf?.collapse_probability ?? 0;
+  const mass      = informationalMass?.informational_mass ?? 0;
 
   return (
     <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
@@ -44,6 +46,7 @@ export default function WavefunctionGauges({ wavefunction, informationalMass }: 
         meta={`Attractor: ${wf?.active_attractor ?? '—'}`}
         icon={Activity}
         tone={entropyTone(entropy)}
+        progress={entropy}
         index={0}
       />
       <GaugeCard
@@ -52,6 +55,7 @@ export default function WavefunctionGauges({ wavefunction, informationalMass }: 
         meta={`Density: ${(wf?.information_density ?? 0).toFixed(2)}`}
         icon={Shield}
         tone={stabilityTone(stability)}
+        progress={stability}
         index={1}
       />
       <GaugeCard
@@ -60,6 +64,7 @@ export default function WavefunctionGauges({ wavefunction, informationalMass }: 
         meta={collapse > 0.5 ? 'High risk' : 'Stable'}
         icon={AlertTriangle}
         tone={collapseTone(collapse)}
+        progress={collapse}
         index={2}
       />
       <GaugeCard
@@ -67,7 +72,7 @@ export default function WavefunctionGauges({ wavefunction, informationalMass }: 
         value={mass.toFixed(2)}
         meta={`Risk: ${informationalMass?.singularity_risk ?? '—'}`}
         icon={Database}
-        tone="from-violet-500/20 to-purple-500/10 border-violet-500/20 text-violet-200"
+        tone="violet"
         index={3}
       />
     </div>

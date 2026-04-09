@@ -1,3 +1,4 @@
+from core.agent_wrapper import agent_node
 import os
 from typing import Dict, Any
 from state import NarrativeState
@@ -24,6 +25,8 @@ Dùng kỹ thuật "Show, Don't Tell" để bài viết sống động.
 {storyboard}
 """)
 ])
+
+@agent_node("wordsmith")
 
 async def wordsmith_agent(state: NarrativeState, config: Dict[str, Any] = None) -> NarrativeState:
     """
@@ -120,3 +123,5 @@ async def wordsmith_agent(state: NarrativeState, config: Dict[str, Any] = None) 
     print(f"DEBUG: Final Prose Total Length: {len(final_prose)}")
     
     return {**state, "final_prose": final_prose, "current_agent": "wordsmith"}
+
+
