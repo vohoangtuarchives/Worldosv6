@@ -20,7 +20,10 @@
       "Bash(xargs -I {} basename {})",
       "Bash(find /c/projects/IPFactory/backend/app -name \"*.php\" -type f -exec wc -l {} +)",
       "Bash(xargs wc:*)",
-      "Bash(php -l \"app/Modules/Simulation/Core/Runtime/WorldKernel.php\")"
+      "Bash(php -l \"app/Modules/Simulation/Core/Runtime/WorldKernel.php\")",
+      "Read(//tmp/**)",
+      "Bash(python3:*)",
+      "Bash(find backend:*)"
     ]
   }
 }
