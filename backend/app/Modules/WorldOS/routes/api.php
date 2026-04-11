@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Modules\WorldOS\Http\Controllers\UniverseController;
 use App\Modules\WorldOS\Http\Controllers\NarrativeController;
 use App\Modules\WorldOS\Http\Controllers\Api\ActorController;
+use App\Modules\WorldOS\Http\Controllers\Api\CentrifugoController;
 use App\Modules\WorldOS\Http\Controllers\Api\WorldController;
 use App\Modules\WorldOS\Http\Controllers\Api\TimelineController;
 use App\Modules\WorldOS\Http\Controllers\Api\AiConfigController;
@@ -46,6 +47,9 @@ Route::middleware('api')->prefix('worldos')->group(function () {
     // 6. System Configuration (GET)
     Route::get('config/keys', [AiConfigController::class , 'listKeys'])->name('worldos.config.keys.list');
     Route::get('config/settings', [AiConfigController::class , 'getSettings'])->name('worldos.config.settings.get');
+
+    // 7. Centrifugo WebSocket Token
+    Route::post('centrifugo/token', [CentrifugoController::class , 'token'])->name('worldos.centrifugo.token');
 });
 
 Route::middleware(['api', 'auth:sanctum'])->prefix('worldos')->group(function () {

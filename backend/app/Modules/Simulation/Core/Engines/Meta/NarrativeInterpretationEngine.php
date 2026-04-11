@@ -36,7 +36,7 @@ class NarrativeInterpretationEngine implements SimulationEngine
         $effects = [];
         $events = [];
         
-        // Note: SimulationKernel doesn't pass the events of the CURRENT tick to handles easily.
+        // Note: The kernel doesn't pass the events of the CURRENT tick to handle() easily.
         // In a Living System, we might need to fetch events from the WorldEventBus or a temporary registry.
         // For now, we simulate by checking the tick manifest or recent high-impact events.
         

@@ -4,12 +4,19 @@ declare(strict_types=1);
 
 namespace App\Modules\Simulation\Core\Runtime;
 
+use App\Modules\Simulation\Core\Domain\EngineExecutionRecord;
+use App\Modules\Simulation\Core\Domain\EngineResult;
+use App\Modules\Simulation\Core\Domain\PhaseExecutionResult;
+use App\Modules\Simulation\Core\Domain\SimulationTickResult;
+use App\Modules\Simulation\Core\Domain\TickContext;
 use App\Modules\Simulation\Core\Runtime\Causality\ImpactReport;
 use App\Modules\Simulation\Core\Runtime\Kernel\AgentBatchProcessor;
 use App\Modules\Simulation\Core\Runtime\Kernel\PhaseExecutor;
 use App\Modules\Simulation\Core\Runtime\Kernel\TickFinalizer;
 use App\Modules\Simulation\Core\Runtime\State\StateManager;
 use App\Modules\Simulation\Core\Runtime\State\WorldState;
+use App\Modules\Simulation\Enums\SimulationPhase;
+use App\Modules\Simulation\Services\Kernel\PhaseRegistry;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -18,9 +25,13 @@ use Illuminate\Support\Facades\Log;
  * "Laravel backend chỉ đóng vai orchestrator"
  * Orchestrates all 15 Primitive Rules across 5 Reality Phases.
  *
+ * Supports two registration modes during migration:
+ * 1. Legacy: registerSystem() into orchestrationMap (backward compatible)
+ * 2. New: PhaseRegistry with AbstractWorldOSEngine instances
+ *
  * Delegates to:
  * - AgentBatchProcessor: Agent actions & gRPC processing
- * - PhaseExecutor: 5-phase reality execution
+ * - PhaseExecutor: 5-phase reality execution (legacy systems)
  * - TickFinalizer: Causal impacts, domain events, finalization
  */
 class WorldKernel
@@ -50,18 +61,22 @@ class WorldKernel
     public const RULE_CYCLE        = 'cycle';
     public const RULE_ATTRACTION   = 'attraction';
 
-    /** @var array<string, array<string, object[]>> */
+    /** @var array<string, array<string, object[]>> Legacy orchestration map */
     protected array $orchestrationMap = [];
 
     /** @var ImpactReport[] */
     protected array $tickImpacts = [];
+
+    /** @var PhaseExecutionResult[] Results from the latest tick's v2 engines. */
+    protected array $phaseResults = [];
 
     protected AgentBatchProcessor $agentProcessor;
     protected PhaseExecutor $phaseExecutor;
     protected TickFinalizer $tickFinalizer;
 
     public function __construct(
-        protected StateManager $stateManager
+        protected StateManager $stateManager,
+        protected ?PhaseRegistry $registry = null,
     ) {
         $this->initOrchestrationMap();
         $this->agentProcessor = new AgentBatchProcessor();
@@ -76,6 +91,11 @@ class WorldKernel
         }
     }
 
+    /**
+     * Legacy system registration — kept for backward compatibility.
+     *
+     * @deprecated Register engines via PhaseRegistry instead.
+     */
     public function registerSystem(string $phase, string $category, object $system): void
     {
         $this->orchestrationMap[$phase][$category][] = $system;
@@ -89,6 +109,7 @@ class WorldKernel
         $startTime = microtime(true);
         Log::debug("WorldKernel: Starting Orchestration Tick $tick");
         $this->tickImpacts = [];
+        $this->phaseResults = [];
 
         // 1. PHASE 0: Agents Act First (§V8 Realignment)
         // V9: Ensure zones are prepopulated with agents from the single source of truth
@@ -101,11 +122,24 @@ class WorldKernel
         $state->syncAgentsToZones();
 
         // 2. PHASE 1-5: Sequential Reality Phases
-        foreach ($this->orchestrationMap as $phase => $categories) {
+        foreach (SimulationPhase::inOrder() as $phase) {
             $phaseStart = microtime(true);
-            $this->phaseExecutor->executePhase($phase, $categories, $state, $tick, $this->tickImpacts);
+
+            // 2a. Legacy orchestration map systems
+            $phaseKey = $phase->key();
+            $categories = $this->orchestrationMap[$phaseKey] ?? [];
+            if (!empty($categories)) {
+                $this->phaseExecutor->executePhase($phaseKey, $categories, $state, $tick, $this->tickImpacts);
+            }
+
+            // 2b. v2 PhaseRegistry engines
+            if ($this->registry !== null) {
+                $phaseResult = $this->executeRegistryPhase($phase, $state, $tick);
+                $this->phaseResults[] = $phaseResult;
+            }
+
             $phaseMs = round((microtime(true) - $phaseStart) * 1000, 2);
-            Log::debug("WorldKernel: Phase [{$phase}] completed in {$phaseMs}ms");
+            Log::debug("WorldKernel: Phase [{$phaseKey}] completed in {$phaseMs}ms");
         }
 
         // 3. Process Global Emergence: State Transition Engine (ISTE)
@@ -118,5 +152,107 @@ class WorldKernel
 
         $totalMs = round((microtime(true) - $startTime) * 1000, 2);
         Log::debug("WorldKernel: Orchestration Tick $tick Completed in {$totalMs}ms");
+    }
+
+    /**
+     * Execute v2 engines registered via PhaseRegistry for a given phase.
+     * Respects rust_authoritative config — OVERLAP/BRIDGE engines are skipped when Rust is authoritative.
+     */
+    protected function executeRegistryPhase(SimulationPhase $phase, WorldState $state, int $tick): PhaseExecutionResult
+    {
+        $result = new PhaseExecutionResult($phase);
+
+        $rustAuthoritative = (bool) config('worldos_simulation.simulation.rust_authoritative', true);
+        $engines = $this->registry->getEnginesForPhase($phase, [], $rustAuthoritative);
+
+        if (empty($engines)) {
+            return $result;
+        }
+
+        $ctx = new TickContext(
+            universeId: 0, // Will be set from state when available
+            tick: $tick,
+            seed: crc32((string) $tick),
+        );
+
+        foreach ($engines as $engine) {
+            $engineStart = microtime(true);
+
+            try {
+                $engineResult = $engine->execute($state, $ctx);
+                $engineResult->metrics['duration_ms'] = round((microtime(true) - $engineStart) * 1000, 2);
+
+                Log::debug("WorldKernel: v2 Engine [{$engine->name()}] in phase [{$phase->key()}]", [
+                    'skipped' => $engineResult->skipped,
+                    'mutations' => count($engineResult->stateChanges),
+                    'events' => count($engineResult->events),
+                    'duration_ms' => $engineResult->getDurationMs(),
+                ]);
+            } catch (\Throwable $e) {
+                Log::error("WorldKernel: v2 Engine [{$engine->name()}] failed", [
+                    'phase' => $phase->key(),
+                    'error' => $e->getMessage(),
+                ]);
+
+                $engineResult = EngineResult::skipped("Engine error: {$e->getMessage()}");
+                $engineResult->metrics['duration_ms'] = round((microtime(true) - $engineStart) * 1000, 2);
+            }
+
+            $result->addEngineResult($engine->name(), $engineResult);
+        }
+
+        return $result;
+    }
+
+    /**
+     * Get results from the latest tick's v2 engine execution.
+     *
+     * @return PhaseExecutionResult[]
+     */
+    public function getPhaseResults(): array
+    {
+        return $this->phaseResults;
+    }
+
+    /**
+     * Run a single tick and return a SimulationTickResult.
+     *
+     * Bridge method that provides API parity with the deprecated SimulationKernel::runTick(),
+     * enabling SimulationReplayService and other consumers to migrate away from SimulationKernel.
+     */
+    public function runTick(WorldState $state, TickContext $ctx): SimulationTickResult
+    {
+        $this->execute($state, $ctx->getTick());
+
+        // Collect events and metrics from v2 PhaseRegistry engine results
+        $allEvents = [];
+        $allCausalLinks = [];
+        $engineMetrics = [];
+
+        foreach ($this->phaseResults as $phaseResult) {
+            foreach ($phaseResult->getEngineResults() as $engineName => $engineResult) {
+                foreach ($engineResult->events as $ev) {
+                    $allEvents[] = $ev;
+                }
+                foreach ($engineResult->causalLinks as $type => $pid) {
+                    $allCausalLinks[$type] = $pid;
+                }
+                $engineMetrics[] = new EngineExecutionRecord(
+                    engineName: $engineName,
+                    elapsedMs: $engineResult->getDurationMs(),
+                    effectsCount: count($engineResult->stateChanges),
+                    eventsCount: count($engineResult->events),
+                    priority: 'NORMAL',
+                    wasSkipped: $engineResult->skipped,
+                );
+            }
+        }
+
+        return new SimulationTickResult(
+            state: $state,
+            events: $allEvents,
+            causalLinks: $allCausalLinks,
+            engineMetrics: $engineMetrics,
+        );
     }
 }

@@ -10,7 +10,7 @@ use App\Modules\Simulation\Core\Runtime\Contracts\TickSchedulerInterface;
  *
  * Single place for universe-level tick assignment: which stages run at which tick,
  * and which engines are active at a given tick (by tickRate). Composes EngineRegistry
- * and TickScheduler; does not replace SimulationKernel or SimulationTickPipeline.
+ * and TickScheduler; does not replace WorldKernel or SimulationTickPipeline.
  */
 final class SimulationScheduler
 {

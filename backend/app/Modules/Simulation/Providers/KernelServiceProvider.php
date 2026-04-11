@@ -2,15 +2,207 @@
 
 namespace App\Modules\Simulation\Providers;
 
+use App\Modules\Simulation\Engines\LegacyEngineAdapter;
+use App\Modules\Simulation\Enums\EngineAuthority;
+use App\Modules\Simulation\Enums\SimulationPhase;
+use App\Modules\Simulation\Services\Kernel\PhaseRegistry;
 use Illuminate\Support\ServiceProvider;
 
 class KernelServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        // PhaseRegistry singleton — v2 engine registration system
+        $this->app->singleton(PhaseRegistry::class, function ($app) {
+            $registry = new PhaseRegistry();
+
+            // ===================================================================
+            // v2 PhaseRegistry Engine Registration
+            // Wrap legacy SimulationEngine implementations via LegacyEngineAdapter
+            // so they run through the new PhaseRegistry pipeline in WorldKernel.
+            //
+            // Authority classification (rust-authoritative-boundary):
+            //   SUPPLEMENT = Rust doesn't compute this; always runs
+            //   OVERLAP    = Rust already computes; skipped when rust_authoritative=true
+            //   BRIDGE     = PHP wrapper delegating to Rust; skipped when rust_authoritative=true
+            //   (STUB engines removed entirely — FinanceEngine, DiplomacyEngine, ProductionChainEngine)
+            //   (RuleStage-duplicate engines removed — already called via RuleStage.run())
+            // ===================================================================
+
+            // --- Environment phase ---
+            $registry->register(new LegacyEngineAdapter(
+                $app->make(\App\Modules\Simulation\Core\Engines\Physics\ClimateEngine::class),
+                SimulationPhase::Environment,
+                EngineAuthority::OVERLAP,
+            ));
+            $registry->register(new LegacyEngineAdapter(
+                $app->make(\App\Modules\Simulation\Core\Engines\Physics\GeologicalEngine::class),
+                SimulationPhase::Environment,
+                EngineAuthority::OVERLAP,
+            ));
+            $registry->register(new LegacyEngineAdapter(
+                $app->make(\App\Modules\Simulation\Core\Engines\Physics\MetabolicEngine::class),
+                SimulationPhase::Environment,
+                EngineAuthority::OVERLAP,
+            ));
+            $registry->register(new LegacyEngineAdapter(
+                $app->make(\App\Modules\Simulation\Core\Engines\Physics\CosmicPressureEngine::class),
+                SimulationPhase::Environment,
+                EngineAuthority::OVERLAP,
+            ));
+            $registry->register(new LegacyEngineAdapter(
+                $app->make(\App\Modules\Simulation\Core\Engines\Physics\RealityAnchorEngine::class),
+                SimulationPhase::Environment,
+            ));
+            $registry->register(new LegacyEngineAdapter(
+                $app->make(\App\Modules\Simulation\Core\Engines\Physics\MaterialEvolutionEngine::class),
+                SimulationPhase::Environment,
+            ));
+
+            // --- Life phase ---
+            $registry->register(new LegacyEngineAdapter(
+                $app->make(\App\Modules\Simulation\Core\Engines\Environment\LivingWorldEngine::class),
+                SimulationPhase::Life,
+            ));
+            $registry->register(new LegacyEngineAdapter(
+                $app->make(\App\Modules\Simulation\Core\Engines\Biological\AutopoieticEvolutionEngine::class),
+                SimulationPhase::Life,
+            ));
+
+            // --- Mind phase ---
+            $registry->register(new LegacyEngineAdapter(
+                $app->make(\App\Modules\Simulation\Core\Engines\Social\PsychologyEngine::class),
+                SimulationPhase::Mind,
+                EngineAuthority::OVERLAP,
+            ));
+            $registry->register(new LegacyEngineAdapter(
+                $app->make(\App\Modules\Simulation\Core\Engines\Social\IdeaDiffusionEngine::class),
+                SimulationPhase::Mind,
+            ));
+            $registry->register(new LegacyEngineAdapter(
+                $app->make(\App\Modules\Simulation\Core\Engines\Meta\NarrativeConflictEngine::class),
+                SimulationPhase::Mind,
+            ));
+            $registry->register(new LegacyEngineAdapter(
+                $app->make(\App\Modules\Simulation\Core\Engines\Meta\InformationPropagationEngine::class),
+                SimulationPhase::Mind,
+            ));
+            $registry->register(new LegacyEngineAdapter(
+                $app->make(\App\Modules\Simulation\Core\Engines\Meta\MeaningEngine::class),
+                SimulationPhase::Mind,
+            ));
+            $registry->register(new LegacyEngineAdapter(
+                $app->make(\App\Modules\Simulation\Core\Engines\Meta\KnowledgeEvolutionEngine::class),
+                SimulationPhase::Mind,
+            ));
+
+            // --- Social phase ---
+            $registry->register(new LegacyEngineAdapter(
+                $app->make(\App\Modules\Simulation\Core\Engines\Social\GlobalEconomyEngine::class),
+                SimulationPhase::Social,
+                EngineAuthority::OVERLAP,
+            ));
+            $registry->register(new LegacyEngineAdapter(
+                $app->make(\App\Modules\Simulation\Core\Engines\Social\PoliticsEngine::class),
+                SimulationPhase::Social,
+            ));
+            $registry->register(new LegacyEngineAdapter(
+                $app->make(\App\Modules\Simulation\Core\Engines\Social\CultureEngine::class),
+                SimulationPhase::Social,
+            ));
+            $registry->register(new LegacyEngineAdapter(
+                $app->make(\App\Modules\Simulation\Core\Engines\Meta\PowerStructureEngine::class),
+                SimulationPhase::Social,
+            ));
+            $registry->register(new LegacyEngineAdapter(
+                $app->make(\App\Modules\Simulation\Core\Engines\Social\MarketEngine::class),
+                SimulationPhase::Social,
+                EngineAuthority::OVERLAP,
+            ));
+            $registry->register(new LegacyEngineAdapter(
+                $app->make(\App\Modules\Simulation\Core\Engines\Social\TradeEngine::class),
+                SimulationPhase::Social,
+                EngineAuthority::OVERLAP,
+            ));
+            // STUB removed: DiplomacyEngine (empty — will be implemented in separate change)
+            // STUB removed: FinanceEngine (empty — will be implemented in separate change)
+            // STUB removed: ProductionChainEngine (empty — will be implemented in separate change)
+            $registry->register(new LegacyEngineAdapter(
+                $app->make(\App\Modules\Simulation\Core\Engines\Social\InequalityEngine::class),
+                SimulationPhase::Social,
+                EngineAuthority::OVERLAP,
+            ));
+            $registry->register(new LegacyEngineAdapter(
+                $app->make(\App\Modules\Simulation\Core\Engines\Social\LegitimacyEliteEngine::class),
+                SimulationPhase::Social,
+            ));
+            $registry->register(new LegacyEngineAdapter(
+                $app->make(\App\Modules\Simulation\Core\Engines\Social\CivilizationSettlementEngine::class),
+                SimulationPhase::Social,
+            ));
+            $registry->register(new LegacyEngineAdapter(
+                $app->make(\App\Modules\Simulation\Core\Engines\Social\CivilizationPhysicsEngine::class),
+                SimulationPhase::Social,
+            ));
+            $registry->register(new LegacyEngineAdapter(
+                $app->make(\App\Modules\Simulation\Core\Engines\Social\CivilizationLongCycleEngine::class),
+                SimulationPhase::Social,
+            ));
+            $registry->register(new LegacyEngineAdapter(
+                $app->make(\App\Modules\Simulation\Core\Engines\Meta\CulturalInfluenceEngine::class),
+                SimulationPhase::Social,
+            ));
+            $registry->register(new LegacyEngineAdapter(
+                $app->make(\App\Modules\Simulation\Core\Engines\Meta\ThermodynamicPhaseEngine::class),
+                SimulationPhase::Social,
+                EngineAuthority::BRIDGE,
+            ));
+
+            // --- Meta phase ---
+            $registry->register(new LegacyEngineAdapter(
+                $app->make(\App\Modules\Simulation\Core\Engines\Meta\MythogenesisEngine::class),
+                SimulationPhase::Meta,
+            ));
+            $registry->register(new LegacyEngineAdapter(
+                $app->make(\App\Modules\Simulation\Core\Engines\Meta\CausalityEngine::class),
+                SimulationPhase::Meta,
+            ));
+            $registry->register(new LegacyEngineAdapter(
+                $app->make(\App\Modules\Simulation\Core\Engines\Meta\IdeologyEngine::class),
+                SimulationPhase::Meta,
+            ));
+            $registry->register(new LegacyEngineAdapter(
+                $app->make(\App\Modules\Simulation\Core\Engines\Meta\AscensionEngine::class),
+                SimulationPhase::Meta,
+            ));
+            // RuleStage-duplicate removed: CausalHistoryEngine (called in RuleStage.run())
+            $registry->register(new LegacyEngineAdapter(
+                $app->make(\App\Modules\Simulation\Core\Engines\Meta\SingularityStabilityEngine::class),
+                SimulationPhase::Meta,
+            ));
+            $registry->register(new LegacyEngineAdapter(
+                $app->make(\App\Modules\Simulation\Core\Engines\Meta\NarrativePropagationEngine::class),
+                SimulationPhase::Meta,
+            ));
+            $registry->register(new LegacyEngineAdapter(
+                $app->make(\App\Modules\Simulation\Core\Engines\Meta\NarrativeInterpretationEngine::class),
+                SimulationPhase::Meta,
+            ));
+            $registry->register(new LegacyEngineAdapter(
+                $app->make(\App\Modules\Simulation\Core\Engines\Social\WarEngine::class),
+                SimulationPhase::Meta,
+                EngineAuthority::OVERLAP,
+            ));
+
+            return $registry;
+        });
+
         // Phase 80: World Kernel & Primitive Systems
         $this->app->singleton(\App\Modules\Simulation\Core\Runtime\WorldKernel::class, function ($app) {
-            $kernel = new \App\Modules\Simulation\Core\Runtime\WorldKernel($app->make(\App\Modules\Simulation\Core\Runtime\State\StateManager::class));
+            $kernel = new \App\Modules\Simulation\Core\Runtime\WorldKernel(
+                $app->make(\App\Modules\Simulation\Core\Runtime\State\StateManager::class),
+                $app->make(PhaseRegistry::class),
+            );
 
             // Phase 1: Environment
             $kernel->registerSystem(

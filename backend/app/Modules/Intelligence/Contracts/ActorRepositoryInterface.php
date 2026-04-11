@@ -26,6 +26,13 @@ interface ActorRepositoryInterface
     public function saveBatch(array $actors): void;
     
     public function delete(int $id): void;
-    
+
+    /**
+     * Batch-delete actors by their IDs in a single query.
+     *
+     * @param int[] $ids
+     */
+    public function deleteBatch(array $ids): void;
+
     public function getActiveCount(int $universeId): int;
 }

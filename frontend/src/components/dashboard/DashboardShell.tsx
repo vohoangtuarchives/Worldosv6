@@ -4,12 +4,16 @@ import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { UniverseProvider } from '@/contexts/UniverseContext';
+import { useRealtimeSync } from '@/hooks/useRealtimeSync';
 import Sidebar from '@/components/shell/Sidebar';
 import AppHeader from '@/components/shell/AppHeader';
 
 function ShellContent({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const pathname = usePathname();
+
+  // Activate WebSocket → React Query cache invalidation bridge
+  useRealtimeSync();
 
   return (
     <div className="flex h-screen overflow-hidden bg-[var(--bg-base)] text-slate-200">

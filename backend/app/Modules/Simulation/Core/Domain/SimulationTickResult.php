@@ -6,7 +6,7 @@ namespace App\Modules\Simulation\Core\Domain;
 use App\Modules\Simulation\Core\Runtime\State\WorldState;
 
 /**
- * Result of a SimulationKernel::runTick() call.
+ * Result of a WorldKernel::runTick() call.
  * Contains the final state and any events/causal links emitted by engines.
  */
 final class SimulationTickResult

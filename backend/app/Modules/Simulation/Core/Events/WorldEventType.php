@@ -49,6 +49,9 @@ final class WorldEventType
     public const ECONOMIC_BOOM = 'economic_boom';
     public const CURRENCY_CREATED = 'currency_created';
 
+    // Diplomacy
+    public const TREATY_EXPIRED = 'treaty_expired';
+
     // Population
     public const MIGRATION_WAVE = 'migration_wave';
     public const POPULATION_BOOM = 'population_boom';
@@ -89,6 +92,7 @@ final class WorldEventType
             self::ART_MOVEMENT_BORN, self::CULTURAL_GOLDEN_AGE, self::LITERARY_REVOLUTION,
             self::ARCHITECTURAL_STYLE_BORN, self::CULTURAL_DRIFT,
             self::TRADE_ROUTE_ESTABLISHED, self::MARKET_CRASH, self::ECONOMIC_BOOM, self::CURRENCY_CREATED,
+            self::TREATY_EXPIRED,
             self::MIGRATION_WAVE, self::POPULATION_BOOM, self::FAMINE, self::PLAGUE_OUTBREAK, self::CROP_FAILURE,
             self::IDEOLOGY_BORN, self::PHILOSOPHY_SCHOOL, self::POLITICAL_REVOLUTION, self::STABILITY_CRISIS, self::CONSTITUTION_WRITTEN,
             self::STRUCTURAL_DECAY, self::PHASE_TRANSITION, self::ECOLOGICAL_COLLAPSE,
@@ -115,6 +119,7 @@ final class WorldEventType
             self::CULTURAL_DRIFT => 'culture',
             self::TRADE_ROUTE_ESTABLISHED => 'economy', self::MARKET_CRASH => 'economy',
             self::ECONOMIC_BOOM => 'economy', self::CURRENCY_CREATED => 'economy',
+            self::TREATY_EXPIRED => 'diplomacy',
             self::MIGRATION_WAVE => 'population', self::POPULATION_BOOM => 'population',
             self::FAMINE => 'population', self::PLAGUE_OUTBREAK => 'population', self::CROP_FAILURE => 'population',
             self::IDEOLOGY_BORN => 'ideology', self::PHILOSOPHY_SCHOOL => 'ideology',

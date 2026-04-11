@@ -13,6 +13,11 @@ return [
     |--------------------------------------------------------------------------
     | Simulation Tick Driver (Phase 5)
     |--------------------------------------------------------------------------
+    | @deprecated — This toggle exists for backward compatibility only.
+    |               Default is 'rust_only'. The 'laravel_kernel' option routes
+    |               through the deprecated SimulationKernel and will be removed
+    |               in a future release. Do not change this setting.
+    |
     | laravel_kernel: tick from Rust, then optionally run Laravel SimulationKernel
     |                 (see simulation_kernel_post_tick) and overwrite snapshot.
     | rust_only:     tick entirely from Rust; Laravel only syncs state, saves
@@ -24,6 +29,7 @@ return [
     |--------------------------------------------------------------------------
     | Simulation Kernel (Laravel-side post-tick)
     |--------------------------------------------------------------------------
+    | @deprecated — Will be removed alongside SimulationKernel and simulation_tick_driver.
     | When true and simulation_tick_driver is laravel_kernel, after Rust engine
     | saves snapshot, run SimulationKernel and overwrite snapshot.
     */
@@ -37,7 +43,7 @@ return [
     | pipeline stages skip writing if state_vector already has the corresponding key.
     */
     'simulation' => [
-        'rust_authoritative' => (bool) env('WORLDOS_SIMULATION_RUST_AUTHORITATIVE', false),
+        'rust_authoritative' => (bool) env('WORLDOS_SIMULATION_RUST_AUTHORITATIVE', true),
     ],
 
     /*

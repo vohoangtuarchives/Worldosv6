@@ -40,6 +40,8 @@ class EngineServiceProvider extends ServiceProvider
         );
 
         // State Management (Phase 37)
+        $this->app->singleton(\App\Modules\Simulation\Core\Runtime\State\StateLoader::class);
+        $this->app->singleton(\App\Modules\Simulation\Core\Runtime\State\StateWriter::class);
         $this->app->singleton(\App\Modules\Simulation\Core\Runtime\State\StateManager::class);
 
         // Simulation Kernel (effect-based, deterministic tick) + Event Bus (Tier 3, Phase 5 Track A)
@@ -265,17 +267,9 @@ class EngineServiceProvider extends ServiceProvider
                 $app->make(\App\Modules\Simulation\Core\Runtime\Contracts\TickSchedulerInterface::class)
             );
         });
-        $this->app->singleton(\App\Modules\Simulation\Core\SimulationKernel::class, function ($app) {
-            return new \App\Modules\Simulation\Core\SimulationKernel(
-                $app->make(\App\Modules\Simulation\Core\EffectResolver::class),
-                $app->make(\App\Modules\Simulation\Core\EngineRegistry::class),
-                $app->make(\App\Modules\Simulation\Core\Contracts\WorldEventBusInterface::class),
-                $app->make(\App\Modules\Simulation\Core\Services\TickMetricsService::class)
-            );
-        });
         $this->app->singleton(\App\Modules\Simulation\Core\Services\SimulationReplayService::class, function ($app) {
             return new \App\Modules\Simulation\Core\Services\SimulationReplayService(
-                $app->make(\App\Modules\Simulation\Core\SimulationKernel::class),
+                $app->make(\App\Modules\Simulation\Core\Runtime\WorldKernel::class),
             );
         });
 

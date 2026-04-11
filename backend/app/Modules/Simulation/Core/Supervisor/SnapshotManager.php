@@ -8,18 +8,16 @@ use App\Modules\Simulation\Repositories\UniverseSnapshotRepository;
 use App\Modules\Simulation\Core\Contracts\SnapshotArchiveInterface;
 use App\Modules\Simulation\Core\EngineRegistry;
 use App\Modules\Simulation\Core\Support\SnapshotLoader;
-use App\Modules\Simulation\Core\SimulationKernel;
 use App\Modules\Simulation\Services\Cosmology\SimulationClock;
 
 /**
- * Persists or creates virtual snapshot; optionally runs SimulationKernel post-tick.
+ * Persists or creates virtual snapshot after each tick.
  */
 final class SnapshotManager
 {
     public function __construct(
         private readonly UniverseSnapshotRepository $snapshots,
         private readonly SnapshotLoader $snapshotLoader,
-        private readonly SimulationKernel $simulationKernel,
         private readonly EngineRegistry $engineRegistry,
         private readonly SnapshotArchiveInterface $snapshotArchive,
         private readonly SimulationClock $clock,
@@ -33,24 +31,6 @@ final class SnapshotManager
         if ($shouldSave) {
             $saved = $this->saveSnapshot($universe, $snapshotData, $tickDurationMsPerTick, $engineManifest);
             $this->snapshotArchive->archive($universe, $saved);
-            $tickDriver = config('worldos.simulation_tick_driver', 'rust_only');
-            if ($tickDriver === 'laravel_kernel' && config('worldos.simulation_kernel_post_tick')) {
-                $state = $this->snapshotLoader->fromSnapshot($universe, $saved);
-                $ctx = new \App\Modules\Simulation\Core\Domain\TickContext(
-                    (int) $universe->id,
-                    (int) $saved->tick,
-                    (int) ($universe->seed ?? 0)
-                );
-                $result = $this->simulationKernel->runTick($state, $ctx);
-                $newState = $result->state;
-                $saved = $this->snapshots->save($universe, [
-                    'tick' => $newState->getTick(),
-                    'state_vector' => $newState->getStateVector(),
-                    'entropy' => $newState->getEntropy(),
-                    'stability_index' => $newState->getStateVectorKey('stability_index') ?? $newState->getMetric('stability_index'),
-                    'metrics' => $newState->getMetrics(),
-                ]);
-            }
 
             return $saved;
         }

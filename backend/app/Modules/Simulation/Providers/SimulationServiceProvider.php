@@ -69,6 +69,8 @@ class SimulationServiceProvider extends ServiceProvider
                 \App\Modules\Simulation\Console\Commands\WorldosEngineProductsCommand::class,
                 \App\Modules\Simulation\Console\Commands\WorldosMetricsReportCommand::class,
                 \App\Modules\Simulation\Console\Commands\WorldosSimCommand::class,
+                \App\Modules\Simulation\Console\Commands\StressTestCommand::class,
+                \App\Modules\Simulation\Console\Commands\HealthCheckCommand::class,
             ]);
         }
     }

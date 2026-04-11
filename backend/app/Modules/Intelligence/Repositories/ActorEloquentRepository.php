@@ -75,6 +75,15 @@ class ActorEloquentRepository implements ActorRepositoryInterface
         ActorModel::destroy($id);
     }
 
+    public function deleteBatch(array $ids): void
+    {
+        if (empty($ids)) {
+            return;
+        }
+
+        ActorModel::whereIn('id', $ids)->delete();
+    }
+
     public function getActiveCount(int $universeId): int
     {
         return ActorModel::where('universe_id', $universeId)

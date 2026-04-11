@@ -15,6 +15,14 @@ final class CivilizationDiscoveryPostSnapshotHandler implements PostSnapshotHand
 
     public function handle(Universe $universe, UniverseSnapshot $snapshot): void
     {
+        // Skip when Rust is authoritative and discovery fields already present
+        if (config('worldos_simulation.simulation.rust_authoritative', true)) {
+            $sv = is_array($snapshot->state_vector) ? $snapshot->state_vector : [];
+            if (isset($sv['civilization']['discovery'])) {
+                return;
+            }
+        }
+
         $this->civilizationDiscoveryService->evaluate($universe, (int) $snapshot->tick, $snapshot);
     }
 }

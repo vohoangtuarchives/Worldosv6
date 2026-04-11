@@ -7,7 +7,7 @@ namespace App\Modules\Simulation\Core\Services;
 use App\Models\TickManifest;
 use App\Models\UniverseSnapshot;
 use App\Modules\Simulation\Core\Domain\TickContext;
-use App\Modules\Simulation\Core\SimulationKernel;
+use App\Modules\Simulation\Core\Runtime\WorldKernel;
 use App\Modules\Simulation\Core\Runtime\State\WorldState;
 use Illuminate\Support\Facades\Log;
 
@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\Log;
 final class SimulationReplayService
 {
     public function __construct(
-        private readonly SimulationKernel $kernel,
+        private readonly WorldKernel $kernel,
     ) {}
 
     /**

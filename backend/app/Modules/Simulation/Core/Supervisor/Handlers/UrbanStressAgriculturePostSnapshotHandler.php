@@ -19,6 +19,15 @@ final class UrbanStressAgriculturePostSnapshotHandler implements PostSnapshotHan
         if (! Config::get('worldos.urban_stress_agriculture.enabled', true)) {
             return;
         }
+
+        // Skip when Rust is authoritative and agriculture fields already present
+        if (Config::get('worldos_simulation.simulation.rust_authoritative', true)) {
+            $sv = is_array($snapshot->state_vector) ? $snapshot->state_vector : [];
+            if (isset($sv['agriculture_capacity'])) {
+                return;
+            }
+        }
+
         $this->urbanStressAgricultureService->update($universe);
     }
 }
