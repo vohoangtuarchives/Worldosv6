@@ -1,0 +1,231 @@
+================================================================================
+WORLDOS ENGINE ANALYSIS - FILES READ REPORT
+Generated: April 10, 2026
+================================================================================
+
+BASE CLASSES & INTERFACES (5 files)
+====================================
+
+1. SimulationEngine.php
+   Location: backend/app/Modules/Simulation/Core/Contracts/
+   Lines: 54
+   Type: Interface Contract
+   Imports: EngineResult, TickContext, WorldState
+
+2. AbstractWorldOSEngine.php
+   Location: backend/app/Modules/Simulation/Engines/
+   Lines: 63
+   Type: Abstract Base Class
+   Extends: Implements WorldOSEngineInterface
+   
+3. EngineInterface.php
+   Location: backend/app/Modules/Simulation/Core/Engines/
+   Lines: 7
+   Type: Interface
+   Extends: SimulationEngine
+
+4. LegacyEngineAdapter.php
+   Location: backend/app/Modules/Simulation/Engines/
+   Lines: 75
+   Type: Adapter Pattern
+   Extends: AbstractWorldOSEngine
+   Purpose: Bridges legacy handle() to new execute()
+
+5. EngineResult.php
+   Location: backend/app/Modules/Simulation/Core/Engines/
+   Lines: 17
+   Type: Data Transfer Object
+   Properties: stateChanges, events, metrics, causalLinks
+
+================================================================================
+ENVIRONMENT PHASE (3 files)
+===========================
+
+1. GeographyEngine.php
+   Location: backend/app/Modules/Simulation/Core/Engines/Environment/
+   Lines: 154
+   Implements: EngineInterface
+   
+2. MetabolicEngine.php
+   Location: backend/app/Modules/Simulation/Core/Engines/Physics/
+   Lines: 127
+   Implements: EngineInterface
+   Integrates: Rust FFI (FfiRuleEngine)
+
+3. PotentialFieldEngine.php
+   Location: backend/app/Modules/Simulation/Core/Engines/Physics/
+   Lines: 88
+   Implements: SimulationEngine
+   Status: Delegated to Rust core (passive bridge)
+
+================================================================================
+LIFE PHASE (2 files)
+====================
+
+1. LivingWorldEngine.php
+   Location: backend/app/Modules/Simulation/Core/Engines/Environment/
+   Lines: 186
+   Implements: EngineInterface
+   Features: Population/resource feedback loop with migration
+
+2. AutopoieticEvolutionEngine.php
+   Location: backend/app/Modules/Simulation/Core/Engines/Biological/
+   Lines: 155
+   Implements: SimulationEngine
+   Features: Self-modifying DSL logic via RuleMutationService
+
+================================================================================
+MIND PHASE (3 files)
+====================
+
+1. PsychologyEngine.php
+   Location: backend/app/Modules/Simulation/Core/Engines/Social/
+   Lines: 100
+   Implements: EngineInterface
+   Metrics: morale, unrest, fear, anger (per zone)
+
+2. IdeaDiffusionEngine.php
+   Location: backend/app/Modules/Simulation/Core/Engines/Social/
+   Lines: 113
+   Implements: EngineInterface
+   Features: Technology spread with deterministic hashing
+
+3. NarrativeConflictEngine.php
+   Location: backend/app/Modules/Simulation/Core/Engines/Meta/
+   Lines: 75
+   Implements: SimulationEngine
+   Features: Narrative competition (virality-based)
+
+================================================================================
+SOCIAL PHASE (5 files)
+======================
+
+1. GlobalEconomyEngine.php
+   Location: backend/app/Modules/Simulation/Core/Engines/Social/
+   Lines: 66
+   Implements: EngineInterface
+   Metrics: GDP, inflation, GDP per capita
+
+2. PoliticsEngine.php
+   Location: backend/app/Modules/Simulation/Core/Engines/Social/
+   Lines: 83
+   Implements: EngineInterface
+   Features: Governance emergence (tribal → republic → monarchy)
+
+3. CultureEngine.php
+   Location: backend/app/Modules/Simulation/Core/Engines/Social/
+   Lines: 160
+   Implements: EngineInterface
+   Features: Meme aggregation, cultural artifacts
+
+4. PowerStructureEngine.php
+   Location: backend/app/Modules/Simulation/Core/Engines/Meta/
+   Lines: 66
+   Implements: SimulationEngine
+   Features: Coup risk detection, monolithicity tracking
+
+5. AscensionEngine.php
+   Location: backend/app/Modules/Simulation/Core/Engines/Meta/
+   Lines: 73
+   Type: Service Class (not inherited from SimulationEngine)
+   Features: Supreme entity evolution with AI axiom shifts
+
+================================================================================
+META PHASE (5 files)
+====================
+
+1. MythogenesisEngine.php
+   Location: backend/app/Modules/Simulation/Core/Engines/Meta/
+   Lines: 194
+   Implements: SimulationEngine
+   Features: Event → Myth → Belief pipeline with RNG-based evolution
+
+2. CausalityEngine.php
+   Location: backend/app/Modules/Simulation/Core/Engines/Meta/
+   Lines: 82
+   Implements: SimulationEngine
+   Features: DSL-based causal integrity evaluation
+
+3. CausalHistoryEngine.php
+   Location: backend/app/Modules/Simulation/Core/Engines/Meta/
+   Lines: 113
+   Implements: SimulationEngine
+   Features: Semantic causal link recording, attractor tracking
+
+4. IdeologyEngine.php
+   Location: backend/app/Modules/Simulation/Core/Engines/Meta/
+   Lines: 140
+   Implements: SimulationEngine
+   Features: Scar-to-ideology conversion with trait modifiers
+
+5. (Note: NarrativeConflictEngine listed above in Mind Phase
+         but executes in Meta phase - narrative handling spans domains)
+
+================================================================================
+SUMMARY STATISTICS
+===================
+
+Total Files Read: 18 (5 base + 3 env + 2 life + 3 mind + 5 social/meta)
+Total Lines of Code: ~1,850
+Date Range: January 2026 - April 2026 (file modification dates)
+
+Directory Structure:
+- /backend/app/Modules/Simulation/Engines/ (2 files: Abstract + Adapter)
+- /backend/app/Modules/Simulation/Core/Contracts/ (1 file: Interface)
+- /backend/app/Modules/Simulation/Core/Engines/ (14 files)
+  - /Engines/Environment/ (2 files)
+  - /Engines/Physics/ (2 files)
+  - /Engines/Biological/ (1 file)
+  - /Engines/Social/ (3 files)
+  - /Engines/Meta/ (6 files)
+
+Language: PHP 8+ (declare(strict_types=1) used)
+
+Namespaces:
+- App\Modules\Simulation\Core\Contracts (interfaces)
+- App\Modules\Simulation\Engines (abstract base)
+- App\Modules\Simulation\Core\Engines\* (domain-specific engines)
+
+Dependencies:
+- Illuminate\Support\Facades (Log, Config)
+- App\Contracts\* (WorldOSEngineInterface, CausalityGraphServiceInterface)
+- App\Models\* (Universe, HistoricalFact, Myth, CulturalArtifact, etc)
+- App\Modules\Simulation\Core\* (Services, State, Context, Effects, Events)
+
+================================================================================
+KEY FINDINGS
+============
+
+1. Execution Model:
+   - All engines implement either SimulationEngine or EngineInterface
+   - Execute via handle(WorldState, TickContext) method
+   - Return EngineResult with stateChanges, events, metrics, causalLinks
+
+2. Determinism:
+   - RNG seeded with (universeId, tick, engineSeed)
+   - Deterministic hashing (crc32) for idea diffusion
+   - Supports replay and distributed computation
+
+3. Performance:
+   - Tick rates configurable: 1-100 ticks per run
+   - 5 engines marked parallel-safe
+   - Rust FFI for computationally intensive operations (metabolism)
+   - Delegated state management (PotentialFieldEngine → Rust)
+
+4. Integration:
+   - DSL-driven rules (5 DSL paths)
+   - Event-driven architecture (WorldEvent enum)
+   - Service layer injection (RuleVmService, RuleMutationService, etc)
+   - In-memory state caching (GeographyEngine persistent maps)
+
+5. Phases & Priorities:
+   - 5 simulation phases with clear boundaries
+   - Priorities control execution order within phases
+   - Some engines run in multiple phases (esp. Meta)
+   - Trait-based phase defaults (DefaultSimulationEnginePhase)
+
+================================================================================
+ANALYSIS COMPLETE
+Generated: 2026-04-10T21:30:00Z
+Analyzer: Claude Code v1.0
+================================================================================

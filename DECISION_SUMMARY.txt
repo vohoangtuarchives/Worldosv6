@@ -1,0 +1,47 @@
+STUB ENGINE DECISION SUMMARY — WorldOS V6
+==========================================
+
+3 ENGINES TO IMPLEMENT (Social Tier):
+✅ FinanceEngine — Zone-based credit/debt tracking
+✅ DiplomacyEngine — Treaty management + tension calculation  
+✅ ProductionChainEngine — Industrial output formula
+
+8 ENGINES TO ACTIVATE (Meta Tier):
+✅ MetaAttractorEngine (already called in RuleStage L82 & L96)
+✅ OmegaConvergenceEngine (injected in RuleStage L42)
+✅ PostApotheosisEngine (injected in RuleStage L41)
+✅ HigherDimensionalEngine (injected in RuleStage L36)
+✅ InfiniteRecursionEngine (injected in RuleStage L37)
+✅ IdealismEngine (injected in RuleStage L38)
+✅ ResonanceBleedingEngine (injected in RuleStage L31)
+✅ SingularityEngine (injected in RuleStage L39)
+
+2 ENGINES TO REMOVE (Orphaned Meta Tier):
+❌ NarrativeConflictEngine — Registered but never called
+❌ NarrativePropagationEngine — Registered but never called
+
+KEY FINDINGS:
+- All 14 engines registered in service containers
+- Only 11 actually execute in kernel pipeline
+- Social engines: stubs (empty handle()) awaiting implementation
+- 8 Meta engines: logic complete, need RuleStage to call them
+- 2 Meta engines: dead code (orphaned)
+
+INFRASTRUCTURE READY:
+✅ FinanceEngine: civilization.finance state key, test at L75-84
+✅ DiplomacyEngine: diplomacy.tensions, DiplomaticTreaty model
+✅ ProductionChainEngine: civilization.production, formula documented
+
+NO RUST OVERLAP:
+- Rust does not handle finance/diplomacy/production
+- These are pure Laravel implementations
+
+EFFORT ESTIMATE:
+- Implement 3 Social engines: ~4 hours (LOW effort, test specs exact)
+- Verify 8 Meta engines execute: ~1 hour (just ensure RuleStage calls them)
+- Remove 2 Orphans: 10 minutes (delete registration lines)
+
+FILES CREATED:
+1. STUB_ENGINE_ANALYSIS.md — Detailed per-engine breakdown
+2. SOCIAL_ENGINES_IMPLEMENTATION_SPEC.md — Implementation specs
+3. DECISION_MATRIX.txt — Full decision matrix
