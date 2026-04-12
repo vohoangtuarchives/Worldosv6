@@ -3,6 +3,7 @@
 import { useQuery, useMutation } from '@tanstack/react-query';
 
 import api from '@/lib/api';
+import { useCentrifugoConnection, useAdaptiveRefetchInterval } from '@/hooks/useCentrifugo';
 import type {
   ActorSummary,
   ActorDetail,
@@ -11,9 +12,12 @@ import type {
   SupremeEntity,
 } from '@/types/api';
 
-// ── Actor list for a universe (auto-refresh every 10s) ──
+// ── Actor list for a universe (adaptive polling) ──
 
 export function useActors(universeId: number | null) {
+  const { state } = useCentrifugoConnection();
+  const refetchInterval = useAdaptiveRefetchInterval(state, 10_000);
+
   const { data, error, isLoading } = useQuery<ActorSummary[]>({
     queryKey: ['universes', universeId, 'actors'],
     queryFn: () =>
@@ -21,7 +25,7 @@ export function useActors(universeId: number | null) {
         .get(`/worldos/universes/${universeId}/actors`)
         .then((res) => res.data),
     enabled: !!universeId,
-    refetchInterval: 10000,
+    refetchInterval,
     refetchOnWindowFocus: true,
   });
 

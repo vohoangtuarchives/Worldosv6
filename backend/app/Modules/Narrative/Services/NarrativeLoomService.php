@@ -4,6 +4,7 @@ namespace App\Modules\Narrative\Services;
 
 use App\Models\AiKeyPool;
 use App\Modules\Intelligence\Services\AI\AiGateway;
+use App\Services\CircuitBreaker;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -16,12 +17,14 @@ class NarrativeLoomService
 {
     protected string $baseUrl;
     protected int $timeout;
+    protected CircuitBreaker $circuitBreaker;
 
     public function __construct(
         protected AiGateway $aiGateway
     ) {
         $this->baseUrl = rtrim((string) config('services.loom.url', 'http://narrative_loom:8001'), '/');
         $this->timeout = (int) config('services.loom.timeout', 600);
+        $this->circuitBreaker = new CircuitBreaker('narrative_loom', 3, 60);
     }
 
     /**
@@ -29,6 +32,12 @@ class NarrativeLoomService
      */
     public function weave(int $worldId, ?int $tickStart = null, ?int $tickEnd = null): array
     {
+        if (! $this->circuitBreaker->isAvailable()) {
+            Log::warning('NarrativeLoom: circuit breaker OPEN — skipping weave call');
+
+            return ['ok' => false, 'error' => 'NarrativeLoom circuit breaker is open (service temporarily unavailable)'];
+        }
+
         $world = \App\Models\World::find($worldId);
         $genre = $world ? ($world->current_genre ?? $world->base_genre) : 'generic';
         $runtime = $this->aiGateway->runtimeProfileForFeature('narrative');
@@ -66,6 +75,7 @@ class NarrativeLoomService
 
             if ($response->successful()) {
                 $this->reportRuntimeUsage($keyEntry);
+                $this->circuitBreaker->recordSuccess();
                 $data = $response->json();
                 Log::info('NarrativeLoom: weave completed', [
                     'world_id' => $worldId,
@@ -84,9 +94,11 @@ class NarrativeLoomService
                 'provider' => $runtime['provider'] ?? null,
                 'model' => $runtime['model'] ?? null,
             ]);
+            $this->circuitBreaker->recordFailure();
             $this->reportRuntimeUsage($keyEntry, $this->resolveErrorCodeFromResponse($response));
         } catch (\Throwable $e) {
             Log::error('NarrativeLoom: weave exception: ' . $e->getMessage());
+            $this->circuitBreaker->recordFailure();
             $this->reportRuntimeUsage($keyEntry, $this->resolveErrorCodeFromThrowable($e));
         }
 
@@ -98,6 +110,12 @@ class NarrativeLoomService
      */
     public function getActorIntent(array $requestData): array
     {
+        if (! $this->circuitBreaker->isAvailable()) {
+            Log::warning('NarrativeLoom: circuit breaker OPEN — skipping actor-intent call');
+
+            return ['ok' => false, 'error' => 'NarrativeLoom circuit breaker is open'];
+        }
+
         $runtime = $this->aiGateway->runtimeProfileForFeature('decision');
         $keyEntry = $runtime['key_entry'] ?? null;
         $payload = array_merge($requestData, $this->buildRuntimePayload($runtime));
@@ -114,6 +132,7 @@ class NarrativeLoomService
 
             if ($response->successful()) {
                 $this->reportRuntimeUsage($keyEntry);
+                $this->circuitBreaker->recordSuccess();
                 $data = $response->json();
                 Log::info('NarrativeLoom: actor-intent completed', [
                     'actor_id' => $requestData['actor_id'] ?? null,
@@ -125,9 +144,11 @@ class NarrativeLoomService
                 return $data;
             }
 
+            $this->circuitBreaker->recordFailure();
             $this->reportRuntimeUsage($keyEntry, $this->resolveErrorCodeFromResponse($response));
         } catch (\Throwable $e) {
             Log::warning('NarrativeLoom: actor-intent failed: ' . $e->getMessage());
+            $this->circuitBreaker->recordFailure();
             $this->reportRuntimeUsage($keyEntry, $this->resolveErrorCodeFromThrowable($e));
         }
 

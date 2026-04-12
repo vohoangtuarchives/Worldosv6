@@ -3,6 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 
 import api from '@/lib/api';
+import { useCentrifugoConnection, useAdaptiveRefetchInterval } from '@/hooks/useCentrifugo';
 import type {
   WavefunctionData,
   InformationalMass,
@@ -13,6 +14,9 @@ import type {
 
 // ── Wavefunction snapshot ───────────────────
 export function useWavefunction(universeId: number | null) {
+  const { state } = useCentrifugoConnection();
+  const refetchInterval = useAdaptiveRefetchInterval(state, 5_000);
+
   const { data, error, isLoading } = useQuery<WavefunctionData>({
     queryKey: ['wavefunction', universeId],
     queryFn: () =>
@@ -20,7 +24,7 @@ export function useWavefunction(universeId: number | null) {
         .get(`/apex/wavefunction/${universeId}`)
         .then((res) => res.data),
     enabled: !!universeId,
-    refetchInterval: 5_000,
+    refetchInterval,
     refetchOnWindowFocus: true,
   });
 
@@ -29,6 +33,9 @@ export function useWavefunction(universeId: number | null) {
 
 // ── Informational mass ──────────────────────
 export function useInformationalMass(universeId: number | null) {
+  const { state } = useCentrifugoConnection();
+  const refetchInterval = useAdaptiveRefetchInterval(state, 10_000);
+
   const { data, error, isLoading } = useQuery<InformationalMass>({
     queryKey: ['informational-mass', universeId],
     queryFn: () =>
@@ -36,7 +43,7 @@ export function useInformationalMass(universeId: number | null) {
         .get(`/apex/informational-mass/${universeId}`)
         .then((res) => res.data),
     enabled: !!universeId,
-    refetchInterval: 10_000,
+    refetchInterval,
     refetchOnWindowFocus: true,
   });
 
@@ -45,6 +52,9 @@ export function useInformationalMass(universeId: number | null) {
 
 // ── Consciousness field ─────────────────────
 export function useConsciousness(universeId: number | null) {
+  const { state } = useCentrifugoConnection();
+  const refetchInterval = useAdaptiveRefetchInterval(state, 10_000);
+
   const { data, error, isLoading } = useQuery<ConsciousnessField>({
     queryKey: ['consciousness', universeId],
     queryFn: () =>
@@ -52,7 +62,7 @@ export function useConsciousness(universeId: number | null) {
         .get(`/apex/v10/universes/${universeId}/consciousness`)
         .then((res) => res.data),
     enabled: !!universeId,
-    refetchInterval: 10_000,
+    refetchInterval,
     refetchOnWindowFocus: true,
   });
 
@@ -61,6 +71,9 @@ export function useConsciousness(universeId: number | null) {
 
 // ── Ascension filters ───────────────────────
 export function useAscensionFilters(universeId: number | null) {
+  const { state } = useCentrifugoConnection();
+  const refetchInterval = useAdaptiveRefetchInterval(state, 10_000);
+
   const { data, error, isLoading } = useQuery<AscensionFilterData>({
     queryKey: ['ascension-filters', universeId],
     queryFn: () =>
@@ -68,7 +81,7 @@ export function useAscensionFilters(universeId: number | null) {
         .get(`/apex/v10/universes/${universeId}/ascension-filters`)
         .then((res) => res.data),
     enabled: !!universeId,
-    refetchInterval: 10_000,
+    refetchInterval,
     refetchOnWindowFocus: true,
   });
 
@@ -77,6 +90,9 @@ export function useAscensionFilters(universeId: number | null) {
 
 // ── State delta ─────────────────────────────
 export function useStateDelta(universeId: number | null) {
+  const { state } = useCentrifugoConnection();
+  const refetchInterval = useAdaptiveRefetchInterval(state, 15_000);
+
   const { data, error, isLoading } = useQuery<StateDelta>({
     queryKey: ['state-delta', universeId],
     queryFn: () =>
@@ -84,7 +100,7 @@ export function useStateDelta(universeId: number | null) {
         .get(`/apex/v10/universes/${universeId}/delta`)
         .then((res) => res.data),
     enabled: !!universeId,
-    refetchInterval: 15_000,
+    refetchInterval,
     refetchOnWindowFocus: true,
   });
 

@@ -8,6 +8,7 @@ use App\Modules\Narrative\Services\ChronicleSynthesisEngine;
 use App\Modules\Narrative\Services\NarrativeAiService;
 use App\Modules\Narrative\Services\UniverseHistoryGenerator;
 use App\Modules\WorldOS\Http\Resources\TimelineEventResource;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -60,6 +61,22 @@ class TimelineController extends Controller
 
         if (! $chronicle) {
             return response()->json(['message' => 'Khong the sinh su thi.'], 422);
+        }
+
+        // Broadcast narrative completion via Centrifugo
+        try {
+            $broadcaster = app(\App\Broadcasting\CentrifugoBroadcaster::class);
+            $broadcaster->broadcast(
+                ["public:universes"],
+                'narrative.completed',
+                [
+                    'type' => 'chronicle_generated',
+                    'universe_id' => $universeId,
+                    'chronicle_id' => $chronicle->id,
+                ]
+            );
+        } catch (\Throwable $e) {
+            Log::warning('Failed to broadcast narrative completion: ' . $e->getMessage());
         }
 
         return response()->json(['data' => [

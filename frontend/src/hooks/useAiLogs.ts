@@ -3,6 +3,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import api from '@/lib/api';
+import { useCentrifugoConnection, useAdaptiveRefetchInterval } from '@/hooks/useCentrifugo';
 
 export type JsonValue =
     | string
@@ -53,6 +54,8 @@ export function useAiLogs(
     } = {}
 ) {
     const queryClient = useQueryClient();
+    const { state } = useCentrifugoConnection();
+    const refetchInterval = useAdaptiveRefetchInterval(state, 5_000);
 
     const {
         feature,
@@ -79,7 +82,7 @@ export function useAiLogs(
     const { data, error, isLoading } = useQuery<PaginatedAiLogs>({
         queryKey,
         queryFn: () => api.get(`/ai-logs?${params.toString()}`).then((res) => res.data),
-        refetchInterval: 5000,
+        refetchInterval,
         refetchOnWindowFocus: true,
     });
 
@@ -108,11 +111,13 @@ export function useAiLogs(
 
 export function useAiStats() {
     const queryClient = useQueryClient();
+    const { state } = useCentrifugoConnection();
+    const refetchInterval = useAdaptiveRefetchInterval(state, 5_000);
 
     const { data, error, isLoading } = useQuery<AiStats>({
         queryKey: ['ai-logs', 'stats'],
         queryFn: () => api.get('/ai-logs/stats').then((res) => res.data),
-        refetchInterval: 5000,
+        refetchInterval,
         refetchOnWindowFocus: true,
     });
 

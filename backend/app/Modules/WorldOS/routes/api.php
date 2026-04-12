@@ -8,8 +8,12 @@ use App\Modules\WorldOS\Http\Controllers\Api\CentrifugoController;
 use App\Modules\WorldOS\Http\Controllers\Api\WorldController;
 use App\Modules\WorldOS\Http\Controllers\Api\TimelineController;
 use App\Modules\WorldOS\Http\Controllers\Api\AiConfigController;
+use App\Modules\WorldOS\Http\Controllers\Api\ServiceStatusController;
 
 Route::middleware('api')->prefix('worldos')->group(function () {
+    // 0. Service Status (public)
+    Route::get('service-status', ServiceStatusController::class)->name('worldos.service-status');
+
     // 1. Core Universe Management (GET — public)
     Route::get('universes', [UniverseController::class , 'index'])->name('worldos.universes.index');
     Route::get('universes/{id}', [UniverseController::class , 'show'])->name('worldos.universes.show');

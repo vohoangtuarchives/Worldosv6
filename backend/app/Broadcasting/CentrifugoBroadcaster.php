@@ -2,7 +2,9 @@
 
 namespace App\Broadcasting;
 
+use App\Models\Universe;
 use Illuminate\Broadcasting\Broadcasters\Broadcaster;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Firebase\JWT\JWT;
 use Illuminate\Broadcasting\BroadcastException;
@@ -18,9 +20,28 @@ class CentrifugoBroadcaster extends Broadcaster
      */
     public function auth($request)
     {
-        // Simple authentication: allow if user is authenticated or channel is public
-        // For production, you should verify if $request->user() can access $channel
-        return true; 
+        $channel = $request->input('channel', '');
+
+        // Public channels: allow all authenticated users (or anonymous)
+        if (str_starts_with($channel, 'public:')) {
+            return true;
+        }
+
+        // Universe-specific channels: verify the universe exists and is accessible
+        if (preg_match('/^universes:(\d+)$/', $channel, $matches)) {
+            $universeId = (int) $matches[1];
+
+            return Cache::remember(
+                "centrifugo:auth:universe:{$universeId}",
+                60,
+                fn () => Universe::where('id', $universeId)
+                    ->whereIn('status', ['active', 'paused'])
+                    ->exists()
+            );
+        }
+
+        // Unknown channel pattern: deny
+        return false;
     }
 
     /**
