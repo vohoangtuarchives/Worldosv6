@@ -14,6 +14,7 @@ Usage in agent files:
     async def historian_agent(state: NarrativeState, config=None) -> NarrativeState:
         ...
 """
+import os
 import time
 from functools import wraps
 from typing import Any, Callable, Coroutine
@@ -31,15 +32,17 @@ from core.centrifugo import (
     publish_agent_error,
     publish_agent_started,
 )
+from core.exceptions import TransientLLMError
 from core.logging import get_logger
+from core.metrics import metrics
 
 log = get_logger(__name__)
 
 # Number of agents in the full pipeline — used for progress % calculation
-TOTAL_AGENTS = 18
+TOTAL_AGENTS = int(os.getenv("LOOM_TOTAL_AGENTS", "18"))
 
 # Exception types that are worth retrying (transient LLM errors)
-_RETRYABLE = (Exception,)  # broad — tenacity will not retry on BaseException
+_RETRYABLE = (TransientLLMError, ConnectionError, TimeoutError)
 
 
 def _make_retrying(fn: Callable) -> Callable:
@@ -91,6 +94,7 @@ def agent_node(name: str) -> Callable:
                     duration_ms=duration_ms,
                     error=str(exc),
                 )
+                metrics.record_agent(name, duration_ms, success=False)
                 publish_agent_error(world_id, task_id, name, str(exc))
                 # Propagate — LangGraph will surface this as a pipeline error
                 raise
@@ -104,10 +108,12 @@ def agent_node(name: str) -> Callable:
                     duration_ms=duration_ms,
                     error=str(exc),
                 )
+                metrics.record_agent(name, duration_ms, success=False)
                 publish_agent_error(world_id, task_id, name, str(exc))
                 raise
 
             duration_ms = int((time.perf_counter() - t_start) * 1000)
+            metrics.record_agent(name, duration_ms, success=True)
             new_completed = completed + [name]
 
             log.info(
