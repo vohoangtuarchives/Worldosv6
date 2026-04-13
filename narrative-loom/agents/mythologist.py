@@ -3,7 +3,7 @@ from core.logging import get_logger
 import os
 from typing import Dict, Any
 from state import NarrativeState
-from utils.llm_factory import get_llm
+from utils.llm_factory import get_llm, get_llm_for_agent
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 
