@@ -8,13 +8,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Chronicle extends Model
 {
     protected $fillable = [
-        'universe_id', 'parent_id', 'actor_id', 'world_event_id', 'from_tick', 'to_tick', 'type', 'content', 'importance',
+        'universe_id', 'parent_id', 'actor_id', 'world_event_id', 'from_tick', 'to_tick', 'type', 'content', 'animation_script', 'importance',
         'perceived_archive_snapshot', 'raw_payload'
     ];
 
     protected $casts = [
         'perceived_archive_snapshot' => 'array',
         'raw_payload' => 'array',
+        'animation_script' => 'array',
         'importance' => 'float',
     ];
 

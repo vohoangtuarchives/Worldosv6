@@ -32,6 +32,7 @@ Route::middleware('api')->prefix('worldos')->group(function () {
 
     // 3. Narrative & Chronicles (Results)
     Route::get('universes/{id}/chronicles', [NarrativeController::class , 'chronicles'])->name('worldos.universes.chronicles');
+    Route::get('chronicles/{chronicle}', [NarrativeController::class , 'show'])->name('worldos.chronicles.show');
     Route::get('universes/{id}/myth-scars', [NarrativeController::class , 'mythScars'])->name('worldos.universes.myth-scars');
     Route::get('universes/{id}/artifacts', [NarrativeController::class , 'artifacts'])->name('worldos.universes.artifacts');
     Route::get('universes/{id}/history-timeline', [TimelineController::class , 'history'])->name('worldos.universes.history-timeline');

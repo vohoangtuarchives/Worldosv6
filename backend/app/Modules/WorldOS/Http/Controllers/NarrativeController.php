@@ -3,6 +3,7 @@
 namespace App\Modules\WorldOS\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Models\Chronicle;
 use App\Modules\Narrative\Contracts\ArtifactRepositoryInterface;
 use App\Modules\Narrative\Contracts\ChronicleRepositoryInterface;
 use App\Modules\Narrative\Contracts\MythScarRepositoryInterface;
@@ -23,6 +24,11 @@ class NarrativeController extends Controller
         $chronicles = $this->chronicleRepo->findByUniverse($universeId);
 
         return ChronicleResource::collection(collect($chronicles))->response();
+    }
+
+    public function show(Chronicle $chronicle): ChronicleResource
+    {
+        return new ChronicleResource($chronicle);
     }
 
     public function mythScars(int $universeId): JsonResponse
