@@ -7,6 +7,7 @@ import { ArrowLeft } from 'lucide-react';
 import { useChronicleDetail } from '@/hooks/useChronicleDetail';
 import { parseAnimationScript } from '@/lib/vaf/parser';
 import CinematicPlayer from '@/components/vaf/CinematicPlayer';
+import VAFErrorBoundary from '@/components/vaf/VAFErrorBoundary';
 
 interface PageProps {
     params: Promise<{ chronicleId: string }>;
@@ -82,12 +83,14 @@ export default function NarrativeCinemaPage(props: PageProps) {
                 </button>
             </div>
 
-            <CinematicPlayer
-                animationScript={animation}
-                chronicleTitle={chronicle.title}
-                chronicleContent={chronicle.content}
-                onExit={() => router.back()}
-            />
+            <VAFErrorBoundary onExit={() => router.back()}>
+                <CinematicPlayer
+                    animationScript={animation}
+                    chronicleTitle={chronicle.title}
+                    chronicleContent={chronicle.content}
+                    onExit={() => router.back()}
+                />
+            </VAFErrorBoundary>
         </div>
     );
 }
