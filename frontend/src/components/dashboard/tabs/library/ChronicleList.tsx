@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, Clock } from 'lucide-react';
+import { ChevronDown, Clock, Film } from 'lucide-react';
+import Link from 'next/link';
 
 import type { Chronicle } from '@/types/api';
 import BadgeLabel from '@/components/ui/shared/BadgeLabel';
@@ -99,12 +100,24 @@ export default function ChronicleList({ chronicles, searchTerm }: ChronicleListP
                                 </p>
                             </div>
 
-                            <ChevronDown
-                                size={16}
-                                className={`mt-1 text-slate-600 transition-transform duration-300 flex-shrink-0 ${
-                                    isExpanded ? 'rotate-180' : ''
-                                }`}
-                            />
+                            <div className="flex items-center gap-1 flex-shrink-0">
+                                {chronicle.has_animation && (
+                                    <Link
+                                        href={`/narrative-cinema/${chronicle.id}`}
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="mt-1 p-1.5 rounded-lg text-cyan-500/60 transition hover:bg-cyan-500/10 hover:text-cyan-400"
+                                        title="Watch cinematic"
+                                    >
+                                        <Film size={15} />
+                                    </Link>
+                                )}
+                                <ChevronDown
+                                    size={16}
+                                    className={`mt-1 text-slate-600 transition-transform duration-300 ${
+                                        isExpanded ? 'rotate-180' : ''
+                                    }`}
+                                />
+                            </div>
                         </button>
 
                         <AnimatePresence initial={false}>
