@@ -85,7 +85,9 @@
       "Bash(php:*)",
       "Bash(python:*)",
       "Bash(git add:*)",
-      "Bash(git commit -m ':*)"
+      "Bash(git commit -m ':*)",
+      "Bash(wc -l /c/projects/IPFactory/narrative-loom/agents/*.py)",
+      "Bash(npx --yes openspec new change \"vaf-phase-2-frontend-engine\")"
     ]
   }
 }

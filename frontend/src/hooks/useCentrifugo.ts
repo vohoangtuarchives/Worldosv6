@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Centrifuge, Subscription, PublicationContext } from 'centrifuge';
 import { getCentrifuge } from '@/lib/centrifugo';
 
@@ -21,14 +21,13 @@ export function useCentrifugoConnection(): {
   client: Centrifuge | null;
 } {
   const [state, setState] = useState<ConnectionState>('disconnected');
-  const clientRef = useRef<Centrifuge | null>(null);
+  const client = typeof window === 'undefined' ? null : getCentrifuge();
 
   useEffect(() => {
     // Skip on server
     if (typeof window === 'undefined') return;
 
     const client = getCentrifuge();
-    clientRef.current = client;
 
     client.on('connected', () => setState('connected'));
     client.on('connecting', () => setState('connecting'));
@@ -41,7 +40,7 @@ export function useCentrifugoConnection(): {
     };
   }, []);
 
-  return { state, client: clientRef.current };
+  return { state, client };
 }
 
 // ────────────────────────────────────────────────────────
@@ -58,7 +57,9 @@ export function useCentrifugoSubscription(
   onMessage: (data: Record<string, unknown>) => void,
 ): void {
   const callbackRef = useRef(onMessage);
-  callbackRef.current = onMessage;
+  useEffect(() => {
+    callbackRef.current = onMessage;
+  }, [onMessage]);
 
   useEffect(() => {
     if (!channel || typeof window === 'undefined') return;

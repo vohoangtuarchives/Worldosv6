@@ -1,4 +1,7 @@
-'use client';
+
+import os
+
+content = r"""'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -24,7 +27,7 @@ function formatTime(ms: number): string {
   const seconds = Math.floor(ms / 1000);
   const m = Math.floor(seconds / 60);
   const s = seconds % 60;
-  return `${m}:${s.toString().padStart(2, '0')}`;
+  return ;
 }
 
 const HIDE_DELAY_MS = 3000;
@@ -33,12 +36,12 @@ const controlsVariants = {
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.25, ease: 'easeOut' as const },
+    transition: { duration: 0.25, ease: 'easeOut' },
   },
   hidden: {
     opacity: 0,
     y: 16,
-    transition: { duration: 0.3, ease: 'easeIn' as const },
+    transition: { duration: 0.3, ease: 'easeIn' },
   },
 };
 
@@ -54,15 +57,8 @@ export default function PlayerControls({
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const handlePlay = useCallback(() => {
-    setVisible(true);
-    onPlay();
-  }, [onPlay]);
-
   // ── Auto-hide logic ──────────────────────────
   const resetHideTimer = useCallback(() => {
-    if (state.status !== 'playing') return;
-
     setVisible(true);
     if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
     if (state.status === 'playing') {
@@ -75,6 +71,7 @@ export default function PlayerControls({
     if (state.status === 'playing') {
       hideTimerRef.current = setTimeout(() => setVisible(false), HIDE_DELAY_MS);
     } else {
+      setVisible(true);
       if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
     }
     return () => {
@@ -105,12 +102,11 @@ export default function PlayerControls({
 
   const progress = state.totalDurationMs > 0 ? state.elapsedMs / state.totalDurationMs : 0;
   const isPlaying = state.status === 'playing';
-
-  const showControls = visible || state.status !== 'playing';
+  const isEnded = state.status === 'ended';
 
   return (
     <AnimatePresence>
-      {showControls && (
+      {visible && (
         <motion.div
           ref={containerRef}
           className="absolute bottom-0 left-0 right-0 z-30 px-4 pb-4 pt-8"
@@ -135,7 +131,7 @@ export default function PlayerControls({
           >
             <div
               className="h-full bg-white/90 rounded-full relative transition-all"
-              style={{ width: `${progress * 100}%` }}
+              style={{ width:  }}
             >
               <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg" />
             </div>
@@ -145,7 +141,7 @@ export default function PlayerControls({
             {/* Play / Pause button */}
             <button
               className="flex items-center justify-center w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-sm transition-colors"
-              onClick={isPlaying ? onPause : handlePlay}
+              onClick={isPlaying ? onPause : onPlay}
               aria-label={isPlaying ? 'Pause' : 'Play'}
             >
               {isPlaying ? (
@@ -180,13 +176,7 @@ export default function PlayerControls({
                 return (
                   <div
                     key={i}
-                    className={`rounded-full transition-all ${
-                      isActive
-                        ? 'w-3 h-3 bg-white shadow-[0_0_6px_rgba(255,255,255,0.6)]'
-                        : isPast
-                          ? 'w-2 h-2 bg-white/60'
-                          : 'w-2 h-2 bg-white/25'
-                    }`}
+                    className={}
                   />
                 );
               })}
@@ -197,3 +187,9 @@ export default function PlayerControls({
     </AnimatePresence>
   );
 }
+"""
+
+filepath = 'c:/projects/IPFactory/frontend/src/components/vaf/PlayerControls.tsx'
+with open(filepath, 'w', encoding='utf-8', newline='\n') as f:
+    f.write(content)
+print('PlayerControls created.')

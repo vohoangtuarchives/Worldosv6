@@ -3,7 +3,8 @@
 import React, { useEffect, useState } from 'react';
 import AgentNode from '@/components/ui/narrative/AgentNode';
 import api from '@/lib/api';
-import { createCentrifuge } from '@/lib/centrifugo';
+import { getCentrifuge } from '@/lib/centrifugo';
+import type { ConnectedContext, PublicationContext } from 'centrifuge';
 
 interface AgentConfig {
   id?: string;
@@ -49,14 +50,14 @@ export default function NarrativeStudio() {
     const interval = setInterval(fetchStatus, 30000); // Reduce polling to 30s only for health check
     
     // Khởi tạo Centrifugo WebSocket
-    const centrifuge = createCentrifuge();
+    const centrifuge = getCentrifuge();
 
-    centrifuge.on('connected', (ctx) => {
+    centrifuge.on('connected', (ctx: ConnectedContext) => {
       setLogs(prev => [...prev, `[Centrifugo] Connected to socket. Node: ${ctx.client}`]);
     });
 
     const sub = centrifuge.newSubscription('universe.1.narrative');
-    sub.on('publication', (ctx) => {
+    sub.on('publication', (ctx: PublicationContext) => {
       const eventName = ctx.data.event || ctx.data.__type || 'Unknown Event';
       setLogs(prev => [...prev, `[Weaving Stream] ${eventName} detect! Payload: ${JSON.stringify(ctx.data)}`].slice(-20));
     });

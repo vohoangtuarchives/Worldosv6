@@ -52,10 +52,9 @@ const cardVariants = {
 
 interface PollenCardProps {
   pollen: ResonancePollen;
-  index: number;
 }
 
-function PollenCard({ pollen, index: _index }: PollenCardProps) {
+function PollenCard({ pollen }: PollenCardProps) {
   return (
     <motion.div
       variants={cardVariants}
@@ -152,7 +151,7 @@ export default function ResonanceFeed({ resonance }: ResonanceFeedProps) {
         className="flex max-h-[calc(100vh-20rem)] flex-col gap-3 overflow-y-auto pr-1 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-slate-700/50"
       >
         {pollen.map((item, i) => (
-          <PollenCard key={item.id ?? i} pollen={item} index={i} />
+          <PollenCard key={item.id ?? i} pollen={item} />
         ))}
       </motion.div>
     </div>

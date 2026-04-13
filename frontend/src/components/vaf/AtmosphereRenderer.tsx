@@ -130,7 +130,7 @@ const glitchVariants = {
       duration: 0.6,
       repeat: Infinity,
       repeatDelay: 2,
-      ease: 'linear',
+      ease: 'linear' as const,
     },
   },
 };
@@ -151,7 +151,7 @@ const auroraVariants = {
     transition: {
       duration: 8,
       repeat: Infinity,
-      ease: 'linear',
+      ease: 'linear' as const,
     },
   },
 };
@@ -222,12 +222,11 @@ export default function AtmosphereRenderer({ atmosphere }: Props) {
           key={filter}
           className="absolute inset-0 pointer-events-none"
           initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
+          animate={useGlitch || useAurora ? 'animate' : { opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.5 }}
           style={filterStyle}
           variants={useGlitch ? glitchVariants : useAurora ? auroraVariants : undefined}
-          {...(useGlitch || useAurora ? { animate: 'animate' } : {})}
         />
       </AnimatePresence>
 

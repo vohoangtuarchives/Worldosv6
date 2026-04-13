@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { createCentrifuge } from "@/lib/centrifugo";
+import { getCentrifuge } from "@/lib/centrifugo";
+import type { PublicationContext } from "centrifuge";
 
 export default function AtmospherePlayer() {
   const [currentTrack, setCurrentTrack] = useState<string | null>(null);
@@ -65,14 +66,17 @@ export default function AtmospherePlayer() {
     }
 
     // Khởi tạo Centrifugo WebSocket
-    const centrifuge = createCentrifuge();
+    const centrifuge = getCentrifuge();
     centrifuge.connect();
 
     // Lắng nghe tín hiệu đổi nhạc qua Centrifugo (Kênh global_universe)
     const sub = centrifuge.newSubscription('global_universe');
-    sub.on('publication', (ctx: { data: { event: string; payload: { url: string; epochName: string; style: string } } }) => {
-      const data = ctx.data;
-      if (data && data.event === 'SoundtrackChanged') {
+    sub.on('publication', (ctx: PublicationContext) => {
+      const data = ctx.data as {
+        event?: string;
+        payload?: { url: string; epochName: string; style: string };
+      };
+      if (data && data.event === 'SoundtrackChanged' && data.payload) {
         const payload = data.payload;
         console.log("[ATMOSPHERE] Nhận sóng âm nhạc kỷ nguyên:", payload);
 

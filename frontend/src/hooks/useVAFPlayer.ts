@@ -47,6 +47,7 @@ export function useVAFPlayer(script: AnimationScript | null): VAFPlayerReturn {
   // Refs for the rAF loop
   const rafIdRef = useRef<number>(0);
   const lastTimestampRef = useRef<number>(0);
+  const tickRef = useRef<((timestamp: number) => void) | null>(null);
 
   // Build scene durations array
   const sceneDurations = useMemo(
@@ -55,10 +56,7 @@ export function useVAFPlayer(script: AnimationScript | null): VAFPlayerReturn {
   );
 
   // Build effect scheduler
-  const schedulerRef = useRef<EffectScheduler | null>(null);
-  useEffect(() => {
-    schedulerRef.current = new EffectScheduler(script?.scenes ?? []);
-  }, [script]);
+  const scheduler = useMemo(() => new EffectScheduler(script?.scenes ?? []), [script]);
 
   // Compute derived values
   const currentSceneIndex = useMemo(
@@ -74,8 +72,8 @@ export function useVAFPlayer(script: AnimationScript | null): VAFPlayerReturn {
   const currentScene = script?.scenes[currentSceneIndex] ?? null;
 
   const activeEffects = useMemo(
-    () => schedulerRef.current?.getActiveEffects(currentSceneIndex, sceneElapsedMs) ?? [],
-    [currentSceneIndex, sceneElapsedMs],
+    () => scheduler.getActiveEffects(currentSceneIndex, sceneElapsedMs),
+    [scheduler, currentSceneIndex, sceneElapsedMs],
   );
 
   const progress =
@@ -83,8 +81,8 @@ export function useVAFPlayer(script: AnimationScript | null): VAFPlayerReturn {
 
   // ── rAF Loop ──────────────────────────────────
 
-  const tick = useCallback(
-    (timestamp: number) => {
+  useEffect(() => {
+    tickRef.current = (timestamp: number) => {
       if (lastTimestampRef.current === 0) {
         lastTimestampRef.current = timestamp;
       }
@@ -96,15 +94,14 @@ export function useVAFPlayer(script: AnimationScript | null): VAFPlayerReturn {
         dispatch({ type: 'TICK', deltaMs });
       }
 
-      rafIdRef.current = requestAnimationFrame(tick);
-    },
-    [],
-  );
+      rafIdRef.current = requestAnimationFrame((ts) => tickRef.current?.(ts));
+    };
+  }, [dispatch]);
 
   useEffect(() => {
     if (state.status === 'playing') {
       lastTimestampRef.current = 0; // Reset so first frame has zero delta
-      rafIdRef.current = requestAnimationFrame(tick);
+      rafIdRef.current = requestAnimationFrame((ts) => tickRef.current?.(ts));
     } else {
       if (rafIdRef.current) {
         cancelAnimationFrame(rafIdRef.current);
@@ -118,7 +115,7 @@ export function useVAFPlayer(script: AnimationScript | null): VAFPlayerReturn {
         rafIdRef.current = 0;
       }
     };
-  }, [state.status, tick]);
+  }, [state.status]);
 
   // Reset state when script changes
   useEffect(() => {

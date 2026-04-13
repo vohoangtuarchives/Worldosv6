@@ -223,7 +223,7 @@ export default function MultiverseTree({ bloom, onSelectUniverse }: MultiverseTr
           animate="visible"
           className="flex flex-col gap-6"
         >
-          {bloom.worlds.map((world, i) => (
+          {bloom.worlds.map((world) => (
             <div key={world.id} className="relative">
               {/* Horizontal connector */}
               <div className="absolute -left-8 top-8 h-px w-7 bg-violet-500/25" />

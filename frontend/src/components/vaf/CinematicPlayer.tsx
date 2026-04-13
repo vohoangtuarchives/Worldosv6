@@ -72,7 +72,11 @@ export default function CinematicPlayer({
       switch (e.key) {
         case ' ':
           e.preventDefault();
-          state.status === 'playing' ? pause() : play();
+          if (state.status === 'playing') {
+            pause();
+          } else {
+            play();
+          }
           break;
         case 'ArrowLeft':
           seek(state.elapsedMs - 5000);
