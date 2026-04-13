@@ -99,10 +99,16 @@ class HealthCheckCommand extends Command
             $host = $parsed['host'] ?? 'localhost';
             $port = 7474; // Neo4j HTTP browser port
 
+            $username = config('worldos_knowledge.neo4j.username', 'neo4j');
+            $password = config('worldos_knowledge.neo4j.password', '');
+
             $ch = curl_init("http://{$host}:{$port}");
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_TIMEOUT, 5);
             curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);
+            if ($username && $password) {
+                curl_setopt($ch, CURLOPT_USERPWD, "{$username}:{$password}");
+            }
             $response = curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             curl_close($ch);
