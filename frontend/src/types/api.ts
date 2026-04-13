@@ -2,6 +2,8 @@
 // Shared API response types for WorldOS V6 Dashboard
 // ──────────────────────────────────────────────
 
+import type { AnimationScript } from '@/lib/vaf/types';
+
 // ── Actors ───────────────────────────────────
 
 export interface ActorSummary {
@@ -131,7 +133,11 @@ export interface Chronicle {
   importance: number;
   actor_id: number | null;
   world_event_id: number | null;
+  has_animation: boolean;
+  animation_script: AnimationScript | null;
 }
+
+export type ChronicleDetail = Chronicle;
 
 export interface MythScar {
   id: number;
