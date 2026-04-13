@@ -1,7 +1,7 @@
 """Chronicle weaving routers."""
 import uuid
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from typing import Dict, Any, List, Optional
 import os
 import httpx
@@ -24,6 +24,21 @@ class ChronicleRequest(BaseModel):
     power_system: str | None = None
     whispers: list[str] | None = []
     ai_runtime: Dict[str, Any] | None = None
+
+    @field_validator("world_id")
+    @classmethod
+    def world_id_positive(cls, v):
+        if v <= 0:
+            raise ValueError("world_id must be positive")
+        return v
+
+    @field_validator("tick_end")
+    @classmethod
+    def tick_end_after_start(cls, v, info):
+        tick_start = info.data.get("tick_start")
+        if tick_start is not None and v is not None and v < tick_start:
+            raise ValueError("tick_end must be >= tick_start")
+        return v
 
 @router.post("/weave-chronicles")
 async def weave_chronicles(req: ChronicleRequest):

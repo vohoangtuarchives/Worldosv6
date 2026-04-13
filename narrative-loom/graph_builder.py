@@ -4,6 +4,7 @@ Narrative Loom Configurable Graph Builder.
 Constructs a LangGraph StateGraph that utilizes parallel fan-out execution
 to significantly reduce pipeline wall-clock time.
 """
+import os
 from langgraph.graph import END, StateGraph
 
 from agents.archivist import archivist_agent
@@ -27,12 +28,15 @@ from nodes.universe_bridge import universe_bridge_node
 from state import NarrativeState
 
 
+_MAX_REVISIONS = int(os.getenv("LOOM_MAX_REVISIONS", "2"))
+
+
 def check_revision(state: NarrativeState) -> str:
     """Conditional edge logic after The_Critic."""
     fb = state.get("feedback", {})
     if fb.get("is_passed", True):
         return "The_Archivist"
-    if state.get("revision_count", 0) >= 2:
+    if state.get("revision_count", 0) >= _MAX_REVISIONS:
         # Max 2 vòng lặp để tránh infinite loop
         return "The_Archivist"
     return "The_Wordsmith"

@@ -12,22 +12,26 @@ from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_openai import ChatOpenAI
 
+from core.logging import get_logger
 from utils.cache_manager import cache_manager
+
+log = get_logger(__name__)
 
 
 class TickBasedCache(BaseCache):
     """LangChain-compatible cache with 80-tick lifespan awareness."""
 
-    def __init__(self, world_id: int, current_tick: int):
+    def __init__(self, world_id: int, current_tick: int, provider: str = "unknown"):
         self.world_id = world_id
         self.current_tick = current_tick
+        self.provider = provider
 
     def lookup(self, prompt: str, llm_string: str) -> Optional[Any]:
-        full_query = f"{llm_string}:{prompt}"
+        full_query = f"v1:{self.provider}:{llm_string}:{prompt}"
         return cache_manager.get_cached_narrative(self.world_id, self.current_tick, full_query)
 
     def update(self, prompt: str, llm_string: str, return_val: Any) -> None:
-        full_query = f"{llm_string}:{prompt}"
+        full_query = f"v1:{self.provider}:{llm_string}:{prompt}"
         if hasattr(return_val, "content"):
             cache_manager.set_cached_narrative(self.world_id, self.current_tick, full_query, return_val.content)
 
@@ -45,10 +49,7 @@ def get_llm_for_agent(
     runtime = _normalize_ai_runtime(ai_runtime)
 
     if runtime:
-        print(
-            f"DEBUG: Routing Agent '{agent_id}' via injected runtime "
-            f"{runtime['provider']} ({runtime.get('model_name')}) - World: {world_id}, Tick: {current_tick}"
-        )
+        log.debug("llm.routing", agent=agent_id, provider=runtime["provider"], model=runtime.get("model_name"), world_id=world_id, tick=current_tick)
         return get_llm(
             provider=runtime["provider"],
             model_name=runtime.get("model_name"),
@@ -68,10 +69,10 @@ def get_llm_for_agent(
         provider = agent_config.get("provider", "openai")
         model = agent_config.get("model")
 
-        print(f"DEBUG: Routing Agent '{agent_id}' to {provider} ({model}) - World: {world_id}, Tick: {current_tick}")
+        log.debug("llm.routing", agent=agent_id, provider=provider, model=model, world_id=world_id, tick=current_tick)
         return get_llm(provider=provider, model_name=model, world_id=world_id, current_tick=current_tick)
     except Exception as e:
-        print(f"WARNING: Routing failed for '{agent_id}': {e}. Falling back to default provider.")
+        log.warning("llm.routing_fallback", agent=agent_id, error=str(e))
         return get_llm(provider="openrouter", world_id=world_id, current_tick=current_tick)
 
 
@@ -101,10 +102,7 @@ def get_llm(
     api_key: str = None,
     base_url: str = None,
 ) -> BaseChatModel:
-    print(
-        f"DEBUG: get_llm called with provider={provider}, model_name={model_name}, "
-        f"world={world_id}, tick={current_tick}, has_custom_key={bool(api_key)}"
-    )
+    log.debug("llm.get", provider=provider, model=model_name, world_id=world_id, tick=current_tick, has_custom_key=bool(api_key))
 
     provider = provider.lower().strip()
     if provider == "gemini":
@@ -124,13 +122,13 @@ def get_llm(
                 )
             )
         except Exception as e:
-            print(f"WARNING: Failed to init semantic cache: {e}. Falling back to standard cache.")
+            log.warning("llm.semantic_cache_failed", error=str(e))
             try:
                 set_llm_cache(RedisCache(redis.from_url(redis_url)))
             except Exception:
                 pass
 
-    cache = TickBasedCache(world_id, current_tick) if world_id is not None and current_tick is not None else None
+    cache = TickBasedCache(world_id, current_tick, provider=provider) if world_id is not None and current_tick is not None else None
 
     if provider == "openai":
         return ChatOpenAI(
@@ -138,7 +136,7 @@ def get_llm(
             temperature=0.7,
             api_key=effective_api_key,
             base_url=base_url,
-            timeout=20,
+            timeout=int(os.getenv("LOOM_LLM_TIMEOUT", "20")),
             cache=cache,
         )
 
@@ -148,7 +146,7 @@ def get_llm(
             temperature=0.7,
             api_key=effective_api_key or os.getenv("NARRATIVE_LLM_KEY"),
             base_url=base_url or "https://api.z.ai/api/paas/v4",
-            timeout=20,
+            timeout=int(os.getenv("LOOM_LLM_TIMEOUT", "20")),
             cache=cache,
         )
 
@@ -176,7 +174,7 @@ def get_llm(
         model = model_name or os.getenv("LOCAL_MODEL_NAME", "qwen3.5-9b-uncensored-hauhaucs-aggressive")
 
         if "/v1" in local_url:
-            print(f"DEBUG: Local LLM using OpenAI-compatible API: {local_url}, model={model}")
+            log.debug("llm.local", url=local_url, model=model)
             return ChatOpenAI(
                 base_url=local_url,
                 model=model,
@@ -185,7 +183,7 @@ def get_llm(
                 timeout=int(os.getenv("LOCAL_LLM_TIMEOUT", "360")),
             )
 
-        print(f"DEBUG: Local LLM using Custom Chat API: {local_url}, model={model}")
+        log.debug("llm.local", url=local_url, model=model)
         return ChatOpenAI(
             base_url=f"{local_url}/api/v1",
             model=model,
@@ -197,7 +195,7 @@ def get_llm(
     if provider == "openrouter":
         or_key = effective_api_key or os.getenv("OPENROUTER_API_KEY")
         if not or_key:
-            print("WARNING: OPENROUTER_API_KEY missing. Falling back to LOCAL.")
+            log.warning("llm.openrouter_no_key")
             return get_llm(provider="local", model_name=model_name, world_id=world_id, current_tick=current_tick)
 
         return ChatOpenAI(
@@ -220,7 +218,7 @@ def get_llm(
             base_url=base_url or "https://dashscope.aliyuncs.com/compatible-mode/v1",
             api_key=dashscope_key,
             temperature=0.7,
-            timeout=20,
+            timeout=int(os.getenv("LOOM_LLM_TIMEOUT", "20")),
             cache=cache,
         )
 
