@@ -43,3 +43,42 @@ async def invalidate_cache(world_id: int):
     except Exception as e:
         log.exception("cache.invalidation_failed", world_id=world_id, error=str(e))
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/health")
+async def health_check():
+    checks = {}
+
+    # Redis
+    try:
+        from utils.cache_manager import cache_manager
+        if cache_manager.redis_available:
+            cache_manager.redis_client.ping()
+            checks["redis"] = "ok"
+        else:
+            checks["redis"] = "unavailable"
+    except Exception as e:
+        checks["redis"] = f"error: {e}"
+
+    # Celery broker
+    try:
+        from core.celery_app import celery_app
+        conn = celery_app.connection()
+        conn.ensure_connection(max_retries=1, timeout=3)
+        conn.close()
+        checks["celery_broker"] = "ok"
+    except Exception as e:
+        checks["celery_broker"] = f"error: {e}"
+
+    # LLM providers (key presence only)
+    for provider, env_key in [("openai", "OPENAI_API_KEY"), ("anthropic", "ANTHROPIC_API_KEY"), ("google", "GOOGLE_API_KEY")]:
+        checks[f"llm_{provider}"] = "configured" if os.getenv(env_key) else "not_configured"
+
+    all_ok = all(v in ("ok", "configured", "not_configured") for v in checks.values())
+    return {"status": "healthy" if all_ok else "degraded", "checks": checks}
+
+
+@router.get("/metrics")
+async def get_metrics():
+    from core.metrics import metrics
+    return metrics.snapshot()
