@@ -53,6 +53,7 @@ class NarrativeState(TypedDict, total=False):
     news_slogan: str
     vfx_config: dict
     vfx_hints: Optional[Dict[str, Any]]
+    animation_script: Optional[dict]
 
     # ── Critic loop ──────────────────────────────────────────────
     feedback: dict

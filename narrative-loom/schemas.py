@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List
+from typing import List, Optional
 
 class NarrativeBeat(BaseModel):
     title: str = Field(description="Tiêu đề gợi nhớ của nhịp truyện")
@@ -31,3 +31,46 @@ class CriticReview(BaseModel):
     score: int = Field(description="Điểm đánh giá chất lượng văn bản từ 1-10 (10 là kiệt tác)")
     feedbacks: List[str] = Field(description="Danh sách các điểm cần sửa chữa hoặc thêm thắt để tăng tính drama (Ghi rõ cần sửa đoạn nào)")
     is_passed: bool = Field(description="True nếu văn bản đã đủ tốt (score >= 7) và không cần sửa thêm, False nếu cần phải viết lại")
+
+
+# ── VAF Animation Script Models ─────────────────────────
+
+class VAFBackground(BaseModel):
+    type: str = Field(description="Background type: gradient | solid | pattern")
+    colors: List[str] = Field(description="List of hex color codes")
+    description: str = Field(description="Descriptive text for procedural generation")
+
+class VAFAtmosphere(BaseModel):
+    filter: str = Field(description="Atmosphere filter: mist | sepia | grain | glitch | aurora | dust | none")
+    intensity: float = Field(description="Filter intensity 0.0 - 1.0")
+    weather: str | None = Field(default=None, description="Weather effect: rain | snow | fire_embers | sandstorm | None")
+
+class VAFCameraMovement(BaseModel):
+    type: str = Field(description="Camera type: static | zoom_in | zoom_out | pan_left | pan_right | dolly | shake")
+    speed: float = Field(description="Movement speed 0.1 (slow) - 2.0 (fast)")
+    easing: str = Field(description="Easing function: ease-in | ease-out | ease-in-out | linear")
+
+class VAFEffect(BaseModel):
+    type: str = Field(description="Effect type: particles | screen_shake | flash | ripple | energy_burst | glow")
+    intensity: float = Field(description="Effect intensity 0.0 - 1.0")
+    color: str | None = Field(default=None, description="Hex color, None = use primary_color from vfx_config")
+    trigger_at_ms: int = Field(description="Trigger time relative to scene start in milliseconds")
+
+class VAFTransition(BaseModel):
+    type: str = Field(description="Transition type: fade | dissolve | wipe_left | wipe_right | zoom_through | cut")
+    duration_ms: int = Field(description="Transition duration 300-1500ms")
+
+class VAFScene(BaseModel):
+    id: str = Field(description="Scene identifier e.g. scene_1")
+    type: str = Field(description="Scene type: establishing | action | tension | climax | resolution")
+    duration_ms: int = Field(description="Scene duration 3000-15000ms")
+    background: VAFBackground
+    atmosphere: VAFAtmosphere
+    camera: VAFCameraMovement
+    effects: List[VAFEffect] = Field(default_factory=list)
+    narration: str = Field(description="Short narration text overlay for this scene")
+    transition: VAFTransition
+
+class AnimationScript(BaseModel):
+    total_duration_ms: int = Field(description="Total animation duration in milliseconds (15000-60000)")
+    scenes: List[VAFScene] = Field(description="Sequential list of 2-8 scenes")

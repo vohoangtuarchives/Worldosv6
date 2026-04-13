@@ -102,18 +102,19 @@ def build_graph() -> StateGraph:
         "The_Critic",
         check_revision,
         {
-            "The_Archivist": "The_Archivist",
+            "The_Archivist": "VFX_Director",
             "The_Wordsmith": "The_Wordsmith"
         }
     )
 
-    # PARALLEL FAN-OUT 3: Final rendering & export tasks
+    # VFX Director runs after Critic approves (needs final_prose from Wordsmith)
+    workflow.add_edge("VFX_Director", "The_Archivist")
+
+    # PARALLEL FAN-OUT 3: Final export tasks after archiving
     workflow.add_edge("The_Archivist", "News_Anchor")
-    workflow.add_edge("The_Archivist", "VFX_Director")
-    
+
     # End of pipeline
     workflow.add_edge("News_Anchor", END)
-    workflow.add_edge("VFX_Director", END)
 
     return workflow.compile()
 
