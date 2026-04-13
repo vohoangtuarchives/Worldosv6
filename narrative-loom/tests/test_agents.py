@@ -166,3 +166,184 @@ async def test_vfx_director_fallback_on_error(mocker, vfx_narrative_state):
     state = await vfx_director_agent(vfx_narrative_state)
     assert state["vfx_config"]["primary_color"] == "#8b5cf6"  # fallback color
     assert state["animation_script"] is None
+
+
+# ─── Tests for archivist, chief_editor, critic, mythologist, news_anchor ──────
+
+from agents.archivist import archivist_agent
+from agents.chief_editor import chief_editor_agent
+from agents.critic import critic_agent
+from agents.mythologist import mythologist_agent
+from agents.news_anchor import news_anchor_agent
+from schemas import CriticReview
+from unittest.mock import MagicMock
+
+
+@pytest.fixture
+def extended_narrative_state():
+    """State with all fields needed by the new agents."""
+    return {
+        "world_id": 1,
+        "tick_start": 100,
+        "tick_end": 120,
+        "ai_runtime": None,
+        "raw_chronicles": [],
+        "normalized_events": [],
+        "historical_outline": "Outline of historical events...",
+        "psychological_profiles": {},
+        "style_guidelines": "Epic and dramatic",
+        "storyboard": "Scene 1: The battle begins.",
+        "final_prose": "The fortress fell in the dead of night.",
+        "past_memories": "",
+        "event_scores": {"total_entropy": 0.75},
+        "narrative_phase": "climax",
+        "singularity": {"distortion": 0.5},
+        "genre": "dark_fantasy",
+        "mythic_fragments": "",
+        "news_headline": "",
+        "news_slogan": "",
+        "feedback": {},
+        "revision_count": 0,
+        "current_agent": "start",
+        "completed_agents": [],
+        "task_id": "test-task-001",
+    }
+
+
+# ─── archivist ────────────────────────────────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_archivist_agent(mocker, extended_narrative_state):
+    """Archivist skips store_memory when memory_db.enabled is False."""
+    # Disable the module-level memory_db so no real DB call is made
+    mocker.patch("agents.archivist.memory_db", enabled=False)
+
+    state = await archivist_agent(extended_narrative_state)
+
+    assert state["current_agent"] == "archivist"
+    # All other state keys must be preserved
+    assert state["world_id"] == extended_narrative_state["world_id"]
+
+
+# ─── chief_editor ─────────────────────────────────────────────────────────────
+
+@pytest.fixture
+def mock_chief_editor_llm(mocker):
+    async def mock_invoke(prompt):
+        return "Editorial angle: Focus on the fall of civilizations."
+
+    dummy_llm = RunnableLambda(mock_invoke)
+    mocker.patch("agents.chief_editor.get_llm_for_agent", return_value=dummy_llm)
+    return dummy_llm
+
+
+@pytest.mark.asyncio
+async def test_chief_editor_agent(mock_chief_editor_llm, extended_narrative_state):
+    """Chief editor appends an editorial angle to past_memories."""
+    state = await chief_editor_agent(extended_narrative_state)
+
+    assert state["current_agent"] == "chief_editor"
+    assert "[CHIEF EDITOR ANGLE]" in state["past_memories"]
+    assert "Editorial angle" in state["past_memories"]
+
+
+# ─── critic ───────────────────────────────────────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_critic_agent_pass(mocker, extended_narrative_state):
+    """Critic returns is_passed=True when score is high."""
+    mock_base_llm = MagicMock()
+
+    async def mock_structured_invoke(input_dict):
+        return CriticReview(score=8, feedbacks=[], is_passed=True)
+
+    structured_runnable = RunnableLambda(mock_structured_invoke)
+    mock_base_llm.with_structured_output.return_value = structured_runnable
+    mocker.patch("agents.critic.get_llm_for_agent", return_value=mock_base_llm)
+
+    state = await critic_agent(extended_narrative_state)
+
+    assert state["current_agent"] == "critic"
+    assert state["feedback"]["is_passed"] is True
+    assert state["feedback"]["score"] == 8
+    assert state["revision_count"] == 1
+
+
+@pytest.mark.asyncio
+async def test_critic_agent_fail(mocker, extended_narrative_state):
+    """Critic returns is_passed=False when score is low."""
+    mock_base_llm = MagicMock()
+
+    async def mock_structured_invoke(input_dict):
+        return CriticReview(score=4, feedbacks=["Needs work"], is_passed=False)
+
+    structured_runnable = RunnableLambda(mock_structured_invoke)
+    mock_base_llm.with_structured_output.return_value = structured_runnable
+    mocker.patch("agents.critic.get_llm_for_agent", return_value=mock_base_llm)
+
+    state = await critic_agent(extended_narrative_state)
+
+    assert state["current_agent"] == "critic"
+    assert state["feedback"]["is_passed"] is False
+    assert state["feedback"]["score"] == 4
+    assert "Needs work" in state["feedback"]["feedbacks"]
+    assert state["revision_count"] == 1
+
+
+# ─── mythologist ──────────────────────────────────────────────────────────────
+
+@pytest.fixture
+def mock_mythologist_llm(mocker):
+    async def mock_invoke(prompt):
+        return "The gods wept as the last fortress fell."
+
+    dummy_llm = RunnableLambda(mock_invoke)
+    mocker.patch("agents.mythologist.get_llm_for_agent", return_value=dummy_llm)
+    return dummy_llm
+
+
+@pytest.mark.asyncio
+async def test_mythologist_agent(mock_mythologist_llm, extended_narrative_state):
+    """Mythologist writes mythic_fragments from the historical outline."""
+    state = await mythologist_agent(extended_narrative_state)
+
+    assert state["current_agent"] == "mythologist"
+    assert "gods wept" in state["mythic_fragments"]
+
+
+# ─── news_anchor ──────────────────────────────────────────────────────────────
+
+@pytest.fixture
+def mock_news_anchor_llm(mocker):
+    async def mock_invoke(prompt):
+        return '{"headline": "Test Headline", "slogan": "Test Slogan"}'
+
+    dummy_llm = RunnableLambda(mock_invoke)
+    mocker.patch("agents.news_anchor.get_llm_for_agent", return_value=dummy_llm)
+    return dummy_llm
+
+
+@pytest.mark.asyncio
+async def test_news_anchor_agent(mock_news_anchor_llm, extended_narrative_state):
+    """News anchor extracts headline and slogan from final_prose."""
+    state = await news_anchor_agent(extended_narrative_state)
+
+    assert state["current_agent"] == "news_anchor"
+    assert state["news_headline"] == "Test Headline"
+    assert state["news_slogan"] == "Test Slogan"
+
+
+@pytest.mark.asyncio
+async def test_news_anchor_fallback(mocker, extended_narrative_state):
+    """News anchor uses fallback values when LLM raises an exception."""
+    async def failing_invoke(prompt):
+        raise RuntimeError("LLM unavailable")
+
+    dummy_llm = RunnableLambda(failing_invoke)
+    mocker.patch("agents.news_anchor.get_llm_for_agent", return_value=dummy_llm)
+
+    state = await news_anchor_agent(extended_narrative_state)
+
+    assert state["current_agent"] == "news_anchor"
+    assert state["news_headline"] == "BREAKING NEWS: SỰ KIỆN LỚN ĐANG DIỄN RA"
+    assert state["news_slogan"] == "Theo dõi để biết thêm chi tiết."
