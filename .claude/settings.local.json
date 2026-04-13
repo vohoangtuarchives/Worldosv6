@@ -83,7 +83,9 @@
       "Bash(php -l \"C:\\\\Users\\\\vohoa\\\\Worldosv6\\\\backend\\\\tests\\\\Feature\\\\Simulation\\\\DeterministicReplayTest.php\")",
       "Bash(php -l \"C:\\\\Users\\\\vohoa\\\\Worldosv6\\\\backend\\\\app\\\\Modules\\\\Simulation\\\\Providers\\\\SimulationServiceProvider.php\")",
       "Bash(php:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m ':*)"
     ]
   }
 }
