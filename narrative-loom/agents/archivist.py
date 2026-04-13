@@ -1,15 +1,18 @@
 from core.agent_wrapper import agent_node
+from core.logging import get_logger
 import asyncio
 from typing import Dict, Any
 from state import NarrativeState
 from utils.memory_manager import EpisodicMemoryManager
+
+log = get_logger(__name__)
 
 memory_db = EpisodicMemoryManager()
 
 @agent_node("archivist")
 
 async def archivist_agent(state: NarrativeState, config: Dict[str, Any] = None) -> NarrativeState:
-    print("--- RUNNING AGENT: THE ARCHIVIST (MEMORY WIRING) ---")
+    log.info("agent.run", agent="archivist")
 
     prose = state.get("final_prose", "")
 
@@ -35,9 +38,9 @@ async def archivist_agent(state: NarrativeState, config: Dict[str, Any] = None) 
         }
 
         await asyncio.to_thread(memory_db.store_memory, prose, metadata)
-        print(f"DEBUG: Archivist (Model: qwen3.5) đã khắc ghi sử thi vào Tàng thư các.")
+        log.debug("agent.detail", agent="archivist", model="qwen3.5", event="memory_stored")
     elif not memory_db.enabled:
-        print("DEBUG: Archivist bị vô hiệu hóa do thiếu thư viện Vector DB (chromadb/sentence-transformers).")
+        log.warning("agent.warning", agent="archivist", reason="memory_db_disabled_missing_vector_db_libraries")
 
     return {**state, "current_agent": "archivist"}
 

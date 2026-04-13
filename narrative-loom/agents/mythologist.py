@@ -1,10 +1,13 @@
 from core.agent_wrapper import agent_node
+from core.logging import get_logger
 import os
 from typing import Dict, Any
 from state import NarrativeState
 from utils.llm_factory import get_llm
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
+
+log = get_logger(__name__)
 
 # Phóng viên Văn hóa (Cultural Reporter / Mythologist)
 mythologist_prompt = ChatPromptTemplate.from_messages([
@@ -24,7 +27,7 @@ Chỉ thị từ Tổng Biên Tập:
 @agent_node("mythologist")
 
 async def mythologist_agent(state: NarrativeState, config: Dict[str, Any] = None) -> NarrativeState:
-    print("--- RUNNING AGENT: THE MYTHOLOGIST ---")
+    log.info("agent.run", agent="mythologist")
     
     outline = state.get("historical_outline", "")
     style = state.get("style_guidelines", "")

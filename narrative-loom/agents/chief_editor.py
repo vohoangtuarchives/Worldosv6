@@ -1,10 +1,13 @@
 from core.agent_wrapper import agent_node
+from core.logging import get_logger
 import os
 from typing import Dict, Any
 from state import NarrativeState
 from utils.llm_factory import get_llm, get_llm_for_agent
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
+
+log = get_logger(__name__)
 
 # Tổng Biên Tập (Chief Editor) - Người đặt ra "Góc nhìn" và "Thông điệp" cho bài viết
 chief_editor_prompt = ChatPromptTemplate.from_messages([
@@ -29,7 +32,7 @@ Hãy đưa ra góc nhìn biên tập cho số báo này.
 @agent_node("chief_editor")
 
 async def chief_editor_agent(state: NarrativeState, config: Dict[str, Any] = None) -> NarrativeState:
-    print("--- RUNNING AGENT: THE CHIEF EDITOR ---")
+    log.info("agent.run", agent="chief_editor")
     
     entropy = state.get("event_scores", {}).get("total_entropy", 0.5)
     phase = state.get("narrative_phase", "Unknown")

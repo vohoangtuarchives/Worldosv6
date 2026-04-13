@@ -1,7 +1,10 @@
 from core.agent_wrapper import agent_node
+from core.logging import get_logger
 import asyncio
 import os
 import random
+
+log = get_logger(__name__)
 
 class AudioDirectorAgent:
     """
@@ -25,7 +28,7 @@ class AudioDirectorAgent:
         Nhận vào tên Kỷ nguyên và Chủ đề lõi, phân tích để pick nhạc phù hợp.
         Chỗ này sau này có thể là hàm gọi API tới HuggingFace AudioGen / Suno.
         """
-        print(f"[AudioDirector] Phân tích Motif Kỷ Nguyên '{epoch_name}'...")
+        log.info("agent.run", agent="audio_director", epoch_name=epoch_name)
         delay = float(os.environ.get("AUDIO_PROCESSING_DELAY", "0"))
         if delay > 0:
             await asyncio.sleep(delay)
@@ -45,7 +48,7 @@ class AudioDirectorAgent:
 
         track_url = self.mock_tracks.get(selected_style, self.mock_tracks["default"])
 
-        print(f"[AudioDirector] Hoàn tất bản giao hưởng: {selected_style.upper()}")
+        log.info("agent.detail", agent="audio_director", event="soundtrack_complete", style=selected_style)
 
         return {
             "epoch_name": epoch_name,

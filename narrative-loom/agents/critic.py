@@ -1,4 +1,5 @@
 from core.agent_wrapper import agent_node
+from core.logging import get_logger
 import os
 from typing import Dict, Any
 from state import NarrativeState
@@ -6,6 +7,8 @@ from state import NarrativeState
 from utils.llm_factory import get_llm, get_llm_for_agent
 from langchain_core.prompts import ChatPromptTemplate
 from schemas import CriticReview
+
+log = get_logger(__name__)
 
 # Biên tập viên Cao cấp (Senior Editor / Critic)
 critic_prompt = ChatPromptTemplate.from_messages([
@@ -19,7 +22,7 @@ Chấm điểm dựa trên: Độ sắc bén của góc nhìn, tính sống đ�
 @agent_node("critic")
 
 async def critic_agent(state: NarrativeState, config: Dict[str, Any] = None) -> NarrativeState:
-    print("--- RUNNING AGENT: THE CRITIC ---")
+    log.info("agent.run", agent="critic")
     
     prose = state.get("final_prose", "")
     storyboard = state.get("storyboard", "")
@@ -46,12 +49,12 @@ async def critic_agent(state: NarrativeState, config: Dict[str, Any] = None) -> 
     rev = state.get("revision_count", 0) + 1
     
     if not result:
-        print("DEBUG: Lỗi phân tích cú pháp Critic, cho pass tạm.")
+        log.debug("agent.detail", agent="critic", event="parse_error_fallback")
         report = {"score": 7, "feedbacks": ["Lỗi parse JSON"], "is_passed": True}
     else:
         report = result.model_dump()
         
-    print(f"DEBUG: Critic Score: {report.get('score')}/10 - Passed: {report.get('is_passed')}")
+    log.debug("agent.detail", agent="critic", score=report.get("score"), is_passed=report.get("is_passed"))
     
     return {**state, "feedback": report, "revision_count": rev, "current_agent": "critic"}
 

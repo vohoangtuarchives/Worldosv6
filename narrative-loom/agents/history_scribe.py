@@ -1,9 +1,12 @@
 from core.agent_wrapper import agent_node
+from core.logging import get_logger
 import json
 from langchain_core.prompts import ChatPromptTemplate
 from typing import Dict, Any
 
 from utils.llm_factory import get_llm_for_agent
+
+log = get_logger(__name__)
 
 history_prompt = ChatPromptTemplate.from_messages([
     ("system", """Ngươi là Sử Quan (History Scribe) của WorldOS.
@@ -39,7 +42,7 @@ async def scribe_history(req_data: dict) -> dict:
         })
         return result
     except Exception as e:
-        print(f"DEBUG Error Scribe History: {e}")
+        log.debug("agent.detail", agent="history_scribe", event="scribe_error", exc=str(e))
         return {"event_name": "Sự Kiện Dị Thường", "chronicle": "Một chuyển động chưa từng có đã quét qua vùng không gian này."}
 
 @agent_node("history_scribe")
@@ -50,7 +53,7 @@ async def history_scribe_api(event_type: str, impact_score: float, trigger_data:
     """
     if impact_score < 5.0:
         # Fallback to Rule-based / Raw text to save API cost
-        print(f"[Resource Saving] Scribe History bỏ qua AI vì Impact Score ({impact_score}) < 5.0")
+        log.debug("agent.detail", agent="history_scribe", event="skipped_low_impact", impact_score=impact_score)
         name = event_type.replace("_", " ").title()
         return {
             "event_name": f"Minor Event: {name}",
@@ -58,7 +61,7 @@ async def history_scribe_api(event_type: str, impact_score: float, trigger_data:
         }
 
     # Trigger LLM
-    print(f"[Adaptive Narrative] Kích hoạt LLM Scribe cho Impact Score: {impact_score}")
+    log.info("agent.detail", agent="history_scribe", event="llm_triggered", impact_score=impact_score)
     req_data = {
         "event_type": event_type,
         "impact_score": impact_score,

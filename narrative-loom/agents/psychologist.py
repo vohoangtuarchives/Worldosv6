@@ -1,4 +1,5 @@
 from core.agent_wrapper import agent_node
+from core.logging import get_logger
 from typing import Dict, Any
 from state import NarrativeState
 import httpx
@@ -7,6 +8,8 @@ import os
 from utils.llm_factory import get_llm, get_llm_for_agent
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
+
+log = get_logger(__name__)
 
 # Phóng viên Điều tra (Investigative Reporter / Psychologist)
 psychologist_prompt = ChatPromptTemplate.from_messages([
@@ -30,7 +33,7 @@ async def psychologist_agent(state: NarrativeState, config: Dict[str, Any] = Non
     Node B: The Psychologist. 
     Lấy thông tin Outline và gọi Character API từ WorldOS để fetch profiles.
     """
-    print("--- RUNNING AGENT: THE PSYCHOLOGIST ---")
+    log.info("agent.run", agent="psychologist")
     
     outline_data = state.get("historical_outline", {})
     if isinstance(outline_data, dict):

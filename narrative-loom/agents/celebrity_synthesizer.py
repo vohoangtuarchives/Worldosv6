@@ -1,9 +1,12 @@
 from core.agent_wrapper import agent_node
+from core.logging import get_logger
 import json
 from langchain_core.prompts import ChatPromptTemplate
 from typing import Dict, Any
 
 from utils.llm_factory import get_llm_for_agent
+
+log = get_logger(__name__)
 
 celebrity_prompt = ChatPromptTemplate.from_messages([
     ("system", """Ngươi là Trưởng Ban Tiểu sử Danh nhân (Biographer) của WorldOS.
@@ -41,7 +44,7 @@ async def synthesize_celebrity(req_data: dict) -> dict:
         })
         return result
     except Exception as e:
-        print(f"DEBUG Error Synthesize Celebrity: {e}")
+        log.debug("agent.detail", agent="celebrity_synthesizer", event="synthesize_error", exc=str(e))
         return {"name": "Vô Danh", "biography": "Một sự hiện diện bí ẩn vừa xuất hiện với hành tung bất định."}
 
 

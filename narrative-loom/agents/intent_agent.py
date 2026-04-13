@@ -1,8 +1,11 @@
 from core.agent_wrapper import agent_node
+from core.logging import get_logger
 from typing import Any, Dict, List, Optional
 from pydantic import BaseModel
 from utils.llm_factory import get_llm
 from langchain_core.prompts import ChatPromptTemplate
+
+log = get_logger(__name__)
 
 # ── Pydantic schemas ──────────────────────────────────────────────────────────
 
@@ -118,7 +121,7 @@ async def intent_agent(req: ActorIntentRequest) -> ActorIntentResponse:
 
     # Use real LLM by default, but allow mock via env var
     use_mock = os.getenv("USE_MOCK_LLM", "false").lower() == "true"
-    print(f"DEBUG: Intent Agent call - provider={req.provider}, model={req.model_name}, use_mock={use_mock}")
+    log.debug("agent.detail", agent="intent_agent", provider=req.provider, model=req.model_name, use_mock=use_mock)
 
     if use_mock:
         # Mock response for local/unconfigured environments

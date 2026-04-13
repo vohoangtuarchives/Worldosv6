@@ -1,9 +1,12 @@
 from core.agent_wrapper import agent_node
+from core.logging import get_logger
 import json
 from langchain_core.prompts import ChatPromptTemplate
 from typing import Dict, Any
 
 from utils.llm_factory import get_llm_for_agent
+
+log = get_logger(__name__)
 
 artifact_prompt = ChatPromptTemplate.from_messages([
     ("system", """Ngươi là Rèn sư Truyền thuyết (Artifact Forger) của WorldOS.
@@ -40,7 +43,7 @@ async def forge_artifact(req_data: dict) -> dict:
         })
         return result
     except Exception as e:
-        print(f"DEBUG Error Forge Artifact: {e}")
+        log.debug("agent.detail", agent="artifact_forger", event="forge_error", exc=str(e))
         return {"name": "Khối Vật Chất Vô Danh", "lore": "Vật phẩm này tỏa ra ánh sáng rực rỡ nhưng không ai biết nguồn gốc của nó."}
 
 

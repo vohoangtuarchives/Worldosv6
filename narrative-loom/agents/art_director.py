@@ -1,7 +1,10 @@
 from core.agent_wrapper import agent_node
+from core.logging import get_logger
 import os
 import httpx
 from typing import Optional
+
+log = get_logger(__name__)
 
 @agent_node("art_director")
 
@@ -10,11 +13,11 @@ async def generate_visual_asset(prompt_text: str, is_portrait: bool = True) -> O
     Sinh ảnh Visual Asset (Portrait hoặc Blueprint) thông qua OpenAI DALL-E 3 API.
     Sử dụng httpx để gọi REST API trực tiếp.
     """
-    print(f"--- RUNNING AGENT: ART DIRECTOR (DALL-E 3) ---")
+    log.info("agent.run", agent="art_director")
     
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
-        print("WARNING: Missing OPENAI_API_KEY. Khong the sinh anh.")
+        log.warning("agent.warning", agent="art_director", reason="missing_OPENAI_API_KEY")
         return None
 
     style_suffix = (
@@ -49,13 +52,13 @@ async def generate_visual_asset(prompt_text: str, is_portrait: bool = True) -> O
             if response.status_code == 200:
                 data = response.json()
                 image_url = data['data'][0]['url']
-                print(f"SUCCESS: Art Director sinh thanh cong Asset: {image_url}")
+                log.info("agent.detail", agent="art_director", event="asset_generated", image_url=image_url)
                 return image_url
             else:
-                print(f"ERROR: Art Director DALL-E 3 that bai: {response.text}")
+                log.error("agent.error", agent="art_director", event="dalle3_failed", detail=response.text)
                 return None
     except Exception as e:
-        print(f"ERROR: Art Director Exception: {e}")
+        log.error("agent.error", agent="art_director", event="exception", exc=str(e))
         return None
 
 

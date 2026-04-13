@@ -1,4 +1,5 @@
 from core.agent_wrapper import agent_node
+from core.logging import get_logger
 import os
 import json
 from typing import Dict, Any
@@ -11,6 +12,8 @@ from pydantic import BaseModel, Field
 from typing import List, Optional
 
 from schemas import AnimationScript
+
+log = get_logger(__name__)
 
 
 class VFXConfig(BaseModel):
@@ -63,7 +66,7 @@ Chronicle content to visualize:
 
 @agent_node("vfx_director")
 async def vfx_director_agent(state: NarrativeState, config: Dict[str, Any] = None) -> NarrativeState:
-    print("--- RUNNING AGENT: THE VFX DIRECTOR (VISUAL EFFECTS + CINEMATOGRAPHY) ---")
+    log.info("agent.run", agent="vfx_director")
 
     # Read inputs from state
     entropy = state.get("event_scores", {}).get("total_entropy", 0.5)
@@ -94,7 +97,7 @@ async def vfx_director_agent(state: NarrativeState, config: Dict[str, Any] = Non
         vfx_config = result.get("vfx_config", {})
         animation_script = result.get("animation_script", None)
     except Exception as e:
-        print(f"DEBUG: VFX Director error: {e}")
+        log.debug("agent.detail", agent="vfx_director", event="vfx_error", exc=str(e))
         vfx_config = {
             "primary_color": "#8b5cf6",
             "distortion": 0.4,

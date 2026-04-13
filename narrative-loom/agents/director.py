@@ -1,4 +1,5 @@
 from core.agent_wrapper import agent_node
+from core.logging import get_logger
 import os
 from typing import Dict, Any
 from state import NarrativeState
@@ -8,6 +9,8 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 
 from schemas import Storyboard
+
+log = get_logger(__name__)
 
 # Thư ký Tòa soạn (Managing Editor / Director)
 director_prompt = ChatPromptTemplate.from_messages([
@@ -44,7 +47,7 @@ async def director_agent(state: NarrativeState, config: Dict[str, Any] = None) -
     Node C: The Director. 
     Tổng hợp Outline, Psychology và WorldState để tạo Storyboard kịch tính.
     """
-    print("--- RUNNING AGENT: THE DIRECTOR ---")
+    log.info("agent.run", agent="director")
     
     # Lôi World State từ raw payload (Causal Integrity / Collapse Threat)
     chronicles = state.get("raw_chronicles", [])
@@ -89,12 +92,12 @@ async def director_agent(state: NarrativeState, config: Dict[str, Any] = None) -
     })
     
     if not result:
-        print("DEBUG: Director JSON parsing failed.")
+        log.debug("agent.detail", agent="director", event="json_parse_failed")
         result_dict = {"title": "Lỗi phân cảnh", "scenes": []}
     else:
         result_dict = result.model_dump()
         
-    print(f"DEBUG: Storyboard Scenes Generated: {len(result_dict.get('scenes', []))}")
+    log.debug("agent.detail", agent="director", scenes_count=len(result_dict.get("scenes", [])))
     
     return {**state, "storyboard": result_dict, "current_agent": "director"}
 

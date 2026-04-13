@@ -1,4 +1,5 @@
 from core.agent_wrapper import agent_node
+from core.logging import get_logger
 import os
 from typing import Dict, Any
 from state import NarrativeState
@@ -6,6 +7,8 @@ from utils.llm_factory import get_llm, get_llm_for_agent
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
 from pydantic import BaseModel, Field
+
+log = get_logger(__name__)
 
 class NewsHeadline(BaseModel):
     headline: str = Field(description="Tiêu đề giật gân cho bản tin")
@@ -30,7 +33,7 @@ Góc nhìn tòa soạn (Angle):
 @agent_node("news_anchor")
 
 async def news_anchor_agent(state: NarrativeState, config: Dict[str, Any] = None) -> NarrativeState:
-    print("--- RUNNING AGENT: THE NEWS ANCHOR (BROADCASTING) ---")
+    log.info("agent.run", agent="news_anchor")
     
     prose = state.get("final_prose", "")
     angle = state.get("past_memories", "").split("[CHIEF EDITOR ANGLE]:")[-1]
@@ -55,7 +58,7 @@ async def news_anchor_agent(state: NarrativeState, config: Dict[str, Any] = None
         headline = result.get("headline", "Sự kiện Đa vũ trụ chưa xác định")
         slogan = result.get("slogan", "Mọi thứ đang nở rộ...")
     except Exception as e:
-        print(f"DEBUG: News Anchor error: {e}")
+        log.debug("agent.detail", agent="news_anchor", event="anchor_error", exc=str(e))
         headline = "BREAKING NEWS: SỰ KIỆN LỚN ĐANG DIỄN RA"
         slogan = "Theo dõi để biết thêm chi tiết."
     

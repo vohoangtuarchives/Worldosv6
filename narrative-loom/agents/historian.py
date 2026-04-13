@@ -1,4 +1,5 @@
 from core.agent_wrapper import agent_node
+from core.logging import get_logger
 import json
 import os
 from langchain_core.prompts import ChatPromptTemplate
@@ -9,6 +10,8 @@ from state import NarrativeState
 from utils.llm_factory import get_llm, get_llm_for_agent
 from schemas import HistoricalOutline
 from utils.memory_manager import EpisodicMemoryManager
+
+log = get_logger(__name__)
 
 memory_db = EpisodicMemoryManager()
 
@@ -45,7 +48,7 @@ async def historian_agent(state: NarrativeState, config: Dict[str, Any] = None) 
     Hàm xử lý Node 'The Historian' trong LangGraph. 
     Lấy dữ liệu thô và gọi LLM để viết Historical Outline.
     """
-    print("--- RUNNING AGENT: THE HISTORIAN ---")
+    log.info("agent.run", agent="historian")
     
     # 1. Trích xuất Payload từ State
     chronicles = state.get("raw_chronicles", [])
@@ -108,7 +111,7 @@ async def historian_agent(state: NarrativeState, config: Dict[str, Any] = None) 
         query = f"Hậu quả nhân quả và diễn biến của các nhân vật: {', '.join(list(actors)[:10])}"
         memories = memory_db.retrieve_memories(query, k=2)
         past_memories = "\n---\n".join(memories) if memories else "Chưa có ký ức nào được ghi nhận trong Vector DB."
-        print(f"DEBUG: Historian retrieved {len(memories)} past memories.")
+        log.debug("agent.detail", agent="historian", event="memories_retrieved", count=len(memories))
     else:
         past_memories = "Hệ thống Memory Database đang tắt hoặc không có nhân vật nào đáng chú ý."
 
@@ -132,16 +135,16 @@ async def historian_agent(state: NarrativeState, config: Dict[str, Any] = None) 
             "resonance_scars": "\n- ".join(state.get("resonance_scars", [])) if state.get("resonance_scars") else "Không có cộng hương đáng kể."
         })
     except Exception as e:
-        print(f"DEBUG: Lỗi gọi LLM: {str(e)}")
+        log.debug("agent.detail", agent="historian", event="llm_call_error", exc=str(e))
         result = None
 
     if not result:
-        print("DEBUG: Lỗi cấu trúc JSON từ LLM, fallback về trạng thái rỗng.")
+        log.debug("agent.detail", agent="historian", event="json_parse_failed_fallback")
         outline_data = {"summary": "Lỗi phân tích cú pháp JSON.", "beats": []}
     else:
         outline_data = result.model_dump()
     
-    print(f"DEBUG: Historian Outline Length (Parsed Beats): {len(outline_data.get('beats', []))}")
+    log.debug("agent.detail", agent="historian", beats_count=len(outline_data.get("beats", [])))
     
     # 5. Cập nhật State
     return {**state, "historical_outline": outline_data, "past_memories": past_memories, "current_agent": "historian"}
