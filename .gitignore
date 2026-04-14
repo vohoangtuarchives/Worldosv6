@@ -39,7 +39,6 @@ bloom/.env.local
 bloom/.env.*.local
 
 # ─── Rust Engine (engine/) ────────────────────────────────────────────────────
-engine/target/
 
 # ─── Python / Narrative Loom (narrative-loom/) ────────────────────────────────
 narrative-loom/__pycache__/
