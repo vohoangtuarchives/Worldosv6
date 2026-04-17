@@ -1,10 +1,13 @@
 from core.agent_wrapper import agent_node
+from core.logging import get_logger
 import redis
 import os
 import random
 import json
 from state import NarrativeState
 from typing import Dict, Any
+
+log = get_logger(__name__)
 
 _redis_pool = None
 
@@ -16,22 +19,22 @@ def _get_redis():
     return redis.Redis(connection_pool=_redis_pool)
 
 @agent_node("universe_bridge")
-def universe_bridge_node(state: NarrativeState) -> NarrativeState:
+async def universe_bridge_node(state: NarrativeState, config: Dict[str, Any] = None) -> NarrativeState:
     """
     Universe Bridge Node: Lấy các tin tức/sự kiện từ các vũ trụ song song khác.
     Dùng để tạo hiệu ứng 'Deja Vu' hoặc 'Cross-Pollination' giữa các thế giới.
     """
-    print("--- RUNNING NODE: UNIVERSE BRIDGE (CROSS-POLLINATION) ---")
+    log.debug("bridge.running")
 
     r = _get_redis()
-    
+
     whisper_key = "worldos:multiverse:whispers"
     current_world_id = state.get("world_id", 0)
-    
+
     try:
         # 1. Lấy tất cả whispers hiện có
         all_whispers = r.lrange(whisper_key, 0, 50) # Lấy 50 cái mới nhất
-        
+
         # 2. Lọc bỏ các whispers từ chính vũ trụ hiện tại (tránh loop)
         foreign_whispers = []
         for w_raw in all_whispers:
@@ -41,20 +44,20 @@ def universe_bridge_node(state: NarrativeState) -> NarrativeState:
                     foreign_whispers.append(w_data.get("summary", ""))
             except (json.JSONDecodeError, ValueError, KeyError):
                 continue
-                
+
         # 3. Chọn ngẫu nhiên 2-3 whispers để đưa vào state
         selected_whispers = random.sample(foreign_whispers, min(len(foreign_whispers), 3))
-        
+
         if selected_whispers:
-            print(f"DEBUG: Universe Bridge found {len(selected_whispers)} whispers from parallel worlds.")
+            log.debug("bridge.whispers_found", count=len(selected_whispers))
         else:
-            print("DEBUG: Universe Bridge silent. No parallel activity detected.")
-            
-        return {**state, "cross_pollination_whispers": selected_whispers}
-        
+            log.debug("bridge.no_whispers")
+
+        return {"cross_pollination_whispers": selected_whispers}
+
     except Exception as e:
-        print(f"WARNING: Universe Bridge failed: {e}")
-        return {**state, "cross_pollination_whispers": []}
+        log.warning("bridge.failed", error=str(e))
+        return {"cross_pollination_whispers": []}
 
 @agent_node("universe_bridge")
 def record_universe_whisper(state: NarrativeState):
@@ -76,6 +79,6 @@ def record_universe_whisper(state: NarrativeState):
         # Đẩy vào list và giữ độ dài tối đa 100
         r.lpush(whisper_key, json.dumps(payload))
         r.ltrim(whisper_key, 0, 99)
-        print("DEBUG: Epic event recorded in Multiverse Whispers.")
+        log.debug("bridge.epic_recorded")
 
 

@@ -135,6 +135,69 @@ class AiSettingsController extends Controller
         return response()->json(array_values(array_unique(['pool', ...array_keys(config('ai.drivers', []))])));
     }
 
+    /**
+     * Get Loom agents configuration.
+     */
+    public function loomAgents()
+    {
+        $agents = AiSetting::query()
+            ->where('key', 'like', 'loom_agents.%')
+            ->get()
+            ->map(function (AiSetting $setting) {
+                $value = $this->decodeValue($setting->value);
+
+                return [
+                    'id' => $setting->id,
+                    'key' => $setting->key,
+                    'agent_name' => str_replace('loom_agents.', '', $setting->key),
+                    'value' => $value,
+                    'group' => $setting->group,
+                    'description' => $setting->description,
+                    'created_at' => $setting->created_at,
+                    'updated_at' => $setting->updated_at,
+                ];
+            });
+
+        return response()->json($agents);
+    }
+
+    /**
+     * Import Loom agents configuration from JSON file.
+     */
+    public function importLoomAgents()
+    {
+        $jsonPath = base_path('agent_routing.json');
+
+        if (!file_exists($jsonPath)) {
+            return response()->json(['message' => 'File agent_routing.json không tồn tại tại: ' . $jsonPath], 404);
+        }
+
+        $config = json_decode(file_get_contents($jsonPath), true);
+
+        if (!is_array($config)) {
+            return response()->json(['message' => 'Không thể đọc file JSON'], 500);
+        }
+
+        foreach ($config as $agentName => $agentConfig) {
+            $key = "loom_agents.{$agentName}";
+            $value = json_encode($agentConfig);
+
+            AiSetting::updateOrCreate(
+                ['key' => $key],
+                [
+                    'value' => $value,
+                    'group' => 'loom_agents',
+                    'description' => "Cấu hình AI cho Loom agent: {$agentName}",
+                    'is_secret' => false,
+                ]
+            );
+        }
+
+        $this->configManager->syncToCache();
+
+        return response()->json(['message' => 'Đã nhập cấu hình Loom agents từ file JSON thành công.']);
+    }
+
     private function purgeLegacyDriverSettings(bool $sync = true): void
     {
         AiSetting::query()->where('key', 'like', 'drivers.%')->delete();

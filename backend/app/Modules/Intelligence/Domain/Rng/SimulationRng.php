@@ -21,19 +21,19 @@ final class SimulationRng
      */
     public function nextFloat(): float
     {
-        // Ensure state is 64 bit capable (PHP mostly is 64 bit int)
-        // A simple LCG or XorShift could also work, using simplified SplitMix64 principles:
+        // 1. Advance state
         $this->state = (int) ($this->state + 0x9E3779B97F4A7C15);
+
+        // 2. Mix
         $z = $this->state;
         $z = (int) (($z ^ ($z >> 30)) * 0xBF58476D1CE4E5B9);
         $z = (int) (($z ^ ($z >> 27)) * 0x94D049BB133111EB);
         $z = $z ^ ($z >> 31);
-        
-        // Convert integer strictly to float between 0.0 and 1.0.
-        // Max value handling considering signed integers.
-        $maxInt = PHP_INT_MAX;
-        $val = abs($z);
-        return (float) ($val / $maxInt);
+
+        // 3. Convert to float [0.0, 1.0)
+        // We mask the value to 53 bits (the precision of a double)
+        // and divide by 2^53.
+        return ($z & 0x1FFFFFFFFFFFFF) / 9007199254740992;
     }
 
     /**

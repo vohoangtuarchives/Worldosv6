@@ -105,14 +105,18 @@ class AnalyticalAiService
 
     protected function callLlm(string $prompt): ?string
     {
-        return $this->aiGateway->feature('analytical')->chat([
-            ['role' => 'system', 'content' => 'You are an AI analyst for WorldOS simulation. Respond in JSON when asked.'],
-            ['role' => 'user',   'content' => $prompt],
-        ], [
-            'temperature' => 0.3,
-            'timeout' => 45
-        ]);
-
+        try {
+            return $this->aiGateway->feature('analytical')->chat([
+                ['role' => 'system', 'content' => 'You are an AI analyst for WorldOS simulation. Respond in JSON when asked.'],
+                ['role' => 'user',   'content' => $prompt],
+            ], [
+                'temperature' => 0.3,
+                'timeout' => 45,
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('AnalyticalAiService: LLM call failed', ['error' => $e->getMessage()]);
+            return null;
+        }
     }
 
 

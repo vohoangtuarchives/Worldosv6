@@ -40,7 +40,17 @@ class NarrativeLoomService
 
         $world = \App\Models\World::find($worldId);
         $genre = $world ? ($world->current_genre ?? $world->base_genre) : 'generic';
-        $runtime = $this->aiGateway->runtimeProfileForFeature('narrative');
+
+        // Tạm thởi bỏ qua AI key requirement để test
+        try {
+            $runtime = $this->aiGateway->runtimeProfileForFeature('narrative');
+        } catch (\Throwable $e) {
+            Log::warning('NarrativeLoom: AI key pool exhausted, using default runtime (AI Pool)', ['error' => $e->getMessage()]);
+            $runtime = [
+                'provider' => 'local',
+                'model' => 'qwen3.5-9b-uncensored-hauhaucs-aggressive',
+            ];
+        }
         $keyEntry = $runtime['key_entry'] ?? null;
 
         $whispers = \App\Models\Narrative::where('is_active', true)

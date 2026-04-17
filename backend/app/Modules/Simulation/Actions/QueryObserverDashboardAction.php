@@ -197,7 +197,7 @@ class QueryObserverDashboardAction
         return [
             'universe_id' => $universeId,
             'global_resonance' => $resonance,
-            'primary_dimension' => array_search(max($fields), $fields) ?: 'none',
+            'primary_dimension' => !empty($fields) ? (array_search(max($fields), $fields) ?: 'none') : 'none',
             'heatmap' => $heatmap
         ];
     }

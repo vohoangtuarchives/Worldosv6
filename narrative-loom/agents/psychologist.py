@@ -95,12 +95,10 @@ async def psychologist_agent(state: NarrativeState, config: Dict[str, Any] = Non
     except Exception as e:
         import logging
         logging.error(f"Psychologist LLM call failed: {e}")
-        return {**state, "current_agent": "psychologist"}
+        return {}
 
     return {
-        **state,
-        "psychological_profiles": {"analysis": result},
-        "current_agent": "psychologist"
+        "psychological_profiles": {"analysis": result}
     }
 
 

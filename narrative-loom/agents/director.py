@@ -99,6 +99,6 @@ async def director_agent(state: NarrativeState, config: Dict[str, Any] = None) -
         
     log.debug("agent.detail", agent="director", scenes_count=len(result_dict.get("scenes", [])))
     
-    return {**state, "storyboard": result_dict, "current_agent": "director"}
+    return {"storyboard": result_dict}
 
 

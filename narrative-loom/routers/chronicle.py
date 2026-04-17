@@ -1,10 +1,10 @@
 """Chronicle weaving routers."""
 import uuid
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, field_validator
-from typing import Dict, Any, List, Optional
-import os
+from typing import Optional, List, Dict, Any
 import httpx
+import os
 
 from core.logging import get_logger
 from core.celery_app import celery_app
@@ -117,16 +117,44 @@ async def get_task_status(task_id: str):
     Get the status and result of a narrative weaving task.
     """
     result = AsyncResult(task_id, app=celery_app)
-    
+
     response = {
         "task_id": task_id,
         "status": result.status,
     }
-    
+
     if result.ready():
         if result.successful():
             response["result"] = result.result
         else:
             response["error"] = str(result.result)
-            
+
     return response
+
+@router.get("/config/agent/{agent_id}")
+async def get_agent_config(agent_id: str):
+    """
+    Get AI configuration for a specific Loom agent from backend database.
+    """
+    backend_url = os.getenv("WORLDOS_API_URL", "http://nginx/api")
+
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        try:
+            # Query all loom agents config from backend
+            response = await client.get(
+                f"{backend_url}/intelligence/ai-settings/loom-agents"
+            )
+            response.raise_for_status()
+            agents = response.json()
+
+            # Find the specific agent
+            for agent in agents:
+                if agent.get("agent_name") == agent_id:
+                    return agent
+
+            # If not found, return 404
+            raise HTTPException(status_code=404, detail=f"Agent config not found: {agent_id}")
+
+        except httpx.HTTPError as e:
+            log.error("backend.fetch_failed", error=str(e))
+            raise HTTPException(status_code=500, detail=f"Failed to fetch from backend: {str(e)}")

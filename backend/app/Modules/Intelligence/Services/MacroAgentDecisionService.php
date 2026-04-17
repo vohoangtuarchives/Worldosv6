@@ -44,14 +44,18 @@ Dựa vào tình hình hiện tại, hãy ban hành một Sắc Lệnh (Edict) �
 Lưu ý "drift_target" là mốc xoay chuyển văn hóa (thuộc 8 chiều: survival, power, order, reason, strategy, system, holistic, integral). Chỉ chọn 2-3 thuộc tính để thay đổi (giá trị từ 0.0 đến 1.0).
 EOT;
 
-        $content = $this->aiGateway->feature('decision')->chat([
-            ['role' => 'system', 'content' => $systemPersona],
-            ['role' => 'user',   'content' => $prompt]
-        ], [
-            'temperature' => 0.7,
-            'timeout' => 60
-        ]);
-
+        try {
+            $content = $this->aiGateway->feature('decision')->chat([
+                ['role' => 'system', 'content' => $systemPersona],
+                ['role' => 'user',   'content' => $prompt]
+            ], [
+                'temperature' => 0.7,
+                'timeout' => 60
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('MacroAgentDecisionService: AI call failed', ['error' => $e->getMessage()]);
+            return null;
+        }
 
         if ($content) {
             // Clean markdown JSON block if present

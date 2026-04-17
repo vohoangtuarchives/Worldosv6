@@ -21,8 +21,12 @@ class GatewayNarrativeService implements LlmNarrativeClientInterface
      */
     public function isAvailable(): bool
     {
-        // Gateway is always technically available if drivers are configured
-        return true; 
+        try {
+            return $this->aiGateway->getActiveKeyForFeature('narrative') !== null;
+        } catch (\Throwable $e) {
+            Log::debug('GatewayNarrativeService::isAvailable check failed: ' . $e->getMessage());
+            return false;
+        }
     }
 
     /**

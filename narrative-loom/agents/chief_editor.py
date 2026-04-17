@@ -58,6 +58,6 @@ async def chief_editor_agent(state: NarrativeState, config: Dict[str, Any] = Non
     # Lưu chỉ thị vào state
     editorial_instruction = f"[CHIEF EDITOR ANGLE]:\n{result}"
     
-    return {**state, "past_memories": state.get("past_memories", "") + "\n" + editorial_instruction, "current_agent": "chief_editor"}
+    return {"past_memories": state.get("past_memories", "") + "\n" + editorial_instruction}
 
 

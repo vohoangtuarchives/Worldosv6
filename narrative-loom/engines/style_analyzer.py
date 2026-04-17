@@ -1,14 +1,15 @@
 from core.agent_wrapper import agent_node
 from state import NarrativeState
+from typing import Dict, Any
 
 @agent_node("style_analyzer")
-def style_analyzer_node(state: NarrativeState):
+async def style_analyzer_node(state: NarrativeState, config: Dict[str, Any] = None) -> NarrativeState:
     """
     Style Analyzer: Phân tích Genre và thiết lập Style Guidelines cho câu chuyện.
     Giúp Wordsmith và Director bám sát phong cách đặc thù của World.
     """
     genre = state.get("genre", "generic").lower()
-    
+
     # Map genre sang style guidelines
     style_map = {
         "wuxia": "Phong cách Kiếm hiệp, ngôn từ hoa mỹ, chú trọng vào võ công, danh dự và nội tâm cao thâm.",
@@ -18,9 +19,9 @@ def style_analyzer_node(state: NarrativeState):
         "solarpunk": "Phong cách Solarpunk, tươi sáng, hy vọng, chú trọng vào sự hài hòa giữa thiên nhiên và công nghệ.",
         "cosmic_horror": "Phong cách Cosmic Horror, ngôn từ gợi sự điên rồ, cái vô hạn và sự nhỏ bé của con người trước vũ trụ.",
     }
-    
+
     guidelines = style_map.get(genre, "Phong cách kể chuyện trung tính, rõ ràng và mạch lạc.")
-    
-    return {**state, "style_guidelines": guidelines, "current_agent": "Style_Analyzer"}
+
+    return {"style_guidelines": guidelines}
 
 

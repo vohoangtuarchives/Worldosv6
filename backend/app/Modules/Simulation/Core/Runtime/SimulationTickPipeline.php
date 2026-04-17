@@ -13,6 +13,9 @@ use Illuminate\Support\Facades\Log;
 
 final class SimulationTickPipeline
 {
+    /** Engine events emitted during the last run() call. */
+    private array $lastEngineEvents = [];
+
     /**
      * @param  array<string, SimulationStageInterface>  $stages  Stage key => stage instance
      */
@@ -51,6 +54,9 @@ final class SimulationTickPipeline
         // All heavy lifting (Mass Actors, DSL, Physics) is dispatched to Rust/DSL via Systems in the Kernel.
         $this->kernel->execute($state, $tick);
 
+        // Collect engine-level events (e.g. material_unlocked) for downstream listeners.
+        $this->lastEngineEvents = $this->kernel->getLastEngineEvents();
+
         // Phase 72: Collect Zenith Meta-Metrics
         $metrics = $this->metricsService->getZenithReport($state);
         foreach ($metrics as $key => $values) {
@@ -77,6 +83,17 @@ final class SimulationTickPipeline
             $universeEntity = app(\App\Modules\Simulation\Contracts\UniverseRepositoryInterface::class)->findById($universe->id);
             $this->narrativeEngine->pulse($universeEntity, $snapshotModel);
         }
+    }
+
+    /**
+     * Engine events collected from the last run() call.
+     * Call immediately after run() before the next tick.
+     *
+     * @return array<int, mixed>
+     */
+    public function getLastEngineEvents(): array
+    {
+        return $this->lastEngineEvents;
     }
 }
 

@@ -18,7 +18,12 @@ class OpenAINarrativeService implements LlmNarrativeClientInterface
 
     public function isAvailable(): bool
     {
-        return true;
+        try {
+            return $this->aiGateway->getActiveKeyForFeature('narrative') !== null;
+        } catch (\Throwable $e) {
+            Log::debug('OpenAINarrativeService::isAvailable check failed: ' . $e->getMessage());
+            return false;
+        }
     }
 
     public function generate(string $prompt, array $options = []): ?string

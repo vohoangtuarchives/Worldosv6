@@ -39,5 +39,11 @@ final class RuntimePipeline
             }
         }
     }
+
+    /** @return array<int, mixed> */
+    public function getLastEngineEvents(): array
+    {
+        return $this->tickOrchestrator->getLastEngineEvents();
+    }
 }
 

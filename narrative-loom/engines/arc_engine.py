@@ -12,11 +12,9 @@ TENSION_MAP = {
 }
 
 class DramaticArcEngine:
-    @agent_node("arc_engine")
     def tension(self, e: Dict[str, Any]) -> float:
         return TENSION_MAP.get((e.get("type") or "").lower(), 0.4)
 
-    @agent_node("arc_engine")
     def build(self, events: List[Dict[str, Any]]) -> Dict[str, List[Dict[str, Any]]]:
         ev = sorted(events, key=lambda x: x.get("tick", 0) or 0)
         if not ev:
@@ -33,10 +31,10 @@ class DramaticArcEngine:
         return {"setup": setup, "conflict": conflict, "crisis": crisis, "climax": climax, "aftermath": aftermath}
 
 @agent_node("arc_engine")
-def arc_engine_node(state: NarrativeState, config: Dict[str, Any] = None) -> NarrativeState:
+async def arc_engine_node(state: NarrativeState, config: Dict[str, Any] = None) -> NarrativeState:
     events = state.get("filtered_events", [])
     engine = DramaticArcEngine()
     arc = engine.build(events)
-    return {**state, "dramatic_arc": arc, "current_agent": "dramatic_arc"}
+    return {"dramatic_arc": arc}
 
 

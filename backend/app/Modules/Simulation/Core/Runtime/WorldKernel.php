@@ -122,13 +122,21 @@ class WorldKernel
         $state->syncAgentsToZones();
 
         // 2. PHASE 1-5: Sequential Reality Phases
+        $rustAuthoritative = (bool) config('worldos_simulation.simulation.rust_authoritative', true);
         foreach (SimulationPhase::inOrder() as $phase) {
             $phaseStart = microtime(true);
 
-            // 2a. Legacy orchestration map systems
+            // 2a. Legacy orchestration map systems (via registerSystem — @deprecated).
+            // GUARD: skip if PhaseRegistry has engines for this phase to prevent double execution.
+            // Engines registered in KernelServiceProvider Wave 1–6 overlap with PhaseRegistry entries.
             $phaseKey = $phase->key();
             $categories = $this->orchestrationMap[$phaseKey] ?? [];
-            if (!empty($categories)) {
+            // Use rustAuthoritative=false to check raw registration (ignores authority filtering).
+            // This prevents legacy path from running when the same phase has v2 engines registered,
+            // regardless of whether those engines are currently active under rust_authoritative mode.
+            $registryHasEngines = $this->registry !== null
+                && !empty($this->registry->getEnginesForPhase($phase, [], false));
+            if (!empty($categories) && !$registryHasEngines) {
                 $this->phaseExecutor->executePhase($phaseKey, $categories, $state, $tick, $this->tickImpacts);
             }
 
@@ -212,6 +220,25 @@ class WorldKernel
     public function getPhaseResults(): array
     {
         return $this->phaseResults;
+    }
+
+    /**
+     * Return all engine events emitted during the last execute() call.
+     * Safe to call after execute(); resets on the next execute() call.
+     *
+     * @return array<int, mixed>
+     */
+    public function getLastEngineEvents(): array
+    {
+        $events = [];
+        foreach ($this->phaseResults as $phaseResult) {
+            foreach ($phaseResult->getEngineResults() as $engineResult) {
+                foreach ($engineResult->events as $ev) {
+                    $events[] = $ev;
+                }
+            }
+        }
+        return $events;
     }
 
     /**

@@ -15,7 +15,8 @@ class UniverseSimulationPulsed implements ShouldBroadcast
     public function __construct(
         public Universe $universe,
         public UniverseSnapshot $snapshot,
-        public array $engineResponse = []
+        public array $engineResponse = [],
+        public array $engineEvents = []
     ) {}
 
     public function broadcastOn(): array

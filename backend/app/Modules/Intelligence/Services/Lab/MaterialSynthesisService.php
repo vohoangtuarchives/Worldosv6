@@ -64,14 +64,18 @@ EOT;
 
     protected function callLlm(string $prompt): ?string
     {
-        return $this->aiGateway->feature('lab')->chat([
-            ['role' => 'system', 'content' => "Bạn là một AI khoa học của WorldOS, chuyên thiết kế JSON."],
-            ['role' => 'user',   'content' => $prompt],
-        ], [
-            'temperature' => 0.8,
-            'timeout' => 120
-        ]);
-
+        try {
+            return $this->aiGateway->feature('lab')->chat([
+                ['role' => 'system', 'content' => "Bạn là một AI khoa học của WorldOS, chuyên thiết kế JSON."],
+                ['role' => 'user',   'content' => $prompt],
+            ], [
+                'temperature' => 0.8,
+                'timeout' => 120,
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('MaterialSynthesisService: LLM call failed', ['error' => $e->getMessage()]);
+            return null;
+        }
     }
 
 

@@ -26,10 +26,10 @@ class ChronicleResource extends JsonResource
             'importance' => (float) $this->importance,
             'actor_id' => $this->actorId,
             'world_event_id' => $this->worldEventId,
-            'has_animation' => ! empty($this->animation_script),
+            'has_animation' => ! empty($this->rawPayload['animation_script'] ?? null),
             'animation_script' => $this->when(
                 $request->routeIs('worldos.chronicles.show'),
-                $this->animation_script
+                $this->rawPayload['animation_script'] ?? null
             ),
         ];
     }

@@ -114,7 +114,7 @@ WORLDOS_GRAPH_URI=http://localhost:7474
 
 CENTRIFUGO_URL=http://centrifugo:8000
 CENTRIFUGO_KEY=api_key
-CENTRIFUGO_SECRET=secret
+CENTRIFUGO_SECRET=worldos_centrifugo_hmac_secret_key_32bytes_min
 CENTRIFUGO_HMAC_SECRET=hmac_secret
 ```
 

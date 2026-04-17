@@ -42,6 +42,6 @@ async def archivist_agent(state: NarrativeState, config: Dict[str, Any] = None) 
     elif not memory_db.enabled:
         log.warning("agent.warning", agent="archivist", reason="memory_db_disabled_missing_vector_db_libraries")
 
-    return {**state, "current_agent": "archivist"}
+    return {}
 
 

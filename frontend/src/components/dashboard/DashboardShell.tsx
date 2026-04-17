@@ -1,12 +1,36 @@
 'use client';
 
-import { useState } from 'react';
-import { usePathname } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { UniverseProvider } from '@/contexts/UniverseContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useRealtimeSync } from '@/hooks/useRealtimeSync';
 import Sidebar from '@/components/shell/Sidebar';
 import AppHeader from '@/components/shell/AppHeader';
+
+function AuthGuard({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, isLoading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      router.replace('/login');
+    }
+  }, [isLoading, isAuthenticated, router]);
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-[var(--bg-base)]">
+        <div className="w-6 h-6 rounded-full border-2 border-violet-500/30 border-t-violet-400 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) return null;
+
+  return <>{children}</>;
+}
 
 function ShellContent({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -60,8 +84,10 @@ export default function DashboardShell({
   children: React.ReactNode;
 }) {
   return (
-    <UniverseProvider>
-      <ShellContent>{children}</ShellContent>
-    </UniverseProvider>
+    <AuthGuard>
+      <UniverseProvider>
+        <ShellContent>{children}</ShellContent>
+      </UniverseProvider>
+    </AuthGuard>
   );
 }

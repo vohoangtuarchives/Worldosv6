@@ -110,8 +110,6 @@ async def vfx_director_agent(state: NarrativeState, config: Dict[str, Any] = Non
     record_universe_whisper(state)
 
     return {
-        **state,
         "vfx_config": vfx_config,
-        "animation_script": animation_script,
-        "current_agent": "vfx_director"
+        "animation_script": animation_script
     }

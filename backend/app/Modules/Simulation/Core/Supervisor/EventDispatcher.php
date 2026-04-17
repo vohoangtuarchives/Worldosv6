@@ -18,7 +18,7 @@ final class EventDispatcher
         private readonly \App\Modules\Simulation\Contracts\UniverseRepositoryInterface $universeRepository,
     ) {}
 
-    public function dispatchPulsed(UniverseEntity $universe, SnapshotEntity $snapshot, array $engineResponse, int $ticks, float $tickDurationMsPerTick): void
+    public function dispatchPulsed(UniverseEntity $universe, SnapshotEntity $snapshot, array $engineResponse, int $ticks, float $tickDurationMsPerTick, array $engineEvents = []): void
     {
         // Vẫn cần Model cho Event (UniverseSimulationPulsed) nếu Event chưa refactor
         $universeModel = \App\Models\Universe::find($universe->id);
@@ -28,7 +28,8 @@ final class EventDispatcher
             event(new \App\Modules\Simulation\Events\UniverseSimulationPulsed(
                 $universeModel,
                 $snapshotModel,
-                array_merge($engineResponse, ['_ticks' => $ticks])
+                array_merge($engineResponse, ['_ticks' => $ticks]),
+                $engineEvents
             ));
         }
 

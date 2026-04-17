@@ -70,7 +70,7 @@ async def wordsmith_agent(state: NarrativeState, config: Dict[str, Any] = None) 
         
         final_prose = scene_result if isinstance(scene_result, str) else str(scene_result.content if hasattr(scene_result, 'content') else scene_result)
         log.debug("agent.detail", agent="wordsmith", event="revision_complete", prose_length=len(final_prose))
-        return {**state, "final_prose": final_prose, "current_agent": "wordsmith"}
+        return {"final_prose": final_prose}
         
     # 🌟 NẾU LÀ LẦN VIẾT ĐẦU TIÊN: Tách storyboard thành từng Scene
     storyboard_data = state.get("storyboard", {})
@@ -125,6 +125,6 @@ async def wordsmith_agent(state: NarrativeState, config: Dict[str, Any] = None) 
     final_prose = "\n\n".join(chapter_content)
     log.debug("agent.detail", agent="wordsmith", event="prose_finalized", prose_length=len(final_prose))
     
-    return {**state, "final_prose": final_prose, "current_agent": "wordsmith"}
+    return {"final_prose": final_prose}
 
 

@@ -6,8 +6,10 @@ but uses asyncio internally since LangGraph nodes are async.
 Publishes overall pipeline state via Centrifugo.
 """
 import asyncio
+import os
 from typing import Any
 
+import httpx
 from celery import Task
 from celery.exceptions import SoftTimeLimitExceeded
 
@@ -18,6 +20,9 @@ from core.logging import get_logger
 from graph_builder import build_graph
 
 log = get_logger(__name__)
+
+# Backend webhook URL configuration
+BACKEND_WEBHOOK_URL = os.getenv("BACKEND_WEBHOOK_URL", "http://backend:8000/api/worldos/narrative-loom/webhook")
 
 # Compile graph once per worker process instead of per task
 # ensuring it's ready in memory
@@ -76,6 +81,26 @@ def weave_chronicle_task(self: Task, initial_state: dict[str, Any], world_id: in
         }
 
         publish_pipeline_done(world_id, task_id, pipeline_result)
+
+        # Call backend webhook to notify completion
+        try:
+            webhook_payload = {
+                "type": "pipeline_done",
+                "task_id": task_id,
+                "world_id": world_id,
+                "tick_start": initial_state.get("tick_start"),
+                "tick_end": initial_state.get("tick_end"),
+                **pipeline_result
+            }
+            with httpx.Client(timeout=10) as client:
+                response = client.post(BACKEND_WEBHOOK_URL, json=webhook_payload)
+                if response.status_code == 200:
+                    log.info("webhook.success", task_id=task_id, status=response.status_code)
+                else:
+                    log.warning("webhook.failed", task_id=task_id, status=response.status_code)
+        except Exception as e:
+            log.error("webhook.error", task_id=task_id, error=str(e))
+            # Không fail task nếu webhook thất bại
 
         # Trả về kết quả cho Celery Result Backend (Redis)
         return pipeline_result

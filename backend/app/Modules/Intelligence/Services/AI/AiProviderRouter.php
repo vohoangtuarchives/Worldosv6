@@ -7,6 +7,7 @@ namespace App\Modules\Intelligence\Services\AI;
 use App\Models\AiKeyPool;
 use App\Modules\Intelligence\Actions\RotateKeyAction;
 use App\Modules\Intelligence\Contracts\LlmDriverInterface;
+use App\Modules\Intelligence\Exceptions\AiPoolExhaustedException;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Log;
 
@@ -32,115 +33,58 @@ class AiProviderRouter
      *   key_entry:?AiKeyPool
      * }
      */
+    /**
+     * Pool-only resolution. Always resolves through ai_key_pool.
+     *
+     * @param  callable  $usesPoolFn  kept for signature compatibility; ignored
+     * @throws AiPoolExhaustedException when no usable pool key matches
+     */
     public function resolveRuntimeProfile(?string $name, string $feature, array $featureProfile, string $forcedTier, callable $usesPoolFn): array
     {
         $requestedName = $name
             ?: ($featureProfile['driver'] ?? null)
-            ?: $this->configManager->get('default', config('ai.default', 'local'));
+            ?: $this->configManager->get('default', config('ai.default', null));
 
         $requiredTier = $forcedTier !== 'any'
             ? $forcedTier
             : ($featureProfile['tier'] ?? 'any');
-        $providerFilter = $requestedName !== 'pool'
-            ? $requestedName
+        $providerFilter = $requestedName !== 'pool' && $requestedName !== null
+            ? (string) $requestedName
             : ($featureProfile['provider'] ?? null);
         $modelGroup = $featureProfile['model_group'] ?? null;
         $exactModel = $featureProfile['model'] ?? null;
         $driverOverrides = $this->normalizer->extractDriverOverrides($featureProfile);
         $defaultOptions = $this->normalizer->extractDefaultOptions($featureProfile);
 
-        if ($requestedName === 'pool' || $usesPoolFn()) {
-            $poolRuntime = $this->resolveUsablePoolKey(
-                $requiredTier,
+        $poolRuntime = $this->resolveUsablePoolKey(
+            $requiredTier,
+            $providerFilter,
+            $modelGroup,
+            $exactModel
+        );
+
+        if (!$poolRuntime) {
+            throw AiPoolExhaustedException::forFeature(
+                $feature,
                 $providerFilter,
+                $requiredTier,
                 $modelGroup,
-                $exactModel
+                $exactModel,
             );
-
-            if ($poolRuntime) {
-                $key = $poolRuntime['key'];
-
-                return [
-                    'provider' => $key->provider,
-                    'model' => $driverOverrides['model'] ?? ($key->metadata['model'] ?? $this->normalizer->defaultModelForProvider($key->provider)),
-                    'base_url' => $driverOverrides['url'] ?? ($key->metadata['url'] ?? $this->normalizer->defaultUrlForProvider($key->provider)),
-                    'api_key' => $poolRuntime['api_key'],
-                    'tier' => $key->tier,
-                    'from_pool' => true,
-                    'default_options' => $defaultOptions,
-                    'key_entry' => $key,
-                ];
-            }
-
-            throw new \RuntimeException('No available AI keys in pool for provider='.($providerFilter ?? 'any').", tier={$requiredTier}, model_group=".($modelGroup ?? 'any').', model='.($exactModel ?? 'any'));
         }
 
-        $config = $this->resolveDriverConfig((string) $requestedName, $driverOverrides);
+        $key = $poolRuntime['key'];
 
         return [
-            'provider' => (string) $requestedName,
-            'model' => $config['model'] ?? $this->normalizer->defaultModelForProvider((string) $requestedName),
-            'base_url' => $config['url'] ?? $this->normalizer->defaultUrlForProvider((string) $requestedName),
-            'api_key' => $config['key'] ?? null,
-            'tier' => $requiredTier,
-            'from_pool' => false,
+            'provider' => $key->provider,
+            'model' => $driverOverrides['model'] ?? ($key->metadata['model'] ?? $this->normalizer->defaultModelForProvider($key->provider)),
+            'base_url' => $driverOverrides['url'] ?? ($key->metadata['url'] ?? $this->normalizer->defaultUrlForProvider($key->provider)),
+            'api_key' => $poolRuntime['api_key'],
+            'tier' => $key->tier,
+            'from_pool' => true,
             'default_options' => $defaultOptions,
-            'key_entry' => null,
+            'key_entry' => $key,
         ];
-    }
-
-    public function createDriver(string $name, array $overrides = []): LlmDriverInterface
-    {
-        $config = $this->resolveDriverConfig($name, $overrides);
-
-        if (! $config) {
-            throw new \InvalidArgumentException("AI Driver [{$name}] not configured.");
-        }
-
-        return match ($name) {
-            'zai' => new Drivers\ZaiDriver(
-                $config['url'] ?? '',
-                $config['key'] ?? '',
-                $config['model'] ?? ''
-            ),
-            'openai' => new Drivers\OpenAiDriver(
-                $config['url'] ?? '',
-                $config['key'] ?? '',
-                $config['model'] ?? ''
-            ),
-            'gemini' => new Drivers\OpenAiDriver(
-                $config['url'] ?? 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
-                $config['key'] ?? '',
-                $config['model'] ?? 'gemini-1.5-flash'
-            ),
-            'local' => new Drivers\LocalDriver(
-                $config['url'] ?? '',
-                $config['model'] ?? ''
-            ),
-            'openrouter' => new Drivers\OpenRouterDriver(
-                $config['url'] ?? 'https://openrouter.ai/api/v1/chat/completions',
-                $config['key'] ?? '',
-                $config['model'] ?? 'minimax/minimax-m2.5:free'
-            ),
-            'qwen' => new Drivers\LocalDriver(
-                $config['url'] ?? 'http://host.docker.internal:8080/v1/chat/completions',
-                $config['model'] ?? 'qwen3-14b-uncensored'
-            ),
-            default => throw new \InvalidArgumentException("AI Driver [{$name}] not supported."),
-        };
-    }
-
-    public function resolveDriverConfig(string $name, array $overrides = []): array
-    {
-        $dbConfig = $this->configManager->get("drivers.{$name}");
-        $staticConfig = config("ai.drivers.{$name}", []);
-        $config = is_array($dbConfig) ? array_merge($staticConfig, $dbConfig) : $staticConfig;
-
-        if ($overrides !== []) {
-            $config = array_merge($config, $overrides);
-        }
-
-        return $config;
     }
 
     public function createDriverFromPoolRuntime(array $runtime, array $overrides = []): LlmDriverInterface

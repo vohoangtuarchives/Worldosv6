@@ -1,7 +1,6 @@
 <?php
 namespace App\Modules\Simulation\Core\Engines\Physics;
 
-use App\Models\Chronicle;
 use App\Modules\Simulation\Core\Concerns\DefaultSimulationEnginePhase;
 use App\Modules\Simulation\Core\Engines\EngineInterface;
 use App\Modules\Simulation\Core\Engines\EngineResult;
@@ -50,6 +49,7 @@ class MaterialEvolutionEngine implements EngineInterface
         $universeId = (int) $state->get('universe_id');
 
         $updatedZones = [];
+        $events = [];
         $hasChanged = false;
 
         Log::info("[MaterialEvolutionEngine] Universe {$universeId} Tick {$tick}, TechLevel: {$techLevel}");
@@ -64,7 +64,7 @@ class MaterialEvolutionEngine implements EngineInterface
                 if ($techLevel >= $tier['tech_min']) {
                     $amount = $minerals * $tier['mineral_factor'] * 10.0;
                     $rounded = round($amount, 2);
-                    
+
                     if (!isset($materials[$tier['name']])) {
                         $unlockedThisTick[] = $tier['name'];
                     }
@@ -74,21 +74,17 @@ class MaterialEvolutionEngine implements EngineInterface
 
             if (!empty($unlockedThisTick)) {
                 Log::info("[MaterialEvolutionEngine] Zone {$idx} unlocked: " . implode(', ', $unlockedThisTick));
-                
+
                 foreach ($unlockedThisTick as $newMaterial) {
-                    Chronicle::query()->firstOrCreate([
+                    $events[] = [
+                        'type' => 'material_unlocked',
                         'universe_id' => $universeId,
-                        'type' => 'material_transition',
-                        'from_tick' => $tick,
-                        'content' => "Dân cư tại vùng {$zone['name']} đã làm chủ kỹ thuật chế tác " . ucfirst($newMaterial) . ".",
-                    ], [
-                        'importance' => 0.45,
-                        'raw_payload' => [
-                            'zone_id' => $zone['id'] ?? $idx,
-                            'material' => $newMaterial,
-                            'tech_band' => $this->deriveTechBand($techLevel),
-                        ]
-                    ]);
+                        'zone_id' => $zone['id'] ?? $idx,
+                        'zone_name' => $zone['name'] ?? "Zone {$idx}",
+                        'material' => $newMaterial,
+                        'tech_band' => $this->deriveTechBand($techLevel),
+                        'tick' => $tick,
+                    ];
                 }
             }
 
@@ -99,16 +95,14 @@ class MaterialEvolutionEngine implements EngineInterface
                 $zoneState['available_materials'] = $materials;
                 $zoneState['material_profile'] = $materialProfile;
                 $zone['state'] = $zoneState;
-                $updatedZones[$idx] = $zone;
                 $hasChanged = true;
-            } else {
-                $updatedZones[$idx] = $zone;
             }
+            $updatedZones[$idx] = $zone;
         }
 
-        if ($hasChanged) {
-            Log::info("[MaterialEvolutionEngine] Updated " . count($updatedZones) . " zones");
-            return new EngineResult(['zones' => $updatedZones]);
+        if ($hasChanged || !empty($events)) {
+            Log::info("[MaterialEvolutionEngine] Updated zones: " . count($updatedZones) . ", events: " . count($events));
+            return new EngineResult(['zones' => $updatedZones], $events);
         }
 
         return EngineResult::empty();

@@ -1,6 +1,7 @@
 import json
 import os
 from typing import Any, Optional
+import httpx
 
 import redis
 from langchain.globals import set_llm_cache
@@ -59,21 +60,52 @@ def get_llm_for_agent(
             base_url=runtime.get("base_url"),
         )
 
-    config_path = os.path.join(os.path.dirname(__file__), "..", "configs", "agent_routing.json")
+    # Query config from backend database via API
+    backend_url = os.getenv("WORLDOS_API_URL", "http://nginx/api")
 
     try:
-        with open(config_path, "r", encoding="utf-8") as f:
-            routing = json.load(f)
+        # Query all loom agents config from backend
+        response = httpx.get(
+            f"{backend_url}/ai-settings/loom-agents",
+            timeout=5.0
+        )
+        response.raise_for_status()
+        agents = response.json()
 
-        agent_config = routing.get(agent_id, routing.get("failover", {}))
+        # Find the specific agent
+        agent_data = None
+        for agent in agents:
+            if agent.get("key") == f"loom_agents.{agent_id}":
+                agent_data = agent
+                break
+
+        if not agent_data:
+            raise Exception(f"Agent config not found: {agent_id}")
+
+        agent_config = agent_data.get("value", {})
         provider = agent_config.get("provider", "openai")
         model = agent_config.get("model")
 
-        log.debug("llm.routing", agent=agent_id, provider=provider, model=model, world_id=world_id, tick=current_tick)
+        log.debug("llm.routing", agent=agent_id, provider=provider, model=model, world_id=world_id, tick=current_tick, source="database")
         return get_llm(provider=provider, model_name=model, world_id=world_id, current_tick=current_tick)
     except Exception as e:
-        log.warning("llm.routing_fallback", agent=agent_id, error=str(e))
-        return get_llm(provider="openrouter", world_id=world_id, current_tick=current_tick)
+        log.warning("llm.routing_fallback", agent=agent_id, error=str(e), source="database")
+
+        # Fallback: try reading from file JSON
+        config_path = os.path.join(os.path.dirname(__file__), "..", "configs", "agent_routing.json")
+        try:
+            with open(config_path, "r", encoding="utf-8") as f:
+                routing = json.load(f)
+
+            agent_config = routing.get(agent_id, routing.get("failover", {}))
+            provider = agent_config.get("provider", "openai")
+            model = agent_config.get("model")
+
+            log.debug("llm.routing", agent=agent_id, provider=provider, model=model, world_id=world_id, tick=current_tick, source="file")
+            return get_llm(provider=provider, model_name=model, world_id=world_id, current_tick=current_tick)
+        except Exception as file_error:
+            log.warning("llm.routing_fallback", agent=agent_id, error=str(file_error), source="file")
+            return get_llm(provider="openrouter", world_id=world_id, current_tick=current_tick)
 
 
 def _normalize_ai_runtime(ai_runtime: dict | None) -> dict[str, str] | None:

@@ -7,8 +7,6 @@ use App\Modules\Intelligence\Contracts\LlmDriverInterface;
 
 class AiGateway
 {
-    protected array $drivers = [];
-
     protected string $forcedTier = 'any';
 
     public function __construct(
@@ -20,13 +18,13 @@ class AiGateway
         $this->router = $router ?? new AiProviderRouter($this->configManager, $this->normalizer);
     }
 
+    /**
+     * Pool-only mode. Kept for backward compatibility with callers that still
+     * branch on this flag; always returns true.
+     */
     public function usesPool(): bool
     {
-        return filter_var(
-            $this->configManager->get('use_pool', config('ai.use_pool', false)),
-            FILTER_VALIDATE_BOOL,
-            FILTER_NULL_ON_FAILURE
-        ) ?? false;
+        return true;
     }
 
     public function withTier(string $tier): self
@@ -36,40 +34,34 @@ class AiGateway
         return $this;
     }
 
+    /**
+     * Resolve a driver for the given feature. Pool-only: throws
+     * AiPoolExhaustedException when no usable key is available.
+     */
     public function driver(?string $name = null, string $feature = 'general', array $featureProfile = []): LlmDriverInterface
     {
         $featureProfile = $this->normalizer->normalizeFeatureProfile($featureProfile);
-        $runtime = $this->router->resolveRuntimeProfile($name, $feature, $featureProfile, $this->forcedTier, fn () => $this->usesPool());
+        $runtime = $this->router->resolveRuntimeProfile($name, $feature, $featureProfile, $this->forcedTier, fn () => true);
         $driverOverrides = $this->normalizer->extractDriverOverrides($featureProfile);
         $defaultOptions = $runtime['default_options'] ?? [];
+        $keyEntry = $runtime['key_entry'] ?? null;
 
-        if (($runtime['from_pool'] ?? false) === true && isset($runtime['key_entry']) && $runtime['key_entry'] instanceof AiKeyPool) {
-            $driver = $this->router->createDriverFromPoolRuntime($runtime, $driverOverrides);
-
-            return new AiDriverProxy(
-                $driver,
-                (string) $runtime['provider'],
+        if (!($keyEntry instanceof AiKeyPool)) {
+            // Router guarantees this in pool-only mode, but guard defensively.
+            throw \App\Modules\Intelligence\Exceptions\AiPoolExhaustedException::forFeature(
                 $feature,
-                $runtime['key_entry'],
-                $defaultOptions
+                is_string($name) ? $name : null,
+                $this->forcedTier,
             );
         }
 
-        $requestedName = (string) $runtime['provider'];
-
-        if ($driverOverrides === []) {
-            if (! isset($this->drivers[$requestedName])) {
-                $this->drivers[$requestedName] = $this->router->createDriver($requestedName);
-            }
-
-            return new AiDriverProxy($this->drivers[$requestedName], $requestedName, $feature, null, $defaultOptions);
-        }
+        $driver = $this->router->createDriverFromPoolRuntime($runtime, $driverOverrides);
 
         return new AiDriverProxy(
-            $this->router->createDriver($requestedName, $driverOverrides),
-            $requestedName,
+            $driver,
+            (string) $runtime['provider'],
             $feature,
-            null,
+            $keyEntry,
             $defaultOptions
         );
     }

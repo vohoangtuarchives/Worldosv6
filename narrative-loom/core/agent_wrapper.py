@@ -129,8 +129,8 @@ def agent_node(name: str) -> Callable:
                 world_id, task_id, name, duration_ms, len(new_completed), TOTAL_AGENTS
             )
 
-            # Merge completed_agents back into result state
-            return {**result, "completed_agents": new_completed}
+            # Return result without merging completed_agents to avoid conflicts
+            return result
 
         return wrapper
 

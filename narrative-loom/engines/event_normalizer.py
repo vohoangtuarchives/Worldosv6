@@ -9,7 +9,6 @@ class EventNormalizer:
         "death_event": "death",
     }
 
-    @agent_node("event_normalizer")
     def normalize_event(self, e: Dict[str, Any]) -> Dict[str, Any]:
         t = e.get("type")
         nt = self.TYPE_MAP.get(t, t)
@@ -20,11 +19,11 @@ class EventNormalizer:
                 payload = json.loads(payload)
             except (json.JSONDecodeError, ValueError):
                 payload = {}
-                
+
         actors = []
         if isinstance(payload, dict):
             a = payload.get("actors") or payload.get("targets") or []
-            
+
             # Cố gắng bóc Actor ID từ nested Context (Định dạng mới)
             if not a and "context" in payload:
                 ctx = payload.get("context", {})
@@ -32,11 +31,11 @@ class EventNormalizer:
                 act_id = vm.get("id") or vm.get("actor_id")
                 if act_id:
                     a = [act_id]
-            
+
             # Fallback
             if not a and e.get("actor_id"):
                 a = [e.get("actor_id")]
-                
+
             if isinstance(a, list):
                 actors = [str(x) for x in a]
             elif isinstance(a, str) or isinstance(a, int):
@@ -49,10 +48,10 @@ class EventNormalizer:
         }
 
 @agent_node("event_normalizer")
-def event_normalizer_node(state: NarrativeState, config: Dict[str, Any] = None) -> NarrativeState:
+async def event_normalizer_node(state: NarrativeState, config: Dict[str, Any] = None) -> NarrativeState:
     raw = state.get("raw_chronicles", [])
     normalizer = EventNormalizer()
     normalized = [normalizer.normalize_event(e) for e in raw]
-    return {**state, "normalized_events": normalized, "current_agent": "event_normalizer"}
+    return {"normalized_events": normalized}
 
 

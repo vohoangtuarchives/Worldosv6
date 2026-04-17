@@ -4,11 +4,12 @@ return [
 
     /*
      |--------------------------------------------------------------------------
-     | Default AI Driver
+     | Default AI Provider
      |--------------------------------------------------------------------------
      |
-     | This value determines which of the following gateways to use by default
-     | for all AI-powered features in the WorldOS simulation.
+     | Used as a fallback provider filter when a feature does not declare one.
+     | Actual API keys are ALWAYS resolved from the `ai_key_pool` table —
+     | static driver credentials have been removed (pool-only mode).
      |
      */
 
@@ -16,22 +17,12 @@ return [
 
     /*
      |--------------------------------------------------------------------------
-     | Use AI Key Pool
+     | AI Driver Metadata
      |--------------------------------------------------------------------------
      |
-     | When enabled, the gateway will prefer rotating keys from ai_key_pool
-     | before falling back to static driver credentials.
-     |
-     */
-
-    'use_pool' => env('AI_USE_POOL', false),
-
-    /*
-     |--------------------------------------------------------------------------
-     | AI Drivers Configuration
-     |--------------------------------------------------------------------------
-     |
-     | Here you may configure all of the AI drivers used by your application.
+     | Only metadata (base URL, default model) is kept here. API keys MUST be
+     | imported into `ai_key_pool`. Values declared per-pool-entry (metadata
+     | column) override these defaults.
      |
      */
 
@@ -39,36 +30,32 @@ return [
 
         'zai' => [
             'url' => env('NARRATIVE_LLM_URL', 'https://api.z.ai/api/paas/v4/chat/completions'),
-            'key' => env('NARRATIVE_LLM_KEY'),
             'model' => env('NARRATIVE_LLM_MODEL', 'GLM-4.5-Flash'),
         ],
 
         'openai' => [
-            'url' => 'https://api.openai.com/v1/chat/completions',
-            'key' => env('OPENAI_API_KEY'),
+            'url' => env('OPENAI_URL', 'https://api.openai.com/v1/chat/completions'),
             'model' => env('OPENAI_MODEL', 'gpt-4o'),
         ],
 
         'gemini' => [
             'url' => env('GEMINI_URL', 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions'),
-            'key' => env('GEMINI_API_KEY'),
             'model' => env('GEMINI_MODEL', 'gemini-1.5-flash'),
         ],
 
         'local' => [
-            'url' => env('LOCAL_LLM_URL', 'http://localhost:1234/api/v1/chat'),
-            'model' => env('LOCAL_LLM_MODEL', 'qwen3.5-9b-uncensored-hauhaucs-aggressive'),
+            'url' => env('LOCAL_LLM_URL', 'http://host.docker.internal:11434/v1/chat/completions'),
+            'model' => env('LOCAL_LLM_MODEL', 'qwen2.5:7b'),
         ],
 
         'openrouter' => [
             'url' => env('OPENROUTER_URL', 'https://openrouter.ai/api/v1/chat/completions'),
-            'key' => env('OPENROUTER_API_KEY'),
-            'model' => env('OPENROUTER_MODEL', 'minimax/minimax-m2.5:free'),
+            'model' => env('OPENROUTER_MODEL', 'google/gemini-2.0-flash-001'),
         ],
 
         'qwen' => [
-            'url' => env('QWEN_LLM_URL', 'http://localhost:1234/api/v1/chat'),
-            'model' => env('QWEN_LLM_MODEL', 'qwen3.5-9b-uncensored-hauhaucs-aggressive'),
+            'url' => env('QWEN_LLM_URL', 'https://dashscope.aliyuncs.com/compatible-mode/v1'),
+            'model' => env('QWEN_LLM_MODEL', 'qwen-max'),
         ],
 
     ],
@@ -78,15 +65,17 @@ return [
      | AI Feature Mapping
      |--------------------------------------------------------------------------
      |
-     | Map specific WorldOS features to specific AI drivers.
+     | Maps simulation features to a preferred provider. The provider name is
+     | used to filter `ai_key_pool` entries when resolving a key.
      |
      */
 
     'features' => [
         'analytical' => env('AI_FEATURE_ANALYTICAL', 'zai'),
-        'narrative' => env('AI_FEATURE_NARRATIVE', 'zai'),
-        'lab' => env('AI_FEATURE_LAB', 'zai'),
-        'decision' => env('AI_FEATURE_DECISION', 'zai'),
+        'narrative'  => env('AI_FEATURE_NARRATIVE', 'zai'),
+        'lab'        => env('AI_FEATURE_LAB', 'zai'),
+        'decision'   => env('AI_FEATURE_DECISION', 'zai'),
+        'general'    => env('AI_FEATURE_GENERAL', 'zai'),
     ],
 
 ];

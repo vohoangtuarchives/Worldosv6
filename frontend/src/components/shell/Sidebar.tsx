@@ -15,6 +15,7 @@ import {
   Globe,
   Shield,
   ChevronDown,
+  Cpu,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useUniverse } from '@/contexts/UniverseContext';
@@ -62,6 +63,7 @@ const NAV_SECTIONS: NavSection[] = [
     label: 'System',
     items: [
       { icon: Database, label: 'Key Pool', href: '/dashboard/config/key-pool' },
+      { icon: Cpu, label: 'AI Settings', href: '/dashboard/config/ai-settings' },
       { icon: Shield, label: 'AI Config', href: '/dashboard/config' },
       { icon: Settings, label: 'Settings', href: '/dashboard/settings' },
     ],

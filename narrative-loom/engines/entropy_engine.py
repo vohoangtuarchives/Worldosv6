@@ -2,7 +2,6 @@ from core.agent_wrapper import agent_node
 from typing import Dict, Any, List, Tuple
 from state import NarrativeState
 
-@agent_node("entropy_engine")
 def temporal_weight(event: Dict[str, Any], events: List[Dict[str, Any]]) -> float:
     if not events:
         return 0.0
@@ -19,24 +18,20 @@ class NarrativeEntropyEngine:
             t = e.get("type") or ""
             self.type_counts[t] = self.type_counts.get(t, 0) + 1
 
-    @agent_node("entropy_engine")
     def rarity(self, e: Dict[str, Any]) -> float:
         t = e.get("type") or ""
         c = self.type_counts.get(t, 1)
         return 1.0 / c
 
-    @agent_node("entropy_engine")
     def character_impact(self, e: Dict[str, Any]) -> float:
         return min(1.0, len(e.get("actors", [])) / 10.0)
 
-    @agent_node("entropy_engine")
     def political_impact(self, e: Dict[str, Any]) -> float:
         t = (e.get("type") or "").lower()
         if t in ("coup", "rebellion", "assassination", "law_change", "war", "civil_war"):
             return 0.8
         return 0.3
 
-    @agent_node("entropy_engine")
     def chaos_delta(self, e: Dict[str, Any]) -> float:
         t = (e.get("type") or "").lower()
         if t in ("battle", "assassination", "rebellion", "civil_war"):
@@ -45,7 +40,6 @@ class NarrativeEntropyEngine:
             return 0.1
         return 0.3
 
-    @agent_node("entropy_engine")
     def score_event(self, e: Dict[str, Any]) -> float:
         ci = self.character_impact(e)
         pi = self.political_impact(e)
@@ -54,7 +48,6 @@ class NarrativeEntropyEngine:
         tw = temporal_weight(e, self.events)
         return 0.30*ci + 0.25*pi + 0.20*ra + 0.15*cd + 0.10*tw
 
-    @agent_node("entropy_engine")
     def select_events(self, k: int) -> Tuple[List[Dict[str, Any]], Dict[str, float]]:
         scored: List[Tuple[Dict[str, Any], float]] = []
         for e in self.events:
@@ -84,11 +77,11 @@ class NarrativeEntropyEngine:
         return picked, scores
 
 @agent_node("entropy_engine")
-def entropy_engine_node(state: NarrativeState, config: Dict[str, Any] = None) -> NarrativeState:
+async def entropy_engine_node(state: NarrativeState, config: Dict[str, Any] = None) -> NarrativeState:
     events = state.get("normalized_events", [])
     engine = NarrativeEntropyEngine(events)
     k = 20
     filtered, scores = engine.select_events(k)
-    return {**state, "filtered_events": filtered, "event_scores": scores, "current_agent": "entropy_engine"}
+    return {"filtered_events": filtered, "event_scores": scores}
 
 

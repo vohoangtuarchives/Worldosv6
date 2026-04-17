@@ -63,10 +63,8 @@ async def news_anchor_agent(state: NarrativeState, config: Dict[str, Any] = None
         slogan = "Theo dõi để biết thêm chi tiết."
     
     return {
-        **state, 
         "news_headline": headline, 
-        "news_slogan": slogan, 
-        "current_agent": "news_anchor"
+        "news_slogan": slogan
     }
 
 

@@ -171,10 +171,7 @@ class KernelServiceProvider extends ServiceProvider
                 $app->make(\App\Modules\Simulation\Core\Engines\Meta\IdeologyEngine::class),
                 SimulationPhase::Meta,
             ));
-            $registry->register(new LegacyEngineAdapter(
-                $app->make(\App\Modules\Simulation\Core\Engines\Meta\AscensionEngine::class),
-                SimulationPhase::Meta,
-            ));
+            // AscensionEngine is a service class (not a SimulationEngine) — registered separately via KernelServiceProvider binding, not here.
             // RuleStage-duplicate removed: CausalHistoryEngine (called in RuleStage.run())
             $registry->register(new LegacyEngineAdapter(
                 $app->make(\App\Modules\Simulation\Core\Engines\Meta\SingularityStabilityEngine::class),
@@ -458,6 +455,19 @@ class KernelServiceProvider extends ServiceProvider
             );
 
 
+            // ===== Wave 2–6: NOTE =====
+            // WARNING: Several engines below (MetabolicEngine, ClimateEngine, GeologicalEngine,
+            // CosmicPressureEngine, MarketEngine, TradeEngine, GlobalEconomyEngine, InequalityEngine,
+            // PoliticsEngine, PsychologyEngine, CulturalInfluenceEngine, ThermodynamicPhaseEngine,
+            // WarEngine, PowerStructureEngine, LegitimacyEliteEngine, IdeaDiffusionEngine,
+            // CivilizationSettlementEngine, CivilizationPhysicsEngine, CivilizationLongCycleEngine,
+            // MythogenesisEngine, IdeologyEngine, AscensionEngine, SingularityStabilityEngine,
+            // NarrativePropagationEngine, NarrativeInterpretationEngine, MeaningEngine, KnowledgeEvolutionEngine)
+            // are ALSO registered in PhaseRegistry above (lines 33-196).
+            // If WorldKernel and PhaseRegistry both run during a tick, these engines execute TWICE.
+            // Verify that exactly ONE of WorldKernel.tick() or PhaseRegistry-based runner is called
+            // per simulation tick. The OVERLAP/BRIDGE authority flags on PhaseRegistry entries
+            // should suppress execution when rust_authoritative=true, but WorldKernel has no such guard.
             // ===== Wave 2: Living System =====
             $kernel->registerSystem(
                 \App\Modules\Simulation\Core\Runtime\WorldKernel::PHASE_LIFE,

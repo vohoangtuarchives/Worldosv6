@@ -53,7 +53,7 @@ async def historian_agent(state: NarrativeState, config: Dict[str, Any] = None) 
     # 1. Trích xuất Payload từ State
     chronicles = state.get("raw_chronicles", [])
     if not chronicles:
-        return {**state, "historical_outline": "Kho lưu trữ trống. Không có sự kiện nào xảy ra."}
+        return {"historical_outline": "Kho lưu trữ trống. Không có sự kiện nào xảy ra."}
     
     tick_start = state.get("tick_start", "N/A")
     tick_end = state.get("tick_end", "N/A")
@@ -147,6 +147,6 @@ async def historian_agent(state: NarrativeState, config: Dict[str, Any] = None) 
     log.debug("agent.detail", agent="historian", beats_count=len(outline_data.get("beats", [])))
     
     # 5. Cập nhật State
-    return {**state, "historical_outline": outline_data, "past_memories": past_memories, "current_agent": "historian"}
+    return {"historical_outline": outline_data, "past_memories": past_memories}
 
 

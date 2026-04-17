@@ -30,5 +30,11 @@ final class SimulationTickOrchestrator
     ): void {
         $this->pipeline->run($universe, $tick, $savedSnapshot, $engineResponse);
     }
+
+    /** @return array<int, mixed> */
+    public function getLastEngineEvents(): array
+    {
+        return $this->pipeline->getLastEngineEvents();
+    }
 }
 

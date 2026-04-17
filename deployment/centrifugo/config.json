@@ -1,33 +1,19 @@
 {
-    "api_key": "${CENTRIFUGO_HTTP_API_KEY}",
-    "api_insecure": false,
-    "client_insecure": false,
-    "client_allowed_origins": [
-        "http://localhost",
-        "http://localhost:80",
-        "http://localhost:3000"
-    ],
-    "client_token_hmac_secret_key": "${CENTRIFUGO_CLIENT_TOKEN_HMAC_SECRET_KEY}",
-    "namespaces": [
-        {
-            "name": "public",
-            "publish": false,
-            "subscribe": true,
-            "presence": true,
-            "presence_stats": true,
-            "join_leave": true,
-            "history_size": 10,
-            "history_ttl": "60s"
-        },
-        {
-            "name": "narrative",
-            "publish": false,
-            "subscribe": true,
-            "presence": true,
-            "presence_stats": true,
-            "join_leave": true,
-            "history_size": 100,
-            "history_ttl": "600s"
-        }
+  "v3_use_offset": true,
+  "token": {
+    "hmac_secret_key": "worldos_centrifugo_hmac_secret_key_32bytes_min",
+    "hmac_allowed_algorithms": ["HS256"]
+  },
+  "client": {
+    "insecure": true,
+    "allowed_origins": [
+      "http://localhost",
+      "http://localhost:80",
+      "http://localhost:3000"
     ]
+  },
+  "api": {
+    "key": "changeme_centrifugo_api",
+    "insecure": false
+  }
 }

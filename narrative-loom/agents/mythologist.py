@@ -46,6 +46,6 @@ async def mythologist_agent(state: NarrativeState, config: Dict[str, Any] = None
         "style": style
     })
     
-    return {**state, "mythic_fragments": result, "current_agent": "mythologist"}
+    return {"mythic_fragments": result}
 
 

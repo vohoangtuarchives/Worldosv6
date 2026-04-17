@@ -116,7 +116,8 @@ final class SimulationSupervisor
                     1
                 );
 
-                $this->eventDispatcher->dispatchPulsed($universe, $snapshotEntity, $engineResponse, 1, $tickDurationMsPerTick);
+                $engineEvents = $this->runtimePipeline->getLastEngineEvents();
+                $this->eventDispatcher->dispatchPulsed($universe, $snapshotEntity, $engineResponse, 1, $tickDurationMsPerTick, $engineEvents);
             } catch (\Throwable $e) {
                 Log::error('Simulation: tick loop failure', ['index' => $i, 'error' => $e->getMessage()]);
                 break;

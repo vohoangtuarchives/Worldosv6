@@ -2,6 +2,7 @@
 
 namespace App\Modules\Simulation\Listeners;
 
+use App\Models\Chronicle;
 use App\Modules\Simulation\Events\UniverseSimulationPulsed;
 use App\Modules\World\Services\MaterialReactionEngine;
 use App\Modules\Simulation\Core\Engines\Physics\MaterialEvolutionEngine;
@@ -24,15 +25,37 @@ class ProcessMaterialLifecycle implements ShouldQueue
     {
         $universe = $event->universe;
         $snapshot = $event->snapshot;
-        
-        $context = $this->buildMaterialContext($snapshot);
-        // V6: Advanced Material Evolution — Now handled by WorldKernel PHASE_ENVIRONMENT
-        // No longer calling legacy $this->materialEvolution->process()
 
-        // V6: Advanced Material Evolution — Now handled by WorldKernel PHASE_ENVIRONMENT
+        $context = $this->buildMaterialContext($snapshot);
+
         // Omega States & Ascension (§49, §50)
         $this->omegaEngine->checkOmegaStatus($universe, $context);
         $this->ascensionEngine->processAscension($universe, $context);
+
+        // Persist Chronicle records for material_unlocked events emitted by MaterialEvolutionEngine
+        $engineEvents = $event->engineEvents ?? [];
+        foreach ($engineEvents as $ev) {
+            if (($ev['type'] ?? '') !== 'material_unlocked') {
+                continue;
+            }
+            Chronicle::firstOrCreate(
+                [
+                    'universe_id' => $ev['universe_id'],
+                    'type'        => 'material_transition',
+                    'from_tick'   => $ev['tick'],
+                    'content'     => "Dân cư tại vùng {$ev['zone_name']} đã làm chủ kỹ thuật chế tác " . ucfirst($ev['material']) . ".",
+                ],
+                [
+                    'to_tick'     => $ev['tick'],
+                    'importance'  => 0.45,
+                    'raw_payload' => [
+                        'zone_id'   => $ev['zone_id'],
+                        'material'  => $ev['material'],
+                        'tech_band' => $ev['tech_band'],
+                    ],
+                ]
+            );
+        }
     }
 
     protected function applyDeltas($universe, $deltas): void

@@ -14,6 +14,9 @@ Route::middleware('api')->prefix('worldos')->group(function () {
     // 0. Service Status (public)
     Route::get('service-status', ServiceStatusController::class)->name('worldos.service-status');
 
+    // Test route (tạm thời - không cần auth)
+    Route::post('test-weave/{id}', [TimelineController::class , 'generateChronicle'])->name('worldos.test-weave');
+
     // 1. Core Universe Management (GET — public)
     Route::get('universes', [UniverseController::class , 'index'])->name('worldos.universes.index');
     Route::get('universes/{id}', [UniverseController::class , 'show'])->name('worldos.universes.show');
@@ -66,8 +69,14 @@ Route::middleware(['api', 'auth:sanctum'])->prefix('worldos')->group(function ()
     Route::post('universes/{id}/snapshots', [UniverseController::class , 'createSnapshot'])->name('worldos.universes.snapshots.create');
 
     // 3. Narrative & Chronicles (POST — protected)
-    Route::post('universes/{id}/generate-chronicle', [TimelineController::class , 'generateChronicle'])->name('worldos.universes.generate-chronicle');
     Route::post('universes/{id}/historian/generate', [TimelineController::class , 'generateHistory'])->name('worldos.universes.historian.generate');
+    Route::get('universes/{id}/chronicles/raw', [TimelineController::class , 'getChronicles'])->name('worldos.universes.chronicles.raw');
+
+// Webhook từ narrative-loom (bỏ qua auth - được gọi từ internal network)
+Route::post('narrative-loom/webhook', [TimelineController::class , 'loomWebhook'])->name('worldos.narrative-loom.webhook');
+
+// Test route: generate-chronicle (bỏ qua auth tạm thời để test)
+Route::post('universes/{id}/generate-chronicle', [TimelineController::class , 'generateChronicle'])->name('worldos.universes.generate-chronicle');
 
     // 4. Actors (POST — protected)
     Route::post('actors/{id}/mind-meld', [ActorController::class , 'mindMeld'])->name('worldos.actors.mind-meld');

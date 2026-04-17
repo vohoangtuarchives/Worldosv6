@@ -56,6 +56,6 @@ async def critic_agent(state: NarrativeState, config: Dict[str, Any] = None) -> 
         
     log.debug("agent.detail", agent="critic", score=report.get("score"), is_passed=report.get("is_passed"))
     
-    return {**state, "feedback": report, "revision_count": rev, "current_agent": "critic"}
+    return {"feedback": report, "revision_count": rev}
 
 
