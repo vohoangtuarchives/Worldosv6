@@ -18,6 +18,8 @@ export default function TickAdvancePanel() {
   const activeUniverse = universes.find((u) => u.id === activeUniverseId);
 
   const handleAdvance = () => {
+    if (!activeUniverseId) return;
+
     if (ticks > 100 && !showConfirm) {
       setShowConfirm(true);
       return;
@@ -25,12 +27,18 @@ export default function TickAdvancePanel() {
     setShowConfirm(false);
     setShowSuccess(false);
 
-    advanceMutation.mutate(ticks, {
+    advanceMutation.mutate(
+      {
+        universeId: activeUniverseId,
+        ticks,
+      },
+      {
       onSuccess: () => {
         setShowSuccess(true);
         setTimeout(() => setShowSuccess(false), 3000);
       },
-    });
+      },
+    );
   };
 
   const handleCancel = () => {

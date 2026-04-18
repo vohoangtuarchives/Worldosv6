@@ -224,11 +224,12 @@ class UniverseController extends Controller
     public function advance(AdvanceSimulationAction $action, Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'ticks_per_universe' => 'nullable|integer|min:1|max:1000',
+            'universe_id' => 'required|integer|min:1|exists:universes,id',
+            'ticks' => 'required|integer|min:1|max:1000',
         ]);
 
-        $universeId = (int) $request->input('universe_id', 0);
-        $ticks = (int) $request->input('ticks', 1);
+        $universeId = (int) $validated['universe_id'];
+        $ticks = (int) $validated['ticks'];
 
         return response()->json($action->execute($universeId, $ticks));
     }

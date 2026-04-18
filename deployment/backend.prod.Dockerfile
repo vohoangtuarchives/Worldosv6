@@ -3,6 +3,7 @@ FROM php:8.4-fpm
 
 # Install dependencies, minimal for PHP
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
     unzip \
     libpq-dev \
     libzip-dev \
@@ -22,8 +23,10 @@ RUN echo "max_execution_time=300" >> /usr/local/etc/php/conf.d/docker-php-timeou
 # Clear cache
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Install Composer
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+# Install Composer without depending on a separate Docker Hub stage.
+RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" \
+    && php composer-setup.php --install-dir=/usr/local/bin --filename=composer \
+    && php -r "unlink('composer-setup.php');"
 
 WORKDIR /var/www
 

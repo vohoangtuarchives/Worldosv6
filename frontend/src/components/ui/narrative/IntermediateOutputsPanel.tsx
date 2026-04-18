@@ -3,8 +3,8 @@
 import React, { useState } from 'react';
 
 interface IntermediateOutputsPanelProps {
-  historicalOutline?: any;
-  storyboard?: any;
+  historicalOutline?: unknown;
+  storyboard?: unknown;
   finalProse?: string;
 }
 
@@ -22,7 +22,7 @@ const IntermediateOutputsPanel: React.FC<IntermediateOutputsPanelProps> = ({
   return (
     <div className="space-y-4">
       {/* Historical Outline */}
-      {historicalOutline && (
+      {Boolean(historicalOutline) && (
         <div className="border border-white/10 bg-black/40 rounded-xl overflow-hidden">
           <button
             onClick={() => toggleSection('historical')}
@@ -38,7 +38,7 @@ const IntermediateOutputsPanel: React.FC<IntermediateOutputsPanelProps> = ({
               <pre className="text-[11px] text-gray-300 font-mono whitespace-pre-wrap overflow-auto max-h-64">
                 {typeof historicalOutline === 'string' 
                   ? historicalOutline 
-                  : JSON.stringify(historicalOutline, null, 2)}
+                  : (JSON.stringify(historicalOutline, null, 2) ?? '')}
               </pre>
             </div>
           )}
@@ -46,7 +46,7 @@ const IntermediateOutputsPanel: React.FC<IntermediateOutputsPanelProps> = ({
       )}
 
       {/* Storyboard */}
-      {storyboard && (
+      {Boolean(storyboard) && (
         <div className="border border-white/10 bg-black/40 rounded-xl overflow-hidden">
           <button
             onClick={() => toggleSection('storyboard')}
@@ -62,7 +62,7 @@ const IntermediateOutputsPanel: React.FC<IntermediateOutputsPanelProps> = ({
               <pre className="text-[11px] text-gray-300 font-mono whitespace-pre-wrap overflow-auto max-h-64">
                 {typeof storyboard === 'string' 
                   ? storyboard 
-                  : JSON.stringify(storyboard, null, 2)}
+                  : (JSON.stringify(storyboard, null, 2) ?? '')}
               </pre>
             </div>
           )}

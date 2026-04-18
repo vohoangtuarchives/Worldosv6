@@ -23,7 +23,7 @@ class SimulationConfigServiceProvider extends ServiceProvider
     public function boot(): void
     {
         // Chỉ chạy nếu bảng ai_settings tồn tại (tránh lỗi khi chạy migration lần đầu)
-        if (!$this->app->runningInConsole() || $this->app->runningUnitTests()) {
+        if (! $this->app->runningInConsole() && ! $this->app->runningUnitTests()) {
             $this->loadDynamicConfig();
         } else {
             // Nếu chạy console (migration/seed), chỉ load nếu bảng đã tồn tại
@@ -31,7 +31,7 @@ class SimulationConfigServiceProvider extends ServiceProvider
                 if (Schema::hasTable('ai_settings')) {
                     $this->loadDynamicConfig();
                 }
-            } catch (\Exception $e) {
+            } catch (\Throwable) {
                 // Ignore errors during early bootstrap
             }
         }

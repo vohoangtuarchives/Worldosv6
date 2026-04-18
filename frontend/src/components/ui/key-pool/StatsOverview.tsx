@@ -9,7 +9,7 @@ import {
     HardDrive,
     LucideIcon,
 } from 'lucide-react';
-import { AiKey } from '@/hooks/useKeyPool';
+import type { AiKey } from '@/features/admin/types';
 
 interface StatsProps {
     keys: AiKey[];

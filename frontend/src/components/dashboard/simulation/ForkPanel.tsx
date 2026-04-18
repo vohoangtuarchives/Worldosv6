@@ -26,14 +26,10 @@ export default function ForkPanel() {
   const { activeUniverseId } = useUniverse();
   const { forks, isLoading } = useForks(activeUniverseId);
   const forkMutation = useForkUniverse();
-  const compareMutation = useCompareBranch();
 
   const [forkTick, setForkTick] = useState<string>('');
   const [forkName, setForkName] = useState('');
   const [expandedBranch, setExpandedBranch] = useState<number | null>(null);
-  const [comparisons, setComparisons] = useState<
-    Record<number, BranchComparison>
-  >({});
 
   const handleFork = () => {
     if (!activeUniverseId) return;
@@ -62,18 +58,6 @@ export default function ForkPanel() {
     }
 
     setExpandedBranch(branchId);
-
-    // Only fetch if we haven't already
-    if (!comparisons[branchId]) {
-      compareMutation.mutate(
-        { universeId: activeUniverseId, branchId },
-        {
-          onSuccess: (data) => {
-            setComparisons((prev) => ({ ...prev, [branchId]: data }));
-          },
-        },
-      );
-    }
   };
 
   const statusVariant = (status: string) => {
@@ -209,20 +193,10 @@ export default function ForkPanel() {
               {/* Comparison Panel */}
               {expandedBranch === fork.id && (
                 <div className="ml-6 mt-1 rounded-xl border border-slate-800/60 bg-slate-950/60 p-4">
-                  {compareMutation.isPending && !comparisons[fork.id] ? (
-                    <div className="flex items-center justify-center py-4">
-                      <RefreshCcw
-                        size={14}
-                        className="animate-spin text-slate-600"
-                      />
-                    </div>
-                  ) : comparisons[fork.id] ? (
-                    <ComparisonDisplay data={comparisons[fork.id]} />
-                  ) : (
-                    <p className="text-xs text-slate-500">
-                      No comparison data available.
-                    </p>
-                  )}
+                  <BranchComparisonPanel
+                    universeId={activeUniverseId}
+                    branchId={fork.id}
+                  />
                 </div>
               )}
             </div>
@@ -231,6 +205,30 @@ export default function ForkPanel() {
       )}
     </SectionPanel>
   );
+}
+
+function BranchComparisonPanel({
+  universeId,
+  branchId,
+}: {
+  universeId: number | null;
+  branchId: number;
+}) {
+  const { comparison, isLoading } = useCompareBranch(universeId, branchId);
+
+  if (isLoading && !comparison) {
+    return (
+      <div className="flex items-center justify-center py-4">
+        <RefreshCcw size={14} className="animate-spin text-slate-600" />
+      </div>
+    );
+  }
+
+  if (!comparison) {
+    return <p className="text-xs text-slate-500">No comparison data available.</p>;
+  }
+
+  return <ComparisonDisplay data={comparison} />;
 }
 
 // ── Comparison inline display ───────────────────
@@ -307,8 +305,8 @@ function ComparisonDisplay({ data }: { data: BranchComparison }) {
                 className="inline-flex items-center gap-1 rounded-lg bg-slate-900/50 px-2 py-1 text-[11px]"
               >
                 <span className="text-slate-500">{key}:</span>
-                <span className={`font-mono font-bold ${deltaColor(val)}`}>
-                  {formatDelta(val)}
+                <span className={`font-mono font-bold ${deltaColor(Number(val))}`}>
+                  {formatDelta(Number(val))}
                 </span>
               </span>
             ))}
@@ -329,8 +327,8 @@ function ComparisonDisplay({ data }: { data: BranchComparison }) {
                 className="inline-flex items-center gap-1 rounded-lg bg-slate-900/50 px-2 py-1 text-[11px]"
               >
                 <span className="text-slate-500">{key}:</span>
-                <span className={`font-mono font-bold ${deltaColor(val)}`}>
-                  {formatDelta(val)}
+                <span className={`font-mono font-bold ${deltaColor(Number(val))}`}>
+                  {formatDelta(Number(val))}
                 </span>
               </span>
             ))}

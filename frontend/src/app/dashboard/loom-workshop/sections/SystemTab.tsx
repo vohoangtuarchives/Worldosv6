@@ -1,10 +1,9 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
 import { 
-  Activity, Server, Database, Cpu, AlertCircle, 
-  CheckCircle, XCircle, Clock, RefreshCw, Zap 
+  Activity, Server, Cpu, AlertCircle,
+  CheckCircle, XCircle, RefreshCw, Zap
 } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/lib/api';
@@ -54,7 +53,7 @@ export default function SystemTab() {
       if (healthRes) setHealth(healthRes.data);
       if (metricsRes) setMetrics(metricsRes.data);
       if (configRes) setConfig(configRes.data);
-    } catch (error) {
+    } catch {
       toast.error('Failed to fetch system data');
     } finally {
       setLoading(false);

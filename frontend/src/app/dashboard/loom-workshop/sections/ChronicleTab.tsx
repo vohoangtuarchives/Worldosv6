@@ -2,18 +2,12 @@
 
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Play, Square, Clock, CheckCircle, XCircle, Loader2, Copy, Download, FileText } from 'lucide-react';
+import { Play, Square, CheckCircle, Loader2, Copy, Download, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/lib/api';
 import { getCentrifuge } from '@/lib/centrifugo';
-import type { ConnectedContext, PublicationContext } from 'centrifuge';
+import type { PublicationContext } from 'centrifuge';
 import { useUniverse } from '@/contexts/UniverseContext';
-
-interface PipelineNode {
-  status: 'idle' | 'running' | 'completed' | 'error';
-  startedAt?: number;
-  completedAt?: number;
-}
 
 export default function ChronicleTab() {
   const { universes, activeUniverseId } = useUniverse();
@@ -21,7 +15,6 @@ export default function ChronicleTab() {
   const [isWeaving, setIsWeaving] = useState(false);
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
   const [logs, setLogs] = useState<string[]>([]);
-  const [pipelineNodes, setPipelineNodes] = useState<Record<string, PipelineNode>>({});
   const [completedAgents, setCompletedAgents] = useState<Record<string, { durationMs: number }>>({});
   const [narrativeResult, setNarrativeResult] = useState<{ headline?: string; prose?: string } | null>(null);
   const logsEndRef = useRef<HTMLDivElement>(null);
@@ -45,28 +38,15 @@ export default function ChronicleTab() {
         addLog(`[Agent] ${event.agent} ${event.stage || 'running'}`);
         
         if (event.stage === 'completed') {
-          setPipelineNodes((prev) => ({
-            ...prev,
-            [event.agent]: { status: 'completed', completedAt: Date.now() }
-          }));
           setCompletedAgents((prev) => ({
             ...prev,
             [event.agent]: { durationMs: event.duration_ms || 0 }
-          }));
-        } else if (event.stage === 'running') {
-          setPipelineNodes((prev) => ({
-            ...prev,
-            [event.agent]: { status: 'running', startedAt: Date.now() }
           }));
         }
       }
       
       if (event.error) {
         addLog(`[Error] ${event.agent} failed: ${event.error}`);
-        setPipelineNodes((prev) => ({
-          ...prev,
-          [event.agent]: { status: 'error' }
-        }));
       }
       
       if (event.stage === 'complete') {
@@ -99,7 +79,6 @@ export default function ChronicleTab() {
 
     setIsWeaving(true);
     setLogs([]);
-    setPipelineNodes({});
     setCompletedAgents({});
     setNarrativeResult(null);
 
@@ -115,7 +94,7 @@ export default function ChronicleTab() {
       setActiveTaskId(task_id);
       addLog(`[Weave] Started task ${task_id}`);
       toast.success('Chronicle weaving started');
-    } catch (error) {
+    } catch {
       toast.error('Failed to start weaving');
       setIsWeaving(false);
     }

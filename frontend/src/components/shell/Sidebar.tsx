@@ -5,8 +5,6 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
-  Settings,
-  Database,
   Zap,
   Map,
   Users,
@@ -16,6 +14,7 @@ import {
   Shield,
   ChevronDown,
   Cpu,
+  Sparkles,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useUniverse } from '@/contexts/UniverseContext';
@@ -55,6 +54,7 @@ const NAV_SECTIONS: NavSection[] = [
   {
     label: 'Monitoring',
     items: [
+      { icon: Sparkles, label: 'Loom Workshop', href: '/dashboard/loom-workshop' },
       { icon: Radio, label: 'Wavefunction', href: '/dashboard/wavefunction' },
       { icon: Zap, label: 'Narrative Monitor', href: '/dashboard/intelligence/monitor' },
     ],
@@ -62,10 +62,8 @@ const NAV_SECTIONS: NavSection[] = [
   {
     label: 'System',
     items: [
-      { icon: Database, label: 'Key Pool', href: '/dashboard/config/key-pool' },
-      { icon: Cpu, label: 'AI Settings', href: '/dashboard/config/ai-settings' },
-      { icon: Shield, label: 'AI Config', href: '/dashboard/config' },
-      { icon: Settings, label: 'Settings', href: '/dashboard/settings' },
+      { icon: Shield, label: 'System', href: '/dashboard/system' },
+      { icon: Cpu, label: 'AI Runtime', href: '/dashboard/ai-runtime' },
     ],
   },
 ];

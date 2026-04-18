@@ -11,14 +11,24 @@ export function useAdvanceSimulation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (ticksPerUniverse: number) =>
+    mutationFn: ({
+      universeId,
+      ticks,
+    }: {
+      universeId: number;
+      ticks: number;
+    }) =>
       api
         .post<{ ok: boolean }>('/worldos/simulation/advance', {
-          ticks_per_universe: ticksPerUniverse,
+          universe_id: universeId,
+          ticks,
         })
         .then((res) => res.data),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['universes'] });
+      queryClient.invalidateQueries({ queryKey: ['universes', variables.universeId, 'metrics'] });
+      queryClient.invalidateQueries({ queryKey: ['universes', variables.universeId, 'dossier'] });
+      queryClient.invalidateQueries({ queryKey: ['universes', variables.universeId, 'snapshots'] });
     },
   });
 }
@@ -127,29 +137,29 @@ export function useForkUniverse() {
   });
 }
 
-export function useCompareBranch() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({
-      universeId,
-      branchId,
-    }: {
-      universeId: number;
-      branchId: number;
-    }) =>
+export function useCompareBranch(
+  universeId: number | null,
+  branchId: number | null,
+  enabled = true,
+) {
+  const { data, error, isLoading, isFetching } = useQuery<BranchComparison>({
+    queryKey: ['universes', universeId, 'forks', 'compare', branchId],
+    queryFn: () =>
       api
-        .post<BranchComparison>(
-          `/worldos/universes/${universeId}/forks/compare`,
-          { branch_id: branchId },
-        )
+        .get(`/worldos/universes/${universeId}/forks/compare`, {
+          params: { branch_id: branchId },
+        })
         .then((res) => res.data),
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: ['universes', variables.universeId, 'forks'],
-      });
-    },
+    enabled: enabled && !!universeId && !!branchId,
+    staleTime: 15_000,
   });
+
+  return {
+    comparison: data ?? null,
+    isLoading,
+    isFetching,
+    isError: !!error,
+  };
 }
 
 // ── Create Universe ─────────────────────────────

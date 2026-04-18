@@ -45,7 +45,7 @@ export const simulationQueries = {
   config: () =>
     queryOptions({
       queryKey: ['simulation', 'settings'] as const,
-      queryFn: () => api.get('/simulation/settings').then((r) => r.data),
+      queryFn: () => api.get('/apex/settings').then((r) => r.data),
       staleTime: 30_000,
     }),
 };

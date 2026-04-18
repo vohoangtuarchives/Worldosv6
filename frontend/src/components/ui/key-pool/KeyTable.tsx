@@ -9,7 +9,7 @@ import {
     CheckCircle2,
     Timer
 } from 'lucide-react';
-import { AiKey } from '@/hooks/useKeyPool';
+import type { AiKey } from '@/features/admin/types';
 import { formatDistanceToNow } from 'date-fns';
 
 interface KeyTableProps {

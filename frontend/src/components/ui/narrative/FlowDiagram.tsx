@@ -14,34 +14,6 @@ interface FlowDiagramProps {
   selectedNode?: string;
 }
 
-// Pipeline structure from narrative-loom/graph.py
-const PIPELINE_NODES = [
-  // Sequential start
-  { id: 'Event_Normalizer', label: 'Event Normalizer' },
-  { id: 'Universe_Bridge', label: 'Universe Bridge' },
-  // Parallel 1
-  { id: 'Entropy_Engine', label: 'Entropy Engine', parallelGroup: 1 },
-  { id: 'Style_Analyzer', label: 'Style Analyzer', parallelGroup: 1 },
-  // Sequential after parallel 1
-  { id: 'Attractor_Engine', label: 'Attractor Engine' },
-  { id: 'Dramatic_Arc', label: 'Dramatic Arc' },
-  { id: 'Phase_Engine', label: 'Phase Engine' },
-  { id: 'Singularity_Engine', label: 'Singularity Engine' },
-  { id: 'Chief_Editor', label: 'Chief Editor' },
-  // Parallel 2
-  { id: 'The_Historian', label: 'The Historian', parallelGroup: 2 },
-  { id: 'The_Mythologist', label: 'The Mythologist', parallelGroup: 2 },
-  // Sequential after parallel 2
-  { id: 'The_Psychologist', label: 'The Psychologist' },
-  { id: 'The_Director', label: 'The Director' },
-  { id: 'The_Wordsmith', label: 'The Wordsmith' },
-  { id: 'The_Critic', label: 'The Critic' },
-  // Sequential after critic
-  { id: 'VFX_Director', label: 'VFX Director' },
-  { id: 'The_Archivist', label: 'The Archivist' },
-  { id: 'News_Anchor', label: 'News Anchor' },
-];
-
 const FlowDiagram: React.FC<FlowDiagramProps> = ({ nodes, onNodeClick, selectedNode }) => {
   const getStatusColor = (status: string) => {
     switch (status) {

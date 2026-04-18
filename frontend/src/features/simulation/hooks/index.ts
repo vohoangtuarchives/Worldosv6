@@ -64,41 +64,52 @@ export function useForkUniverse() {
   });
 }
 
-export function useCompareBranch() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({
-      universeId,
-      branchId,
-    }: {
-      universeId: number;
-      branchId: number;
-    }) =>
+export function useCompareBranch(
+  universeId: number | null,
+  branchId: number | null,
+  enabled = true,
+) {
+  const { data, error, isLoading, isFetching } = useQuery({
+    queryKey: ['universes', universeId, 'forks', 'compare', branchId],
+    queryFn: (): Promise<BranchComparison> =>
       api
-        .post<BranchComparison>(
-          `/worldos/universes/${universeId}/forks/compare`,
-          { branch_id: branchId },
-        )
+        .get(`/worldos/universes/${universeId}/forks/compare`, {
+          params: { branch_id: branchId },
+        })
         .then((r) => r.data),
-    onSuccess: (_, { universeId }) =>
-      queryClient.invalidateQueries({
-        queryKey: simulationQueries.forks(universeId).queryKey,
-      }),
+    enabled: enabled && !!universeId && !!branchId,
+    staleTime: 15_000,
   });
+
+  return { comparison: data ?? null, isLoading, isFetching, isError: !!error };
 }
+
+export const useBranchComparison = useCompareBranch;
 
 // ── Advance / Toggle ─────────────────────────────────────────────────
 
 export function useAdvanceSimulation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (ticks: number) =>
+    mutationFn: ({
+      universeId,
+      ticks,
+    }: {
+      universeId: number;
+      ticks: number;
+    }) =>
       api
         .post<{ ok: boolean }>('/worldos/simulation/advance', {
-          ticks_per_universe: ticks,
+          universe_id: universeId,
+          ticks,
         })
         .then((r) => r.data),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['universes'] }),
+    onSuccess: (_, { universeId }) => {
+      queryClient.invalidateQueries({ queryKey: ['universes'] });
+      queryClient.invalidateQueries({ queryKey: ['universes', universeId, 'metrics'] });
+      queryClient.invalidateQueries({ queryKey: ['universes', universeId, 'dossier'] });
+      queryClient.invalidateQueries({ queryKey: ['universes', universeId, 'snapshots'] });
+    },
   });
 }
 

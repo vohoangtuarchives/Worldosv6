@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Save, AlertCircle } from 'lucide-react';
-import { AiKey, AiKeyPayload } from '@/hooks/useKeyPool';
+import type { AiKey, AiKeyPayload } from '@/features/admin/types';
 
 interface KeyFormProps {
     isOpen: boolean;

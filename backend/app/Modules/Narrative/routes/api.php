@@ -1,6 +1,7 @@
 <?php
 
 use App\Modules\Narrative\Http\Controllers\LoomStatusController;
+use App\Modules\Narrative\Http\Controllers\LoomTaskStatusController;
 use App\Modules\Narrative\Http\Controllers\NarrativeController;
 use App\Modules\Narrative\Http\Controllers\LoomChronicleController;
 use App\Modules\Narrative\Http\Controllers\LoomCharacterController;
@@ -9,6 +10,7 @@ use Illuminate\Support\Facades\Route;
 
 // Narrative Module Specific Only
 Route::get('/loom-status', [LoomStatusController::class, 'status']);
+Route::get('/loom-tasks/{taskId}/status', [LoomTaskStatusController::class, 'show']);
 Route::get('/universes/{universe}/omen-context', [NarrativeController::class, 'omenContext']);
 
 // Loom Integration Routes (internal - narrative-loom calls these)

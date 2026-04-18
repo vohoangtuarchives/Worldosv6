@@ -1,20 +1,14 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import type { Centrifuge, Subscription, PublicationContext } from 'centrifuge';
+import type { Centrifuge, PublicationContext, Subscription } from 'centrifuge';
 import { getCentrifuge } from '@/lib/centrifugo';
-
-// ────────────────────────────────────────────────────────
-// Connection state
-// ────────────────────────────────────────────────────────
 
 export type ConnectionState = 'disconnected' | 'connecting' | 'connected';
 
 /**
- * Manages the Centrifuge WebSocket connection lifecycle.
- *
- * Returns the current connection state so consumers can decide
- * whether to fall back to polling.
+ * Manages the shared Centrifuge client lifecycle and exposes connection state
+ * so screens can decide whether to fall back to polling.
  */
 export function useCentrifugoConnection(): {
   state: ConnectionState;
@@ -24,39 +18,38 @@ export function useCentrifugoConnection(): {
   const client = typeof window === 'undefined' ? null : getCentrifuge();
 
   useEffect(() => {
-    // Skip on server
     if (typeof window === 'undefined') return;
 
-    const client = getCentrifuge();
+    const centrifuge = getCentrifuge();
+    const handleConnected = () => setState('connected');
+    const handleConnecting = () => setState('connecting');
+    const handleDisconnected = () => setState('disconnected');
 
-    client.on('connected', () => setState('connected'));
-    client.on('connecting', () => setState('connecting'));
-    client.on('disconnected', () => setState('disconnected'));
-
-    client.connect();
+    centrifuge.on('connected', handleConnected);
+    centrifuge.on('connecting', handleConnecting);
+    centrifuge.on('disconnected', handleDisconnected);
+    centrifuge.connect();
 
     return () => {
-      // Don't disconnect — singleton shared across components
+      centrifuge.off('connected', handleConnected);
+      centrifuge.off('connecting', handleConnecting);
+      centrifuge.off('disconnected', handleDisconnected);
     };
   }, []);
 
   return { state, client };
 }
 
-// ────────────────────────────────────────────────────────
-// Channel subscription with callback
-// ────────────────────────────────────────────────────────
-
 /**
- * Subscribes to a Centrifugo channel and calls `onMessage` on each publish.
- *
- * Automatically unsubscribes when the component unmounts or the channel changes.
+ * Subscribes to a Centrifugo channel and forwards each publication payload to
+ * the latest callback instance.
  */
 export function useCentrifugoSubscription(
   channel: string | null,
   onMessage: (data: Record<string, unknown>) => void,
 ): void {
   const callbackRef = useRef(onMessage);
+
   useEffect(() => {
     callbackRef.current = onMessage;
   }, [onMessage]);
@@ -65,30 +58,24 @@ export function useCentrifugoSubscription(
     if (!channel || typeof window === 'undefined') return;
 
     const client = getCentrifuge();
-    const sub: Subscription = client.newSubscription(channel);
+    const subscription: Subscription = client.newSubscription(channel);
 
-    sub.on('publication', (ctx: PublicationContext) => {
+    subscription.on('publication', (ctx: PublicationContext) => {
       callbackRef.current(ctx.data as Record<string, unknown>);
     });
 
-    sub.subscribe();
+    subscription.subscribe();
 
     return () => {
-      sub.unsubscribe();
-      sub.removeAllListeners();
+      subscription.unsubscribe();
+      subscription.removeAllListeners();
     };
   }, [channel]);
 }
 
-// ────────────────────────────────────────────────────────
-// Refetch interval helper
-// ────────────────────────────────────────────────────────
-
 /**
- * Returns a refetchInterval that adapts to WebSocket connection state.
- *
- * - Connected: `false` (no polling — WebSocket handles invalidation)
- * - Disconnected: `fallbackMs` (fallback polling, default 60s)
+ * Returns an adaptive polling interval: disable polling when WebSocket is
+ * healthy, otherwise fall back to a fixed interval.
  */
 export function useAdaptiveRefetchInterval(
   state: ConnectionState,

@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ScrollText, Zap, Send, Loader2, History, Clock, Sparkles } from 'lucide-react';
+import { ScrollText, Loader2, History, Clock, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/lib/api';
 import { useUniverse } from '@/contexts/UniverseContext';
@@ -59,7 +59,7 @@ export default function ScribeTab() {
       setResult(newResult);
       setHistory(prev => [newResult, ...prev].slice(0, 10));
       toast.success('History scribed successfully');
-    } catch (error) {
+    } catch {
       toast.error('Failed to scribe history');
     } finally {
       setLoading(false);

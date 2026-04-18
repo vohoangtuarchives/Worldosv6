@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { User, Brain, Target, Zap, MessageSquare, Send, Loader2, Sparkles } from 'lucide-react';
+import { User, Brain, Target, Zap, MessageSquare, Loader2, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/lib/api';
 import { useUniverse } from '@/contexts/UniverseContext';
@@ -16,7 +16,7 @@ interface IntentResult {
 }
 
 export default function ActorIntentTab() {
-  const { universes, activeUniverseId } = useUniverse();
+  const { activeUniverseId } = useUniverse();
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<IntentResult | null>(null);
   
@@ -75,7 +75,7 @@ export default function ActorIntentTab() {
 
       setResult(response.data);
       toast.success('Intent simulated successfully');
-    } catch (error) {
+    } catch {
       toast.error('Failed to simulate intent');
     } finally {
       setLoading(false);

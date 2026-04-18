@@ -3,23 +3,50 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
-  Crown, Gem, ImageIcon, Music, Send, Loader2, Sparkles, 
-  User, Package, Palette, Headphones, Copy, Download 
+  Crown, Gem, ImageIcon, Music, Loader2, Sparkles,
+  User, Palette, Headphones, Copy, Download
 } from 'lucide-react';
 import { toast } from 'sonner';
+type AssetTabId = 'celebrity' | 'artifact' | 'visual' | 'audio';
 import api from '@/lib/api';
 
-const tabs = [
+const tabs: Array<{ id: AssetTabId; label: string; icon: typeof Crown }> = [
   { id: 'celebrity', label: 'Celebrity', icon: Crown },
   { id: 'artifact', label: 'Artifact', icon: Gem },
   { id: 'visual', label: 'Visual Asset', icon: ImageIcon },
   { id: 'audio', label: 'Soundtrack', icon: Music },
 ];
 
+interface CelebrityAssetResult {
+  name?: string;
+  biography?: string;
+}
+
+interface ArtifactAssetResult {
+  name?: string;
+  lore?: string;
+}
+
+interface VisualAssetResult {
+  image_url?: string;
+}
+
+interface AudioAssetResult {
+  epoch_name?: string;
+  style?: string;
+  stream_url?: string;
+}
+
+type AssetForgeResult =
+  | CelebrityAssetResult
+  | ArtifactAssetResult
+  | VisualAssetResult
+  | AudioAssetResult;
+
 export default function AssetForgeTab() {
-  const [activeTab, setActiveTab] = useState('celebrity');
+  const [activeTab, setActiveTab] = useState<AssetTabId>('celebrity');
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<AssetForgeResult | null>(null);
 
   // Celebrity form
   const [celebrityData, setCelebrityData] = useState({
@@ -52,8 +79,6 @@ export default function AssetForgeTab() {
   });
 
   const vocations = ['warrior', 'diplomat', 'scholar', 'merchant', 'mystic', 'ruler', 'explorer'];
-  const eras = ['genesis', 'paleolithic', 'medieval', 'industrial', 'cyberpunk', 'space_age'];
-
   const generateAsset = async () => {
     setLoading(true);
     setResult(null);
@@ -84,7 +109,7 @@ export default function AssetForgeTab() {
       const response = await api.post(endpoint, payload);
       setResult(response.data);
       toast.success(`${activeTab} generated successfully`);
-    } catch (error) {
+    } catch {
       toast.error(`Failed to generate ${activeTab}`);
     } finally {
       setLoading(false);
@@ -252,54 +277,63 @@ export default function AssetForgeTab() {
 
     switch (activeTab) {
       case 'celebrity':
+        {
+          const celebrityResult = result as CelebrityAssetResult;
         return (
           <div className="space-y-4">
             <div className="p-4 bg-violet-500/10 border border-violet-500/20 rounded-lg">
               <p className="text-[10px] uppercase text-violet-400 mb-1">Name</p>
-              <p className="text-xl font-bold text-white">{result.name}</p>
+              <p className="text-xl font-bold text-white">{celebrityResult.name}</p>
             </div>
             <div className="p-4 bg-black/40 rounded-lg">
               <p className="text-[10px] uppercase text-gray-500 mb-2 flex items-center gap-1">
                 <User className="w-3 h-3" />
                 Biography
               </p>
-              <p className="text-sm text-gray-300 leading-relaxed">{result.biography}</p>
+              <p className="text-sm text-gray-300 leading-relaxed">{celebrityResult.biography}</p>
             </div>
           </div>
         );
+        }
 
       case 'artifact':
+        {
+          const artifactResult = result as ArtifactAssetResult;
         return (
           <div className="space-y-4">
             <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-lg">
               <p className="text-[10px] uppercase text-amber-400 mb-1">Artifact Name</p>
-              <p className="text-xl font-bold text-white">{result.name}</p>
+              <p className="text-xl font-bold text-white">{artifactResult.name}</p>
             </div>
             <div className="p-4 bg-black/40 rounded-lg">
               <p className="text-[10px] uppercase text-gray-500 mb-2 flex items-center gap-1">
                 <Gem className="w-3 h-3" />
                 Lore
               </p>
-              <p className="text-sm text-gray-300 leading-relaxed">{result.lore}</p>
+              <p className="text-sm text-gray-300 leading-relaxed">{artifactResult.lore}</p>
             </div>
           </div>
         );
+        }
 
       case 'visual':
+        {
+          const visualResult = result as VisualAssetResult;
         return (
           <div className="space-y-4">
-            {result.image_url ? (
+            {visualResult.image_url ? (
               <div className="space-y-3">
                 <div className="relative aspect-square rounded-xl overflow-hidden border border-white/10">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img 
-                    src={result.image_url} 
+                    src={visualResult.image_url} 
                     alt="Generated" 
                     className="w-full h-full object-cover"
                   />
                 </div>
                 <div className="flex gap-2">
                   <a 
-                    href={result.image_url}
+                    href={visualResult.image_url}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-sm text-gray-300 transition-colors"
@@ -309,7 +343,7 @@ export default function AssetForgeTab() {
                   </a>
                   <button
                     onClick={() => {
-                      navigator.clipboard.writeText(result.image_url);
+                      navigator.clipboard.writeText(visualResult.image_url || '');
                       toast.success('URL copied');
                     }}
                     className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-gray-300 transition-colors"
@@ -325,23 +359,26 @@ export default function AssetForgeTab() {
             )}
           </div>
         );
+        }
 
       case 'audio':
+        {
+          const audioResult = result as AudioAssetResult;
         return (
           <div className="space-y-4">
             <div className="p-4 bg-cyan-500/10 border border-cyan-500/20 rounded-lg">
               <p className="text-[10px] uppercase text-cyan-400 mb-1">Track</p>
-              <p className="text-lg font-bold text-white">{result.epoch_name}</p>
-              <p className="text-sm text-gray-400 mt-1">Style: {result.style}</p>
+              <p className="text-lg font-bold text-white">{audioResult.epoch_name}</p>
+              <p className="text-sm text-gray-400 mt-1">Style: {audioResult.style}</p>
             </div>
-            {result.stream_url && (
+            {audioResult.stream_url && (
               <div className="p-4 bg-black/40 rounded-lg">
                 <p className="text-[10px] uppercase text-gray-500 mb-3">Preview</p>
                 <audio controls className="w-full">
-                  <source src={result.stream_url} type="audio/mpeg" />
+                  <source src={audioResult.stream_url} type="audio/mpeg" />
                 </audio>
                 <a 
-                  href={result.stream_url}
+                  href={audioResult.stream_url}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="mt-3 flex items-center gap-2 text-sm text-cyan-400 hover:text-cyan-300 transition-colors"
@@ -353,6 +390,7 @@ export default function AssetForgeTab() {
             )}
           </div>
         );
+        }
 
       default:
         return null;
