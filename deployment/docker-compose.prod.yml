@@ -340,15 +340,9 @@ services:
   centrifugo:
     image: centrifugo/centrifugo:v6
     restart: always
-    # Sử dụng Flags để ép cấu hình - Không phụ thuộc vào file hay biến môi trường
-    command: >
-      centrifugo
-      --api.key="changeme_centrifugo_api"
-      --api.insecure=true
-      --client.insecure=true
-      --client.allowed_origins="*"
-      --token.hmac_secret_key="worldos_centrifugo_hmac_secret_key_32bytes_min"
-      --token.hmac_allowed_algorithms="HS256"
+    command: centrifugo --config=/centrifugo/config.json
+    volumes:
+      - ./centrifugo/config.json:/centrifugo/config.json
     networks:
       - internal
     ports:

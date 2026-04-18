@@ -26,6 +26,7 @@ Route::middleware('api')->group(function () {
     Route::get('ai-settings', [AiSettingsController::class, 'index']);
     Route::get('ai-settings/drivers', [AiSettingsController::class, 'drivers']);
     Route::get('ai-settings/loom-agents', [AiSettingsController::class, 'loomAgents']);
+    Route::get('ai-settings/loom-key', [AiSettingsController::class, 'loomKey']);
 
     Route::get('ai-key-pool', [AiKeyPoolController::class, 'index']);
     Route::get('ai-key-pool/{ai_key_pool}', [AiKeyPoolController::class, 'show']);

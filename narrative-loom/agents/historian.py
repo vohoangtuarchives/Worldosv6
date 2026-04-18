@@ -111,7 +111,7 @@ async def historian_agent(state: NarrativeState, config: Dict[str, Any] = None) 
         query = f"Hậu quả nhân quả và diễn biến của các nhân vật: {', '.join(list(actors)[:10])}"
         memories = memory_db.retrieve_memories(query, k=2)
         past_memories = "\n---\n".join(memories) if memories else "Chưa có ký ức nào được ghi nhận trong Vector DB."
-        log.debug("agent.detail", agent="historian", event="memories_retrieved", count=len(memories))
+        log.debug("agent.detail", agent="historian", stage="memories_retrieved", count=len(memories))
     else:
         past_memories = "Hệ thống Memory Database đang tắt hoặc không có nhân vật nào đáng chú ý."
 
@@ -135,11 +135,11 @@ async def historian_agent(state: NarrativeState, config: Dict[str, Any] = None) 
             "resonance_scars": "\n- ".join(state.get("resonance_scars", [])) if state.get("resonance_scars") else "Không có cộng hương đáng kể."
         })
     except Exception as e:
-        log.debug("agent.detail", agent="historian", event="llm_call_error", exc=str(e))
+        log.debug("agent.detail", agent="historian", stage="llm_call_error", exc=str(e))
         result = None
 
     if not result:
-        log.debug("agent.detail", agent="historian", event="json_parse_failed_fallback")
+        log.debug("agent.detail", agent="historian", stage="json_parse_failed_fallback")
         outline_data = {"summary": "Lỗi phân tích cú pháp JSON.", "beats": []}
     else:
         outline_data = result.model_dump()

@@ -49,7 +49,7 @@ async def critic_agent(state: NarrativeState, config: Dict[str, Any] = None) -> 
     rev = state.get("revision_count", 0) + 1
     
     if not result:
-        log.debug("agent.detail", agent="critic", event="parse_error_fallback")
+        log.debug("agent.detail", agent="critic", stage="parse_error_fallback")
         report = {"score": 7, "feedbacks": ["Lỗi parse JSON"], "is_passed": True}
     else:
         report = result.model_dump()

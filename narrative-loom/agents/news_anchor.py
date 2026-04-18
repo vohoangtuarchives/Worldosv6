@@ -58,7 +58,7 @@ async def news_anchor_agent(state: NarrativeState, config: Dict[str, Any] = None
         headline = result.get("headline", "Sự kiện Đa vũ trụ chưa xác định")
         slogan = result.get("slogan", "Mọi thứ đang nở rộ...")
     except Exception as e:
-        log.debug("agent.detail", agent="news_anchor", event="anchor_error", exc=str(e))
+        log.debug("agent.detail", agent="news_anchor", stage="anchor_error", exc=str(e))
         headline = "BREAKING NEWS: SỰ KIỆN LỚN ĐANG DIỄN RA"
         slogan = "Theo dõi để biết thêm chi tiết."
     

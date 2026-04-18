@@ -105,7 +105,8 @@ def get_llm_for_agent(
             return get_llm(provider=provider, model_name=model, world_id=world_id, current_tick=current_tick)
         except Exception as file_error:
             log.warning("llm.routing_fallback", agent=agent_id, error=str(file_error), source="file")
-            return get_llm(provider="openrouter", world_id=world_id, current_tick=current_tick)
+            # Fallback to local instead of openrouter to avoid connection error
+            return get_llm(provider="local", world_id=world_id, current_tick=current_tick)
 
 
 def _normalize_ai_runtime(ai_runtime: dict | None) -> dict[str, str] | None:

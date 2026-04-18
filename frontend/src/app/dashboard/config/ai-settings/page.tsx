@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import api from '@/lib/api';
 
 interface AiSetting {
     id: number;
@@ -45,72 +46,45 @@ interface AiProviderModel {
 }
 
 async function fetchAiSettings(): Promise<AiSetting[]> {
-    const response = await fetch('/api/ai-settings');
-    if (!response.ok) throw new Error('Failed to fetch AI settings');
-    return response.json();
+    const response = await api.get('/ai-settings');
+    return response.data;
 }
 
 async function fetchLoomAgents(): Promise<AiSetting[]> {
-    const response = await fetch('/api/ai-settings/loom-agents');
-    if (!response.ok) throw new Error('Failed to fetch Loom agents');
-    return response.json();
+    const response = await api.get('/ai-settings/loom-agents');
+    return response.data;
 }
 
 async function fetchProviderModels(): Promise<AiProviderModel[]> {
-    const response = await fetch('/api/ai-provider-models');
-    if (!response.ok) throw new Error('Failed to fetch provider models');
-    return response.json();
+    const response = await api.get('/ai-provider-models');
+    return response.data;
 }
 
 async function updateAiSetting(key: string, value: any): Promise<void> {
-    const response = await fetch('/api/ai-settings/update', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key, value }),
-    });
-    if (!response.ok) throw new Error('Failed to update AI setting');
+    await api.post('/ai-settings/update', { key, value });
 }
 
 async function createProviderModel(data: Partial<AiProviderModel>): Promise<AiProviderModel> {
-    const response = await fetch('/api/ai-provider-models', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-    });
-    if (!response.ok) throw new Error('Failed to create provider model');
-    return response.json();
+    const response = await api.post('/ai-provider-models', data);
+    return response.data;
 }
 
 async function updateProviderModel(id: number, data: Partial<AiProviderModel>): Promise<AiProviderModel> {
-    const response = await fetch(`/api/ai-provider-models/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-    });
-    if (!response.ok) throw new Error('Failed to update provider model');
-    return response.json();
+    const response = await api.put(`/ai-provider-models/${id}`, data);
+    return response.data;
 }
 
 async function deleteProviderModel(id: number): Promise<void> {
-    const response = await fetch(`/api/ai-provider-models/${id}`, {
-        method: 'DELETE',
-    });
-    if (!response.ok) throw new Error('Failed to delete provider model');
+    await api.delete(`/ai-provider-models/${id}`);
 }
 
 async function exportProviderModels(): Promise<any> {
-    const response = await fetch('/api/ai-provider-models/export');
-    if (!response.ok) throw new Error('Failed to export provider models');
-    return response.json();
+    const response = await api.get('/ai-provider-models/export');
+    return response.data;
 }
 
 async function importProviderModels(data: any): Promise<void> {
-    const response = await fetch('/api/ai-provider-models/import', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-    });
-    if (!response.ok) throw new Error('Failed to import provider models');
+    await api.post('/ai-provider-models/import', data);
 }
 
 export default function AiSettingsPage() {

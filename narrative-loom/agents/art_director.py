@@ -52,13 +52,13 @@ async def generate_visual_asset(prompt_text: str, is_portrait: bool = True) -> O
             if response.status_code == 200:
                 data = response.json()
                 image_url = data['data'][0]['url']
-                log.info("agent.detail", agent="art_director", event="asset_generated", image_url=image_url)
+                log.info("agent.detail", agent="art_director", stage="asset_generated", image_url=image_url)
                 return image_url
             else:
-                log.error("agent.error", agent="art_director", event="dalle3_failed", detail=response.text)
+                log.error("agent.error", agent="art_director", stage="dalle3_failed", detail=response.text)
                 return None
     except Exception as e:
-        log.error("agent.error", agent="art_director", event="exception", exc=str(e))
+        log.error("agent.error", agent="art_director", stage="exception", exc=str(e))
         return None
 
 

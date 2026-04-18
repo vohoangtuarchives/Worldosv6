@@ -198,6 +198,69 @@ class AiSettingsController extends Controller
         return response()->json(['message' => 'Đã nhập cấu hình Loom agents từ file JSON thành công.']);
     }
 
+    /**
+     * Get a new AI key from pool for Loom agent retry.
+     * This endpoint allows Loom to request a fresh key when retry fails.
+     */
+    public function loomKey(Request $request)
+    {
+        $agentId = $request->input('agent_id');
+        $tier = $request->input('tier', 'any');
+        $provider = $request->input('provider');
+        $model = $request->input('model');
+        $excludeKeyId = $request->input('exclude_key_id');
+
+        // Get agent config to determine preferred provider/model
+        if ($agentId) {
+            $agentSetting = AiSetting::where('key', "loom_agents.{$agentId}")->first();
+            if ($agentSetting) {
+                $agentConfig = $this->decodeValue($agentSetting->value);
+                $provider = $provider ?: ($agentConfig['provider'] ?? null);
+                $model = $model ?: ($agentConfig['model'] ?? null);
+            }
+        }
+
+        // Use AiGateway to get a new key from pool
+        $aiGateway = app(\App\Modules\Intelligence\Services\AI\AiGateway::class);
+        
+        try {
+            $runtime = $aiGateway->runtimeProfile(
+                $provider ?: null,
+                'loom',
+                [
+                    'tier' => $tier,
+                    'model' => $model,
+                ]
+            );
+
+            // If exclude_key_id is provided and the returned key is the same, try again
+            if ($excludeKeyId && isset($runtime['key_entry']) && $runtime['key_entry']->id == $excludeKeyId) {
+                // Try to get a different key by forcing a different tier or provider
+                $runtime = $aiGateway->runtimeProfile(
+                    $provider ?: null,
+                    'loom',
+                    [
+                        'tier' => $tier === 'any' ? 'pro' : 'any', // Switch tier
+                        'model' => $model,
+                    ]
+                );
+            }
+
+            return response()->json([
+                'provider' => $runtime['provider'],
+                'model' => $runtime['model'],
+                'api_key' => $runtime['api_key'],
+                'base_url' => $runtime['base_url'],
+                'tier' => $runtime['tier'],
+                'key_entry_id' => $runtime['key_entry']?->id,
+            ]);
+        } catch (\App\Modules\Intelligence\Exceptions\AiPoolExhaustedException $e) {
+            return response()->json(['message' => 'AI Key Pool exhausted'], 503);
+        } catch (\Throwable $e) {
+            return response()->json(['message' => 'Failed to get AI key: ' . $e->getMessage()], 500);
+        }
+    }
+
     private function purgeLegacyDriverSettings(bool $sync = true): void
     {
         AiSetting::query()->where('key', 'like', 'drivers.%')->delete();

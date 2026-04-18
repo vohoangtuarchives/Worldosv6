@@ -84,18 +84,33 @@ async def director_agent(state: NarrativeState, config: Dict[str, Any] = None) -
     else:
         outline_str = str(outline_data)
         
-    result = await chain.ainvoke({
-        "world_era": state.get("world_era", "genesis"),
-        "outline": outline_str,
-        "psychology": state.get("psychological_profiles", {}).get("analysis", ""),
-        "world_state": world_state
-    })
-    
-    if not result:
-        log.debug("agent.detail", agent="director", event="json_parse_failed")
-        result_dict = {"title": "Lỗi phân cảnh", "scenes": []}
-    else:
-        result_dict = result.model_dump()
+    try:
+        result = await chain.ainvoke({
+            "world_era": state.get("world_era", "genesis"),
+            "outline": outline_str,
+            "psychology": state.get("psychological_profiles", {}).get("analysis", ""),
+            "world_state": world_state
+        })
+        
+        if not result:
+            log.debug("agent.detail", agent="director", stage="json_parse_failed")
+            result_dict = {"title": "Lỗi phân cảnh", "scenes": []}
+        else:
+            result_dict = result.model_dump()
+    except Exception as e:
+        log.warning("agent.detail", agent="director", stage="structured_output_failed", error=str(e))
+        # Fallback: tạo storyboard đơn giản từ outline
+        result_dict = {
+            "title": outline_data.get("summary", "Chronicle")[:50],
+            "scenes": [
+                {
+                    "setting": "Không gian chính",
+                    "camera_angle": "Wide shot",
+                    "involved_characters": [],
+                    "central_conflict": outline_data.get("summary", "Sự kiện chính")[:100]
+                }
+            ]
+        }
         
     log.debug("agent.detail", agent="director", scenes_count=len(result_dict.get("scenes", [])))
     

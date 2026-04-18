@@ -69,8 +69,6 @@ def agent_node(name: str) -> Callable:
     """
 
     def decorator(fn: Callable[..., Coroutine[Any, Any, Any]]) -> Callable:
-        retrying_fn = _make_retrying(fn)
-
         @wraps(fn)
         async def wrapper(state: dict, config: dict | None = None) -> dict:
             world_id: int = state.get("world_id", 0)
@@ -83,21 +81,28 @@ def agent_node(name: str) -> Callable:
             t_start = time.perf_counter()
 
             try:
-                result: dict = await retrying_fn(state, config)
-            except RetryError as exc:
+                result: dict = await fn(state, config)
+                
                 duration_ms = int((time.perf_counter() - t_start) * 1000)
-                log.error(
-                    "agent.failed_after_retries",
+                metrics.record_agent(name, duration_ms, success=True)
+                new_completed = completed + [name]
+
+                log.info(
+                    "agent.done",
                     agent=name,
                     world_id=world_id,
                     task_id=task_id,
                     duration_ms=duration_ms,
-                    error=str(exc),
+                    completed=len(new_completed),
+                    total=TOTAL_AGENTS,
                 )
-                metrics.record_agent(name, duration_ms, success=False)
-                publish_agent_error(world_id, task_id, name, str(exc))
-                # Propagate — LangGraph will surface this as a pipeline error
-                raise
+                publish_agent_done(
+                    world_id, task_id, name, duration_ms, len(new_completed), TOTAL_AGENTS
+                )
+
+                # Return result without merging completed_agents to avoid conflicts
+                return result
+
             except Exception as exc:
                 duration_ms = int((time.perf_counter() - t_start) * 1000)
                 log.error(
@@ -111,26 +116,6 @@ def agent_node(name: str) -> Callable:
                 metrics.record_agent(name, duration_ms, success=False)
                 publish_agent_error(world_id, task_id, name, str(exc))
                 raise
-
-            duration_ms = int((time.perf_counter() - t_start) * 1000)
-            metrics.record_agent(name, duration_ms, success=True)
-            new_completed = completed + [name]
-
-            log.info(
-                "agent.done",
-                agent=name,
-                world_id=world_id,
-                task_id=task_id,
-                duration_ms=duration_ms,
-                completed=len(new_completed),
-                total=TOTAL_AGENTS,
-            )
-            publish_agent_done(
-                world_id, task_id, name, duration_ms, len(new_completed), TOTAL_AGENTS
-            )
-
-            # Return result without merging completed_agents to avoid conflicts
-            return result
 
         return wrapper
 

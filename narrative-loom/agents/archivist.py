@@ -38,7 +38,7 @@ async def archivist_agent(state: NarrativeState, config: Dict[str, Any] = None) 
         }
 
         await asyncio.to_thread(memory_db.store_memory, prose, metadata)
-        log.debug("agent.detail", agent="archivist", model="qwen3.5", event="memory_stored")
+        log.debug("agent.detail", agent="archivist", model="qwen3.5", stage="memory_stored")
     elif not memory_db.enabled:
         log.warning("agent.warning", agent="archivist", reason="memory_db_disabled_missing_vector_db_libraries")
 

@@ -48,7 +48,7 @@ class AudioDirectorAgent:
 
         track_url = self.mock_tracks.get(selected_style, self.mock_tracks["default"])
 
-        log.info("agent.detail", agent="audio_director", event="soundtrack_complete", style=selected_style)
+        log.info("agent.detail", agent="audio_director", stage="soundtrack_complete", style=selected_style)
 
         return {
             "epoch_name": epoch_name,

@@ -97,7 +97,7 @@ async def vfx_director_agent(state: NarrativeState, config: Dict[str, Any] = Non
         vfx_config = result.get("vfx_config", {})
         animation_script = result.get("animation_script", None)
     except Exception as e:
-        log.debug("agent.detail", agent="vfx_director", event="vfx_error", exc=str(e))
+        log.debug("agent.detail", agent="vfx_director", stage="vfx_error", exc=str(e))
         vfx_config = {
             "primary_color": "#8b5cf6",
             "distortion": 0.4,

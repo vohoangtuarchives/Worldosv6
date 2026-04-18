@@ -44,7 +44,7 @@ async def synthesize_celebrity(req_data: dict) -> dict:
         })
         return result
     except Exception as e:
-        log.debug("agent.detail", agent="celebrity_synthesizer", event="synthesize_error", exc=str(e))
+        log.debug("agent.detail", agent="celebrity_synthesizer", stage="synthesize_error", exc=str(e))
         return {"name": "Vô Danh", "biography": "Một sự hiện diện bí ẩn vừa xuất hiện với hành tung bất định."}
 
 

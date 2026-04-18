@@ -1,19 +1,41 @@
 {
-  "v3_use_offset": true,
-  "token": {
-    "hmac_secret_key": "worldos_centrifugo_hmac_secret_key_32bytes_min",
-    "hmac_allowed_algorithms": ["HS256"]
-  },
   "client": {
     "insecure": true,
-    "allowed_origins": [
-      "http://localhost",
-      "http://localhost:80",
-      "http://localhost:3000"
-    ]
+    "allowed_origins": ["*"],
+    "token": {
+      "hmac_secret_key": "worldos_centrifugo_hmac_secret_key_32bytes_min"
+    }
   },
-  "api": {
-    "key": "changeme_centrifugo_api",
-    "insecure": false
+  "http_api": {
+    "key": "changeme_centrifugo_api"  
+  },
+  "channel": {
+    "without_namespace": {
+      "presence": true,
+      "history_size": 10,
+      "history_ttl": "30s"
+    },
+    "namespaces": [
+      {
+        "name": "public",
+        "history_size": 10,
+        "history_ttl": "300s"
+      },
+      {
+        "name": "universes",
+        "history_size": 10,
+        "history_ttl": "300s"
+      },
+      {
+        "name": "narrative",
+        "history_size": 10,
+        "history_ttl": "300s"
+      },
+      {
+        "name": "worlds",
+        "history_size": 10,
+        "history_ttl": "300s"
+      }
+    ]
   }
 }

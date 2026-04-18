@@ -43,7 +43,7 @@ async def forge_artifact(req_data: dict) -> dict:
         })
         return result
     except Exception as e:
-        log.debug("agent.detail", agent="artifact_forger", event="forge_error", exc=str(e))
+        log.debug("agent.detail", agent="artifact_forger", stage="forge_error", exc=str(e))
         return {"name": "Khối Vật Chất Vô Danh", "lore": "Vật phẩm này tỏa ra ánh sáng rực rỡ nhưng không ai biết nguồn gốc của nó."}
 
 

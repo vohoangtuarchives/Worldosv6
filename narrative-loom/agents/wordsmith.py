@@ -52,7 +52,7 @@ async def wordsmith_agent(state: NarrativeState, config: Dict[str, Any] = None) 
     feedback_dict = state.get("feedback", {})
     # Nếu is_passed == False và đã có revision_count > 0, tức là The Critic chê!
     if not feedback_dict.get("is_passed", True) and state.get("revision_count", 0) > 0:
-        log.info("agent.detail", agent="wordsmith", event="revision_mode")
+        log.info("agent.detail", agent="wordsmith", stage="revision_mode")
         feedbacks = "\n- ".join(feedback_dict.get("feedbacks", []))
         revision_prompt = (
             f"[LỆNH TỪ NHÀ PHÊ BÌNH: BẢN NHÁP CỦA BẠN BỊ TỪ CHỐI]\n\n"
@@ -69,7 +69,7 @@ async def wordsmith_agent(state: NarrativeState, config: Dict[str, Any] = None) 
         })
         
         final_prose = scene_result if isinstance(scene_result, str) else str(scene_result.content if hasattr(scene_result, 'content') else scene_result)
-        log.debug("agent.detail", agent="wordsmith", event="revision_complete", prose_length=len(final_prose))
+        log.debug("agent.detail", agent="wordsmith", stage="revision_complete", prose_length=len(final_prose))
         return {"final_prose": final_prose}
         
     # 🌟 NẾU LÀ LẦN VIẾT ĐẦU TIÊN: Tách storyboard thành từng Scene
@@ -85,7 +85,7 @@ async def wordsmith_agent(state: NarrativeState, config: Dict[str, Any] = None) 
     
     # Nếu không detect được "Scene", thì fallback lại dùng nguyên cục
     if not scenes_data:
-        log.debug("agent.detail", agent="wordsmith", event="single_take_expansion")
+        log.debug("agent.detail", agent="wordsmith", stage="single_take_expansion")
         result = await chain.ainvoke({
             "storyboard": str(storyboard_data), 
             "style_guidelines": style_guidelines,
@@ -95,7 +95,7 @@ async def wordsmith_agent(state: NarrativeState, config: Dict[str, Any] = None) 
         })
         chapter_content.append(result)
     else:
-        log.debug("agent.detail", agent="wordsmith", event="batch_expansion_start", scenes_count=len(scenes_data))
+        log.debug("agent.detail", agent="wordsmith", stage="batch_expansion_start", scenes_count=len(scenes_data))
         batch_inputs = []
         for i, scene in enumerate(scenes_data):
             if isinstance(scene, str):
@@ -118,12 +118,23 @@ async def wordsmith_agent(state: NarrativeState, config: Dict[str, Any] = None) 
             })
  
         # 🌟 Giai đoạn 3.2: Gửi batch đồng thời cho vLLM
-        results = await chain.abatch(batch_inputs)
-        chapter_content.extend(results)
-        log.debug("agent.detail", agent="wordsmith", event="batch_expansion_complete", results_count=len(results))
+        try:
+            results = await chain.abatch(batch_inputs)
+            chapter_content.extend(results)
+            log.debug("agent.detail", agent="wordsmith", stage="batch_expansion_complete", results_count=len(results))
+        except Exception as e:
+            log.warning("agent.detail", agent="wordsmith", stage="batch_failed", error=str(e))
+            # Fallback: gọi từng scene một
+            for batch_input in batch_inputs:
+                try:
+                    result = await chain.ainvoke(batch_input)
+                    chapter_content.append(result)
+                except Exception as inner_e:
+                    log.warning("agent.detail", agent="wordsmith", stage="scene_failed", error=str(inner_e))
+                    chapter_content.append(f"[Lỗi xử lý phân cảnh: {inner_e}]")
  
     final_prose = "\n\n".join(chapter_content)
-    log.debug("agent.detail", agent="wordsmith", event="prose_finalized", prose_length=len(final_prose))
+    log.debug("agent.detail", agent="wordsmith", stage="prose_finalized", prose_length=len(final_prose))
     
     return {"final_prose": final_prose}
 

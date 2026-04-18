@@ -8,6 +8,7 @@ import api from '@/lib/api';
 import { getCentrifuge } from '@/lib/centrifugo';
 import type { ConnectedContext, PublicationContext } from 'centrifuge';
 import { useUniverse } from '@/contexts/UniverseContext';
+import { toast } from 'sonner';
 
 interface AgentConfig {
   id?: string;
@@ -322,36 +323,6 @@ export default function NarrativeStudio() {
     };
   }, [centrifugoReady, activeTaskId, worldId, addLog]);
 
-  // Keep subscription to public:universes for chronicle_generated events from webhook
-  useEffect(() => {
-    if (!centrifugoReady || activeUniverseId == null) return;
-
-    const centrifuge = getCentrifuge();
-    const publicChannel = 'public:universes';
-    const pubSub = centrifuge.newSubscription(publicChannel);
-
-    pubSub.on('publication', (ctx: PublicationContext) => {
-      const event = ctx.data as CentrifugoEvent & { universe_id?: number; chronicle_id?: number; headline?: string };
-      if (event.type === 'chronicle_generated' && event.universe_id === activeUniverseId) {
-        addLog(`[Pipeline] Chronicle #${event.chronicle_id} generated for universe ${activeUniverseId}`);
-        // Update narrative result if webhook provides headline
-        if (event.headline) {
-          setNarrativeResult(prev => ({
-            ...prev,
-            headline: event.headline
-          }));
-        }
-      }
-    });
-
-    pubSub.subscribe();
-    addLog(`[Centrifugo] Subscribed to ${publicChannel}`);
-
-    return () => {
-      pubSub.unsubscribe();
-      pubSub.removeAllListeners();
-    };
-  }, [centrifugoReady, activeUniverseId, addLog]);
 
   return (
     <div className="min-h-screen bg-[#050508] text-white p-8 font-mono bg-[url('/grid.svg')] bg-center relative">
@@ -462,38 +433,39 @@ export default function NarrativeStudio() {
           </section>
         )}
 
-        {/* System Overview */}
-        <section className="mb-12">
-          <h2 className="text-xs uppercase tracking-widest text-gray-500 mb-4 border-l-2 border-violet-500 pl-2">AI Providers Network</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            {data?.providers && (Array.isArray(data.providers) ? data.providers : Object.entries(data.providers).map(([key, info]) => ({ id: key, ...info }))).map((info: ProviderConfig, idx: number) => {
-              const keyName = info.id || info.name || `provider-${idx}`;
-              return (
-              <div key={keyName} className="p-3 border border-white/5 bg-white/5 rounded-lg flex items-center justify-between">
-                <span className="text-xs font-bold uppercase">{keyName}</span>
-                <div className={`w-2 h-2 rounded-full ${info.status === 'online' ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]' : 'bg-red-500'}`} />
+        {/* Execution Performance */}
+        {Object.keys(completedAgents).length > 0 && (
+          <section className="mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xs uppercase tracking-widest text-gray-500 border-l-2 border-violet-500 pl-2">Execution Performance</h2>
+              <div className="flex items-center gap-3">
+                <span className="text-[10px] text-gray-500">
+                  {Object.keys(completedAgents).length} agents • {Object.values(completedAgents).reduce((acc, a) => acc + a.durationMs, 0).toLocaleString()}ms total
+                </span>
               </div>
-            )})}
-          </div>
-        </section>
-
-        {/* Pipeline Flow Diagram */}
-        <section>
-          <h2 className="text-xs uppercase tracking-widest text-gray-500 mb-6 border-l-2 border-violet-500 pl-2">Narrative Loom Pipeline Flow</h2>
-          <div className="p-6 bg-black/40 border border-white/5 rounded-xl">
-            {Object.keys(pipelineNodes).length > 0 || activeTaskId ? (
-              <FlowDiagram
-                nodes={pipelineNodes}
-                onNodeClick={setSelectedAgent}
-                selectedNode={selectedAgent}
-              />
-            ) : (
-              <div className="h-32 flex items-center justify-center border border-dashed border-gray-800 rounded-xl">
-                <span className="text-gray-600 uppercase text-xs tracking-widest">Start Weave to visualize pipeline flow</span>
+            </div>
+            <div className="p-4 bg-black/40 border border-white/5 rounded-xl">
+              <div className="space-y-2">
+                {Object.entries(completedAgents).map(([agentName, data], idx) => (
+                  <div key={agentName} className="flex items-center gap-3 text-xs">
+                    <span className="text-gray-500 w-6">{String(idx + 1).padStart(2, '0')}</span>
+                    <div className="flex-1 flex items-center gap-2">
+                      <span className="text-emerald-400">✓</span>
+                      <span className="text-gray-300">{agentName}</span>
+                    </div>
+                    <span className="text-gray-500">{data.durationMs}ms</span>
+                    <div className="w-24 h-1 bg-gray-800 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-emerald-500 rounded-full"
+                        style={{ width: `${Math.min(100, (data.durationMs / 5000) * 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
               </div>
-            )}
-          </div>
-        </section>
+            </div>
+          </section>
+        )}
 
         {/* Agent Details Panel */}
         {selectedAgent && agentDetails[selectedAgent] && (
@@ -623,15 +595,41 @@ export default function NarrativeStudio() {
             {/* Prose Preview */}
             {narrativeResult.prose && (
               <div className="p-5 bg-black/60 border border-white/10 rounded-xl">
-                <p className="text-[10px] uppercase tracking-widest text-gray-500 mb-3">Final Prose</p>
-                <p className="text-gray-300 text-sm leading-relaxed font-serif whitespace-pre-wrap line-clamp-12">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-[10px] uppercase tracking-widest text-gray-500">Final Prose</p>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(narrativeResult.prose || '');
+                        toast.success('Copied to clipboard');
+                      }}
+                      className="px-3 py-1.5 text-[10px] bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-gray-400 hover:text-white transition-colors"
+                    >
+                      Copy
+                    </button>
+                    <button
+                      onClick={() => {
+                        const blob = new Blob([narrativeResult.prose || ''], { type: 'text/plain' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `chronicle-${new Date().toISOString().slice(0,10)}.txt`;
+                        a.click();
+                        URL.revokeObjectURL(url);
+                        toast.success('Exported to file');
+                      }}
+                      className="px-3 py-1.5 text-[10px] bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 rounded-lg text-emerald-400 transition-colors"
+                    >
+                      Export
+                    </button>
+                  </div>
+                </div>
+                <p className="text-gray-300 text-sm leading-relaxed font-serif whitespace-pre-wrap">
                   {narrativeResult.prose}
                 </p>
-                {narrativeResult.prose.length > 600 && (
-                  <p className="text-[10px] text-gray-600 mt-3">
-                    {narrativeResult.prose.length.toLocaleString()} characters — view full chronicle for complete text
-                  </p>
-                )}
+                <p className="text-[10px] text-gray-600 mt-3">
+                  {narrativeResult.prose.length.toLocaleString()} characters
+                </p>
               </div>
             )}
           </section>

@@ -42,7 +42,7 @@ async def scribe_history(req_data: dict) -> dict:
         })
         return result
     except Exception as e:
-        log.debug("agent.detail", agent="history_scribe", event="scribe_error", exc=str(e))
+        log.debug("agent.detail", agent="history_scribe", stage="scribe_error", exc=str(e))
         return {"event_name": "Sự Kiện Dị Thường", "chronicle": "Một chuyển động chưa từng có đã quét qua vùng không gian này."}
 
 @agent_node("history_scribe")
@@ -53,7 +53,7 @@ async def history_scribe_api(event_type: str, impact_score: float, trigger_data:
     """
     if impact_score < 5.0:
         # Fallback to Rule-based / Raw text to save API cost
-        log.debug("agent.detail", agent="history_scribe", event="skipped_low_impact", impact_score=impact_score)
+        log.debug("agent.detail", agent="history_scribe", stage="skipped_low_impact", impact_score=impact_score)
         name = event_type.replace("_", " ").title()
         return {
             "event_name": f"Minor Event: {name}",
@@ -61,7 +61,7 @@ async def history_scribe_api(event_type: str, impact_score: float, trigger_data:
         }
 
     # Trigger LLM
-    log.info("agent.detail", agent="history_scribe", event="llm_triggered", impact_score=impact_score)
+    log.info("agent.detail", agent="history_scribe", stage="llm_triggered", impact_score=impact_score)
     req_data = {
         "event_type": event_type,
         "impact_score": impact_score,
