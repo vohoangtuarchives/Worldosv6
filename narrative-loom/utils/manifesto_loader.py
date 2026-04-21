@@ -2,6 +2,10 @@ import json
 import os
 from typing import Dict, Any, Optional
 
+from core.logging import get_logger
+
+log = get_logger(__name__)
+
 class ManifestoLoader:
     """
     ManifestoLoader: Truy xuất 'Chân lý' về các quy luật thực tại và bối cảnh từ Knowledge Base.
@@ -21,7 +25,7 @@ class ManifestoLoader:
                 with open(path, 'r', encoding='utf-8') as f:
                     return json.load(f)
         except Exception as e:
-            print(f"FAILED TO LOAD KNOWLEDGE AT {path}: {e}")
+            log.error("manifesto_loader.load_failed", path=path, error=str(e))
         return {}
 
     def get_era_context(self, era_id: str) -> str:

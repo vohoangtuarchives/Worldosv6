@@ -6,6 +6,7 @@ use App\Modules\Narrative\Http\Controllers\NarrativeController;
 use App\Modules\Narrative\Http\Controllers\LoomChronicleController;
 use App\Modules\Narrative\Http\Controllers\LoomCharacterController;
 use App\Modules\Narrative\Http\Controllers\LoomWorldStateController;
+use App\Modules\Narrative\Http\Controllers\LoomWebhookController;
 use Illuminate\Support\Facades\Route;
 
 // Narrative Module Specific Only
@@ -17,3 +18,7 @@ Route::get('/universes/{universe}/omen-context', [NarrativeController::class, 'o
 Route::get('/loom/v1/narrative/chronicles', [LoomChronicleController::class, 'index']);
 Route::get('/loom/v1/narrative/characters/{character_id}', [LoomCharacterController::class, 'show']);
 Route::get('/loom/v1/narrative/state-snapshot/{world_id}', [LoomWorldStateController::class, 'show']);
+
+// Webhook — Narrative Loom calls this after pipeline_done (M4 fix)
+Route::post('/narrative-loom/webhook', [LoomWebhookController::class, 'receive']);
+

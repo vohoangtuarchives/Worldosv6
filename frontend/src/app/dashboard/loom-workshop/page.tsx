@@ -14,6 +14,7 @@ import {
   RadioTower,
   RefreshCcw,
   Route,
+  Settings2,
   Sparkles,
   Wand2,
 } from 'lucide-react';
@@ -27,8 +28,10 @@ import NarrativeOfficeView from '@/components/ui/narrative/NarrativeOfficeView';
 import ActorIntentTab from './sections/ActorIntentTab';
 import ScribeTab from './sections/ScribeTab';
 import AssetForgeTab from './sections/AssetForgeTab';
+import ChronicleTab from './sections/ChronicleTab';
+import Link from 'next/link';
 
-type WorkshopTab = 'run' | 'office' | 'review' | 'utilities';
+type WorkshopTab = 'run' | 'chronicle' | 'office' | 'review' | 'utilities';
 type UtilityTab = 'actor' | 'scribe' | 'forge';
 
 const workshopTabs: Array<{
@@ -42,6 +45,12 @@ const workshopTabs: Array<{
     label: 'Run',
     icon: PlayCircle,
     description: 'Submit and monitor the active pipeline.',
+  },
+  {
+    id: 'chronicle',
+    label: 'Chronicle',
+    icon: BookOpenText,
+    description: 'Browse and monitor past chronicles.',
   },
   {
     id: 'office',
@@ -272,6 +281,7 @@ export default function LoomWorkshopPage() {
             nodes={runtime.pipelineNodes}
             selectedNode={runtime.selectedNode}
             onNodeClick={runtime.setSelectedNode}
+            revisionCount={runtime.revisionCount ?? 0}
           />
         </div>
 
@@ -531,8 +541,17 @@ export default function LoomWorkshopPage() {
                 monitor instead of a parallel product surface.
               </p>
             </div>
-            <div className="rounded-2xl border border-slate-800 bg-slate-950/60 px-4 py-3 text-sm text-slate-400">
-              Active universe: <span className="font-black text-white">{activeUniverseId ?? 'None selected'}</span>
+            <div className="flex flex-col items-end gap-3">
+              <div className="rounded-2xl border border-slate-800 bg-slate-950/60 px-4 py-3 text-sm text-slate-400">
+                Active universe: <span className="font-black text-white">{activeUniverseId ?? 'None selected'}</span>
+              </div>
+              <Link
+                href="/dashboard/config/ai-settings"
+                className="inline-flex items-center gap-2 rounded-2xl border border-violet-500/20 bg-violet-500/10 px-4 py-2.5 text-xs font-black text-violet-400 transition hover:bg-violet-500/20"
+              >
+                <Settings2 size={13} />
+                AI Configuration
+              </Link>
             </div>
           </div>
         </header>
@@ -561,6 +580,7 @@ export default function LoomWorkshopPage() {
           transition={{ duration: 0.2 }}
         >
           {activeTab === 'run' ? renderRunTab() : null}
+          {activeTab === 'chronicle' ? <ChronicleTab /> : null}
           {activeTab === 'office' ? renderOfficeTab() : null}
           {activeTab === 'review' ? renderReviewTab() : null}
           {activeTab === 'utilities' ? renderUtilitiesTab() : null}

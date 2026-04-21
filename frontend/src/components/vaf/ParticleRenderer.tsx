@@ -7,6 +7,7 @@ import type { VAFEffect } from '@/lib/vaf/types';
 // ParticleRenderer
 // Canvas 2D particle system for 'particles' effects.
 // Uses an object pool of 200 particles with rAF loop.
+// H3 fix: Responsive canvas via ResizeObserver (no more fixed 960x540).
 // ──────────────────────────────────────────────
 
 interface Particle {
@@ -27,12 +28,14 @@ const MAX_PARTICLES = 200;
 interface Props {
   effects: VAFEffect[];
   isPlaying: boolean;
+  // width/height props giữ lại để backward-compat nhưng không dùng cho canvas attr
   width?: number;
   height?: number;
 }
 
-export default function ParticleRenderer({ effects, isPlaying, width, height }: Props) {
+export default function ParticleRenderer({ effects, isPlaying }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const particlesRef = useRef<Particle[]>(
     Array.from({ length: MAX_PARTICLES }, () => ({
       x: 0, y: 0, vx: 0, vy: 0,
@@ -51,6 +54,29 @@ export default function ParticleRenderer({ effects, isPlaying, width, height }: 
       : 0;
   const effectColor = particleEffects[0]?.color ?? '#ff6b35';
   const spawnRate = 5 + avgIntensity * 45; // 5-50 per second
+
+  // H3 fix: ResizeObserver sync canvas attrs voi container size + DPR
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const container = containerRef.current;
+    if (!canvas || !container) return;
+
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (!entry) return;
+      const { width, height } = entry.contentRect;
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = Math.round(width * dpr);
+      canvas.height = Math.round(height * dpr);
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.scale(dpr, dpr);
+      }
+    });
+
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, []);
 
   const spawnOne = useCallback(
     (w: number, h: number) => {
@@ -88,8 +114,10 @@ export default function ParticleRenderer({ effects, isPlaying, width, height }: 
       const dt = lastTimeRef.current ? Math.min((time - lastTimeRef.current) / 1000, 0.1) : 0.016;
       lastTimeRef.current = time;
 
-      const w = canvas.width;
-      const h = canvas.height;
+      // Doc logical size (canvas.width da nhan DPR)
+      const dpr = window.devicePixelRatio || 1;
+      const w = canvas.width / dpr;
+      const h = canvas.height / dpr;
       ctx.clearRect(0, 0, w, h);
 
       // spawn
@@ -134,12 +162,11 @@ export default function ParticleRenderer({ effects, isPlaying, width, height }: 
   }, [isPlaying, avgIntensity, spawnRate, spawnOne]);
 
   return (
-    <canvas
-      ref={canvasRef}
-      width={width ?? 960}
-      height={height ?? 540}
-      className="absolute inset-0 pointer-events-none"
-      style={{ width: '100%', height: '100%' }}
-    />
+    <div ref={containerRef} className="absolute inset-0 pointer-events-none">
+      <canvas
+        ref={canvasRef}
+        className="absolute inset-0 w-full h-full"
+      />
+    </div>
   );
 }

@@ -1,8 +1,8 @@
 'use client';
 
-import { use } from 'react';
+import { use, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, RefreshCw, AlertTriangle } from 'lucide-react';
 
 import { useChronicleDetail } from '@/hooks/useChronicleDetail';
 import { parseAnimationScript } from '@/lib/vaf/parser';
@@ -18,7 +18,10 @@ export default function NarrativeCinemaPage(props: PageProps) {
     const chronicleId = Number(rawId);
     const router = useRouter();
 
-    const { chronicle, isLoading } = useChronicleDetail(
+    // retryCount buộc VAFErrorBoundary remount hoàn toàn khi người dùng nhấn "Thử Lại"
+    const [retryCount, setRetryCount] = useState(0);
+
+    const { chronicle, isLoading, isError } = useChronicleDetail(
         Number.isFinite(chronicleId) ? chronicleId : null,
     );
 
@@ -27,6 +30,38 @@ export default function NarrativeCinemaPage(props: PageProps) {
         return (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black">
                 <div className="h-10 w-10 animate-spin rounded-full border-4 border-cyan-500 border-t-transparent" />
+            </div>
+        );
+    }
+
+    // ── Error state (H1 fix) ────────────────────
+    // Hiển thị khi API trả lỗi (4xx/5xx) thay vì màn đen im lặng.
+    if (isError) {
+        return (
+            <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-6 bg-black text-white">
+                <AlertTriangle className="h-10 w-10 text-amber-500" />
+                <div className="text-center space-y-2">
+                    <h2 className="text-lg font-semibold">Không thể tải chronicle</h2>
+                    <p className="text-sm text-slate-400">
+                        Yêu cầu thất bại. Kiểm tra kết nối hoặc liên hệ quản trị viên.
+                    </p>
+                </div>
+                <div className="flex gap-3">
+                    <button
+                        onClick={() => setRetryCount((c) => c + 1)}
+                        className="flex items-center gap-2 rounded-xl bg-white/10 px-5 py-2.5 text-sm font-medium transition hover:bg-white/20"
+                    >
+                        <RefreshCw size={14} />
+                        Thử Lại
+                    </button>
+                    <button
+                        onClick={() => router.back()}
+                        className="flex items-center gap-2 rounded-xl bg-white/5 px-5 py-2.5 text-sm font-medium text-slate-400 transition hover:bg-white/10 hover:text-white"
+                    >
+                        <ArrowLeft size={14} />
+                        Quay Lại
+                    </button>
+                </div>
             </div>
         );
     }
@@ -72,6 +107,8 @@ export default function NarrativeCinemaPage(props: PageProps) {
     }
 
     // ── Cinematic player ────────────────────────
+    // key={chronicleId}-${retryCount} buộc VAFErrorBoundary + CinematicPlayer
+    // remount hoàn toàn khi retry, tránh infinite render loop (M1 fix).
     return (
         <div className="fixed inset-0 z-50 bg-black">
             <div className="absolute left-4 top-4 z-50">
@@ -83,8 +120,12 @@ export default function NarrativeCinemaPage(props: PageProps) {
                 </button>
             </div>
 
-            <VAFErrorBoundary onExit={() => router.back()}>
+            <VAFErrorBoundary
+                key={`${chronicleId}-${retryCount}`}
+                onExit={() => router.back()}
+            >
                 <CinematicPlayer
+                    key={`${chronicleId}-${retryCount}`}
                     animationScript={animation}
                     chronicleTitle={chronicle.title}
                     chronicleContent={chronicle.content}

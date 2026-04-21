@@ -38,6 +38,10 @@
   ],
   "exclude": [
     "node_modules",
-    ".next"
+    ".next",
+    "**/__tests__/**",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "vitest.config.ts"
   ]
 }

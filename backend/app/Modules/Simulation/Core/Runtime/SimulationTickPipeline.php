@@ -74,14 +74,17 @@ final class SimulationTickPipeline
             $savedSnapshot->save();
         }
 
-        // Phase 80: Narrative Integration (Rewrite)
-        // 1 Tick = 1 LLM Call. Pulse the Narrative Engine after state persistence.
-        $universeModel = \App\Models\Universe::find($universe->id);
+        // Phase 80: Narrative Integration (Async — C2 fix)
+        // Dispatch PulseNarrativeJob thay vì gọi pulse() đồng bộ.
+        // Lý do: mỗi LLM call có thể mất 30s+, block toàn bộ tick loop trong batch mode.
+        // Job chạy trên queue "narrative", không ảnh hưởng đến tốc độ simulation.
         $snapshotModel = $savedSnapshot ?? \App\Models\UniverseSnapshot::where('universe_id', $universe->id)->where('tick', $tick)->first();
-        
-        if ($universeModel && $snapshotModel) {
-            $universeEntity = app(\App\Modules\Simulation\Contracts\UniverseRepositoryInterface::class)->findById($universe->id);
-            $this->narrativeEngine->pulse($universeEntity, $snapshotModel);
+
+        if ($snapshotModel) {
+            \App\Modules\Narrative\Jobs\PulseNarrativeJob::dispatch(
+                $universe->id,
+                $snapshotModel->id,
+            );
         }
     }
 

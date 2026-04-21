@@ -13,6 +13,7 @@ import type { VAFCameraMovement } from '@/lib/vaf/types';
 interface Props {
   camera: VAFCameraMovement;
   progress: number; // 0-1 within current scene
+  isPlaying?: boolean; // L2 fix: needed to reset shake on play/pause
   children: React.ReactNode;
 }
 
@@ -20,7 +21,7 @@ function clamp01(v: number): number {
   return Math.min(1, Math.max(0, v));
 }
 
-export default function CameraRenderer({ camera, progress, children }: Props) {
+export default function CameraRenderer({ camera, progress, isPlaying = true, children }: Props) {
   const { type, speed, easing } = camera;
   const p = clamp01(progress * speed);
 
@@ -31,7 +32,7 @@ export default function CameraRenderer({ camera, progress, children }: Props) {
 
   useEffect(() => {
     if (type !== 'shake') return;
-    startRef.current = performance.now();
+    startRef.current = performance.now(); // L2 fix: reset start khi isPlaying thay doi
     let running = true;
 
     const tick = () => {
@@ -48,8 +49,9 @@ export default function CameraRenderer({ camera, progress, children }: Props) {
     return () => {
       running = false;
       cancelAnimationFrame(rafRef.current);
+      setShakeOffset({ x: 0, y: 0 }); // L2 fix: reset offset khi stop
     };
-  }, [type]);
+  }, [type, isPlaying]); // L2 fix: isPlaying added
 
   const transform = useMemo(() => {
     switch (type) {

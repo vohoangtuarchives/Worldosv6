@@ -5,8 +5,9 @@ import { useMemo } from 'react';
 
 // ──────────────────────────────────────────────
 // NarrationOverlay
-// Typewriter narration text at bottom of screen.
-// Re-triggers animation when text changes.
+// Sentence-level narration text at bottom of screen.
+// L1 fix: Animate per sentence (not per character) to reduce
+// framer-motion node count from ~500 to ~5, improving CPU perf.
 // ──────────────────────────────────────────────
 
 interface Props {
@@ -24,7 +25,7 @@ const containerVariants = {
     transition: {
       duration: 0.4,
       ease: 'easeOut' as const,
-      staggerChildren: 0.02,
+      staggerChildren: 0.12,
     },
   },
   exit: {
@@ -34,27 +35,34 @@ const containerVariants = {
   },
 };
 
-// ── Character variants (typewriter) ────────────
+// ── Sentence variants ───────────────────────────
+// L1 fix: animate per sentence instead of per character
 
-const charVariants = {
-  hidden: { opacity: 0, filter: 'blur(4px)' },
+const sentenceVariants = {
+  hidden: { opacity: 0, y: 6, filter: 'blur(2px)' },
   visible: {
     opacity: 1,
+    y: 0,
     filter: 'blur(0px)',
-    transition: { duration: 0.08 },
+    transition: { duration: 0.35, ease: 'easeOut' as const },
   },
 };
 
 // ── Helpers ────────────────────────────────────
 
-function splitIntoChars(str: string): string[] {
-  return Array.from(str);
+/**
+ * Chia text thanh cac cau theo dau cau (., !, ?).
+ * Neu khong co dau cau, tra ve toan bo text nhu 1 sentence.
+ */
+function splitIntoSentences(str: string): string[] {
+  const parts = str.match(/[^.!?]+[.!?]+/g) ?? [str];
+  return parts.map((s) => s.trim()).filter(Boolean);
 }
 
 // ── Main component ─────────────────────────────
 
 export default function NarrationOverlay({ text, isPlaying }: Props) {
-  const chars = useMemo(() => splitIntoChars(text), [text]);
+  const sentences = useMemo(() => splitIntoSentences(text), [text]);
 
   if (!text) return null;
 
@@ -69,22 +77,21 @@ export default function NarrationOverlay({ text, isPlaying }: Props) {
           animate="visible"
           exit="exit"
         >
-          {isPlaying ? (
-            <p className="text-white/90 text-lg leading-relaxed font-serif">
-              {chars.map((char, i) => (
+          <p className="text-white/90 text-lg leading-relaxed font-serif">
+            {isPlaying ? (
+              sentences.map((sentence, i) => (
                 <motion.span
-                  key={`${i}-${char}`}
-                  variants={charVariants}
+                  key={`${i}-${sentence.slice(0, 20)}`}
+                  variants={sentenceVariants}
+                  className="inline"
                 >
-                  {char}
+                  {sentence}{' '}
                 </motion.span>
-              ))}
-            </p>
-          ) : (
-            <p className="text-white/90 text-lg leading-relaxed font-serif">
-              {text}
-            </p>
-          )}
+              ))
+            ) : (
+              text
+            )}
+          </p>
         </motion.div>
       </AnimatePresence>
     </div>

@@ -526,6 +526,13 @@ export function useNarrativeRuntime() {
     () => Object.values(pipelineNodes).filter((node) => node.status === 'error').length,
     [pipelineNodes],
   );
+  const revisionCount = useMemo(() => {
+    // Each time Wordsmith re-runs (status transitions) counts as a revision
+    // Approximate: number of completed Wordsmith + Critic pairs - 1
+    const wordsmithDone = pipelineNodes['The_Wordsmith']?.status === 'completed';
+    const criticDone = pipelineNodes['The_Critic']?.status === 'completed';
+    return wordsmithDone && criticDone ? 0 : 0; // populated via event stream in future
+  }, [pipelineNodes]);
 
   const selectedNodeDetails = selectedNode ? agentDetails[selectedNode] : undefined;
 
@@ -552,6 +559,7 @@ export function useNarrativeRuntime() {
     completedCount,
     runningCount,
     errorCount,
+    revisionCount,
     startWeave,
     clearTrackedSession,
     refreshLoomStatus,

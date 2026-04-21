@@ -1,6 +1,10 @@
 import os
 from typing import List, Dict, Any
 
+from core.logging import get_logger
+
+log = get_logger(__name__)
+
 try:
     from langchain_community.vectorstores import Chroma
     HAS_CHROMA = True
@@ -12,7 +16,11 @@ class EpisodicMemoryManager:
         self.enabled = HAS_CHROMA
         self.db_dir = db_dir
         if not self.enabled:
-            print("WARNING: ChromaDB or LangChain is not installed. Memory module is disabled. Install via `pip install chromadb langchain-community openai`.")
+            log.warning(
+                "memory_manager.disabled",
+                reason="ChromaDB or LangChain not installed",
+                hint="pip install chromadb langchain-community openai",
+            )
             return
             
         # Dùng OpenAI Embeddings nếu có key, không thì dùng local HuggingFace
@@ -30,7 +38,10 @@ class EpisodicMemoryManager:
                 # Dùng model nhẹ, tiếng Việt tốt hoặc model embedding đa ngôn ngữ
                 self.embeddings = HuggingFaceEmbeddings(model_name="keepitreal/vietnamese-sbert")
             except ImportError:
-                print("WARNING: HuggingFaceEmbeddings not found. Install `sentence-transformers`.")
+                log.warning(
+                    "memory_manager.embeddings_missing",
+                    hint="pip install sentence-transformers",
+                )
                 self.enabled = False
                 return
                 

@@ -39,7 +39,7 @@ export default function SceneCompositor({
   const primaryColor = scene.background.colors[0] ?? '#ffffff';
 
   return (
-    <AnimatePresence mode="wait">
+    <AnimatePresence mode="sync">
       <motion.div
         key={scene.id}
         className="absolute inset-0 overflow-hidden"
